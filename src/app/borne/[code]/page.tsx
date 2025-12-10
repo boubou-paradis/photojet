@@ -251,6 +251,16 @@ export default function BornePage() {
     setState('uploading')
 
     try {
+      // Re-fetch session to get latest moderation setting
+      const { data: freshSession } = await supabase
+        .from('sessions')
+        .select('moderation_enabled')
+        .eq('id', session.id)
+        .single()
+
+      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const isApproved = !moderationEnabled
+
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
       const compressedFile = await compressImage(file)
 
@@ -267,13 +277,15 @@ export default function BornePage() {
       const { error: dbError } = await supabase.from('photos').insert({
         session_id: session.id,
         storage_path: fileName,
-        status: session.moderation_enabled ? 'pending' : 'approved',
+        status: isApproved ? 'approved' : 'pending',
         source: 'borne',
-        approved_at: session.moderation_enabled ? null : new Date().toISOString(),
+        approved_at: isApproved ? new Date().toISOString() : null,
       })
 
       if (dbError) throw dbError
 
+      // Update local session state for UI feedback
+      setSession({ ...session, moderation_enabled: moderationEnabled })
       setState('success')
     } catch (err) {
       console.error('Upload error:', err)
@@ -509,7 +521,7 @@ export default function BornePage() {
               <p className="text-2xl text-[#B0B0B5]">
                 {session?.moderation_enabled
                   ? 'Photo envoyée pour validation'
-                  : 'Photo ajoutée au diaporama'}
+                  : 'Photo ajoutée au diaporama !'}
               </p>
             </motion.div>
           </motion.div>

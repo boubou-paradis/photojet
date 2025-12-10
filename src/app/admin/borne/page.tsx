@@ -25,7 +25,7 @@ import { Session, BorneConnection } from '@/types/database'
 import { toast } from 'sonner'
 
 export default function BornePage() {
-  const [sessions, setSessions] = useState<Session[]>([])
+  const [, setSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [borneConnection, setBorneConnection] = useState<BorneConnection | null>(null)
   const [loading, setLoading] = useState(true)

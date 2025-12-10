@@ -1,13 +1,247 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
-import { Maximize, Image as ImageIcon } from 'lucide-react'
+import { Maximize, Minimize, ImagePlus, MessageCircle, Quote } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
-import { Session, Photo } from '@/types/database'
+import { Session, Photo, Message } from '@/types/database'
+
+// Types for slideshow items
+type SlideshowItem =
+  | { type: 'photo'; data: Photo }
+  | { type: 'message'; data: Message }
+
+// Rocket Animation Component
+interface RocketProps {
+  delay: number
+  duration: number
+  startX: number
+  size: number
+  curveIntensity: number
+  opacity: number
+}
+
+function Rocket({ delay, duration, startX, size, curveIntensity, opacity }: RocketProps) {
+  // Use a fixed height that works for most screens - rockets will still animate correctly
+  const screenHeight = 1200
+
+  return (
+    <motion.div
+      className="absolute pointer-events-none"
+      style={{
+        left: `${startX}%`,
+        bottom: '-100px',
+        zIndex: 5,
+        willChange: 'transform',
+      }}
+      initial={{ y: 0, x: 0, opacity: 0 }}
+      animate={{
+        y: [0, -screenHeight - 200],
+        x: [0, curveIntensity, curveIntensity * 0.5, curveIntensity * 1.2, 0],
+        opacity: [0, opacity, opacity, opacity, 0],
+      }}
+      transition={{
+        duration,
+        delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      <div
+        className="absolute left-1/2 -translate-x-1/2 rounded-full blur-md"
+        style={{
+          width: size * 0.6,
+          height: size * 3,
+          bottom: -size * 2,
+          background: 'linear-gradient(to top, transparent, rgba(212, 175, 55, 0.3), rgba(244, 208, 63, 0.5))',
+        }}
+      />
+      <svg
+        width={size}
+        height={size * 1.8}
+        viewBox="0 0 40 72"
+        fill="none"
+        style={{ filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.6))' }}
+      >
+        <defs>
+          <linearGradient id={`rocketGradient-${startX}`} x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#D4AF37" />
+            <stop offset="100%" stopColor="#F4D03F" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M20 0 C20 0, 8 20, 8 35 L8 50 L32 50 L32 35 C32 20, 20 0, 20 0Z"
+          fill={`url(#rocketGradient-${startX})`}
+        />
+        <rect x="8" y="50" width="24" height="10" fill={`url(#rocketGradient-${startX})`} />
+        <path d="M8 45 L0 65 L8 60 Z" fill={`url(#rocketGradient-${startX})`} />
+        <path d="M32 45 L40 65 L32 60 Z" fill={`url(#rocketGradient-${startX})`} />
+        <circle cx="20" cy="35" r="6" fill="#1A1A1E" />
+        <circle cx="20" cy="35" r="4" fill="rgba(212, 175, 55, 0.3)" />
+        <path
+          d="M12 60 L14 72 L20 65 L26 72 L28 60 Z"
+          fill="#F4D03F"
+          style={{ filter: 'blur(1px)' }}
+        />
+      </svg>
+    </motion.div>
+  )
+}
+
+// Pre-generated rocket data to avoid Math.random in render
+const ROCKET_DATA = [
+  { id: 0, delay: 1.2, duration: 10, startX: 15, size: 28, curveIntensity: 30, opacity: 0.6 },
+  { id: 1, delay: 3.5, duration: 12, startX: 35, size: 35, curveIntensity: -25, opacity: 0.7 },
+  { id: 2, delay: 0.8, duration: 9, startX: 55, size: 22, curveIntensity: 45, opacity: 0.5 },
+  { id: 3, delay: 5.2, duration: 11, startX: 75, size: 30, curveIntensity: -40, opacity: 0.65 },
+  { id: 4, delay: 2.1, duration: 13, startX: 25, size: 40, curveIntensity: 20, opacity: 0.75 },
+  { id: 5, delay: 6.8, duration: 10, startX: 65, size: 25, curveIntensity: -35, opacity: 0.55 },
+  { id: 6, delay: 4.0, duration: 14, startX: 85, size: 32, curveIntensity: 50, opacity: 0.8 },
+]
+
+function RocketAnimation() {
+  const rockets = ROCKET_DATA
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {rockets.map((rocket) => (
+        <Rocket key={rocket.id} {...rocket} />
+      ))}
+    </div>
+  )
+}
+
+// Animated counter component
+function AnimatedCounter({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <AnimatePresence mode="popLayout">
+        <motion.span
+          key={value}
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="text-[#D4AF37] font-bold tabular-nums"
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+      <span className="text-white/70">{label}</span>
+    </div>
+  )
+}
+
+// New photo notification component
+function NewPhotoNotification({ show }: { show: boolean }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, y: -50, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.9 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50"
+        >
+          <div className="flex items-center gap-3 px-6 py-3 bg-[#D4AF37] rounded-full shadow-lg shadow-[#D4AF37]/30">
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 0.5 }}
+            >
+              <ImagePlus className="h-5 w-5 text-[#1A1A1E]" />
+            </motion.div>
+            <span className="font-semibold text-[#1A1A1E]">+1 nouvelle photo !</span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// Message display component with adaptive font size
+function MessageDisplay({ message }: { message: Message }) {
+  const content = message.content
+  const length = content.length
+
+  // Calculate font size based on message length
+  let fontSize: string
+  let lineHeight: string
+  if (length < 50) {
+    fontSize = 'text-5xl md:text-6xl'
+    lineHeight = 'leading-tight'
+  } else if (length < 150) {
+    fontSize = 'text-3xl md:text-4xl'
+    lineHeight = 'leading-snug'
+  } else {
+    fontSize = 'text-xl md:text-2xl'
+    lineHeight = 'leading-relaxed'
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+      className="absolute inset-0 flex items-center justify-center p-8 z-10"
+    >
+      <div
+        className="max-w-4xl w-full mx-auto p-10 rounded-2xl text-center relative"
+        style={{
+          background: 'rgba(26, 26, 30, 0.85)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(212, 175, 55, 0.3)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.1)'
+        }}
+      >
+        {/* Golden quote icon */}
+        <motion.div
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 0.2, duration: 0.4, type: 'spring' }}
+          className="absolute -top-6 left-1/2 -translate-x-1/2"
+        >
+          <div className="w-12 h-12 rounded-full bg-[#D4AF37] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30">
+            <Quote className="h-6 w-6 text-[#1A1A1E]" />
+          </div>
+        </motion.div>
+
+        {/* Message content */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className={`${fontSize} ${lineHeight} text-white font-light mt-4`}
+          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+        >
+          &ldquo;{content}&rdquo;
+        </motion.p>
+
+        {/* Author name */}
+        {message.author_name && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="mt-6 text-xl text-[#D4AF37] italic font-medium"
+          >
+            &mdash; {message.author_name}
+          </motion.p>
+        )}
+
+        {/* Decorative elements */}
+        <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-[#D4AF37]/30 rounded-tl-lg" />
+        <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-[#D4AF37]/30 rounded-tr-lg" />
+        <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-[#D4AF37]/30 rounded-bl-lg" />
+        <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-[#D4AF37]/30 rounded-br-lg" />
+      </div>
+    </motion.div>
+  )
+}
 
 const transitions = {
   fade: {
@@ -21,10 +255,16 @@ const transitions = {
     exit: { x: '-100%', opacity: 0 },
   },
   zoom: {
-    initial: { scale: 1.2, opacity: 0 },
+    initial: { scale: 1.1, opacity: 0 },
     animate: { scale: 1, opacity: 1 },
-    exit: { scale: 0.8, opacity: 0 },
+    exit: { scale: 0.95, opacity: 0 },
   },
+}
+
+const logoSizes = {
+  small: { width: 40, height: 40 },
+  medium: { width: 60, height: 60 },
+  large: { width: 80, height: 80 },
 }
 
 export default function LivePage() {
@@ -33,10 +273,96 @@ export default function LivePage() {
 
   const [session, setSession] = useState<Session | null>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showUI, setShowUI] = useState(true)
+  const [showNewPhotoNotification, setShowNewPhotoNotification] = useState(false)
+  const previousPhotosCount = useRef(0)
+  const hideUITimeout = useRef<NodeJS.Timeout | null>(null)
+  const messageIndex = useRef(0)
   const supabase = createClient()
+
+  // Build slideshow items list - interleaving messages with photos
+  const slideshowItems = useMemo((): SlideshowItem[] => {
+    if (photos.length === 0) return []
+
+    const messagesEnabled = session?.messages_enabled ?? true
+    const frequency = session?.messages_frequency || 4
+    const approvedMessages = messages.filter(m => m.status === 'approved')
+
+    if (!messagesEnabled || approvedMessages.length === 0) {
+      return photos.map(photo => ({ type: 'photo' as const, data: photo }))
+    }
+
+    const items: SlideshowItem[] = []
+    let msgIdx = 0
+
+    photos.forEach((photo, idx) => {
+      items.push({ type: 'photo', data: photo })
+
+      // Insert a message after every 'frequency' photos
+      if ((idx + 1) % frequency === 0 && approvedMessages.length > 0) {
+        items.push({ type: 'message', data: approvedMessages[msgIdx % approvedMessages.length] })
+        msgIdx++
+      }
+    })
+
+    return items
+  }, [photos, messages, session?.messages_enabled, session?.messages_frequency])
+
+  // Get current item duration
+  const getCurrentDuration = useCallback(() => {
+    const currentItem = slideshowItems[currentIndex]
+    if (!currentItem) return (session?.transition_duration || 5) * 1000
+
+    if (currentItem.type === 'message') {
+      return (session?.messages_duration || 8) * 1000
+    }
+    return (session?.transition_duration || 5) * 1000
+  }, [currentIndex, slideshowItems, session?.transition_duration, session?.messages_duration])
+
+  // Hide UI after inactivity
+  const resetUITimer = useCallback(() => {
+    setShowUI(true)
+    if (hideUITimeout.current) {
+      clearTimeout(hideUITimeout.current)
+    }
+    hideUITimeout.current = setTimeout(() => {
+      if (isFullscreen) {
+        setShowUI(false)
+      }
+    }, 5000)
+  }, [isFullscreen])
+
+  useEffect(() => {
+    const handleMouseMove = () => resetUITimer()
+    const handleClick = () => resetUITimer()
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('click', handleClick)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('click', handleClick)
+      if (hideUITimeout.current) {
+        clearTimeout(hideUITimeout.current)
+      }
+    }
+  }, [resetUITimer])
+
+  // Show UI when not fullscreen
+  useEffect(() => {
+    if (!isFullscreen) {
+      setShowUI(true)
+      if (hideUITimeout.current) {
+        clearTimeout(hideUITimeout.current)
+      }
+    } else {
+      resetUITimer()
+    }
+  }, [isFullscreen, resetUITimer])
 
   const fetchSession = useCallback(async () => {
     try {
@@ -64,11 +390,38 @@ export default function LivePage() {
         .order('approved_at', { ascending: true })
 
       if (error) throw error
-      setPhotos(data || [])
+
+      const newPhotos = data || []
+
+      // Show notification if new photo arrived
+      if (previousPhotosCount.current > 0 && newPhotos.length > previousPhotosCount.current) {
+        setShowNewPhotoNotification(true)
+        setTimeout(() => setShowNewPhotoNotification(false), 3000)
+      }
+      previousPhotosCount.current = newPhotos.length
+
+      setPhotos(newPhotos)
     } catch (err) {
       console.error('Error fetching photos:', err)
     } finally {
       setLoading(false)
+    }
+  }, [session, supabase])
+
+  const fetchMessages = useCallback(async () => {
+    if (!session) return
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', session.id)
+        .eq('status', 'approved')
+        .order('approved_at', { ascending: true })
+
+      if (error) throw error
+      setMessages(data || [])
+    } catch (err) {
+      console.error('Error fetching messages:', err)
     }
   }, [session, supabase])
 
@@ -79,8 +432,10 @@ export default function LivePage() {
   useEffect(() => {
     if (session) {
       fetchPhotos()
+      fetchMessages()
 
-      const channel = supabase
+      // Subscribe to photos changes
+      const photosChannel = supabase
         .channel(`live-photos-${session.id}`)
         .on(
           'postgres_changes',
@@ -96,22 +451,86 @@ export default function LivePage() {
         )
         .subscribe()
 
+      // Subscribe to messages changes
+      const messagesChannel = supabase
+        .channel(`live-messages-${session.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: `session_id=eq.${session.id}`,
+          },
+          () => {
+            fetchMessages()
+          }
+        )
+        .subscribe()
+
+      // Subscribe to session changes (for settings updates like show_qr_on_screen)
+      const sessionChannel = supabase
+        .channel(`live-session-${session.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sessions',
+            filter: `id=eq.${session.id}`,
+          },
+          async () => {
+            // Re-fetch the full session to get updated values
+            const { data } = await supabase
+              .from('sessions')
+              .select('*')
+              .eq('id', session.id)
+              .single()
+            if (data) {
+              setSession(data)
+            }
+          }
+        )
+        .subscribe()
+
+      // Polling fallback: check session settings every 5 seconds
+      const pollInterval = setInterval(async () => {
+        const { data } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('id', session.id)
+          .single()
+        if (data) {
+          setSession((prev) => {
+            // Only update if something changed
+            if (JSON.stringify(prev) !== JSON.stringify(data)) {
+              return data
+            }
+            return prev
+          })
+        }
+      }, 5000)
+
       return () => {
-        supabase.removeChannel(channel)
+        supabase.removeChannel(photosChannel)
+        supabase.removeChannel(messagesChannel)
+        supabase.removeChannel(sessionChannel)
+        clearInterval(pollInterval)
       }
     }
-  }, [session, fetchPhotos, supabase])
+  }, [session?.id, fetchPhotos, fetchMessages, supabase])
 
+  // Slideshow timer with variable duration
   useEffect(() => {
-    if (photos.length <= 1) return
+    if (slideshowItems.length <= 1) return
 
-    const duration = (session?.transition_duration || 5) * 1000
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % photos.length)
+    const duration = getCurrentDuration()
+    const timeout = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % slideshowItems.length)
     }, duration)
 
-    return () => clearInterval(interval)
-  }, [photos.length, session?.transition_duration])
+    return () => clearTimeout(timeout)
+  }, [currentIndex, slideshowItems.length, getCurrentDuration])
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -131,13 +550,92 @@ export default function LivePage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  function getPhotoUrl(storagePath: string) {
+  function getStorageUrl(storagePath: string | null) {
+    if (!storagePath) return null
     const { data } = supabase.storage.from('photos').getPublicUrl(storagePath)
     return data.publicUrl
   }
 
   const transitionType = session?.transition_type || 'fade'
-  const currentPhoto = photos[currentIndex]
+  const currentItem = slideshowItems[currentIndex]
+
+  // Get customization values with defaults
+  const bgType = session?.background_type || 'color'
+  const bgColor = session?.background_color || '#1A1A1E'
+  const bgImage = session?.background_image
+  const bgOpacity = session?.background_opacity ?? 50
+  const customLogo = session?.custom_logo
+  const logoSize = session?.logo_size || 'medium'
+  const logoPosition = session?.logo_position || 'bottom-left'
+  const logoUrl = customLogo ? getStorageUrl(customLogo) : '/logo.png'
+  const logoSizeValues = logoSizes[logoSize]
+
+  // Render background
+  const renderBackground = () => {
+    if (bgType === 'image' && bgImage) {
+      return (
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${getStorageUrl(bgImage)})` }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: `rgba(0, 0, 0, ${bgOpacity / 100})` }}
+          />
+        </>
+      )
+    }
+    return (
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: bgColor }}
+      />
+    )
+  }
+
+  // Render logo component
+  const renderLogo = () => (
+    <motion.img
+      src={logoUrl || '/logo.png'}
+      alt="Logo"
+      width={logoSizeValues.width}
+      height={logoSizeValues.height}
+      className="drop-shadow-lg object-contain"
+      style={{ maxWidth: logoSizeValues.width, maxHeight: logoSizeValues.height }}
+    />
+  )
+
+  // QR Code component with pulse animation
+  const renderQRCode = (size: number = 80) => (
+    <div className="flex items-center gap-3">
+      <motion.div
+        animate={{
+          scale: [1, 1.02, 1],
+          boxShadow: [
+            '0 0 0 0 rgba(212, 175, 55, 0.4)',
+            '0 0 0 8px rgba(212, 175, 55, 0)',
+            '0 0 0 0 rgba(212, 175, 55, 0)',
+          ],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        className="bg-white p-2 rounded-lg"
+      >
+        <QRCode
+          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${code}`}
+          size={size}
+        />
+      </motion.div>
+      <div className="text-right">
+        <p className="text-xl font-mono font-bold text-[#D4AF37]">#{code}</p>
+        <p className="text-sm text-white/70">Partagez vos photos</p>
+      </div>
+    </div>
+  )
 
   if (loading || !session) {
     return (
@@ -158,141 +656,197 @@ export default function LivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E] overflow-hidden relative">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/3 via-transparent to-[#D4AF37]/3" />
+    <div className="min-h-screen overflow-hidden relative cursor-none" style={{ cursor: showUI ? 'auto' : 'none' }}>
+      {/* Background */}
+      {renderBackground()}
 
-      <button
+      {/* New photo notification */}
+      <NewPhotoNotification show={showNewPhotoNotification} />
+
+      {/* Fullscreen button - always visible on hover */}
+      <motion.button
         onClick={toggleFullscreen}
-        className="absolute top-4 right-4 z-50 p-3 bg-[#242428]/80 hover:bg-[#2E2E33] border border-[rgba(255,255,255,0.1)] rounded-full transition-colors backdrop-blur-sm"
+        initial={false}
+        animate={{ opacity: showUI ? 1 : 0 }}
+        whileHover={{ scale: 1.1 }}
+        transition={{ duration: 0.3 }}
+        className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
         title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
       >
-        <Maximize className="h-6 w-6 text-[#D4AF37]" />
-      </button>
+        {isFullscreen ? (
+          <Minimize className="h-6 w-6 text-[#D4AF37]" />
+        ) : (
+          <Maximize className="h-6 w-6 text-[#D4AF37]" />
+        )}
+      </motion.button>
 
-      {photos.length === 0 ? (
-        <div className="h-screen flex flex-col items-center justify-center text-white relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <div className="w-28 h-28 mx-auto mb-6 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
-              <ImageIcon className="h-14 w-14 text-[#D4AF37]" />
-            </div>
-            <h1 className="text-4xl font-bold mb-4 text-white">{session.name}</h1>
-            <p className="text-xl text-[#B0B0B5] mb-8">
-              En attente des premières photos...
-            </p>
+      {/* Logo at top-center position if selected */}
+      {logoPosition === 'top-center' && (
+        <motion.div
+          initial={false}
+          animate={{ opacity: showUI ? 1 : 0, y: showUI ? 0 : -20 }}
+          transition={{ duration: 0.3 }}
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-40"
+        >
+          {renderLogo()}
+        </motion.div>
+      )}
 
-            {session.show_qr_on_screen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="flex flex-col items-center"
-              >
-                <div className="bg-white p-6 rounded-2xl shadow-gold glow-gold">
-                  <QRCode
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${code}`}
-                    size={200}
-                  />
-                </div>
-                <p className="mt-4 text-3xl font-mono font-bold text-gold-gradient">#{code}</p>
-                <p className="text-[#B0B0B5] mt-2">
-                  Scannez pour partager vos photos
-                </p>
-              </motion.div>
-            )}
-          </motion.div>
-        </div>
-      ) : (
+      {slideshowItems.length === 0 ? (
+        /* Waiting screen with rocket animation */
         <>
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <motion.div
-              key={currentPhoto?.id || currentIndex}
-              variants={transitions[transitionType]}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.8, ease: 'easeInOut' }}
-              className="absolute inset-0 flex items-center justify-center p-8 z-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
             >
-              {currentPhoto && (
-                <div className="relative">
-                  <img
-                    src={getPhotoUrl(currentPhoto.storage_path)}
-                    alt="Photo"
-                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border-2 border-[#D4AF37]/20"
-                  />
-                  {/* Gold glow effect */}
-                  <div className="absolute inset-0 rounded-lg shadow-gold pointer-events-none" />
-                </div>
-              )}
+              <RocketAnimation />
             </motion.div>
           </AnimatePresence>
 
-          {/* Bottom overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#1A1A1E] via-[#1A1A1E]/80 to-transparent z-20">
-            <div className="flex items-end justify-between">
-              <div className="flex items-center gap-4">
-                <Image
-                  src="/logo.png"
-                  alt="PhotoJet"
-                  width={50}
-                  height={50}
-                  className="drop-shadow-lg"
+          <div className="h-screen flex flex-col items-center justify-center text-white relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <div className="mb-6">
+                <img
+                  src={logoUrl || '/logo.png'}
+                  alt="Logo"
+                  className="mx-auto drop-shadow-lg"
+                  style={{
+                    width: logoSize === 'small' ? 80 : logoSize === 'medium' ? 120 : 160,
+                    height: 'auto',
+                    objectFit: 'contain'
+                  }}
                 />
-                <div>
-                  <h1 className="text-2xl font-bold text-white">{session.name}</h1>
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className="text-[#D4AF37] font-semibold">
-                      {currentIndex + 1} / {photos.length}
-                    </span>
-                    {currentPhoto?.uploader_name && (
-                      <span className="text-[#B0B0B5]">
-                        par {currentPhoto.uploader_name}
-                      </span>
-                    )}
-                  </div>
-                </div>
               </div>
 
+              <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-lg">{session.name}</h1>
+
+              <p className="text-xl text-white/80 mb-12">
+                En attente des premières photos...
+              </p>
+
               {session.show_qr_on_screen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="fixed bottom-8 right-8"
+                >
+                  {renderQRCode(120)}
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Photo/Message slideshow */}
+          <AnimatePresence mode="wait">
+            {currentItem?.type === 'message' ? (
+              <MessageDisplay key={`msg-${currentItem.data.id}`} message={currentItem.data} />
+            ) : currentItem?.type === 'photo' ? (
+              <motion.div
+                key={`photo-${currentItem.data.id}`}
+                variants={transitions[transitionType]}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                className="absolute inset-0 flex items-center justify-center p-6 z-10"
+              >
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="relative"
+                >
+                  <img
+                    src={getStorageUrl(currentItem.data.storage_path) || ''}
+                    alt="Photo"
+                    className="max-w-full max-h-[90vh] object-contain"
+                    style={{
+                      borderRadius: '12px',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.2)',
+                    }}
+                  />
+                </motion.div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          {/* Bottom overlay bar */}
+          <motion.div
+            initial={false}
+            animate={{
+              opacity: showUI ? 1 : 0,
+              y: showUI ? 0 : 20
+            }}
+            transition={{ duration: 0.3 }}
+            className="absolute bottom-0 left-0 right-0 z-20"
+          >
+            <div
+              className="p-6 backdrop-blur-md"
+              style={{
+                background: 'rgba(0, 0, 0, 0.6)',
+                borderTop: '1px solid rgba(212, 175, 55, 0.1)'
+              }}
+            >
+              <div className="flex items-end justify-between">
+                {/* Left side: Logo + event info */}
                 <div className="flex items-center gap-4">
-                  <div className="bg-white p-2 rounded-lg shadow-gold">
-                    <QRCode
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${code}`}
-                      size={80}
-                    />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-mono font-bold text-[#D4AF37]">#{code}</p>
-                    <p className="text-sm text-[#B0B0B5]">Partagez vos photos</p>
+                  {logoPosition === 'bottom-left' && renderLogo()}
+                  <div>
+                    <h1 className="text-2xl font-bold text-white drop-shadow-lg">{session.name}</h1>
+                    <div className="flex items-center gap-4 mt-1">
+                      <AnimatedCounter
+                        value={currentIndex + 1}
+                        label={`/ ${slideshowItems.length}`}
+                      />
+                      {currentItem?.type === 'photo' && currentItem.data.uploader_name && (
+                        <span className="text-white/60 text-sm">
+                          par {currentItem.data.uploader_name}
+                        </span>
+                      )}
+                      {currentItem?.type === 'message' && (
+                        <span className="text-[#D4AF37]/80 text-sm flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" />
+                          Message
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Progress dots */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-30">
-            {photos.slice(0, 10).map((_, index) => (
-              <div
-                key={index}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentIndex % 10
-                    ? 'w-8 bg-[#D4AF37]'
-                    : 'w-1.5 bg-[#D4AF37]/30'
-                }`}
-              />
-            ))}
-            {photos.length > 10 && (
-              <span className="text-[#D4AF37]/50 text-xs ml-2">
-                +{photos.length - 10}
-              </span>
-            )}
-          </div>
+                {/* Right side: QR Code */}
+                {session.show_qr_on_screen && renderQRCode(70)}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: showUI ? 1 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute bottom-0 left-0 right-0 h-1 z-30"
+          >
+            <motion.div
+              key={currentIndex}
+              className="h-full bg-[#D4AF37]"
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{
+                duration: getCurrentDuration() / 1000,
+                ease: 'linear'
+              }}
+            />
+          </motion.div>
         </>
       )}
     </div>

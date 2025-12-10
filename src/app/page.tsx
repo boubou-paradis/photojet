@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
+import { PhotoJetFullLogo, ShutterIcon, RocketIcon } from '@/components/branding/PhotoJetLogo'
 
 export default function Home() {
   const [code, setCode] = useState('')
@@ -62,30 +62,31 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#D4AF37]/10 blur-[120px] rounded-full" />
       </div>
 
+      {/* Decorative shutter icons */}
+      <div className="absolute top-20 left-10 opacity-5 spin-slow">
+        <ShutterIcon size={120} />
+      </div>
+      <div className="absolute bottom-20 right-10 opacity-5 spin-slow" style={{ animationDirection: 'reverse' }}>
+        <ShutterIcon size={100} />
+      </div>
+      <div className="absolute top-1/3 right-20 opacity-5">
+        <RocketIcon size={60} className="rocket-launch" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="inline-block mb-6"
-          >
-            <Image
-              src="/logo.png"
-              alt="PhotoJet"
-              width={180}
-              height={180}
-              className="mx-auto drop-shadow-2xl"
-              priority
-            />
-          </motion.div>
-          <p className="text-[#B0B0B5] mt-2">
-            Partagez vos photos en temps reel
+        <div className="flex flex-col items-center justify-center mb-8">
+          <PhotoJetFullLogo size={180} animated className="mb-4" />
+          <h1 className="font-heading text-3xl font-bold mb-2 text-center">
+            <span className="text-white">Photo</span>
+            <span className="text-gold-gradient">Jet</span>
+          </h1>
+          <p className="text-[#B0B0B5] text-center">
+            Partagez vos photos en temps réel
           </p>
         </div>
 
@@ -125,13 +126,14 @@ export default function Home() {
             <Button
               type="submit"
               disabled={loading || code.length !== 4}
-              className="w-full h-12 bg-gold-gradient hover:opacity-90 text-[#1A1A1E] font-semibold transition-all hover:glow-gold disabled:opacity-50"
+              className="w-full h-12 bg-gold-gradient hover:opacity-90 text-[#1A1A1E] font-semibold font-heading transition-all hover:glow-gold disabled:opacity-50"
               size="lg"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
+                  <RocketIcon size={20} className="mr-2" />
                   Rejoindre
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>

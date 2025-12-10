@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock } from 'lucide-react'
+import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock, MessageCircle, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
 import { compressImage } from '@/lib/image-utils'
 import { Session } from '@/types/database'
+
+type TabType = 'photo' | 'message'
+type UploadStatus = 'idle' | 'success' | 'pending'
 
 export default function InvitePage() {
   const params = useParams()
@@ -18,16 +22,28 @@ export default function InvitePage() {
 
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabType>('photo')
+
+  // Photo states
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'pending'>('idle')
+  const [photoUploadStatus, setPhotoUploadStatus] = useState<UploadStatus>('idle')
   const [uploaderName, setUploaderName] = useState('')
+
+  // Message states
+  const [message, setMessage] = useState('')
+  const [messageAuthor, setMessageAuthor] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [messageUploadStatus, setMessageUploadStatus] = useState<UploadStatus>('idle')
+
   const [error, setError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+
+  const MAX_MESSAGE_LENGTH = 280
 
   useEffect(() => {
     async function fetchSession() {
@@ -79,18 +95,26 @@ export default function InvitePage() {
     setSelectedFile(file)
     setPreview(URL.createObjectURL(file))
     setError(null)
-    setUploadStatus('idle')
+    setPhotoUploadStatus('idle')
   }
 
-  const handleUpload = async () => {
+  const handlePhotoUpload = async () => {
     if (!selectedFile || !session) return
 
     setUploading(true)
     setError(null)
 
     try {
-      const compressedFile = await compressImage(selectedFile)
+      const { data: freshSession } = await supabase
+        .from('sessions')
+        .select('moderation_enabled')
+        .eq('id', session.id)
+        .single()
 
+      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const isApproved = !moderationEnabled
+
+      const compressedFile = await compressImage(selectedFile)
       const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
 
       const { error: uploadError } = await supabase.storage
@@ -106,14 +130,15 @@ export default function InvitePage() {
         .insert({
           session_id: session.id,
           storage_path: fileName,
-          status: session.moderation_enabled ? 'pending' : 'approved',
+          status: isApproved ? 'approved' : 'pending',
           uploader_name: uploaderName || null,
-          approved_at: session.moderation_enabled ? null : new Date().toISOString(),
+          approved_at: isApproved ? new Date().toISOString() : null,
+          source: 'invite',
         })
 
       if (dbError) throw dbError
 
-      setUploadStatus(session.moderation_enabled ? 'pending' : 'success')
+      setPhotoUploadStatus(isApproved ? 'success' : 'pending')
       setSelectedFile(null)
 
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -126,18 +151,65 @@ export default function InvitePage() {
     }
   }
 
+  const handleMessageSend = async () => {
+    if (!message.trim() || !session) return
+
+    setSendingMessage(true)
+    setError(null)
+
+    try {
+      const { data: freshSession } = await supabase
+        .from('sessions')
+        .select('moderation_enabled')
+        .eq('id', session.id)
+        .single()
+
+      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const isApproved = !moderationEnabled
+
+      const { error: dbError } = await supabase
+        .from('messages')
+        .insert({
+          session_id: session.id,
+          content: message.trim(),
+          author_name: messageAuthor || null,
+          status: isApproved ? 'approved' : 'pending',
+          approved_at: isApproved ? new Date().toISOString() : null,
+          source: 'invite',
+        })
+
+      if (dbError) throw dbError
+
+      setMessageUploadStatus(isApproved ? 'success' : 'pending')
+      setMessage('')
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi')
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
   const handleCancel = () => {
     setSelectedFile(null)
     setPreview(null)
-    setUploadStatus('idle')
+    setPhotoUploadStatus('idle')
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   const handleNewPhoto = () => {
-    setUploadStatus('idle')
+    setPhotoUploadStatus('idle')
     setPreview(null)
+    setUploaderName('')
   }
+
+  const handleNewMessage = () => {
+    setMessageUploadStatus('idle')
+    setMessageAuthor('')
+  }
+
+  const messagesEnabled = session?.messages_enabled ?? true
 
   if (loading) {
     return (
@@ -178,174 +250,275 @@ export default function InvitePage() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#D4AF37]/10 blur-[100px] rounded-full" />
 
-      <div className="max-w-sm mx-auto pt-8 relative z-10">
+      <div className="max-w-sm mx-auto pt-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
           <Image
             src="/logo.png"
             alt="PhotoJet"
-            width={80}
-            height={80}
-            className="mx-auto mb-4 drop-shadow-lg"
+            width={70}
+            height={70}
+            className="mx-auto mb-3 drop-shadow-lg"
           />
-          <p className="text-[#B0B0B5]">{session?.name}</p>
-          <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-full">
-            <span className="text-sm font-mono text-[#D4AF37] font-semibold">#{code}</span>
+          <p className="text-[#B0B0B5] text-sm">{session?.name}</p>
+          <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-full">
+            <span className="text-xs font-mono text-[#D4AF37] font-semibold">#{code}</span>
           </div>
         </motion.div>
 
+        {/* Tab Toggle */}
+        {messagesEnabled && (
+          <div className="flex gap-2 mb-4 p-1 bg-[#242428] rounded-xl border border-[rgba(255,255,255,0.1)]">
+            <button
+              onClick={() => setActiveTab('photo')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'photo'
+                  ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                  : 'text-[#B0B0B5] hover:text-white'
+              }`}
+            >
+              <Camera className="h-5 w-5" />
+              Photo
+            </button>
+            <button
+              onClick={() => setActiveTab('message')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'message'
+                  ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                  : 'text-[#B0B0B5] hover:text-white'
+              }`}
+            >
+              <MessageCircle className="h-5 w-5" />
+              Message
+            </button>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
-          {uploadStatus !== 'idle' ? (
+          {/* PHOTO TAB */}
+          {activeTab === 'photo' && (
             <motion.div
-              key="status"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              key="photo-tab"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
             >
-              <div className="card-gold rounded-xl">
-                <div className="p-8 text-center">
-                  {uploadStatus === 'success' ? (
-                    <>
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#4CAF50]/10 flex items-center justify-center">
-                        <CheckCircle className="h-10 w-10 text-[#4CAF50]" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-white mb-2">Photo envoyée !</h2>
-                      <p className="text-[#B0B0B5] mb-6">
-                        Votre photo est en ligne !
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
-                        <Clock className="h-10 w-10 text-[#D4AF37]" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-white mb-2">Photo envoyée !</h2>
-                      <p className="text-[#B0B0B5] mb-6">
-                        Votre photo est en attente de validation
-                      </p>
-                    </>
-                  )}
-                  <Button
-                    onClick={handleNewPhoto}
-                    className="w-full bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
-                  >
-                    Envoyer une autre photo
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          ) : preview ? (
-            <motion.div
-              key="preview"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-            >
-              <div className="card-gold rounded-xl">
-                <div className="p-6">
-                  <div className="relative aspect-square rounded-lg overflow-hidden mb-4 border-2 border-[#D4AF37]/30">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={handleCancel}
-                      className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  <Input
-                    placeholder="Votre prénom (optionnel)"
-                    value={uploaderName}
-                    onChange={(e) => setUploaderName(e.target.value)}
-                    className="mb-4 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-[#6B6B70]"
-                  />
-
-                  {error && (
-                    <p className="text-sm text-[#E53935] mb-4">{error}</p>
-                  )}
-
-                  <Button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="w-full h-12 bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90 disabled:opacity-50"
-                    size="lg"
-                  >
-                    {uploading ? (
+              {photoUploadStatus !== 'idle' ? (
+                <div className="card-gold rounded-xl">
+                  <div className="p-8 text-center">
+                    {photoUploadStatus === 'success' ? (
                       <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Envoi en cours...
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#4CAF50]/10 flex items-center justify-center">
+                          <CheckCircle className="h-10 w-10 text-[#4CAF50]" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-white mb-2">Photo envoyée !</h2>
+                        <p className="text-[#B0B0B5] mb-6">Votre photo est en ligne !</p>
                       </>
                     ) : (
                       <>
-                        <Send className="mr-2 h-5 w-5" />
-                        Envoyer la photo
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
+                          <Clock className="h-10 w-10 text-[#D4AF37]" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-white mb-2">Photo envoyée !</h2>
+                        <p className="text-[#B0B0B5] mb-6">Votre photo est en attente de validation</p>
                       </>
                     )}
-                  </Button>
+                    <Button
+                      onClick={handleNewPhoto}
+                      className="w-full bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
+                    >
+                      Envoyer une autre photo
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : preview ? (
+                <div className="card-gold rounded-xl">
+                  <div className="p-6">
+                    <div className="relative aspect-square rounded-lg overflow-hidden mb-4 border-2 border-[#D4AF37]/30">
+                      <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={handleCancel}
+                        className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <Input
+                      placeholder="Votre prénom (optionnel)"
+                      value={uploaderName}
+                      onChange={(e) => setUploaderName(e.target.value)}
+                      className="mb-4 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-[#6B6B70]"
+                    />
+
+                    {error && <p className="text-sm text-[#E53935] mb-4">{error}</p>}
+
+                    <Button
+                      onClick={handlePhotoUpload}
+                      disabled={uploading}
+                      className="w-full h-12 bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90 disabled:opacity-50"
+                      size="lg"
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-5 w-5" />
+                          Envoyer la photo
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="card-gold rounded-xl">
+                  <div className="p-6 space-y-4">
+                    <p className="text-center text-[#B0B0B5] mb-4">
+                      Partagez vos photos de l&apos;événement !
+                    </p>
+
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    <Button
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="w-full h-14 bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
+                      size="lg"
+                    >
+                      <Camera className="mr-2 h-6 w-6" />
+                      Prendre une photo
+                    </Button>
+
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      className="w-full h-14 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                      size="lg"
+                    >
+                      <ImagePlus className="mr-2 h-6 w-6" />
+                      Choisir dans ma galerie
+                    </Button>
+
+                    {error && <p className="text-sm text-[#E53935] text-center">{error}</p>}
+                  </div>
+                </div>
+              )}
             </motion.div>
-          ) : (
+          )}
+
+          {/* MESSAGE TAB */}
+          {activeTab === 'message' && (
             <motion.div
-              key="upload"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              key="message-tab"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
             >
-              <div className="card-gold rounded-xl">
-                <div className="p-6 space-y-4">
-                  <p className="text-center text-[#B0B0B5] mb-4">
-                    Partagez vos photos de l&apos;événement !
-                  </p>
-
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-
-                  <Button
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="w-full h-14 bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
-                    size="lg"
-                  >
-                    <Camera className="mr-2 h-6 w-6" />
-                    Prendre une photo
-                  </Button>
-
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full h-14 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
-                    size="lg"
-                  >
-                    <ImagePlus className="mr-2 h-6 w-6" />
-                    Choisir dans ma galerie
-                  </Button>
-
-                  {error && (
-                    <p className="text-sm text-[#E53935] text-center">{error}</p>
-                  )}
+              {messageUploadStatus !== 'idle' ? (
+                <div className="card-gold rounded-xl">
+                  <div className="p-8 text-center">
+                    {messageUploadStatus === 'success' ? (
+                      <>
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#4CAF50]/10 flex items-center justify-center">
+                          <CheckCircle className="h-10 w-10 text-[#4CAF50]" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-white mb-2">Message envoyé !</h2>
+                        <p className="text-[#B0B0B5] mb-6">Votre message sera affiché sur le diaporama</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
+                          <Clock className="h-10 w-10 text-[#D4AF37]" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-white mb-2">Message envoyé !</h2>
+                        <p className="text-[#B0B0B5] mb-6">Votre message est en attente de validation</p>
+                      </>
+                    )}
+                    <Button
+                      onClick={handleNewMessage}
+                      className="w-full bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
+                    >
+                      Envoyer un autre message
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="card-gold rounded-xl">
+                  <div className="p-6 space-y-4">
+                    <div className="text-center mb-2">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#D4AF37]/10 mb-3">
+                        <MessageCircle className="h-6 w-6 text-[#D4AF37]" />
+                      </div>
+                      <p className="text-[#B0B0B5] text-sm">
+                        Laissez un message de félicitations !
+                      </p>
+                    </div>
+
+                    <div className="relative">
+                      <Textarea
+                        placeholder="Écrivez votre message de félicitations..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+                        className="min-h-[120px] bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-[#6B6B70] resize-none"
+                      />
+                      <div className={`absolute bottom-2 right-3 text-xs ${
+                        message.length >= MAX_MESSAGE_LENGTH ? 'text-[#E53935]' : 'text-[#6B6B70]'
+                      }`}>
+                        {message.length}/{MAX_MESSAGE_LENGTH}
+                      </div>
+                    </div>
+
+                    <Input
+                      placeholder="Votre prénom (optionnel)"
+                      value={messageAuthor}
+                      onChange={(e) => setMessageAuthor(e.target.value)}
+                      className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-[#6B6B70]"
+                    />
+
+                    {error && <p className="text-sm text-[#E53935] text-center">{error}</p>}
+
+                    <Button
+                      onClick={handleMessageSend}
+                      disabled={sendingMessage || !message.trim()}
+                      className="w-full h-12 bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90 disabled:opacity-50"
+                      size="lg"
+                    >
+                      {sendingMessage ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="mr-2 h-5 w-5" />
+                          Envoyer le message
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
