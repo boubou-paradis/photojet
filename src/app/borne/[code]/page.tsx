@@ -7,18 +7,75 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Camera,
   RotateCcw,
-  Check,
   X,
   RefreshCw,
   Loader2,
   Sparkles,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { compressImage } from '@/lib/image-utils'
 
-type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'uploading' | 'success'
+type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'uploading' | 'success' | 'printing'
+
+// Rocket Button Component with takeoff animation
+function RocketButton({ onClick, disabled, isLaunching }: { onClick: () => void; disabled?: boolean; isLaunching?: boolean }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      disabled={disabled}
+      className="group relative w-28 h-28 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4D03F] flex items-center justify-center shadow-2xl disabled:opacity-50"
+      whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(212, 175, 55, 0.6)' }}
+      whileTap={{ scale: 0.95 }}
+      animate={isLaunching ? { y: -500, opacity: 0 } : { y: 0, opacity: 1 }}
+      transition={isLaunching ? { duration: 0.8, ease: 'easeIn' } : { type: 'spring', stiffness: 400 }}
+    >
+      {/* Glow effect */}
+      <div className="absolute inset-0 rounded-full bg-[#D4AF37] opacity-0 group-hover:opacity-30 blur-xl transition-opacity" />
+
+      {/* Rocket trail when launching */}
+      {isLaunching && (
+        <motion.div
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-32 rounded-full"
+          style={{
+            background: 'linear-gradient(to top, transparent, rgba(244, 208, 63, 0.8), rgba(212, 175, 55, 0.4))',
+          }}
+          initial={{ opacity: 0, scaleY: 0 }}
+          animate={{ opacity: [0, 1, 0], scaleY: [0, 1, 2] }}
+          transition={{ duration: 0.8 }}
+        />
+      )}
+
+      {/* Rocket SVG */}
+      <motion.svg
+        width={50}
+        height={60}
+        viewBox="0 0 40 50"
+        fill="none"
+        className="relative z-10"
+        animate={!isLaunching ? { y: [0, -3, 0], rotate: [0, -2, 2, 0] } : {}}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <path
+          d="M20 0 C20 0, 8 15, 8 28 L8 38 L32 38 L32 28 C32 15, 20 0, 20 0Z"
+          fill="#1A1A1E"
+        />
+        <rect x="8" y="38" width="24" height="6" fill="#1A1A1E" />
+        <path d="M8 32 L0 48 L8 44 Z" fill="#1A1A1E" />
+        <path d="M32 32 L40 48 L32 44 Z" fill="#1A1A1E" />
+        <circle cx="20" cy="26" r="5" fill="#D4AF37" />
+        <circle cx="20" cy="26" r="3" fill="#1A1A1E" opacity="0.3" />
+        <path
+          d="M12 44 L14 50 L20 46 L26 50 L28 44 Z"
+          fill="#F4D03F"
+          opacity="0.8"
+        />
+      </motion.svg>
+    </motion.button>
+  )
+}
 
 export default function BornePage() {
   const params = useParams()
@@ -32,6 +89,7 @@ export default function BornePage() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
+  const [isRocketLaunching, setIsRocketLaunching] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -298,11 +356,65 @@ export default function BornePage() {
     setCapturedImage(null)
     setCapturedBlob(null)
     setCountdown(session?.borne_countdown_duration || 3)
+    setIsRocketLaunching(false)
     setState('camera')
   }
 
   function toggleCamera() {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))
+  }
+
+  // Modified upload with rocket animation
+  async function handleSendWithAnimation() {
+    setIsRocketLaunching(true)
+    // Wait for animation before upload
+    await new Promise(resolve => setTimeout(resolve, 800))
+    await uploadPhoto()
+  }
+
+  // Print function
+  async function handlePrint() {
+    if (!capturedImage) return
+
+    setState('printing')
+
+    // Create a print window with the captured image
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>PhotoJet - Impression</title>
+            <style>
+              @page { margin: 0; }
+              body {
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: #000;
+              }
+              img {
+                max-width: 100%;
+                max-height: 100vh;
+                object-fit: contain;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${capturedImage}" onload="window.print(); window.close();" />
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+    }
+
+    // Return to camera after delay
+    setTimeout(() => {
+      resetToCamera()
+    }, (session?.borne_return_delay || 5) * 1000)
   }
 
   if (state === 'loading') {
@@ -462,24 +574,45 @@ export default function BornePage() {
                 </div>
               </div>
             ) : (
-              <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-8">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="h-20 px-10 text-xl bg-[#2E2E33] hover:bg-[#3E3E43] text-white border border-[rgba(255,255,255,0.1)]"
-                  onClick={resetToCamera}
-                >
-                  <RotateCcw className="h-8 w-8 mr-3" />
-                  Reprendre
-                </Button>
-                <Button
-                  size="lg"
-                  className="h-20 px-10 text-xl bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90 glow-gold"
-                  onClick={uploadPhoto}
-                >
-                  <Check className="h-8 w-8 mr-3" />
-                  Valider
-                </Button>
+              <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6">
+                {/* Main action buttons */}
+                <div className="flex items-center gap-10">
+                  {/* Reprendre button */}
+                  <div className="flex flex-col items-center gap-2">
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="w-20 h-20 rounded-full bg-[#2E2E33] hover:bg-[#3E3E43] text-white border border-[rgba(255,255,255,0.1)]"
+                      onClick={resetToCamera}
+                    >
+                      <RotateCcw className="h-8 w-8" />
+                    </Button>
+                    <span className="text-white/70 text-sm font-medium">Reprendre</span>
+                  </div>
+
+                  {/* Rocket Send button */}
+                  <div className="flex flex-col items-center gap-2">
+                    <RocketButton
+                      onClick={handleSendWithAnimation}
+                      disabled={isRocketLaunching}
+                      isLaunching={isRocketLaunching}
+                    />
+                    <span className="text-[#D4AF37] text-lg font-bold">ENVOYER</span>
+                  </div>
+
+                  {/* Print button */}
+                  <div className="flex flex-col items-center gap-2">
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="w-20 h-20 rounded-full bg-[#2E2E33] hover:bg-[#3E3E43] text-white border border-[rgba(255,255,255,0.1)]"
+                      onClick={handlePrint}
+                    >
+                      <Printer className="h-8 w-8" />
+                    </Button>
+                    <span className="text-white/70 text-sm font-medium">Imprimer</span>
+                  </div>
+                </div>
               </div>
             )}
           </motion.div>

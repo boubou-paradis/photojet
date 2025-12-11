@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -17,12 +17,29 @@ const inter = Inter({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#D4AF37",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://photojet.vercel.app'),
   title: "PhotoJet - Partage de photos en temps réel",
   description: "Application premium de partage de photos en temps réel pour événements. Partagez vos photos instantanément lors de mariages, soirées et événements d'entreprise.",
   keywords: ["photo", "événement", "mariage", "partage", "temps réel", "diaporama", "borne photo", "photobooth"],
   authors: [{ name: "PhotoJet" }],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "PhotoJet",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: "PhotoJet - Partage de photos en temps réel",
     description: "Application premium de partage de photos pour vos événements",
@@ -41,6 +58,11 @@ export const metadata: Metadata = {
       { url: "/logo.png", sizes: "32x32", type: "image/png" },
     ],
     apple: "/logo.png",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 
