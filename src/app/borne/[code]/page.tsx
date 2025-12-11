@@ -354,54 +354,83 @@ export default function BornePage() {
   }
 
   async function uploadPhoto() {
-    if (!capturedBlob || !session) return
+    console.log('[Borne] uploadPhoto called')
+    console.log('[Borne] capturedBlob:', capturedBlob?.size, 'bytes')
+    console.log('[Borne] session:', session?.id, session?.code)
+
+    if (!capturedBlob || !session) {
+      console.error('[Borne] Missing capturedBlob or session')
+      return
+    }
 
     setState('compressing')
 
     try {
       // Re-fetch session to get latest moderation setting
-      const { data: freshSession } = await supabase
+      console.log('[Borne] Fetching fresh session for moderation setting...')
+      const { data: freshSession, error: sessionError } = await supabase
         .from('sessions')
         .select('moderation_enabled')
         .eq('id', session.id)
         .single()
 
+      if (sessionError) {
+        console.error('[Borne] Error fetching session:', sessionError)
+      }
+
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
+      console.log('[Borne] moderation_enabled:', moderationEnabled, ', isApproved:', isApproved)
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
+      console.log('[Borne] Created file:', file.name, file.size, 'bytes')
+
+      console.log('[Borne] Compressing image...')
       const compressedFile = await compressImage(file, (progress) => {
+        console.log('[Borne] Compression progress:', progress.stage, progress.progress)
         if (progress.stage === 'done') {
           setState('uploading')
         }
       })
+      console.log('[Borne] Compressed file size:', compressedFile.size, 'bytes')
       setState('uploading')
 
       const fileName = `${session.id}/borne-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+      console.log('[Borne] Uploading to storage:', fileName)
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('photos')
         .upload(fileName, compressedFile, {
           contentType: 'image/jpeg',
         })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('[Borne] Storage upload error:', uploadError)
+        throw uploadError
+      }
+      console.log('[Borne] Storage upload success:', uploadData)
 
-      const { error: dbError } = await supabase.from('photos').insert({
+      console.log('[Borne] Inserting into photos table...')
+      const { data: dbData, error: dbError } = await supabase.from('photos').insert({
         session_id: session.id,
         storage_path: fileName,
         status: isApproved ? 'approved' : 'pending',
         source: 'borne',
         approved_at: isApproved ? new Date().toISOString() : null,
-      })
+      }).select()
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('[Borne] Database insert error:', dbError)
+        throw dbError
+      }
+      console.log('[Borne] Database insert success:', dbData)
 
       // Update local session state for UI feedback
       setSession({ ...session, moderation_enabled: moderationEnabled })
       setState('success')
+      console.log('[Borne] Upload complete!')
     } catch (err) {
-      console.error('Upload error:', err)
+      console.error('[Borne] Upload error:', err)
       setError('Erreur lors de l\'envoi')
       setState('preview')
     }
@@ -413,9 +442,11 @@ export default function BornePage() {
 
   // Modified upload with rocket animation
   async function handleSendWithAnimation() {
+    console.log('[Borne] handleSendWithAnimation called - starting rocket animation')
     setIsRocketLaunching(true)
     // Wait for animation before upload
     await new Promise(resolve => setTimeout(resolve, 800))
+    console.log('[Borne] Animation done, calling uploadPhoto')
     await uploadPhoto()
   }
 
