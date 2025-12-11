@@ -71,26 +71,26 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
 
   return (
     <div className={`card-gold rounded-xl ${className}`}>
-      <div className="p-3 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+      <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-            <Wifi className="h-4 w-4 text-[#D4AF37]" />
+          <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+            <Wifi className="h-3.5 w-3.5 text-[#D4AF37]" />
           </div>
           <span className="text-sm font-medium text-white">Connexion</span>
         </div>
         <button
           onClick={measureSpeed}
           disabled={testing}
-          className="p-1.5 rounded-lg hover:bg-[#2E2E33] transition-colors disabled:opacity-50"
+          className="p-1 rounded-lg hover:bg-[#2E2E33] transition-colors disabled:opacity-50"
           title="Tester la connexion"
         >
-          <RefreshCw className={`h-4 w-4 text-[#D4AF37] ${testing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 text-[#D4AF37] ${testing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="p-4">
-        {/* Vintage Meter */}
-        <div className="relative mx-auto" style={{ width: 180, height: 100 }}>
+      <div className="p-3">
+        {/* Vintage Meter - reduced size */}
+        <div className="relative mx-auto" style={{ width: 150, height: 82 }}>
           <svg viewBox="0 0 200 110" className="w-full h-full overflow-visible">
             <defs>
               <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -246,40 +246,38 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
         </div>
 
         {/* Digital display */}
-        <div className="text-center mt-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
+        <div className="text-center mt-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
             {testing ? (
-              <span className="text-xl font-mono text-[#D4AF37] animate-pulse">--.-</span>
+              <span className="text-lg font-mono text-[#D4AF37] animate-pulse">--.-</span>
             ) : (
-              <span className="text-xl font-mono text-[#D4AF37] font-bold">
+              <span className="text-lg font-mono text-[#D4AF37] font-bold">
                 {speed !== null ? speed.toFixed(1) : '--.-'}
               </span>
             )}
-            <span className="text-xs text-[#6B6B70]">Mbps</span>
+            <span className="text-[10px] text-[#6B6B70]">Mbps</span>
           </div>
         </div>
 
-        {/* Quality indicator */}
-        {quality && !testing && (
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <div
-              className="w-2 h-2 rounded-full animate-pulse"
-              style={{ backgroundColor: qualityConfig[quality].color }}
-            />
-            <span className="text-xs" style={{ color: qualityConfig[quality].color }}>
-              Connexion {qualityConfig[quality].label.toLowerCase()}
-            </span>
-          </div>
-        )}
-
-        {/* Ping display */}
-        {ping !== null && !testing && (
-          <div className="text-center mt-2">
+        {/* Quality indicator and ping in one row */}
+        <div className="flex items-center justify-center gap-3 mt-2">
+          {quality && !testing && (
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: qualityConfig[quality].color }}
+              />
+              <span className="text-[10px]" style={{ color: qualityConfig[quality].color }}>
+                {qualityConfig[quality].label}
+              </span>
+            </div>
+          )}
+          {ping !== null && !testing && (
             <span className="text-[10px] text-[#6B6B70]">
-              Latence : <span className="text-[#B0B0B5]">{ping} ms</span>
+              {ping}ms
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
