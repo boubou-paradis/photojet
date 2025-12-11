@@ -317,8 +317,6 @@ export default function LivePage() {
 
   // Build slideshow items list - interleaving messages with photos
   const slideshowItems = useMemo((): SlideshowItem[] => {
-    if (photos.length === 0) return []
-
     const messagesEnabled = session?.messages_enabled ?? true
     const frequency = session?.messages_frequency || 4
     const approvedMessages = messages.filter(m => m.status === 'approved')
@@ -331,10 +329,23 @@ export default function LivePage() {
       frequency
     })
 
+    // If no photos and no messages, return empty
+    if (photos.length === 0 && approvedMessages.length === 0) {
+      return []
+    }
+
+    // If only messages (no photos), show all messages
+    if (photos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
+      console.log('[Live] No photos, showing only messages')
+      return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
+    }
+
+    // If messages disabled or no messages, show only photos
     if (!messagesEnabled || approvedMessages.length === 0) {
       return photos.map(photo => ({ type: 'photo' as const, data: photo }))
     }
 
+    // Interleave photos and messages
     const items: SlideshowItem[] = []
     let msgIdx = 0
 
@@ -347,6 +358,11 @@ export default function LivePage() {
         msgIdx++
       }
     })
+
+    // If we have messages but none were inserted (less photos than frequency), add one at the end
+    if (approvedMessages.length > 0 && msgIdx === 0) {
+      items.push({ type: 'message', data: approvedMessages[0] })
+    }
 
     console.log('[Live] Slideshow items built:', items.length, 'items with', items.filter(i => i.type === 'message').length, 'messages')
     return items
@@ -799,7 +815,7 @@ export default function LivePage() {
               <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-lg">{session.name}</h1>
 
               <p className="text-xl text-white/80 mb-12">
-                En attente des premières photos...
+                En attente des premières photos ou messages...
               </p>
 
               {session.show_qr_on_screen && (
