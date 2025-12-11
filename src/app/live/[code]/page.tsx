@@ -8,6 +8,7 @@ import QRCode from 'react-qr-code'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
+import { getInviteUrl } from '@/lib/utils'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -626,7 +627,7 @@ export default function LivePage() {
         className="bg-white p-2 rounded-lg"
       >
         <QRCode
-          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${code}`}
+          value={getInviteUrl(code)}
           size={size}
         />
       </motion.div>

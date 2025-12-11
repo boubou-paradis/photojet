@@ -40,6 +40,7 @@ import { Session, Photo, Message, BorneConnection } from '@/types/database'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import SpeedMeter from '@/components/SpeedMeter'
 import { toast } from 'sonner'
+import { getInviteUrl } from '@/lib/utils'
 
 export default function DashboardPage() {
   const [, setSessions] = useState<Session[]>([])
@@ -315,7 +316,7 @@ export default function DashboardPage() {
 
   function copyInviteLink() {
     if (!selectedSession) return
-    const url = `${window.location.origin}/invite/${selectedSession.code}`
+    const url = getInviteUrl(selectedSession.code)
     navigator.clipboard.writeText(url)
     toast.success('Lien copié')
   }
@@ -764,7 +765,7 @@ export default function DashboardPage() {
                 <div className="p-4 flex flex-col items-center">
                   <div className="bg-white p-3 rounded-lg shadow-gold">
                     <QRCode
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${selectedSession.code}`}
+                      value={getInviteUrl(selectedSession.code)}
                       size={140}
                     />
                   </div>

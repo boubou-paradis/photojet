@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase'
 import { Session, BorneConnection } from '@/types/database'
 import { toast } from 'sonner'
+import { getBorneUrl } from '@/lib/utils'
 
 export default function BornePage() {
   const [, setSessions] = useState<Session[]>([])
@@ -170,7 +171,7 @@ export default function BornePage() {
 
   function copyBorneLink() {
     if (!selectedSession?.borne_qr_code) return
-    const url = `${window.location.origin}/borne/${selectedSession.borne_qr_code}`
+    const url = getBorneUrl(selectedSession.borne_qr_code)
     navigator.clipboard.writeText(url)
     toast.success('Lien copié')
   }
@@ -298,7 +299,7 @@ export default function BornePage() {
                       <>
                         <div className="bg-white p-4 rounded-lg shadow-gold">
                           <QRCode
-                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/borne/${selectedSession.borne_qr_code}`}
+                            value={getBorneUrl(selectedSession.borne_qr_code)}
                             size={180}
                           />
                         </div>
