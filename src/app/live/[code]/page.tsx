@@ -163,82 +163,112 @@ function NewPhotoNotification({ show }: { show: boolean }) {
   )
 }
 
-// Message display component with adaptive font size
+// Message display component - SMS bubble style
 function MessageDisplay({ message }: { message: Message }) {
   const content = message.content
   const length = content.length
 
   // Calculate font size based on message length
-  let fontSize: string
-  let lineHeight: string
-  if (length < 50) {
-    fontSize = 'text-5xl md:text-6xl'
-    lineHeight = 'leading-tight'
-  } else if (length < 150) {
-    fontSize = 'text-3xl md:text-4xl'
-    lineHeight = 'leading-snug'
-  } else {
-    fontSize = 'text-xl md:text-2xl'
-    lineHeight = 'leading-relaxed'
+  const getFontSize = () => {
+    if (length < 50) return '2.5rem'
+    if (length < 100) return '2rem'
+    if (length < 150) return '1.5rem'
+    return '1.25rem'
   }
+
+  console.log('[MessageDisplay] Rendering message:', message.id, content.substring(0, 30) + '...')
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
-      transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-      className="absolute inset-0 flex items-center justify-center p-8 z-10"
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -30, scale: 0.95 }}
+      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      className="fixed inset-0 flex items-center justify-center z-50"
     >
-      <div
-        className="max-w-4xl w-full mx-auto p-10 rounded-2xl text-center relative"
-        style={{
-          background: 'rgba(26, 26, 30, 0.85)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.1)'
-        }}
-      >
-        {/* Golden quote icon */}
+      <div className="relative max-w-2xl mx-4">
+        {/* SMS Bubble */}
         <motion.div
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.2, duration: 0.4, type: 'spring' }}
-          className="absolute -top-6 left-1/2 -translate-x-1/2"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.4, type: 'spring', stiffness: 200 }}
+          className="bg-[#242428] border-2 border-[#D4AF37] rounded-3xl p-8 shadow-2xl"
+          style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
-          <div className="w-12 h-12 rounded-full bg-[#D4AF37] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30">
-            <Quote className="h-6 w-6 text-[#1A1A1E]" />
-          </div>
+          {/* Opening quote */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            className="text-[#D4AF37] text-5xl mb-4 text-center font-serif"
+          >
+            &ldquo;
+          </motion.div>
+
+          {/* Message content */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="text-white text-center font-medium leading-relaxed"
+            style={{
+              fontSize: getFontSize(),
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}
+          >
+            {content}
+          </motion.p>
+
+          {/* Closing quote */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+            className="text-[#D4AF37] text-5xl mt-4 text-center font-serif"
+          >
+            &rdquo;
+          </motion.div>
+
+          {/* Author name */}
+          {message.author_name && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="text-[#D4AF37] text-xl italic text-center mt-6 font-medium"
+            >
+              — {message.author_name}
+            </motion.p>
+          )}
         </motion.div>
 
-        {/* Message content */}
-        <motion.p
+        {/* SMS bubble tail (triangle) */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className={`${fontSize} ${lineHeight} text-white font-light mt-4`}
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="absolute -bottom-4 left-1/2 transform -translate-x-1/2"
         >
-          &ldquo;{content}&rdquo;
-        </motion.p>
-
-        {/* Author name */}
-        {message.author_name && (
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="mt-6 text-xl text-[#D4AF37] italic font-medium"
-          >
-            &mdash; {message.author_name}
-          </motion.p>
-        )}
-
-        {/* Decorative elements */}
-        <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-[#D4AF37]/30 rounded-tl-lg" />
-        <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-[#D4AF37]/30 rounded-tr-lg" />
-        <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-[#D4AF37]/30 rounded-bl-lg" />
-        <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-[#D4AF37]/30 rounded-br-lg" />
+          <div
+            className="w-0 h-0"
+            style={{
+              borderLeft: '20px solid transparent',
+              borderRight: '20px solid transparent',
+              borderTop: '20px solid #242428',
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))'
+            }}
+          />
+          {/* Golden border for tail */}
+          <div
+            className="absolute -top-[2px] left-1/2 transform -translate-x-1/2 w-0 h-0"
+            style={{
+              borderLeft: '22px solid transparent',
+              borderRight: '22px solid transparent',
+              borderTop: '22px solid #D4AF37',
+              zIndex: -1
+            }}
+          />
+        </motion.div>
       </div>
     </motion.div>
   )
@@ -421,6 +451,20 @@ export default function LivePage() {
   const fetchMessages = useCallback(async () => {
     if (!session) return
     try {
+      // First fetch ALL messages to see what's in the DB
+      const { data: allMessages, error: allError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('created_at', { ascending: true })
+
+      if (allError) {
+        console.error('[Live] Error fetching all messages:', allError)
+      } else {
+        console.log('[Live] ALL messages in DB:', allMessages?.length || 0, allMessages?.map(m => ({ id: m.id, status: m.status, content: m.content?.substring(0, 20) })))
+      }
+
+      // Now fetch only approved ones
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -429,7 +473,7 @@ export default function LivePage() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      console.log('[Live] Messages fetched:', data?.length || 0, 'messages_enabled:', session.messages_enabled)
+      console.log('[Live] APPROVED messages:', data?.length || 0, 'messages_enabled:', session.messages_enabled)
       setMessages(data || [])
     } catch (err) {
       console.error('Error fetching messages:', err)
@@ -534,6 +578,18 @@ export default function LivePage() {
       }
     }
   }, [session?.id, fetchPhotos, fetchMessages, supabase])
+
+  // Log current item for debugging
+  useEffect(() => {
+    const item = slideshowItems[currentIndex]
+    console.log('[Live] Current slide:', {
+      index: currentIndex,
+      total: slideshowItems.length,
+      type: item?.type,
+      id: item?.data?.id,
+      content: item?.type === 'message' ? item.data.content?.substring(0, 30) : 'photo'
+    })
+  }, [currentIndex, slideshowItems])
 
   // Slideshow timer with variable duration
   useEffect(() => {
