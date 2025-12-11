@@ -256,23 +256,26 @@ export default function BornePage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-6 max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-4"
         >
           {/* Enable/Disable Card */}
-          <div className="card-gold rounded-xl">
-            <div className="p-5 flex items-center justify-between">
+          <motion.div
+            whileHover={{ scale: 1.005 }}
+            className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Activer la borne photo</h3>
-                <p className="text-sm text-[#6B6B70] mt-1">
-                  Transformez une tablette en borne photo pour votre événement
+                <h3 className="text-base font-semibold text-white">Activer la borne photo</h3>
+                <p className="text-xs text-[#6B6B70] mt-0.5">
+                  Transformez une tablette en borne photo
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Label htmlFor="borne-toggle" className="text-sm text-[#B0B0B5]">
+                <Label htmlFor="borne-toggle" className="text-xs text-[#B0B0B5]">
                   {selectedSession.borne_enabled ? 'Activée' : 'Désactivée'}
                 </Label>
                 <Switch
@@ -283,39 +286,42 @@ export default function BornePage() {
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {selectedSession.borne_enabled && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* QR Code Card */}
-                <div className="card-gold rounded-xl">
-                  <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-                    <h3 className="text-lg font-semibold text-white">QR Code connexion</h3>
-                    <p className="text-sm text-[#6B6B70] mt-1">
-                      Scannez ce QR code avec la tablette pour la connecter
+                <motion.div
+                  whileHover={{ scale: 1.005 }}
+                  className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                >
+                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                    <h3 className="text-sm font-semibold text-white">QR Code connexion</h3>
+                    <p className="text-xs text-[#6B6B70] mt-0.5">
+                      Scannez avec la tablette
                     </p>
                   </div>
-                  <div className="p-6 flex flex-col items-center">
+                  <div className="p-4 flex flex-col items-center">
                     {selectedSession.borne_qr_code && (
                       <>
-                        <div className="bg-white p-4 rounded-lg shadow-gold">
+                        <div className="bg-white p-3 rounded-lg shadow-gold">
                           <QRCode
                             value={getBorneUrl(selectedSession.borne_qr_code)}
-                            size={180}
+                            size={140}
                           />
                         </div>
-                        <p className="text-xs text-[#6B6B70] mt-3 font-mono break-all text-center">
+                        <p className="text-[10px] text-[#6B6B70] mt-2 font-mono break-all text-center">
                           {selectedSession.borne_qr_code}
                         </p>
-                        <div className="flex gap-2 mt-4">
+                        <div className="flex gap-2 mt-3 w-full">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={copyBorneLink}
-                            className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                            className="flex-1 h-8 text-xs border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                           >
-                            <Copy className="h-4 w-4 mr-2" />
+                            <Copy className="h-3 w-3 mr-1" />
                             Copier
                           </Button>
                           <Button
@@ -324,9 +330,9 @@ export default function BornePage() {
                             onClick={() =>
                               window.open(`/borne/${selectedSession.borne_qr_code}`, '_blank')
                             }
-                            className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                            className="flex-1 h-8 text-xs border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                           >
-                            <ExternalLink className="h-4 w-4 mr-2" />
+                            <ExternalLink className="h-3 w-3 mr-1" />
                             Ouvrir
                           </Button>
                           <Button
@@ -334,25 +340,28 @@ export default function BornePage() {
                             size="sm"
                             onClick={regenerateBorneQr}
                             disabled={saving}
-                            className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                            className="h-8 w-8 p-0 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                           >
-                            <RefreshCw className="h-4 w-4" />
+                            <RefreshCw className="h-3 w-3" />
                           </Button>
                         </div>
                       </>
                     )}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Connection Status Card */}
-                <div className="card-gold rounded-xl">
-                  <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-                    <h3 className="text-lg font-semibold text-white">Statut de connexion</h3>
-                    <p className="text-sm text-[#6B6B70] mt-1">
-                      État de la tablette connectée à cette session
+                <motion.div
+                  whileHover={{ scale: 1.005 }}
+                  className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                >
+                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                    <h3 className="text-sm font-semibold text-white">Statut de connexion</h3>
+                    <p className="text-xs text-[#6B6B70] mt-0.5">
+                      État de la tablette
                     </p>
                   </div>
-                  <div className="p-6">
+                  <div className="p-4">
                     {borneConnection ? (
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
@@ -398,111 +407,119 @@ export default function BornePage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               </div>
 
               {/* Installation Guide */}
-              <div className="card-gold rounded-xl">
-                <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="text-lg font-semibold text-white">Guide d&apos;installation</h3>
-                  <p className="text-sm text-[#6B6B70] mt-1">
-                    Instructions pour configurer la borne photo sur votre tablette
+              <motion.div
+                whileHover={{ scale: 1.002 }}
+                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                  <h3 className="text-sm font-semibold text-white">Guide d&apos;installation</h3>
+                  <p className="text-xs text-[#6B6B70] mt-0.5">
+                    Configuration sur tablette
                   </p>
                 </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2 text-white">
-                        <span className="w-6 h-6 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-sm">1</span>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
+                        <span className="w-5 h-5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-xs">1</span>
                         iPad / iOS
                       </h3>
-                      <ol className="text-sm text-[#B0B0B5] space-y-2 ml-8">
+                      <ol className="text-xs text-[#B0B0B5] space-y-1 ml-7">
                         <li>Ouvrez Safari sur votre iPad</li>
                         <li>Scannez le QR code ou entrez le lien</li>
-                        <li>Appuyez sur le bouton Partager</li>
-                        <li>Sélectionnez &quot;Sur l&apos;écran d&apos;accueil&quot;</li>
-                        <li>Activez l&apos;Accès guidé dans Réglages &gt; Accessibilité</li>
+                        <li>Appuyez sur Partager → &quot;Sur l&apos;écran d&apos;accueil&quot;</li>
+                        <li>Activez l&apos;Accès guidé (Réglages &gt; Accessibilité)</li>
                       </ol>
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2 text-white">
-                        <span className="w-6 h-6 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-sm">2</span>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
+                        <span className="w-5 h-5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-xs">2</span>
                         Android
                       </h3>
-                      <ol className="text-sm text-[#B0B0B5] space-y-2 ml-8">
+                      <ol className="text-xs text-[#B0B0B5] space-y-1 ml-7">
                         <li>Ouvrez Chrome sur votre tablette</li>
                         <li>Scannez le QR code ou entrez le lien</li>
-                        <li>Appuyez sur le menu (3 points)</li>
-                        <li>Sélectionnez &quot;Ajouter à l&apos;écran d&apos;accueil&quot;</li>
+                        <li>Menu (⋮) → &quot;Ajouter à l&apos;écran d&apos;accueil&quot;</li>
                         <li>Activez le mode kiosque si disponible</li>
                       </ol>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Current Configuration */}
-              <div className="card-gold rounded-xl">
-                <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="text-lg font-semibold text-white">Configuration actuelle</h3>
+              <motion.div
+                whileHover={{ scale: 1.002 }}
+                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                  <h3 className="text-sm font-semibold text-white">Configuration actuelle</h3>
                 </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
+                <div className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
                       <p className="text-[#6B6B70]">Compte à rebours</p>
-                      <p className="font-medium text-[#D4AF37]">
+                      <p className="font-semibold text-[#D4AF37] mt-0.5">
                         {selectedSession.borne_countdown
                           ? `${selectedSession.borne_countdown_duration}s`
                           : 'Désactivé'}
                       </p>
                     </div>
-                    <div>
+                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
                       <p className="text-[#6B6B70]">Retour auto</p>
-                      <p className="font-medium text-[#D4AF37]">{selectedSession.borne_return_delay}s</p>
+                      <p className="font-semibold text-[#D4AF37] mt-0.5">{selectedSession.borne_return_delay}s</p>
                     </div>
-                    <div>
+                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
                       <p className="text-[#6B6B70]">Caméra par défaut</p>
-                      <p className="font-medium text-white">
+                      <p className="font-semibold text-white mt-0.5">
                         {selectedSession.borne_default_camera === 'front' ? 'Frontale' : 'Arrière'}
                       </p>
                     </div>
-                    <div>
+                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
                       <p className="text-[#6B6B70]">Nom événement</p>
-                      <p className="font-medium text-white">
+                      <p className="font-semibold text-white mt-0.5">
                         {selectedSession.borne_show_event_name ? 'Affiché' : 'Masqué'}
                       </p>
                     </div>
                   </div>
                   <Button
                     variant="outline"
-                    className="mt-4 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                    size="sm"
+                    className="mt-3 h-8 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
                     onClick={() => router.push('/admin/settings')}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
+                    <Settings className="h-3 w-3 mr-1.5" />
                     Modifier les paramètres
                   </Button>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Lock Settings */}
-              <div className="card-gold rounded-xl">
-                <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
+              <motion.div
+                whileHover={{ scale: 1.002 }}
+                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
                   <div className="flex items-center gap-2">
-                    <Lock className="h-5 w-5 text-[#D4AF37]" />
-                    <h3 className="text-lg font-semibold text-white">Verrouillage de la borne</h3>
+                    <Lock className="h-4 w-4 text-[#D4AF37]" />
+                    <h3 className="text-sm font-semibold text-white">Verrouillage de la borne</h3>
                   </div>
-                  <p className="text-sm text-[#6B6B70] mt-1">
-                    Empêche les utilisateurs de quitter l&apos;application borne
+                  <p className="text-xs text-[#6B6B70] mt-0.5">
+                    Empêche de quitter l&apos;application borne
                   </p>
                 </div>
-                <div className="p-6 space-y-6">
+                <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="lock-toggle" className="text-white font-medium">
+                      <Label htmlFor="lock-toggle" className="text-white text-sm font-medium">
                         Activer le verrouillage
                       </Label>
-                      <p className="text-sm text-[#6B6B70] mt-1">
-                        Un code PIN sera requis pour accéder au dashboard
+                      <p className="text-xs text-[#6B6B70] mt-0.5">
+                        Code PIN requis pour le dashboard
                       </p>
                     </div>
                     <Switch
@@ -529,11 +546,11 @@ export default function BornePage() {
                   </div>
 
                   {selectedSession.borne_lock_enabled && (
-                    <div className="space-y-3">
-                      <Label htmlFor="lock-code" className="text-white font-medium">
+                    <div className="space-y-2 pt-2 border-t border-[rgba(255,255,255,0.05)]">
+                      <Label htmlFor="lock-code" className="text-white text-sm font-medium">
                         Code PIN (4 chiffres)
                       </Label>
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <Input
                           id="lock-code"
                           type="password"
@@ -545,10 +562,11 @@ export default function BornePage() {
                             const value = e.target.value.replace(/\D/g, '').slice(0, 4)
                             setSelectedSession({ ...selectedSession, borne_lock_code: value })
                           }}
-                          className="w-32 text-center text-lg tracking-widest bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white"
+                          className="w-28 h-9 text-center text-base tracking-widest bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white"
                         />
                         <Button
                           variant="outline"
+                          size="sm"
                           onClick={async () => {
                             if (!selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4) {
                               toast.error('Le code doit contenir 4 chiffres')
@@ -569,18 +587,15 @@ export default function BornePage() {
                             }
                           }}
                           disabled={saving || !selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4}
-                          className="border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                          className="h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
                         >
                           Enregistrer
                         </Button>
                       </div>
-                      <p className="text-xs text-[#6B6B70]">
-                        Ce code sera demandé pour accéder au tableau de bord depuis la borne
-                      </p>
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             </>
           )}
         </motion.div>

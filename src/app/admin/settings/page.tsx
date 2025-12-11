@@ -401,21 +401,24 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 flex-1 overflow-auto">
+      <main className="container mx-auto px-4 py-3 flex-1 overflow-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full"
         >
           {/* Colonne gauche : Informations générales */}
-          <div className="card-gold rounded-xl flex flex-col">
-            <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-              <h3 className="text-lg font-semibold text-white">Informations générales</h3>
-              <p className="text-sm text-[#6B6B70]">
+          <motion.div
+            whileHover={{ scale: 1.002 }}
+            className="card-gold rounded-xl flex flex-col transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <h3 className="text-sm font-semibold text-white">Informations générales</h3>
+              <p className="text-xs text-[#6B6B70]">
                 Informations de base de votre événement
               </p>
             </div>
-            <div className="p-4 space-y-4 flex-1">
+            <div className="p-3 space-y-3 flex-1">
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-[#B0B0B5] text-sm">Nom de l&apos;événement</Label>
                 <Input
@@ -476,16 +479,19 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Colonne droite : Diaporama */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {/* Diaporama */}
-            <div className="card-gold rounded-xl">
-              <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-                <h3 className="text-lg font-semibold text-white">Diaporama</h3>
+            <motion.div
+              whileHover={{ scale: 1.002 }}
+              className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+            >
+              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                <h3 className="text-sm font-semibold text-white">Diaporama</h3>
               </div>
-              <div className="p-4 space-y-4">
+              <div className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white text-sm">Afficher le QR code</Label>
@@ -540,13 +546,16 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Personnalisation Diaporama - pleine largeur */}
-          <div className="card-gold rounded-xl lg:col-span-2">
-            <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3">
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
                   <Palette className="h-5 w-5 text-[#D4AF37]" />
                 </div>
@@ -767,23 +776,26 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Messages - pleine largeur */}
-          <div className="card-gold rounded-xl lg:col-span-2">
-            <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#9C27B0]/10 flex items-center justify-center">
-                  <MessageCircle className="h-5 w-5 text-[#9C27B0]" />
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#9C27B0]/50 hover:shadow-[0_0_20px_rgba(156,39,176,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#9C27B0]/10 flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4 text-[#9C27B0]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Messages</h3>
-                  <p className="text-sm text-[#6B6B70]">Affichage des messages texte dans le diaporama</p>
+                  <h3 className="text-sm font-semibold text-white">Messages</h3>
+                  <p className="text-xs text-[#6B6B70]">Messages texte dans le diaporama</p>
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white text-sm">Activer les messages</Label>
@@ -848,23 +860,26 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Borne Photo - pleine largeur */}
-          <div className="card-gold rounded-xl lg:col-span-2">
-            <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                  <Tablet className="h-5 w-5 text-[#D4AF37]" />
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                  <Tablet className="h-4 w-4 text-[#D4AF37]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Borne Photo</h3>
-                  <p className="text-sm text-[#6B6B70]">Paramètres de la tablette</p>
+                  <h3 className="text-sm font-semibold text-white">Borne Photo</h3>
+                  <p className="text-xs text-[#6B6B70]">Paramètres de la tablette</p>
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -952,16 +967,17 @@ export default function SettingsPage() {
                 <div className="flex items-end">
                   <Button
                     variant="outline"
-                    className="w-full border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                    size="sm"
+                    className="w-full h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
                     onClick={() => router.push('/admin/borne')}
                   >
-                    <Tablet className="h-4 w-4 mr-2" />
+                    <Tablet className="h-3.5 w-3.5 mr-1.5" />
                     Gérer la borne
                   </Button>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </main>
     </div>
