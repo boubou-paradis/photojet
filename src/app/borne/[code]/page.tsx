@@ -222,16 +222,27 @@ export default function BornePage() {
   }, [facingMode])
 
   useEffect(() => {
-    if (state === 'camera' && session) {
-      startCamera()
+    // Start camera for both camera and countdown states
+    if ((state === 'camera' || state === 'countdown') && session) {
+      // Only start if not already running
+      if (!streamRef.current) {
+        startCamera()
+      }
     }
 
+    // Only stop the stream when leaving camera/countdown states entirely
+    // (not when transitioning from camera to countdown)
+  }, [state, session, startCamera])
+
+  // Separate cleanup effect that only runs on unmount or when going to non-camera states
+  useEffect(() => {
     return () => {
+      // Stop stream only on component unmount
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
       }
     }
-  }, [state, session, startCamera])
+  }, [])
 
   // Reset to camera state
   const resetToCamera = useCallback(() => {
@@ -258,22 +269,44 @@ export default function BornePage() {
       return
     }
 
-    // Check video is ready
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      console.error('[Borne] Video dimensions not ready:', video.videoWidth, video.videoHeight)
-      setDebugStatus(`Video pas prête: ${video.videoWidth}x${video.videoHeight}`)
+    // Check video is ready and playing
+    const isVideoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
+    console.log('[Borne] Video state:', {
+      readyState: video.readyState,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      paused: video.paused,
+      isVideoReady
+    })
 
-      // Retry up to 5 times
-      if (retryCount < 5) {
+    if (!isVideoReady) {
+      console.error('[Borne] Video not ready:', video.readyState, video.videoWidth, video.videoHeight)
+      setDebugStatus(`Video pas prête: état=${video.readyState}, ${video.videoWidth}x${video.videoHeight}`)
+
+      // Try to play the video if paused
+      if (video.paused) {
+        video.play().catch(err => console.error('[Borne] Error playing video:', err))
+      }
+
+      // Retry up to 10 times with longer delay
+      if (retryCount < 10) {
         setTimeout(() => {
           capturePhoto(retryCount + 1)
-        }, 500)
+        }, 300)
       } else {
-        setDebugStatus('ERREUR: Video non prête après 5 essais')
+        setDebugStatus('ERREUR: Video non prête après 10 essais')
         setTimeout(() => resetToCamera(), 2000)
       }
       return
     }
+
+    // Double-check: if video is paused, play it
+    if (video.paused) {
+      console.log('[Borne] Video was paused, playing...')
+      video.play().catch(err => console.error('[Borne] Error playing video:', err))
+    }
+
+    setDebugStatus(`Video OK: ${video.videoWidth}x${video.videoHeight}`)
 
     const ctx = canvas.getContext('2d')
     if (!ctx) {
