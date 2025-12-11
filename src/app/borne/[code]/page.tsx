@@ -12,6 +12,8 @@ import {
   Loader2,
   Sparkles,
   Printer,
+  Lock,
+  Delete,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -90,6 +92,11 @@ export default function BornePage() {
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isRocketLaunching, setIsRocketLaunching] = useState(false)
+
+  // Lock modal state
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
+  const [enteredCode, setEnteredCode] = useState('')
+  const [lockError, setLockError] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -481,6 +488,48 @@ export default function BornePage() {
     }, (session?.borne_return_delay || 5) * 1000)
   }
 
+  // Handle PIN keypress
+  const handleKeyPress = (key: number | 'delete' | null) => {
+    if (key === 'delete') {
+      setEnteredCode(prev => prev.slice(0, -1))
+      setLockError(false)
+    } else if (key !== null && enteredCode.length < 4) {
+      const newCode = enteredCode + key
+      setEnteredCode(newCode)
+
+      // Check if code is complete
+      if (newCode.length === 4) {
+        if (newCode === session?.borne_lock_code) {
+          // Correct code - redirect to dashboard
+          window.location.href = '/admin/dashboard'
+        } else {
+          // Incorrect code
+          setLockError(true)
+          setTimeout(() => {
+            setEnteredCode('')
+            setLockError(false)
+          }, 1000)
+        }
+      }
+    }
+  }
+
+  // Prevent back navigation when lock is enabled
+  useEffect(() => {
+    if (session?.borne_lock_enabled) {
+      const preventBack = () => {
+        window.history.pushState(null, '', window.location.href)
+      }
+
+      window.history.pushState(null, '', window.location.href)
+      window.addEventListener('popstate', preventBack)
+
+      return () => {
+        window.removeEventListener('popstate', preventBack)
+      }
+    }
+  }, [session?.borne_lock_enabled])
+
   if (state === 'loading') {
     return (
       <div className="fixed inset-0 bg-[#1A1A1E] flex items-center justify-center">
@@ -517,6 +566,16 @@ export default function BornePage() {
   return (
     <div className="fixed inset-0 bg-[#1A1A1E] overflow-hidden select-none">
       <canvas ref={canvasRef} className="hidden" />
+
+      {/* Lock icon - always visible when lock is enabled */}
+      {session?.borne_lock_enabled && (
+        <button
+          onClick={() => setShowUnlockModal(true)}
+          className="fixed top-4 right-4 z-[60] p-2 opacity-30 hover:opacity-60 transition-opacity"
+        >
+          <Lock className="w-6 h-6 text-white" />
+        </button>
+      )}
 
       {/* Video element - ALWAYS mounted, visibility controlled separately */}
       <video
@@ -715,6 +774,87 @@ export default function BornePage() {
                   ? 'Photo envoyée pour validation'
                   : 'Photo ajoutée au diaporama !'}
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Unlock Modal */}
+      <AnimatePresence>
+        {showUnlockModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#242428] border border-[#D4AF37] rounded-2xl p-8 max-w-sm w-full mx-4"
+            >
+              <h2 className="text-white text-xl font-bold text-center mb-6 flex items-center justify-center gap-2">
+                <Lock className="h-5 w-5 text-[#D4AF37]" />
+                Déverrouiller la borne
+              </h2>
+
+              {/* PIN dots */}
+              <div className="flex justify-center gap-3 mb-6">
+                {[0, 1, 2, 3].map((index) => (
+                  <motion.div
+                    key={index}
+                    className={`w-4 h-4 rounded-full border-2 border-[#D4AF37] ${
+                      enteredCode.length > index ? 'bg-[#D4AF37]' : 'bg-transparent'
+                    }`}
+                    animate={lockError ? { x: [-5, 5, -5, 5, 0] } : {}}
+                    transition={{ duration: 0.3 }}
+                  />
+                ))}
+              </div>
+
+              {/* Numeric keypad */}
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, 'delete'].map((num, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleKeyPress(num as number | 'delete' | null)}
+                    disabled={num === null}
+                    className={`h-14 rounded-xl text-2xl font-bold transition-colors ${
+                      num === null
+                        ? 'invisible'
+                        : num === 'delete'
+                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/40 active:bg-red-500/60'
+                        : 'bg-[#2E2E33] text-white hover:bg-[#D4AF37] hover:text-black active:bg-[#F4D03F]'
+                    }`}
+                  >
+                    {num === 'delete' ? <Delete className="h-6 w-6 mx-auto" /> : num}
+                  </button>
+                ))}
+              </div>
+
+              {/* Error message */}
+              {lockError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-400 text-center mt-4"
+                >
+                  Code incorrect
+                </motion.p>
+              )}
+
+              {/* Cancel button */}
+              <button
+                onClick={() => {
+                  setShowUnlockModal(false)
+                  setEnteredCode('')
+                  setLockError(false)
+                }}
+                className="w-full mt-6 py-3 text-gray-400 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
             </motion.div>
           </motion.div>
         )}

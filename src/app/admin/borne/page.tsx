@@ -15,11 +15,13 @@ import {
   RefreshCw,
   Settings,
   Loader2,
+  Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
 import { Session, BorneConnection } from '@/types/database'
 import { toast } from 'sonner'
@@ -479,6 +481,104 @@ export default function BornePage() {
                     <Settings className="h-4 w-4 mr-2" />
                     Modifier les paramètres
                   </Button>
+                </div>
+              </div>
+
+              {/* Lock Settings */}
+              <div className="card-gold rounded-xl">
+                <div className="p-4 border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-[#D4AF37]" />
+                    <h3 className="text-lg font-semibold text-white">Verrouillage de la borne</h3>
+                  </div>
+                  <p className="text-sm text-[#6B6B70] mt-1">
+                    Empêche les utilisateurs de quitter l&apos;application borne
+                  </p>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="lock-toggle" className="text-white font-medium">
+                        Activer le verrouillage
+                      </Label>
+                      <p className="text-sm text-[#6B6B70] mt-1">
+                        Un code PIN sera requis pour accéder au dashboard
+                      </p>
+                    </div>
+                    <Switch
+                      id="lock-toggle"
+                      checked={selectedSession.borne_lock_enabled || false}
+                      onCheckedChange={async (checked) => {
+                        setSaving(true)
+                        try {
+                          const { error } = await supabase
+                            .from('sessions')
+                            .update({ borne_lock_enabled: checked })
+                            .eq('id', selectedSession.id)
+                          if (error) throw error
+                          setSelectedSession({ ...selectedSession, borne_lock_enabled: checked })
+                          toast.success(checked ? 'Verrouillage activé' : 'Verrouillage désactivé')
+                        } catch {
+                          toast.error('Erreur lors de la mise à jour')
+                        } finally {
+                          setSaving(false)
+                        }
+                      }}
+                      disabled={saving}
+                    />
+                  </div>
+
+                  {selectedSession.borne_lock_enabled && (
+                    <div className="space-y-3">
+                      <Label htmlFor="lock-code" className="text-white font-medium">
+                        Code PIN (4 chiffres)
+                      </Label>
+                      <div className="flex gap-3">
+                        <Input
+                          id="lock-code"
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={4}
+                          placeholder="1234"
+                          value={selectedSession.borne_lock_code || ''}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                            setSelectedSession({ ...selectedSession, borne_lock_code: value })
+                          }}
+                          className="w-32 text-center text-lg tracking-widest bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={async () => {
+                            if (!selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4) {
+                              toast.error('Le code doit contenir 4 chiffres')
+                              return
+                            }
+                            setSaving(true)
+                            try {
+                              const { error } = await supabase
+                                .from('sessions')
+                                .update({ borne_lock_code: selectedSession.borne_lock_code })
+                                .eq('id', selectedSession.id)
+                              if (error) throw error
+                              toast.success('Code PIN enregistré')
+                            } catch {
+                              toast.error('Erreur lors de l\'enregistrement')
+                            } finally {
+                              setSaving(false)
+                            }
+                          }}
+                          disabled={saving || !selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4}
+                          className="border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                        >
+                          Enregistrer
+                        </Button>
+                      </div>
+                      <p className="text-xs text-[#6B6B70]">
+                        Ce code sera demandé pour accéder au tableau de bord depuis la borne
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

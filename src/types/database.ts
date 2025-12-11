@@ -30,6 +30,8 @@ export interface Session {
   borne_return_delay: number
   borne_default_camera: CameraType
   borne_show_event_name: boolean
+  borne_lock_enabled: boolean
+  borne_lock_code: string
   // Customization settings
   background_type: BackgroundType
   background_color: string
