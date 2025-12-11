@@ -244,37 +244,42 @@ export default function BornePage() {
   }, [session?.borne_countdown_duration])
 
   // Capture photo with proper error handling
-  const capturePhoto = useCallback(() => {
-    console.log('[Borne] capturePhoto called')
+  const capturePhoto = useCallback((retryCount = 0) => {
+    console.log('[Borne] capturePhoto called, retry:', retryCount)
+    setDebugStatus(`Capture photo... (essai ${retryCount + 1})`)
 
     const video = videoRef.current
     const canvas = canvasRef.current
 
     if (!video || !canvas) {
       console.error('[Borne] Video or canvas ref not available')
-      resetToCamera()
+      setDebugStatus('ERREUR: Video/canvas non disponible')
+      setTimeout(() => resetToCamera(), 2000)
       return
     }
 
     // Check video is ready
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       console.error('[Borne] Video dimensions not ready:', video.videoWidth, video.videoHeight)
-      // Retry after a short delay
-      setTimeout(() => {
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
-          capturePhoto()
-        } else {
-          console.error('[Borne] Video still not ready, returning to camera')
-          resetToCamera()
-        }
-      }, 500)
+      setDebugStatus(`Video pas prête: ${video.videoWidth}x${video.videoHeight}`)
+
+      // Retry up to 5 times
+      if (retryCount < 5) {
+        setTimeout(() => {
+          capturePhoto(retryCount + 1)
+        }, 500)
+      } else {
+        setDebugStatus('ERREUR: Video non prête après 5 essais')
+        setTimeout(() => resetToCamera(), 2000)
+      }
       return
     }
 
     const ctx = canvas.getContext('2d')
     if (!ctx) {
       console.error('[Borne] Could not get canvas context')
-      resetToCamera()
+      setDebugStatus('ERREUR: Canvas context non disponible')
+      setTimeout(() => resetToCamera(), 2000)
       return
     }
 
@@ -282,6 +287,7 @@ export default function BornePage() {
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
       console.log('[Borne] Canvas size:', canvas.width, 'x', canvas.height)
+      setDebugStatus(`Canvas: ${canvas.width}x${canvas.height}`)
 
       // Mirror if using front camera
       if (facingMode === 'user') {
@@ -291,17 +297,20 @@ export default function BornePage() {
 
       ctx.drawImage(video, 0, 0)
       console.log('[Borne] Image drawn to canvas')
+      setDebugStatus('Image capturée, création blob...')
 
       canvas.toBlob(
         (blob) => {
           if (blob) {
             console.log('[Borne] Blob created:', blob.size, 'bytes')
+            setDebugStatus(`Blob créé: ${Math.round(blob.size / 1024)} Ko`)
             setCapturedBlob(blob)
             setCapturedImage(URL.createObjectURL(blob))
             setState('preview')
           } else {
             console.error('[Borne] Failed to create blob')
-            resetToCamera()
+            setDebugStatus('ERREUR: Blob null')
+            setTimeout(() => resetToCamera(), 2000)
           }
         },
         'image/jpeg',
@@ -309,7 +318,9 @@ export default function BornePage() {
       )
     } catch (err) {
       console.error('[Borne] Error capturing photo:', err)
-      resetToCamera()
+      const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue'
+      setDebugStatus(`ERREUR capture: ${errorMsg}`)
+      setTimeout(() => resetToCamera(), 2000)
     }
   }, [facingMode, resetToCamera])
 
@@ -604,6 +615,15 @@ export default function BornePage() {
                 />
                 <span className="text-[#D4AF37]/60 text-sm font-medium">PhotoJet</span>
               </div>
+
+              {/* Debug status on camera screen */}
+              {debugStatus && (
+                <div className="absolute bottom-4 right-4 pointer-events-none">
+                  <p className="text-xs text-[#D4AF37] font-mono bg-black/70 px-3 py-1 rounded">
+                    {debugStatus}
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -616,7 +636,7 @@ export default function BornePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#1A1A1E]/90 flex items-center justify-center z-50"
+            className="absolute inset-0 bg-[#1A1A1E]/90 flex flex-col items-center justify-center z-50"
           >
             <motion.div
               key={countdown}
@@ -629,6 +649,11 @@ export default function BornePage() {
                 {countdown}
               </span>
             </motion.div>
+            {debugStatus && (
+              <p className="mt-8 text-sm text-[#D4AF37] font-mono bg-black/50 px-4 py-2 rounded">
+                {debugStatus}
+              </p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
