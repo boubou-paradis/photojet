@@ -224,14 +224,20 @@ export default function BornePage() {
   useEffect(() => {
     // Start camera for both camera and countdown states
     if ((state === 'camera' || state === 'countdown') && session) {
-      // Only start if not already running
-      if (!streamRef.current) {
+      // Check if stream exists and is still active
+      const streamActive = streamRef.current &&
+        streamRef.current.getTracks().some(track => track.readyState === 'live')
+
+      // Check if video is connected to stream
+      const videoConnected = videoRef.current && videoRef.current.srcObject === streamRef.current
+
+      console.log('[Borne] Camera check:', { state, streamActive, videoConnected })
+
+      if (!streamActive || !videoConnected) {
+        console.log('[Borne] Starting/reconnecting camera')
         startCamera()
       }
     }
-
-    // Only stop the stream when leaving camera/countdown states entirely
-    // (not when transitioning from camera to countdown)
   }, [state, session, startCamera])
 
   // Separate cleanup effect that only runs on unmount or when going to non-camera states
