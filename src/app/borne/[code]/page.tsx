@@ -641,12 +641,12 @@ export default function BornePage() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      className="w-20 h-20 rounded-full bg-[#2E2E33] hover:bg-[#3E3E43] text-white border border-[rgba(255,255,255,0.1)]"
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-[#D4AF37] to-[#B8960C] hover:from-[#E5C349] hover:to-[#C9A71D] text-[#1A1A1E] border-2 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.4)]"
                       onClick={resetToCamera}
                     >
                       <RotateCcw className="h-8 w-8" />
                     </Button>
-                    <span className="text-white/70 text-sm font-medium">Reprendre</span>
+                    <span className="text-[#D4AF37] text-sm font-medium">Reprendre</span>
                   </div>
 
                   {/* Rocket Send button */}
@@ -664,12 +664,12 @@ export default function BornePage() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      className="w-20 h-20 rounded-full bg-[#2E2E33] hover:bg-[#3E3E43] text-white border border-[rgba(255,255,255,0.1)]"
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-[#D4AF37] to-[#B8960C] hover:from-[#E5C349] hover:to-[#C9A71D] text-[#1A1A1E] border-2 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.4)]"
                       onClick={handlePrint}
                     >
                       <Printer className="h-8 w-8" />
                     </Button>
-                    <span className="text-white/70 text-sm font-medium">Imprimer</span>
+                    <span className="text-[#D4AF37] text-sm font-medium">Imprimer</span>
                   </div>
                 </div>
               </div>
