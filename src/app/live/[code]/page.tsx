@@ -293,6 +293,14 @@ export default function LivePage() {
     const frequency = session?.messages_frequency || 4
     const approvedMessages = messages.filter(m => m.status === 'approved')
 
+    console.log('[Live] Building slideshow:', {
+      photosCount: photos.length,
+      messagesCount: messages.length,
+      approvedMessagesCount: approvedMessages.length,
+      messagesEnabled,
+      frequency
+    })
+
     if (!messagesEnabled || approvedMessages.length === 0) {
       return photos.map(photo => ({ type: 'photo' as const, data: photo }))
     }
@@ -310,6 +318,7 @@ export default function LivePage() {
       }
     })
 
+    console.log('[Live] Slideshow items built:', items.length, 'items with', items.filter(i => i.type === 'message').length, 'messages')
     return items
   }, [photos, messages, session?.messages_enabled, session?.messages_frequency])
 
@@ -417,9 +426,10 @@ export default function LivePage() {
         .select('*')
         .eq('session_id', session.id)
         .eq('status', 'approved')
-        .order('approved_at', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (error) throw error
+      console.log('[Live] Messages fetched:', data?.length || 0, 'messages_enabled:', session.messages_enabled)
       setMessages(data || [])
     } catch (err) {
       console.error('Error fetching messages:', err)
@@ -494,8 +504,9 @@ export default function LivePage() {
         )
         .subscribe()
 
-      // Polling fallback: check session settings every 5 seconds
+      // Polling fallback: check session, photos, and messages every 5 seconds
       const pollInterval = setInterval(async () => {
+        // Fetch session
         const { data } = await supabase
           .from('sessions')
           .select('*')
@@ -510,6 +521,9 @@ export default function LivePage() {
             return prev
           })
         }
+        // Also poll for new photos and messages (fallback if realtime doesn't work)
+        fetchPhotos()
+        fetchMessages()
       }, 5000)
 
       return () => {
