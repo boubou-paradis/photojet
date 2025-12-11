@@ -10,6 +10,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import PhotoJetLogo from '@/components/branding/PhotoJetLogo'
+import Footer from '@/components/Footer'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -103,7 +104,10 @@ export default function AdminLayout({
       </header>
 
       {/* Main content */}
-      <main>{children}</main>
+      <main className="pb-16">{children}</main>
+
+      {/* Footer */}
+      <Footer fixed />
     </div>
   )
 }

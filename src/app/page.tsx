@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
 import { PhotoJetFullLogo, ShutterIcon, RocketIcon } from '@/components/branding/PhotoJetLogo'
+import Footer from '@/components/Footer'
 
 export default function Home() {
   const [code, setCode] = useState('')
@@ -155,6 +156,9 @@ export default function Home() {
           </a>
         </p>
       </motion.div>
+
+      {/* Footer */}
+      <Footer fixed />
     </div>
   )
 }

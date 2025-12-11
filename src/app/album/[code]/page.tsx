@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo } from '@/types/database'
+import Footer from '@/components/Footer'
 
 export default function AlbumPage() {
   const params = useParams()
@@ -298,6 +299,9 @@ export default function AlbumPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Footer */}
+      <Footer fixed />
     </div>
   )
 }
