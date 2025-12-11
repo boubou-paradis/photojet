@@ -90,7 +90,6 @@ export default function BornePage() {
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isRocketLaunching, setIsRocketLaunching] = useState(false)
-  const [debugStatus, setDebugStatus] = useState<string>('')
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -262,36 +261,21 @@ export default function BornePage() {
 
   // Capture photo with proper error handling
   const capturePhoto = useCallback((retryCount = 0) => {
-    console.log('[Borne] capturePhoto called, retry:', retryCount)
-    setDebugStatus(`Capture photo... (essai ${retryCount + 1})`)
-
     const video = videoRef.current
     const canvas = canvasRef.current
 
     if (!video || !canvas) {
-      console.error('[Borne] Video or canvas ref not available')
-      setDebugStatus('ERREUR: Video/canvas non disponible')
       setTimeout(() => resetToCamera(), 2000)
       return
     }
 
     // Check video is ready and playing
     const isVideoReady = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0
-    console.log('[Borne] Video state:', {
-      readyState: video.readyState,
-      videoWidth: video.videoWidth,
-      videoHeight: video.videoHeight,
-      paused: video.paused,
-      isVideoReady
-    })
 
     if (!isVideoReady) {
-      console.error('[Borne] Video not ready:', video.readyState, video.videoWidth, video.videoHeight)
-      setDebugStatus(`Video pas prête: état=${video.readyState}, ${video.videoWidth}x${video.videoHeight}`)
-
       // Try to play the video if paused
       if (video.paused) {
-        video.play().catch(err => console.error('[Borne] Error playing video:', err))
+        video.play().catch(() => {})
       }
 
       // Retry up to 10 times with longer delay
@@ -300,7 +284,6 @@ export default function BornePage() {
           capturePhoto(retryCount + 1)
         }, 300)
       } else {
-        setDebugStatus('ERREUR: Video non prête après 10 essais')
         setTimeout(() => resetToCamera(), 2000)
       }
       return
@@ -308,16 +291,11 @@ export default function BornePage() {
 
     // Double-check: if video is paused, play it
     if (video.paused) {
-      console.log('[Borne] Video was paused, playing...')
-      video.play().catch(err => console.error('[Borne] Error playing video:', err))
+      video.play().catch(() => {})
     }
-
-    setDebugStatus(`Video OK: ${video.videoWidth}x${video.videoHeight}`)
 
     const ctx = canvas.getContext('2d')
     if (!ctx) {
-      console.error('[Borne] Could not get canvas context')
-      setDebugStatus('ERREUR: Canvas context non disponible')
       setTimeout(() => resetToCamera(), 2000)
       return
     }
@@ -325,8 +303,6 @@ export default function BornePage() {
     try {
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
-      console.log('[Borne] Canvas size:', canvas.width, 'x', canvas.height)
-      setDebugStatus(`Canvas: ${canvas.width}x${canvas.height}`)
 
       // Mirror if using front camera
       if (facingMode === 'user') {
@@ -335,30 +311,21 @@ export default function BornePage() {
       }
 
       ctx.drawImage(video, 0, 0)
-      console.log('[Borne] Image drawn to canvas')
-      setDebugStatus('Image capturée, création blob...')
 
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            console.log('[Borne] Blob created:', blob.size, 'bytes')
-            setDebugStatus(`Blob créé: ${Math.round(blob.size / 1024)} Ko`)
             setCapturedBlob(blob)
             setCapturedImage(URL.createObjectURL(blob))
             setState('preview')
           } else {
-            console.error('[Borne] Failed to create blob')
-            setDebugStatus('ERREUR: Blob null')
             setTimeout(() => resetToCamera(), 2000)
           }
         },
         'image/jpeg',
         0.9
       )
-    } catch (err) {
-      console.error('[Borne] Error capturing photo:', err)
-      const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue'
-      setDebugStatus(`ERREUR capture: ${errorMsg}`)
+    } catch {
       setTimeout(() => resetToCamera(), 2000)
     }
   }, [facingMode, resetToCamera])
@@ -405,88 +372,54 @@ export default function BornePage() {
   }
 
   async function uploadPhoto() {
-    console.log('[Borne] uploadPhoto called')
-    setDebugStatus('Démarrage upload...')
+    if (!capturedBlob || !session) return
 
-    if (!capturedBlob || !session) {
-      console.error('[Borne] Missing capturedBlob or session')
-      setDebugStatus('ERREUR: Pas de photo ou session')
-      return
-    }
-
-    setDebugStatus(`Photo: ${Math.round(capturedBlob.size / 1024)} Ko`)
     setState('compressing')
 
     try {
       // Re-fetch session to get latest moderation setting
-      setDebugStatus('Vérification session...')
-      const { data: freshSession, error: sessionError } = await supabase
+      const { data: freshSession } = await supabase
         .from('sessions')
         .select('moderation_enabled')
         .eq('id', session.id)
         .single()
 
-      if (sessionError) {
-        console.error('[Borne] Error fetching session:', sessionError)
-        setDebugStatus(`ERREUR session: ${sessionError.message}`)
-      }
-
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
-      setDebugStatus('Compression en cours...')
 
       const compressedFile = await compressImage(file, (progress) => {
-        if (progress.progress) {
-          setDebugStatus(`Compression: ${progress.progress}%`)
-        }
         if (progress.stage === 'done') {
           setState('uploading')
         }
       })
 
-      setDebugStatus(`Compressé: ${Math.round(compressedFile.size / 1024)} Ko`)
       setState('uploading')
 
       const fileName = `${session.id}/borne-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
-      setDebugStatus('Upload vers Storage...')
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(fileName, compressedFile, {
           contentType: 'image/jpeg',
         })
 
-      if (uploadError) {
-        console.error('[Borne] Storage upload error:', uploadError)
-        setDebugStatus(`ERREUR Storage: ${uploadError.message}`)
-        throw uploadError
-      }
+      if (uploadError) throw uploadError
 
-      setDebugStatus('Storage OK! Enregistrement DB...')
-
-      const { data: dbData, error: dbError } = await supabase.from('photos').insert({
+      const { error: dbError } = await supabase.from('photos').insert({
         session_id: session.id,
         storage_path: fileName,
         status: isApproved ? 'approved' : 'pending',
         source: 'borne',
         approved_at: isApproved ? new Date().toISOString() : null,
-      }).select()
+      })
 
-      if (dbError) {
-        console.error('[Borne] Database insert error:', dbError)
-        setDebugStatus(`ERREUR DB: ${dbError.message}`)
-        throw dbError
-      }
+      if (dbError) throw dbError
 
-      setDebugStatus('SUCCESS! Photo envoyée!')
       setSession({ ...session, moderation_enabled: moderationEnabled })
       setState('success')
-    } catch (err: unknown) {
-      console.error('[Borne] Upload error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
-      setDebugStatus(`ERREUR: ${errorMessage}`)
+    } catch {
       setError('Erreur lors de l\'envoi')
       setState('preview')
     }
@@ -498,11 +431,8 @@ export default function BornePage() {
 
   // Modified upload with rocket animation
   async function handleSendWithAnimation() {
-    console.log('[Borne] handleSendWithAnimation called - starting rocket animation')
     setIsRocketLaunching(true)
-    // Wait for animation before upload
     await new Promise(resolve => setTimeout(resolve, 800))
-    console.log('[Borne] Animation done, calling uploadPhoto')
     await uploadPhoto()
   }
 
@@ -654,14 +584,6 @@ export default function BornePage() {
               <span className="text-[#D4AF37]/60 text-sm font-medium">PhotoJet</span>
             </div>
 
-            {/* Debug status on camera screen */}
-            {debugStatus && (
-              <div className="absolute bottom-4 right-4">
-                <p className="text-xs text-[#D4AF37] font-mono bg-black/70 px-3 py-1 rounded">
-                  {debugStatus}
-                </p>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -686,11 +608,6 @@ export default function BornePage() {
                 {countdown}
               </span>
             </motion.div>
-            {debugStatus && (
-              <p className="mt-8 text-sm text-[#D4AF37] font-mono bg-black/50 px-4 py-2 rounded">
-                {debugStatus}
-              </p>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -716,22 +633,17 @@ export default function BornePage() {
               <div className="absolute inset-0 bg-[#1A1A1E]/80 flex items-center justify-center">
                 <div className="text-center">
                   <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-[#D4AF37]" />
-                  <p className="text-xl text-white mb-2">
+                  <p className="text-xl text-white">
                     {state === 'compressing' ? 'Optimisation de la photo...' : 'Envoi en cours...'}
                   </p>
-                  {debugStatus && (
-                    <p className="text-sm text-[#D4AF37] font-mono bg-black/50 px-4 py-2 rounded">
-                      {debugStatus}
-                    </p>
-                  )}
                 </div>
               </div>
             ) : (
               <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6">
-                {/* Error/Debug display */}
-                {(error || debugStatus) && (
-                  <div className={`px-4 py-2 rounded font-mono text-sm ${error ? 'bg-red-500/20 text-red-400' : 'bg-black/50 text-[#D4AF37]'}`}>
-                    {error || debugStatus}
+                {/* Error display */}
+                {error && (
+                  <div className="px-4 py-2 rounded font-mono text-sm bg-red-500/20 text-red-400">
+                    {error}
                   </div>
                 )}
                 {/* Main action buttons */}
@@ -815,11 +727,6 @@ export default function BornePage() {
                   ? 'Photo envoyée pour validation'
                   : 'Photo ajoutée au diaporama !'}
               </p>
-              {debugStatus && (
-                <p className="text-sm text-[#4CAF50] font-mono mt-4 bg-black/30 px-4 py-2 rounded">
-                  {debugStatus}
-                </p>
-              )}
             </motion.div>
           </motion.div>
         )}
