@@ -582,82 +582,78 @@ export default function BornePage() {
     <div className="fixed inset-0 bg-[#1A1A1E] overflow-hidden select-none">
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Camera View - Keep mounted during countdown to preserve videoRef */}
+      {/* Video element - ALWAYS mounted, visibility controlled separately */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`absolute inset-0 w-full h-full object-cover ${
+          facingMode === 'user' ? 'scale-x-[-1]' : ''
+        } ${(state === 'camera' || state === 'countdown') ? 'block' : 'hidden'}`}
+      />
+
+      {/* Camera View Overlay - Controls only shown in camera state */}
       <AnimatePresence>
-        {(state === 'camera' || state === 'countdown') && (
+        {state === 'camera' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0"
+            className="absolute inset-0 pointer-events-none z-10"
           >
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`absolute inset-0 w-full h-full object-cover ${
-                facingMode === 'user' ? 'scale-x-[-1]' : ''
-              }`}
-            />
-
-            {/* Overlay - Only show controls when in camera state */}
-            {state === 'camera' && (
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Event name */}
-                {session?.borne_show_event_name && (
-                  <div className="absolute top-8 left-0 right-0 text-center">
-                    <div className="inline-block px-6 py-3 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full border border-[#D4AF37]/30">
-                      <h1 className="text-2xl font-bold text-white">
-                        {session.name}
-                      </h1>
-                    </div>
-                  </div>
-                )}
-
-                {/* Camera switch button */}
-                <button
-                  onClick={toggleCamera}
-                  className="pointer-events-auto absolute top-8 right-8 p-4 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full text-[#D4AF37] hover:bg-[#242428] transition-colors border border-[#D4AF37]/30"
-                >
-                  <RefreshCw className="h-8 w-8" />
-                </button>
-
-                {/* Capture button */}
-                <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-auto">
-                  <button
-                    onClick={startCountdown}
-                    className="group relative"
-                  >
-                    <div className="w-32 h-32 rounded-full bg-gold-gradient flex items-center justify-center shadow-2xl glow-gold-lg group-hover:scale-105 transition-transform">
-                      <Camera className="h-14 w-14 text-[#1A1A1E]" />
-                    </div>
-                    <span className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-white font-bold text-xl whitespace-nowrap drop-shadow-lg">
-                      PRENDRE UNE PHOTO
-                    </span>
-                  </button>
+            {/* Event name */}
+            {session?.borne_show_event_name && (
+              <div className="absolute top-8 left-0 right-0 text-center">
+                <div className="inline-block px-6 py-3 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full border border-[#D4AF37]/30">
+                  <h1 className="text-2xl font-bold text-white">
+                    {session.name}
+                  </h1>
                 </div>
+              </div>
+            )}
 
-                {/* Logo */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                  <Image
-                    src="/logo.png"
-                    alt="PhotoJet"
-                    width={30}
-                    height={30}
-                    className="opacity-60"
-                  />
-                  <span className="text-[#D4AF37]/60 text-sm font-medium">PhotoJet</span>
+            {/* Camera switch button */}
+            <button
+              onClick={toggleCamera}
+              className="pointer-events-auto absolute top-8 right-8 p-4 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full text-[#D4AF37] hover:bg-[#242428] transition-colors border border-[#D4AF37]/30"
+            >
+              <RefreshCw className="h-8 w-8" />
+            </button>
+
+            {/* Capture button */}
+            <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-auto">
+              <button
+                onClick={startCountdown}
+                className="group relative"
+              >
+                <div className="w-32 h-32 rounded-full bg-gold-gradient flex items-center justify-center shadow-2xl glow-gold-lg group-hover:scale-105 transition-transform">
+                  <Camera className="h-14 w-14 text-[#1A1A1E]" />
                 </div>
+                <span className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-white font-bold text-xl whitespace-nowrap drop-shadow-lg">
+                  PRENDRE UNE PHOTO
+                </span>
+              </button>
+            </div>
 
-                {/* Debug status on camera screen */}
-                {debugStatus && (
-                  <div className="absolute bottom-4 right-4 pointer-events-none">
-                    <p className="text-xs text-[#D4AF37] font-mono bg-black/70 px-3 py-1 rounded">
-                      {debugStatus}
-                    </p>
-                  </div>
-                )}
+            {/* Logo */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="PhotoJet"
+                width={30}
+                height={30}
+                className="opacity-60"
+              />
+              <span className="text-[#D4AF37]/60 text-sm font-medium">PhotoJet</span>
+            </div>
+
+            {/* Debug status on camera screen */}
+            {debugStatus && (
+              <div className="absolute bottom-4 right-4">
+                <p className="text-xs text-[#D4AF37] font-mono bg-black/70 px-3 py-1 rounded">
+                  {debugStatus}
+                </p>
               </div>
             )}
           </motion.div>
