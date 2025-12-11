@@ -572,18 +572,6 @@ export default function BornePage() {
               </button>
             </div>
 
-            {/* Logo */}
-            <div className="absolute bottom-4 left-4 flex items-center gap-2">
-              <Image
-                src="/logo.png"
-                alt="PhotoJet"
-                width={30}
-                height={30}
-                className="opacity-60"
-              />
-              <span className="text-[#D4AF37]/60 text-sm font-medium">PhotoJet</span>
-            </div>
-
           </motion.div>
         )}
       </AnimatePresence>
