@@ -90,6 +90,7 @@ export default function BornePage() {
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isRocketLaunching, setIsRocketLaunching] = useState(false)
+  const [debugStatus, setDebugStatus] = useState<string>('')
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -355,19 +356,20 @@ export default function BornePage() {
 
   async function uploadPhoto() {
     console.log('[Borne] uploadPhoto called')
-    console.log('[Borne] capturedBlob:', capturedBlob?.size, 'bytes')
-    console.log('[Borne] session:', session?.id, session?.code)
+    setDebugStatus('Démarrage upload...')
 
     if (!capturedBlob || !session) {
       console.error('[Borne] Missing capturedBlob or session')
+      setDebugStatus('ERREUR: Pas de photo ou session')
       return
     }
 
+    setDebugStatus(`Photo: ${Math.round(capturedBlob.size / 1024)} Ko`)
     setState('compressing')
 
     try {
       // Re-fetch session to get latest moderation setting
-      console.log('[Borne] Fetching fresh session for moderation setting...')
+      setDebugStatus('Vérification session...')
       const { data: freshSession, error: sessionError } = await supabase
         .from('sessions')
         .select('moderation_enabled')
@@ -376,27 +378,29 @@ export default function BornePage() {
 
       if (sessionError) {
         console.error('[Borne] Error fetching session:', sessionError)
+        setDebugStatus(`ERREUR session: ${sessionError.message}`)
       }
 
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
-      console.log('[Borne] moderation_enabled:', moderationEnabled, ', isApproved:', isApproved)
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
-      console.log('[Borne] Created file:', file.name, file.size, 'bytes')
+      setDebugStatus('Compression en cours...')
 
-      console.log('[Borne] Compressing image...')
       const compressedFile = await compressImage(file, (progress) => {
-        console.log('[Borne] Compression progress:', progress.stage, progress.progress)
+        if (progress.progress) {
+          setDebugStatus(`Compression: ${progress.progress}%`)
+        }
         if (progress.stage === 'done') {
           setState('uploading')
         }
       })
-      console.log('[Borne] Compressed file size:', compressedFile.size, 'bytes')
+
+      setDebugStatus(`Compressé: ${Math.round(compressedFile.size / 1024)} Ko`)
       setState('uploading')
 
       const fileName = `${session.id}/borne-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
-      console.log('[Borne] Uploading to storage:', fileName)
+      setDebugStatus('Upload vers Storage...')
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('photos')
@@ -406,11 +410,12 @@ export default function BornePage() {
 
       if (uploadError) {
         console.error('[Borne] Storage upload error:', uploadError)
+        setDebugStatus(`ERREUR Storage: ${uploadError.message}`)
         throw uploadError
       }
-      console.log('[Borne] Storage upload success:', uploadData)
 
-      console.log('[Borne] Inserting into photos table...')
+      setDebugStatus('Storage OK! Enregistrement DB...')
+
       const { data: dbData, error: dbError } = await supabase.from('photos').insert({
         session_id: session.id,
         storage_path: fileName,
@@ -421,16 +426,17 @@ export default function BornePage() {
 
       if (dbError) {
         console.error('[Borne] Database insert error:', dbError)
+        setDebugStatus(`ERREUR DB: ${dbError.message}`)
         throw dbError
       }
-      console.log('[Borne] Database insert success:', dbData)
 
-      // Update local session state for UI feedback
+      setDebugStatus('SUCCESS! Photo envoyée!')
       setSession({ ...session, moderation_enabled: moderationEnabled })
       setState('success')
-      console.log('[Borne] Upload complete!')
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Borne] Upload error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
+      setDebugStatus(`ERREUR: ${errorMessage}`)
       setError('Erreur lors de l\'envoi')
       setState('preview')
     }
@@ -648,13 +654,24 @@ export default function BornePage() {
               <div className="absolute inset-0 bg-[#1A1A1E]/80 flex items-center justify-center">
                 <div className="text-center">
                   <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-[#D4AF37]" />
-                  <p className="text-xl text-white">
+                  <p className="text-xl text-white mb-2">
                     {state === 'compressing' ? 'Optimisation de la photo...' : 'Envoi en cours...'}
                   </p>
+                  {debugStatus && (
+                    <p className="text-sm text-[#D4AF37] font-mono bg-black/50 px-4 py-2 rounded">
+                      {debugStatus}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6">
+                {/* Error/Debug display */}
+                {(error || debugStatus) && (
+                  <div className={`px-4 py-2 rounded font-mono text-sm ${error ? 'bg-red-500/20 text-red-400' : 'bg-black/50 text-[#D4AF37]'}`}>
+                    {error || debugStatus}
+                  </div>
+                )}
                 {/* Main action buttons */}
                 <div className="flex items-center gap-10">
                   {/* Reprendre button */}
@@ -736,6 +753,11 @@ export default function BornePage() {
                   ? 'Photo envoyée pour validation'
                   : 'Photo ajoutée au diaporama !'}
               </p>
+              {debugStatus && (
+                <p className="text-sm text-[#4CAF50] font-mono mt-4 bg-black/30 px-4 py-2 rounded">
+                  {debugStatus}
+                </p>
+              )}
             </motion.div>
           </motion.div>
         )}
