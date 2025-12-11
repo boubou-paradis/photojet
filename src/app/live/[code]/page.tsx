@@ -608,16 +608,33 @@ export default function LivePage() {
   }, [currentIndex, slideshowItems])
 
   // Slideshow timer with variable duration
+  // Use ref to get current items without triggering effect re-run
+  const slideshowItemsRef = useRef(slideshowItems)
   useEffect(() => {
-    if (slideshowItems.length <= 1) return
+    slideshowItemsRef.current = slideshowItems
+  }, [slideshowItems])
 
-    const duration = getCurrentDuration()
+  // Compute current item type for duration
+  const currentItemType = slideshowItems[currentIndex]?.type || 'photo'
+  const itemsCount = slideshowItems.length
+
+  useEffect(() => {
+    if (itemsCount <= 1) return
+
+    const duration = currentItemType === 'message'
+      ? (session?.messages_duration || 8) * 1000
+      : (session?.transition_duration || 5) * 1000
+
     const timeout = setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % slideshowItems.length)
+      setCurrentIndex((prev) => {
+        const items = slideshowItemsRef.current
+        if (items.length === 0) return 0
+        return (prev + 1) % items.length
+      })
     }, duration)
 
     return () => clearTimeout(timeout)
-  }, [currentIndex, slideshowItems.length, getCurrentDuration])
+  }, [currentIndex, currentItemType, itemsCount, session?.transition_duration, session?.messages_duration])
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
