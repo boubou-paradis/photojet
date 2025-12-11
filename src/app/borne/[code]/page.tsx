@@ -232,21 +232,103 @@ export default function BornePage() {
     }
   }, [state, session, startCamera])
 
+  // Reset to camera state
+  const resetToCamera = useCallback(() => {
+    console.log('[Borne] Resetting to camera')
+    setCapturedImage(null)
+    setCapturedBlob(null)
+    setCountdown(session?.borne_countdown_duration || 3)
+    setIsRocketLaunching(false)
+    setState('camera')
+  }, [session?.borne_countdown_duration])
+
+  // Capture photo with proper error handling
+  const capturePhoto = useCallback(() => {
+    console.log('[Borne] capturePhoto called')
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+
+    if (!video || !canvas) {
+      console.error('[Borne] Video or canvas ref not available')
+      resetToCamera()
+      return
+    }
+
+    // Check video is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error('[Borne] Video dimensions not ready:', video.videoWidth, video.videoHeight)
+      // Retry after a short delay
+      setTimeout(() => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          capturePhoto()
+        } else {
+          console.error('[Borne] Video still not ready, returning to camera')
+          resetToCamera()
+        }
+      }, 500)
+      return
+    }
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      console.error('[Borne] Could not get canvas context')
+      resetToCamera()
+      return
+    }
+
+    try {
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      console.log('[Borne] Canvas size:', canvas.width, 'x', canvas.height)
+
+      // Mirror if using front camera
+      if (facingMode === 'user') {
+        ctx.translate(canvas.width, 0)
+        ctx.scale(-1, 1)
+      }
+
+      ctx.drawImage(video, 0, 0)
+      console.log('[Borne] Image drawn to canvas')
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            console.log('[Borne] Blob created:', blob.size, 'bytes')
+            setCapturedBlob(blob)
+            setCapturedImage(URL.createObjectURL(blob))
+            setState('preview')
+          } else {
+            console.error('[Borne] Failed to create blob')
+            resetToCamera()
+          }
+        },
+        'image/jpeg',
+        0.9
+      )
+    } catch (err) {
+      console.error('[Borne] Error capturing photo:', err)
+      resetToCamera()
+    }
+  }, [facingMode, resetToCamera])
+
   // Handle countdown
   useEffect(() => {
     if (state !== 'countdown') return
 
-    if (countdown <= 0) {
+    if (countdown === 0) {
+      console.log('[Borne] Countdown finished, capturing photo')
       capturePhoto()
       return
     }
 
     const timer = setTimeout(() => {
+      console.log('[Borne] Countdown:', countdown - 1)
       setCountdown((prev) => prev - 1)
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [state, countdown])
+  }, [state, countdown, capturePhoto])
 
   // Auto return to camera after success
   useEffect(() => {
@@ -261,6 +343,7 @@ export default function BornePage() {
 
   function startCountdown() {
     if (!session) return
+    console.log('[Borne] Starting countdown, borne_countdown:', session.borne_countdown)
 
     if (session.borne_countdown) {
       setCountdown(session.borne_countdown_duration)
@@ -268,39 +351,6 @@ export default function BornePage() {
     } else {
       capturePhoto()
     }
-  }
-
-  function capturePhoto() {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-
-    if (!ctx) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    // Mirror if using front camera
-    if (facingMode === 'user') {
-      ctx.translate(canvas.width, 0)
-      ctx.scale(-1, 1)
-    }
-
-    ctx.drawImage(video, 0, 0)
-
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          setCapturedBlob(blob)
-          setCapturedImage(URL.createObjectURL(blob))
-          setState('preview')
-        }
-      },
-      'image/jpeg',
-      0.9
-    )
   }
 
   async function uploadPhoto() {
@@ -355,14 +405,6 @@ export default function BornePage() {
       setError('Erreur lors de l\'envoi')
       setState('preview')
     }
-  }
-
-  function resetToCamera() {
-    setCapturedImage(null)
-    setCapturedBlob(null)
-    setCountdown(session?.borne_countdown_duration || 3)
-    setIsRocketLaunching(false)
-    setState('camera')
   }
 
   function toggleCamera() {
