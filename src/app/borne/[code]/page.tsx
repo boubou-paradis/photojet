@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { compressImage } from '@/lib/image-utils'
 
-type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'uploading' | 'success' | 'printing'
+type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'compressing' | 'uploading' | 'success' | 'printing'
 
 // Rocket Button Component with takeoff animation
 function RocketButton({ onClick, disabled, isLaunching }: { onClick: () => void; disabled?: boolean; isLaunching?: boolean }) {
@@ -306,7 +306,7 @@ export default function BornePage() {
   async function uploadPhoto() {
     if (!capturedBlob || !session) return
 
-    setState('uploading')
+    setState('compressing')
 
     try {
       // Re-fetch session to get latest moderation setting
@@ -320,7 +320,12 @@ export default function BornePage() {
       const isApproved = !moderationEnabled
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
-      const compressedFile = await compressImage(file)
+      const compressedFile = await compressImage(file, (progress) => {
+        if (progress.stage === 'done') {
+          setState('uploading')
+        }
+      })
+      setState('uploading')
 
       const fileName = `${session.id}/borne-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
 
@@ -551,7 +556,7 @@ export default function BornePage() {
 
       {/* Preview */}
       <AnimatePresence>
-        {(state === 'preview' || state === 'uploading') && capturedImage && (
+        {(state === 'preview' || state === 'compressing' || state === 'uploading') && capturedImage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -566,11 +571,13 @@ export default function BornePage() {
               />
             </div>
 
-            {state === 'uploading' ? (
+            {(state === 'compressing' || state === 'uploading') ? (
               <div className="absolute inset-0 bg-[#1A1A1E]/80 flex items-center justify-center">
                 <div className="text-center">
                   <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-[#D4AF37]" />
-                  <p className="text-xl text-white">Envoi en cours...</p>
+                  <p className="text-xl text-white">
+                    {state === 'compressing' ? 'Optimisation de la photo...' : 'Envoi en cours...'}
+                  </p>
                 </div>
               </div>
             ) : (

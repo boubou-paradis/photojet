@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
-import { compressImage } from '@/lib/image-utils'
+import { compressImage, formatFileSize, needsCompression, CompressionProgress } from '@/lib/image-utils'
 import { Session } from '@/types/database'
 
 type TabType = 'photo' | 'message'
@@ -26,6 +26,8 @@ export default function InvitePage() {
 
   // Photo states
   const [uploading, setUploading] = useState(false)
+  const [compressing, setCompressing] = useState(false)
+  const [compressionProgress, setCompressionProgress] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [photoUploadStatus, setPhotoUploadStatus] = useState<UploadStatus>('idle')
@@ -102,6 +104,8 @@ export default function InvitePage() {
     if (!selectedFile || !session) return
 
     setUploading(true)
+    setCompressing(true)
+    setCompressionProgress(0)
     setError(null)
 
     try {
@@ -114,7 +118,17 @@ export default function InvitePage() {
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
-      const compressedFile = await compressImage(selectedFile)
+      // Compress image with progress callback
+      const compressedFile = await compressImage(selectedFile, (progress) => {
+        if (progress.progress !== undefined) {
+          setCompressionProgress(Math.round(progress.progress * 100))
+        }
+        if (progress.stage === 'done') {
+          setCompressing(false)
+        }
+      })
+      setCompressing(false)
+
       const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
 
       const { error: uploadError } = await supabase.storage
@@ -366,7 +380,11 @@ export default function InvitePage() {
                       {uploading ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Envoi en cours...
+                          {compressing ? (
+                            `Optimisation... ${compressionProgress}%`
+                          ) : (
+                            'Envoi en cours...'
+                          )}
                         </>
                       ) : (
                         <>
