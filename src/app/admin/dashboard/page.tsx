@@ -26,16 +26,10 @@ import {
   XCircle,
   Aperture,
   Gamepad2,
+  FolderOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message, BorneConnection } from '@/types/database'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -53,6 +47,7 @@ export default function DashboardPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [togglingModeration, setTogglingModeration] = useState(false)
   const [activeTab, setActiveTab] = useState<'photos' | 'messages'>('photos')
+  const [downloading, setDownloading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -336,6 +331,9 @@ export default function DashboardPage() {
           mystery_total_rounds: 1,
           mystery_is_playing: false,
           mystery_revealed_tiles: [],
+          // Album defaults
+          album_enabled: true,
+          album_password: null,
         })
         .select()
         .single()
@@ -355,6 +353,59 @@ export default function DashboardPage() {
     const url = getInviteUrl(selectedSession.code)
     navigator.clipboard.writeText(url)
     toast.success('Lien copié')
+  }
+
+  function getAlbumUrl(code: string) {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/album/${code}`
+    }
+    return `/album/${code}`
+  }
+
+  function copyAlbumLink() {
+    if (!selectedSession) return
+    const url = getAlbumUrl(selectedSession.code)
+    navigator.clipboard.writeText(url)
+    toast.success('Lien album copié')
+  }
+
+  async function downloadAllPhotos() {
+    if (!selectedSession || downloading) return
+
+    const approvedPhotos = photos.filter(p => p.status === 'approved')
+    if (approvedPhotos.length === 0) {
+      toast.error('Aucune photo approuvée à télécharger')
+      return
+    }
+
+    setDownloading(true)
+    try {
+      const response = await fetch('/api/album/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionCode: selectedSession.code })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${selectedSession.name.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedSession.code}.zip`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success(`${approvedPhotos.length} photos téléchargées`)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors du téléchargement')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   async function toggleModeration() {
@@ -873,6 +924,47 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* QR Code Album - Post-Event */}
+              <div className="card-gold rounded-xl flex-shrink-0">
+                <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4 text-[#D4AF37]" />
+                    <h3 className="font-semibold text-white text-sm">Album post-event</h3>
+                  </div>
+                </div>
+                <div className="p-3 flex flex-col items-center">
+                  <div className="bg-white p-2 rounded-lg shadow-gold">
+                    <QRCode
+                      value={getAlbumUrl(selectedSession.code)}
+                      size={100}
+                    />
+                  </div>
+                  <p className="text-xs text-[#6B6B70] mt-2 text-center">
+                    {approvedCount} photos disponibles
+                  </p>
+                  <div className="flex gap-2 mt-2 w-full">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyAlbumLink}
+                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copier
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
+                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Voir
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {/* Informations Card - Compact */}
               <div className="card-gold rounded-xl flex-shrink-0">
                 <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
@@ -938,26 +1030,20 @@ export default function DashboardPage() {
                     <ImageIcon className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
                     Voir l&apos;album
                   </Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full h-8 justify-start border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                      >
-                        <Download className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
-                        Télécharger tout
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-[#242428] border-[rgba(255,255,255,0.1)]">
-                      <DialogHeader>
-                        <DialogTitle className="text-white">Télécharger l&apos;album</DialogTitle>
-                      </DialogHeader>
-                      <p className="text-[#B0B0B5]">
-                        Cette fonctionnalité sera disponible prochainement.
-                      </p>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 justify-start border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
+                    onClick={downloadAllPhotos}
+                    disabled={downloading || approvedCount === 0}
+                  >
+                    {downloading ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-2 text-[#D4AF37] animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
+                    )}
+                    {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
+                  </Button>
                 </div>
               </div>
             </div>
