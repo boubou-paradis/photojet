@@ -119,9 +119,15 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           if (newRound !== prevRound && newRound > prevRound) {
             setShowRoundTransition(true)
             setTimeout(() => {
-              setShowRoundTransition(false)
-              setCurrentRound(newRound)
-              setRevealedTiles(updated.mystery_revealed_tiles || [])
+              // IMPORTANT: D'abord remettre toutes les cases (vider revealedTiles)
+              // AVANT de changer la photo (currentRound)
+              setRevealedTiles([])
+
+              // Petit délai pour que les cases soient bien en place
+              setTimeout(() => {
+                setCurrentRound(newRound)
+                setShowRoundTransition(false)
+              }, 100)
             }, 2000)
           } else {
             setCurrentRound(newRound)
