@@ -327,10 +327,15 @@ export default function DashboardPage() {
           // Mystery Photo Game defaults
           mystery_photo_enabled: false,
           mystery_photo_url: null,
-          mystery_photo_grid: '8x6',
+          mystery_photo_grid: '12x8',
           mystery_photo_speed: 'medium',
           mystery_photo_active: false,
           mystery_photo_state: null,
+          mystery_photos: '[]',
+          mystery_current_round: 1,
+          mystery_total_rounds: 1,
+          mystery_is_playing: false,
+          mystery_revealed_tiles: [],
         })
         .select()
         .single()

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -16,6 +15,8 @@ import {
   StopCircle,
   Gamepad2,
   Search,
+  SkipForward,
+  Monitor,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -32,23 +33,40 @@ import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 
+interface PhotoSlot {
+  url: string
+  preview: string
+}
+
 export default function JeuxPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState<number | null>(null)
   const [launching, setLaunching] = useState(false)
 
   // Mystery Photo settings
   const [mysteryPhotoEnabled, setMysteryPhotoEnabled] = useState(false)
-  const [mysteryPhotoUrl, setMysteryPhotoUrl] = useState<string | null>(null)
-  const [mysteryPhotoGrid, setMysteryPhotoGrid] = useState<MysteryPhotoGrid>('8x6')
+  const [mysteryPhotoGrid, setMysteryPhotoGrid] = useState<MysteryPhotoGrid>('12x8')
   const [mysteryPhotoSpeed, setMysteryPhotoSpeed] = useState<MysteryPhotoSpeed>('medium')
-  const [mysteryPhotoActive, setMysteryPhotoActive] = useState(false)
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Multi-photo support
+  const [photos, setPhotos] = useState<(PhotoSlot | null)[]>([null, null, null, null, null])
+
+  // Game state (realtime)
+  const [gameActive, setGameActive] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentRound, setCurrentRound] = useState(1)
+  const [totalRounds, setTotalRounds] = useState(1)
+  const [revealedTiles, setRevealedTiles] = useState<number[]>([])
+
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const router = useRouter()
   const supabase = createClient()
+
+  // Calculate total tiles
+  const [cols, rows] = mysteryPhotoGrid.split('x').map(Number)
+  const totalTiles = cols * rows
 
   useEffect(() => {
     fetchSession()
@@ -68,10 +86,30 @@ export default function JeuxPage() {
 
       // Initialize state from session
       setMysteryPhotoEnabled(data.mystery_photo_enabled ?? false)
-      setMysteryPhotoUrl(data.mystery_photo_url ?? null)
-      setMysteryPhotoGrid(data.mystery_photo_grid ?? '8x6')
+      setMysteryPhotoGrid(data.mystery_photo_grid ?? '12x8')
       setMysteryPhotoSpeed(data.mystery_photo_speed ?? 'medium')
-      setMysteryPhotoActive(data.mystery_photo_active ?? false)
+      setGameActive(data.mystery_photo_active ?? false)
+      setIsPlaying(data.mystery_is_playing ?? false)
+      setCurrentRound(data.mystery_current_round ?? 1)
+      setTotalRounds(data.mystery_total_rounds ?? 1)
+      setRevealedTiles(data.mystery_revealed_tiles ?? [])
+
+      // Load photos
+      if (data.mystery_photos) {
+        try {
+          const parsedPhotos = JSON.parse(data.mystery_photos)
+          const photoSlots: (PhotoSlot | null)[] = [null, null, null, null, null]
+          parsedPhotos.forEach((p: { url: string }, index: number) => {
+            if (index < 5 && p.url) {
+              const { data: urlData } = supabase.storage.from('photos').getPublicUrl(p.url)
+              photoSlots[index] = { url: p.url, preview: urlData.publicUrl }
+            }
+          })
+          setPhotos(photoSlots)
+        } catch {
+          console.error('Failed to parse mystery_photos')
+        }
+      }
     } catch (err) {
       console.error('Error fetching session:', err)
       toast.error('Erreur lors du chargement de la session')
@@ -85,7 +123,7 @@ export default function JeuxPage() {
     if (!session) return
 
     const channel = supabase
-      .channel(`jeux-session-${session.id}`)
+      .channel(`jeux-admin-${session.id}`)
       .on(
         'postgres_changes',
         {
@@ -96,7 +134,11 @@ export default function JeuxPage() {
         },
         (payload) => {
           const updated = payload.new as Session
-          setMysteryPhotoActive(updated.mystery_photo_active ?? false)
+          setGameActive(updated.mystery_photo_active ?? false)
+          setIsPlaying(updated.mystery_is_playing ?? false)
+          setCurrentRound(updated.mystery_current_round ?? 1)
+          setTotalRounds(updated.mystery_total_rounds ?? 1)
+          setRevealedTiles(updated.mystery_revealed_tiles ?? [])
         }
       )
       .subscribe()
@@ -106,11 +148,11 @@ export default function JeuxPage() {
     }
   }, [session?.id, supabase])
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, index: number) {
     const file = e.target.files?.[0]
     if (!file || !session) return
 
-    setUploading(true)
+    setUploading(index)
     try {
       // Compress image
       const compressedFile = await imageCompression(file, {
@@ -119,7 +161,7 @@ export default function JeuxPage() {
         useWebWorker: true,
       })
 
-      const fileName = `mystery_${session.id}_${Date.now()}.${compressedFile.name.split('.').pop()}`
+      const fileName = `mystery_${session.id}_${index}_${Date.now()}.${compressedFile.name.split('.').pop()}`
       const filePath = `mystery-photos/${fileName}`
 
       // Upload to Supabase Storage
@@ -134,49 +176,65 @@ export default function JeuxPage() {
         .from('photos')
         .getPublicUrl(filePath)
 
-      setMysteryPhotoUrl(filePath)
+      // Update local state
+      const newPhotos = [...photos]
+      newPhotos[index] = { url: filePath, preview: urlData.publicUrl }
+      setPhotos(newPhotos)
 
       // Save to database
-      const { error: updateError } = await supabase
-        .from('sessions')
-        .update({ mystery_photo_url: filePath })
-        .eq('id', session.id)
+      await savePhotosToDatabase(newPhotos)
 
-      if (updateError) throw updateError
-
-      toast.success('Photo uploadée avec succès')
+      toast.success(`Photo ${index + 1} uploadée`)
     } catch (err) {
       console.error('Error uploading file:', err)
       toast.error('Erreur lors de l\'upload')
     } finally {
-      setUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+      setUploading(null)
+      if (fileInputRefs.current[index]) {
+        fileInputRefs.current[index]!.value = ''
       }
     }
   }
 
-  async function removePhoto() {
-    if (!session || !mysteryPhotoUrl) return
+  async function removePhoto(index: number) {
+    if (!session) return
+
+    const photo = photos[index]
+    if (!photo) return
 
     try {
       // Delete from storage
-      await supabase.storage.from('photos').remove([mysteryPhotoUrl])
+      await supabase.storage.from('photos').remove([photo.url])
 
-      // Update database
-      const { error } = await supabase
-        .from('sessions')
-        .update({ mystery_photo_url: null })
-        .eq('id', session.id)
+      // Update local state
+      const newPhotos = [...photos]
+      newPhotos[index] = null
+      setPhotos(newPhotos)
 
-      if (error) throw error
+      // Save to database
+      await savePhotosToDatabase(newPhotos)
 
-      setMysteryPhotoUrl(null)
-      toast.success('Photo supprimée')
+      toast.success(`Photo ${index + 1} supprimée`)
     } catch (err) {
       console.error('Error removing photo:', err)
       toast.error('Erreur lors de la suppression')
     }
+  }
+
+  async function savePhotosToDatabase(photoSlots: (PhotoSlot | null)[]) {
+    if (!session) return
+
+    const photosJson = photoSlots
+      .filter(p => p !== null)
+      .map(p => ({ url: p!.url }))
+
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_photos: JSON.stringify(photosJson),
+        mystery_total_rounds: photosJson.length || 1,
+      })
+      .eq('id', session.id)
   }
 
   async function saveSettings() {
@@ -204,36 +262,33 @@ export default function JeuxPage() {
   }
 
   async function launchGame() {
-    if (!session || !mysteryPhotoUrl) return
+    if (!session) return
+
+    const validPhotos = photos.filter(p => p !== null)
+    if (validPhotos.length === 0) {
+      toast.error('Ajoutez au moins une photo')
+      return
+    }
 
     setLaunching(true)
     try {
-      // Initialize game state
-      const [cols, rows] = mysteryPhotoGrid.split('x').map(Number)
-      const totalTiles = cols * rows
-      const initialState = {
-        tiles: Array.from({ length: totalTiles }, (_, i) => ({
-          id: i,
-          revealed: false,
-        })),
-        isPlaying: false,
-        revealedCount: 0,
-      }
-
       const { error } = await supabase
         .from('sessions')
         .update({
           mystery_photo_active: true,
-          mystery_photo_state: JSON.stringify(initialState),
+          mystery_is_playing: false,
+          mystery_current_round: 1,
+          mystery_total_rounds: validPhotos.length,
+          mystery_revealed_tiles: [],
         })
         .eq('id', session.id)
 
       if (error) throw error
 
-      setMysteryPhotoActive(true)
-      toast.success('Jeu lancé sur le diaporama!')
+      setGameActive(true)
+      toast.success('Jeu lancé!')
 
-      // Open the slideshow in a new tab
+      // Open slideshow in new tab
       window.open(`/live/${session.code}`, '_blank')
     } catch (err) {
       console.error('Error launching game:', err)
@@ -243,32 +298,85 @@ export default function JeuxPage() {
     }
   }
 
-  async function stopGame() {
+  async function togglePlayPause() {
     if (!session) return
 
-    try {
-      const { error } = await supabase
-        .from('sessions')
-        .update({
-          mystery_photo_active: false,
-          mystery_photo_state: null,
-        })
-        .eq('id', session.id)
+    const newIsPlaying = !isPlaying
+    await supabase
+      .from('sessions')
+      .update({ mystery_is_playing: newIsPlaying })
+      .eq('id', session.id)
 
-      if (error) throw error
-
-      setMysteryPhotoActive(false)
-      toast.success('Jeu arrêté')
-    } catch (err) {
-      console.error('Error stopping game:', err)
-      toast.error('Erreur lors de l\'arrêt')
-    }
+    setIsPlaying(newIsPlaying)
   }
 
-  function getPhotoUrl(storagePath: string | null) {
-    if (!storagePath) return null
-    const { data } = supabase.storage.from('photos').getPublicUrl(storagePath)
-    return data.publicUrl
+  async function revealAll() {
+    if (!session) return
+
+    const allTiles = Array.from({ length: totalTiles }, (_, i) => i)
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_revealed_tiles: allTiles,
+        mystery_is_playing: false,
+      })
+      .eq('id', session.id)
+
+    setRevealedTiles(allTiles)
+    setIsPlaying(false)
+  }
+
+  async function resetCurrentRound() {
+    if (!session) return
+
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_revealed_tiles: [],
+        mystery_is_playing: false,
+      })
+      .eq('id', session.id)
+
+    setRevealedTiles([])
+    setIsPlaying(false)
+  }
+
+  async function nextRound() {
+    if (!session || currentRound >= totalRounds) return
+
+    const newRound = currentRound + 1
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_current_round: newRound,
+        mystery_revealed_tiles: [],
+        mystery_is_playing: false,
+      })
+      .eq('id', session.id)
+
+    setCurrentRound(newRound)
+    setRevealedTiles([])
+    setIsPlaying(false)
+  }
+
+  async function exitGame() {
+    if (!session) return
+
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_photo_active: false,
+        mystery_is_playing: false,
+        mystery_current_round: 1,
+        mystery_revealed_tiles: [],
+      })
+      .eq('id', session.id)
+
+    setGameActive(false)
+    setIsPlaying(false)
+    setCurrentRound(1)
+    setRevealedTiles([])
+    toast.success('Jeu arrêté')
   }
 
   const gridOptions = [
@@ -285,6 +393,8 @@ export default function JeuxPage() {
     { value: 'medium', label: 'Moyen (2s par case)' },
     { value: 'fast', label: 'Rapide (1s par case)' },
   ]
+
+  const validPhotosCount = photos.filter(p => p !== null).length
 
   if (loading) {
     return (
@@ -332,6 +442,16 @@ export default function JeuxPage() {
               </div>
             </div>
           </div>
+          {gameActive && (
+            <Button
+              size="sm"
+              onClick={() => window.open(`/live/${session.code}`, '_blank')}
+              className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+            >
+              <Monitor className="h-4 w-4 mr-2" />
+              Voir le diaporama
+            </Button>
+          )}
         </div>
       </header>
 
@@ -362,87 +482,177 @@ export default function JeuxPage() {
                 <Switch
                   id="mystery-enabled"
                   checked={mysteryPhotoEnabled}
-                  onCheckedChange={(checked) => {
-                    setMysteryPhotoEnabled(checked)
-                  }}
+                  onCheckedChange={setMysteryPhotoEnabled}
                   className="data-[state=checked]:bg-[#D4AF37]"
                 />
               </div>
             </div>
 
-            {/* Game Status Banner */}
-            {mysteryPhotoActive && (
-              <div className="bg-gradient-to-r from-[#D4AF37]/20 to-[#F4D03F]/10 px-6 py-3 flex items-center justify-between border-b border-[#D4AF37]/20">
-                <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 bg-[#4CAF50] rounded-full animate-pulse" />
-                  <span className="text-[#D4AF37] font-semibold">Jeu en cours sur le diaporama</span>
+            {/* Game Active - Remote Control Panel */}
+            {gameActive && (
+              <div className="p-6 bg-gradient-to-br from-[#D4AF37]/10 to-transparent border-b border-[#D4AF37]/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                  <h3 className="text-white font-bold text-lg">
+                    Jeu en cours - Manche {currentRound}/{totalRounds}
+                  </h3>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={stopGame}
-                  className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                >
-                  <StopCircle className="h-4 w-4 mr-2" />
-                  Arrêter le jeu
-                </Button>
+
+                {/* Preview miniature */}
+                <div className="bg-[#1A1A1E] rounded-lg p-3 mb-4 aspect-video relative overflow-hidden">
+                  {photos[currentRound - 1]?.preview && (
+                    <img
+                      src={photos[currentRound - 1]!.preview}
+                      alt="Current photo"
+                      className="w-full h-full object-cover rounded opacity-30"
+                    />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <span className="text-[#D4AF37] text-3xl font-bold">
+                        {revealedTiles.length}/{totalTiles}
+                      </span>
+                      <p className="text-white/60 text-sm">cases révélées</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <div className="h-3 bg-[#1A1A1E] rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${(revealedTiles.length / totalTiles) * 100}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+
+                {/* Control buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={togglePlayPause}
+                    className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                      isPlaying
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                        : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                    }`}
+                  >
+                    {isPlaying ? (
+                      <>
+                        <Pause className="h-5 w-5" />
+                        PAUSE
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-5 w-5" />
+                        PLAY
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={revealAll}
+                    className="py-3 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#1A1A1E] rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Eye className="h-5 w-5" />
+                    Révéler tout
+                  </button>
+
+                  <button
+                    onClick={nextRound}
+                    disabled={currentRound >= totalRounds}
+                    className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <SkipForward className="h-5 w-5" />
+                    Manche suivante
+                  </button>
+
+                  <button
+                    onClick={resetCurrentRound}
+                    className="py-3 bg-[#3E3E43] hover:bg-[#4E4E53] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                    Recommencer
+                  </button>
+
+                  <button
+                    onClick={exitGame}
+                    className="col-span-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    <StopCircle className="h-5 w-5" />
+                    Quitter le jeu
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Configuration */}
-            {mysteryPhotoEnabled && (
+            {/* Configuration (when enabled but game not active) */}
+            {mysteryPhotoEnabled && !gameActive && (
               <div className="p-6 space-y-6">
-                {/* Upload zone */}
+                {/* Multi-photo upload */}
                 <div>
-                  <Label className="text-white text-sm mb-3 block">Photo à deviner</Label>
-                  <div
-                    onClick={() => !uploading && fileInputRef.current?.click()}
-                    className={`
-                      border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
-                      transition-all duration-200
-                      ${mysteryPhotoUrl
-                        ? 'border-[#D4AF37]/40 bg-[#D4AF37]/5'
-                        : 'border-[#D4AF37]/30 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/5'
-                      }
-                    `}
-                  >
-                    {uploading ? (
-                      <div className="flex flex-col items-center">
-                        <Loader2 className="h-12 w-12 text-[#D4AF37] animate-spin mb-3" />
-                        <p className="text-[#6B6B70]">Upload en cours...</p>
-                      </div>
-                    ) : mysteryPhotoUrl ? (
-                      <div className="relative inline-block">
-                        <img
-                          src={getPhotoUrl(mysteryPhotoUrl) || ''}
-                          alt="Photo mystère"
-                          className="max-h-48 rounded-lg shadow-lg"
+                  <Label className="text-white text-sm mb-3 block">
+                    Photos à deviner (1 à 5 manches)
+                  </Label>
+                  <div className="grid grid-cols-5 gap-3">
+                    {photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        onClick={() => !uploading && fileInputRefs.current[index]?.click()}
+                        className={`
+                          aspect-square rounded-xl border-2 border-dashed relative overflow-hidden cursor-pointer
+                          transition-all duration-200
+                          ${photo
+                            ? 'border-[#D4AF37] bg-[#242428]'
+                            : 'border-[#3E3E43] bg-[#1A1A1E] hover:border-[#D4AF37]/50'
+                          }
+                        `}
+                      >
+                        {uploading === index ? (
+                          <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
+                            <Loader2 className="h-6 w-6 text-[#D4AF37] animate-spin" />
+                          </div>
+                        ) : photo ? (
+                          <>
+                            <img
+                              src={photo.preview}
+                              alt={`Photo ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold px-2 py-0.5 rounded">
+                              #{index + 1}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removePhoto(index)
+                              }}
+                              className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70]">
+                            <Upload className="h-6 w-6 mb-1" />
+                            <span className="text-xs">Photo {index + 1}</span>
+                          </div>
+                        )}
+                        <input
+                          ref={(el) => { fileInputRefs.current[index] = el }}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, index)}
+                          className="hidden"
                         />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removePhoto()
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
                       </div>
-                    ) : (
-                      <div>
-                        <Upload className="h-12 w-12 text-[#D4AF37] mx-auto mb-3" />
-                        <p className="text-[#6B6B70]">Cliquez ou glissez une photo</p>
-                        <p className="text-[#6B6B70]/60 text-sm mt-1">PNG, JPG jusqu'à 10MB</p>
-                      </div>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
+                    ))}
                   </div>
+                  <p className="text-[#6B6B70] text-sm mt-2">
+                    {validPhotosCount} photo(s) chargée(s) = {validPhotosCount || 1} manche(s)
+                  </p>
                 </div>
 
                 {/* Settings grid */}
@@ -500,44 +710,23 @@ export default function JeuxPage() {
                   variant="outline"
                   className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Sauvegarder les paramètres
                 </Button>
 
                 {/* Launch button */}
-                {!mysteryPhotoActive ? (
-                  <Button
-                    onClick={launchGame}
-                    disabled={!mysteryPhotoUrl || launching}
-                    className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#1A1A1E] hover:opacity-90 disabled:opacity-50"
-                  >
-                    {launching ? (
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <Play className="h-5 w-5 mr-2" />
-                    )}
-                    Lancer le jeu sur le diaporama
-                  </Button>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      onClick={() => window.open(`/live/${session.code}`, '_blank')}
-                      className="py-6 text-lg font-bold bg-[#2E2E33] text-white hover:bg-[#3E3E43] border border-[rgba(255,255,255,0.1)]"
-                    >
-                      <Eye className="h-5 w-5 mr-2" />
-                      Voir le diaporama
-                    </Button>
-                    <Button
-                      onClick={stopGame}
-                      className="py-6 text-lg font-bold bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
-                    >
-                      <StopCircle className="h-5 w-5 mr-2" />
-                      Arrêter le jeu
-                    </Button>
-                  </div>
-                )}
+                <Button
+                  onClick={launchGame}
+                  disabled={validPhotosCount === 0 || launching}
+                  className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#1A1A1E] hover:opacity-90 disabled:opacity-50"
+                >
+                  {launching ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <Play className="h-5 w-5 mr-2" />
+                  )}
+                  Lancer le jeu ({validPhotosCount} manche{validPhotosCount > 1 ? 's' : ''})
+                </Button>
               </div>
             )}
 

@@ -48,11 +48,31 @@ export interface Session {
   messages_duration: number // Duration in seconds
   // Mystery Photo Game settings
   mystery_photo_enabled: boolean
-  mystery_photo_url: string | null
+  mystery_photo_url: string | null // Legacy single photo (kept for backwards compatibility)
   mystery_photo_grid: MysteryPhotoGrid
   mystery_photo_speed: MysteryPhotoSpeed
   mystery_photo_active: boolean
   mystery_photo_state: string | null // JSON string for game state (tiles, isPlaying, etc.)
+  // Multi-photo support
+  mystery_photos: string | null // JSON array of photo URLs
+  mystery_current_round: number
+  mystery_total_rounds: number
+  mystery_is_playing: boolean
+  mystery_revealed_tiles: number[] | null // Array of revealed tile indices for current round
+}
+
+// Mystery Photo types
+export interface MysteryPhotoRound {
+  url: string
+  revealedTiles: number[]
+}
+
+export interface MysteryGameState {
+  currentRound: number
+  totalRounds: number
+  isPlaying: boolean
+  revealedTiles: number[]
+  photos: MysteryPhotoRound[]
 }
 
 export interface Photo {
