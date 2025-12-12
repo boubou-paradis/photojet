@@ -289,42 +289,56 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             {/* Black background */}
             <div className="absolute inset-0 bg-black" />
 
-            {/* Phase 1 & 2: Grid with tiles + Pac-Man */}
+            {/* Phase 1 & 2: Photo with tiles + Pac-Man eating them */}
             {(animationPhase === 1 || animationPhase === 2) && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div
-                  className="relative grid gap-[2px]"
+                  className="relative"
                   style={{
-                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                    gridTemplateRows: `repeat(${rows}, 1fr)`,
                     width: '85vw',
                     maxWidth: '1200px',
                     aspectRatio: `${cols}/${rows}`,
                   }}
                 >
-                  {Array.from({ length: totalTiles }, (_, index) => {
-                    const isEaten = eatenTiles.includes(index)
-                    return (
-                      <motion.div
-                        key={index}
-                        initial={{ scale: 1, opacity: 1 }}
-                        animate={{
-                          scale: isEaten ? 0 : 1,
-                          opacity: isEaten ? 0 : 1,
-                        }}
-                        transition={{ duration: 0.1 }}
-                        className="bg-[#D4AF37] rounded-sm"
-                        style={{
-                          boxShadow: isEaten ? 'none' : '0 0 10px rgba(212, 175, 55, 0.5)',
-                        }}
-                      />
-                    )
-                  })}
+                  {/* Photo underneath */}
+                  <img
+                    src={currentPhotoUrl || ''}
+                    alt="Photo révélée"
+                    className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                  />
+
+                  {/* Tile grid overlay */}
+                  <div
+                    className="absolute inset-0 grid rounded-xl overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                      gridTemplateRows: `repeat(${rows}, 1fr)`,
+                    }}
+                  >
+                    {Array.from({ length: totalTiles }, (_, index) => {
+                      const isEaten = eatenTiles.includes(index)
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ scale: 1, opacity: 1 }}
+                          animate={{
+                            scale: isEaten ? 0 : 1,
+                            opacity: isEaten ? 0 : 1,
+                          }}
+                          transition={{ duration: 0.1 }}
+                          className="bg-[#D4AF37]"
+                          style={{
+                            boxShadow: isEaten ? 'none' : 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
 
                   {/* PAC-MAN */}
                   {animationPhase === 2 && (
                     <motion.div
-                      className="absolute"
+                      className="absolute z-10"
                       style={{
                         width: `${100 / cols}%`,
                         height: `${100 / rows}%`,
@@ -339,7 +353,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
                       }}
                       transition={{ duration: 0.03 }}
                     >
-                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
                         <defs>
                           <radialGradient id="pacmanGlow" cx="50%" cy="50%" r="50%">
                             <stop offset="0%" stopColor="#FFFF00" />
