@@ -9,6 +9,7 @@ import { Maximize, Minimize, ImagePlus, MessageCircle, Quote } from 'lucide-reac
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
 import { getInviteUrl } from '@/lib/utils'
+import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -756,6 +757,19 @@ export default function LivePage() {
           <p className="text-xl text-[#B0B0B5]">Chargement...</p>
         </div>
       </div>
+    )
+  }
+
+  // Show Mystery Photo Game if active
+  if (session.mystery_photo_active && session.mystery_photo_url) {
+    return (
+      <MysteryPhotoGame
+        session={session}
+        onExit={() => {
+          // Re-fetch session to get updated state
+          fetchSession()
+        }}
+      />
     )
   }
 

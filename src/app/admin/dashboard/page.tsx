@@ -25,6 +25,7 @@ import {
   MessageCircle,
   XCircle,
   Aperture,
+  Gamepad2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -323,6 +324,13 @@ export default function DashboardPage() {
           messages_enabled: true,
           messages_frequency: 4,
           messages_duration: 8,
+          // Mystery Photo Game defaults
+          mystery_photo_enabled: false,
+          mystery_photo_url: null,
+          mystery_photo_grid: '8x6',
+          mystery_photo_speed: 'medium',
+          mystery_photo_active: false,
+          mystery_photo_state: null,
         })
         .select()
         .single()
@@ -462,6 +470,15 @@ export default function DashboardPage() {
                 >
                   <Tablet className="h-4 w-4 mr-2" />
                   Borne
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/jeux`)}
+                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                >
+                  <Gamepad2 className="h-4 w-4 mr-2" />
+                  Jeux
                 </Button>
                 <Button
                   variant="outline"

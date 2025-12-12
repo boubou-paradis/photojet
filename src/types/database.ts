@@ -8,6 +8,8 @@ export type DeviceType = 'ipad' | 'android_tablet' | 'other'
 export type BackgroundType = 'color' | 'image'
 export type LogoSize = 'small' | 'medium' | 'large'
 export type LogoPosition = 'bottom-left' | 'top-center'
+export type MysteryPhotoGrid = '6x4' | '8x6' | '10x8'
+export type MysteryPhotoSpeed = 'slow' | 'medium' | 'fast'
 
 export interface Session {
   id: string
@@ -44,6 +46,13 @@ export interface Session {
   messages_enabled: boolean
   messages_frequency: number // Show message every X photos
   messages_duration: number // Duration in seconds
+  // Mystery Photo Game settings
+  mystery_photo_enabled: boolean
+  mystery_photo_url: string | null
+  mystery_photo_grid: MysteryPhotoGrid
+  mystery_photo_speed: MysteryPhotoSpeed
+  mystery_photo_active: boolean
+  mystery_photo_state: string | null // JSON string for game state (tiles, isPlaying, etc.)
 }
 
 export interface Photo {
