@@ -927,7 +927,7 @@ export default function LivePage() {
           {/* Photo/Message slideshow */}
           <AnimatePresence mode="wait">
             {currentItem?.type === 'message' ? (
-              <MessageDisplay key={`msg-${currentItem.data.id}`} message={currentItem.data} />
+              <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} />
             ) : currentItem?.type === 'photo' ? (
               <motion.div
                 key={`photo-${currentItem.data.id}`}
