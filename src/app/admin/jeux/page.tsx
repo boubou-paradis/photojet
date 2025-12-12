@@ -77,6 +77,7 @@ export default function JeuxPage() {
         .from('sessions')
         .update({
           // Reset Photo Mystère
+          mystery_photo_enabled: false,
           mystery_photo_active: false,
           mystery_is_playing: false,
           mystery_current_round: 1,
@@ -122,10 +123,10 @@ export default function JeuxPage() {
       await resetAllGames(data.id)
 
       // Initialize state from session (with reset defaults since we just reset)
-      setMysteryPhotoEnabled(data.mystery_photo_enabled ?? false)
+      // Force all game states to OFF (we just reset in DB)
+      setMysteryPhotoEnabled(false)
       setMysteryPhotoGrid(data.mystery_photo_grid ?? '12x8')
       setMysteryPhotoSpeed(data.mystery_photo_speed ?? 'medium')
-      // Force reset values for game state (we just reset in DB)
       setGameActive(false)
       setIsPlaying(false)
       setCurrentRound(1)
