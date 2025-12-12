@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Maximize, Minimize } from 'lucide-react'
+import QRCode from 'react-qr-code'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { createClient } from '@/lib/supabase'
+import { getInviteUrl } from '@/lib/utils'
 
 interface MysteryPhotoGameProps {
   session: Session
@@ -59,6 +61,9 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // Fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // QR Code visibility (synced with session)
+  const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
 
   const supabase = createClient()
 
@@ -159,6 +164,8 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           }
           setTotalRounds(updated.mystery_total_rounds || 1)
           setIsPlaying(updated.mystery_is_playing || false)
+          // Update QR code visibility
+          setShowQR(updated.show_qr_on_screen ?? false)
           if (updated.mystery_photos) {
             try {
               const parsedPhotos = JSON.parse(updated.mystery_photos)
@@ -703,6 +710,42 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           transition={{ duration: 0.3 }}
         />
       </div>
+
+      {/* QR Code overlay */}
+      <AnimatePresence>
+        {showQR && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed bottom-8 right-8 z-50"
+          >
+            <div className="flex items-center gap-3 bg-black/50 backdrop-blur-sm rounded-xl p-3">
+              <motion.div
+                animate={{
+                  scale: [1, 1.02, 1],
+                  boxShadow: [
+                    '0 0 0 0 rgba(212, 175, 55, 0.4)',
+                    '0 0 0 8px rgba(212, 175, 55, 0)',
+                    '0 0 0 0 rgba(212, 175, 55, 0)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="bg-white p-2 rounded-lg"
+              >
+                <QRCode
+                  value={getInviteUrl(session.code)}
+                  size={80}
+                />
+              </motion.div>
+              <div className="text-right">
+                <p className="text-xl font-mono font-bold text-[#D4AF37]">#{session.code}</p>
+                <p className="text-sm text-white/70">Partagez vos photos</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
