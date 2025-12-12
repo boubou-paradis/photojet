@@ -21,6 +21,26 @@ const SPEED_MAP: Record<MysteryPhotoSpeed, number> = {
   fast: 1000,
 }
 
+// Helper function for delays
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Generate zigzag path for Pac-Man
+const generatePacmanPath = (rows: number, cols: number) => {
+  const path: { row: number; col: number }[] = []
+  for (let row = 0; row < rows; row++) {
+    if (row % 2 === 0) {
+      for (let col = 0; col < cols; col++) {
+        path.push({ row, col })
+      }
+    } else {
+      for (let col = cols - 1; col >= 0; col--) {
+        path.push({ row, col })
+      }
+    }
+  }
+  return path
+}
+
 export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGameProps) {
   const [revealedTiles, setRevealedTiles] = useState<number[]>([])
   const [isPlaying, setIsPlaying] = useState(false)
@@ -28,6 +48,14 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const [totalRounds, setTotalRounds] = useState(1)
   const [photos, setPhotos] = useState<MysteryPhotoData[]>([])
   const [showRoundTransition, setShowRoundTransition] = useState(false)
+
+  // Winner animation states
+  const [showWinnerAnimation, setShowWinnerAnimation] = useState(false)
+  const [animationPhase, setAnimationPhase] = useState(0)
+  const [pacmanPosition, setPacmanPosition] = useState({ row: 0, col: 0 })
+  const [pacmanDirection, setPacmanDirection] = useState<'right' | 'left' | 'up' | 'down'>('right')
+  const [eatenTiles, setEatenTiles] = useState<number[]>([])
+
   const supabase = createClient()
 
   // Parse grid dimensions
@@ -44,7 +72,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         return data.publicUrl
       }
     }
-    // Fallback to legacy single photo
     if (session.mystery_photo_url) {
       const { data } = supabase.storage.from('photos').getPublicUrl(session.mystery_photo_url)
       return data.publicUrl
@@ -54,7 +81,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Initialize state from session
   useEffect(() => {
-    // Load photos from JSON
     if (session.mystery_photos) {
       try {
         const parsedPhotos = JSON.parse(session.mystery_photos)
@@ -64,8 +90,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         console.error('Failed to parse mystery_photos')
       }
     }
-
-    // Load game state
     setCurrentRound(session.mystery_current_round || 1)
     setTotalRounds(session.mystery_total_rounds || 1)
     setIsPlaying(session.mystery_is_playing || false)
@@ -86,18 +110,12 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         },
         (payload) => {
           const updated = payload.new as Session
-
-          // Check if game was stopped
           if (!updated.mystery_photo_active) {
             onExit()
             return
           }
-
-          // Update state from session
           const newRound = updated.mystery_current_round || 1
           const prevRound = currentRound
-
-          // Detect round change for transition animation
           if (newRound !== prevRound && newRound > prevRound) {
             setShowRoundTransition(true)
             setTimeout(() => {
@@ -109,11 +127,8 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             setCurrentRound(newRound)
             setRevealedTiles(updated.mystery_revealed_tiles || [])
           }
-
           setTotalRounds(updated.mystery_total_rounds || 1)
           setIsPlaying(updated.mystery_is_playing || false)
-
-          // Update photos if changed
           if (updated.mystery_photos) {
             try {
               const parsedPhotos = JSON.parse(updated.mystery_photos)
@@ -131,28 +146,82 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
   }, [session.id, supabase, onExit, currentRound])
 
-  // Auto-reveal logic (controlled by admin, just sync state here)
+  // Listen for winner animation broadcast
+  useEffect(() => {
+    const winnerChannel = supabase
+      .channel(`mystery-winner-${session.code}`)
+      .on('broadcast', { event: 'mystery_winner' }, () => {
+        console.log('[MysteryPhoto] Winner animation triggered!')
+        startWinnerSequence()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(winnerChannel)
+    }
+  }, [session.code, supabase, rows, cols])
+
+  // Winner animation sequence
+  const startWinnerSequence = async () => {
+    setShowWinnerAnimation(true)
+    setEatenTiles([])
+    setPacmanPosition({ row: 0, col: 0 })
+    setPacmanDirection('right')
+
+    // Phase 1: Reset all tiles (show them again)
+    setAnimationPhase(1)
+    await sleep(800)
+
+    // Phase 2: Pac-Man eats tiles
+    setAnimationPhase(2)
+    await pacmanEatAnimation()
+
+    // Phase 3: Victory explosion
+    setAnimationPhase(3)
+    await sleep(6000)
+
+    // End
+    setShowWinnerAnimation(false)
+    setAnimationPhase(0)
+    setEatenTiles([])
+  }
+
+  // Pac-Man eating animation
+  const pacmanEatAnimation = async () => {
+    const path = generatePacmanPath(rows, cols)
+
+    for (let i = 0; i < path.length; i++) {
+      const { row, col } = path[i]
+      const prevPos = i > 0 ? path[i - 1] : path[0]
+
+      // Determine direction
+      if (col > prevPos.col) setPacmanDirection('right')
+      else if (col < prevPos.col) setPacmanDirection('left')
+      else if (row > prevPos.row) setPacmanDirection('down')
+      else if (row < prevPos.row) setPacmanDirection('up')
+
+      setPacmanPosition({ row, col })
+      setEatenTiles(prev => [...prev, row * cols + col])
+      await sleep(35)
+    }
+  }
+
+  // Auto-reveal logic
   useEffect(() => {
     if (!isPlaying) return
     if (revealedTiles.length >= totalTiles) return
 
     const interval = setInterval(async () => {
-      // Generate next tile to reveal
       const allTiles = Array.from({ length: totalTiles }, (_, i) => i)
       const hiddenTiles = allTiles.filter(t => !revealedTiles.includes(t))
-
       if (hiddenTiles.length === 0) return
-
       const randomIndex = Math.floor(Math.random() * hiddenTiles.length)
       const tileToReveal = hiddenTiles[randomIndex]
       const newRevealedTiles = [...revealedTiles, tileToReveal]
-
-      // Update database (admin will see this too)
       await supabase
         .from('sessions')
         .update({ mystery_revealed_tiles: newRevealedTiles })
         .eq('id', session.id)
-
       setRevealedTiles(newRevealedTiles)
     }, speed)
 
@@ -202,7 +271,307 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         )}
       </AnimatePresence>
 
-      {/* Header - discret */}
+      {/* WINNER ANIMATION OVERLAY */}
+      <AnimatePresence>
+        {showWinnerAnimation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] overflow-hidden"
+          >
+            {/* Black background */}
+            <div className="absolute inset-0 bg-black" />
+
+            {/* Phase 1 & 2: Grid with tiles + Pac-Man */}
+            {(animationPhase === 1 || animationPhase === 2) && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="relative grid gap-[2px]"
+                  style={{
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gridTemplateRows: `repeat(${rows}, 1fr)`,
+                    width: '85vw',
+                    maxWidth: '1200px',
+                    aspectRatio: `${cols}/${rows}`,
+                  }}
+                >
+                  {Array.from({ length: totalTiles }, (_, index) => {
+                    const isEaten = eatenTiles.includes(index)
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ scale: 1, opacity: 1 }}
+                        animate={{
+                          scale: isEaten ? 0 : 1,
+                          opacity: isEaten ? 0 : 1,
+                        }}
+                        transition={{ duration: 0.1 }}
+                        className="bg-[#D4AF37] rounded-sm"
+                        style={{
+                          boxShadow: isEaten ? 'none' : '0 0 10px rgba(212, 175, 55, 0.5)',
+                        }}
+                      />
+                    )
+                  })}
+
+                  {/* PAC-MAN */}
+                  {animationPhase === 2 && (
+                    <motion.div
+                      className="absolute"
+                      style={{
+                        width: `${100 / cols}%`,
+                        height: `${100 / rows}%`,
+                        left: `${(pacmanPosition.col / cols) * 100}%`,
+                        top: `${(pacmanPosition.row / rows) * 100}%`,
+                        transform: `rotate(${
+                          pacmanDirection === 'right' ? 0 :
+                          pacmanDirection === 'down' ? 90 :
+                          pacmanDirection === 'left' ? 180 :
+                          270
+                        }deg)`,
+                      }}
+                      transition={{ duration: 0.03 }}
+                    >
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <defs>
+                          <radialGradient id="pacmanGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#FFFF00" />
+                            <stop offset="100%" stopColor="#FFD700" />
+                          </radialGradient>
+                        </defs>
+                        {/* Body */}
+                        <circle cx="50" cy="50" r="45" fill="url(#pacmanGlow)" />
+                        {/* Animated mouth */}
+                        <motion.path
+                          d="M50,50 L95,25 A45,45 0 0,1 95,75 Z"
+                          fill="#000"
+                          animate={{
+                            d: [
+                              "M50,50 L95,15 A45,45 0 0,1 95,85 Z",
+                              "M50,50 L95,45 A45,45 0 0,1 95,55 Z",
+                              "M50,50 L95,15 A45,45 0 0,1 95,85 Z",
+                            ]
+                          }}
+                          transition={{ duration: 0.15, repeat: Infinity }}
+                        />
+                        {/* Eye */}
+                        <circle cx="55" cy="25" r="8" fill="#000" />
+                      </svg>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Phase 3: VICTORY EXPLOSION */}
+            {animationPhase === 3 && (
+              <>
+                {/* Animated gradient background */}
+                <motion.div
+                  className="absolute inset-0"
+                  animate={{
+                    background: [
+                      'linear-gradient(45deg, #1a0a2e, #0a1a3e, #2e0a1a)',
+                      'linear-gradient(90deg, #0a1a3e, #2e0a1a, #1a0a2e)',
+                      'linear-gradient(135deg, #2e0a1a, #1a0a2e, #0a1a3e)',
+                      'linear-gradient(180deg, #1a0a2e, #0a1a3e, #2e0a1a)',
+                    ]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+
+                {/* Neon borders */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <motion.div
+                    className="absolute top-0 left-0 right-0 h-2 bg-[#D4AF37]"
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
+                  />
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-2 bg-[#D4AF37]"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
+                  />
+                  <motion.div
+                    className="absolute top-0 bottom-0 left-0 w-2 bg-[#D4AF37]"
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.25 }}
+                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
+                  />
+                  <motion.div
+                    className="absolute top-0 bottom-0 right-0 w-2 bg-[#D4AF37]"
+                    animate={{ opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.25 }}
+                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
+                  />
+                </div>
+
+                {/* Fireworks */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {[...Array(20)].map((_, i) => (
+                    <motion.div
+                      key={`firework-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${10 + (i * 4) % 80}%`,
+                        top: `${10 + (i * 7) % 60}%`,
+                      }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1, 1.5, 0],
+                        opacity: [0, 1, 1, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.3,
+                        repeatDelay: 1,
+                      }}
+                    >
+                      {[...Array(12)].map((_, j) => (
+                        <motion.div
+                          key={j}
+                          className="absolute w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: ['#D4AF37', '#FF0000', '#00FF00', '#0000FF', '#FF00FF', '#FFFF00', '#00FFFF', '#FF6600', '#9900FF', '#FF0099', '#00FF99', '#99FF00'][j],
+                            transformOrigin: 'center',
+                          }}
+                          animate={{
+                            x: [0, Math.cos(j * 30 * Math.PI / 180) * 80],
+                            y: [0, Math.sin(j * 30 * Math.PI / 180) * 80],
+                            scale: [1, 0],
+                            opacity: [1, 0],
+                          }}
+                          transition={{
+                            duration: 1,
+                            delay: 0.2,
+                            repeat: Infinity,
+                            repeatDelay: 1.8,
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Confetti */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {[...Array(100)].map((_, i) => (
+                    <motion.div
+                      key={`confetti-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        width: `${8 + Math.random() * 12}px`,
+                        height: `${8 + Math.random() * 12}px`,
+                        backgroundColor: ['#D4AF37', '#F4D03F', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'][i % 9],
+                        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                      }}
+                      initial={{ top: '-5%', rotate: 0 }}
+                      animate={{
+                        top: '105%',
+                        rotate: 720,
+                        x: [0, (Math.random() - 0.5) * 100, 0],
+                      }}
+                      transition={{
+                        duration: 3 + Math.random() * 2,
+                        repeat: Infinity,
+                        delay: Math.random() * 3,
+                        ease: 'linear',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Stars */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(30)].map((_, i) => (
+                    <motion.div
+                      key={`star-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                      }}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.5, 1, 0.5],
+                        rotate: [0, 180, 360],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        delay: Math.random() * 2,
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                      </svg>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Spinning light rays */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none overflow-hidden opacity-20"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    background: 'conic-gradient(from 0deg, transparent, #D4AF37 10deg, transparent 20deg, transparent 30deg, #D4AF37 40deg, transparent 50deg, transparent 60deg, #D4AF37 70deg, transparent 80deg)',
+                  }}
+                />
+
+                {/* Main winner text */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    {/* Trophy */}
+                    <motion.div
+                      className="text-[120px] md:text-[180px] mb-4"
+                      animate={{ y: [0, -20, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      🏆
+                    </motion.div>
+
+                    {/* WINNER text */}
+                    <motion.h1
+                      className="text-7xl md:text-9xl font-black"
+                      animate={{
+                        backgroundPosition: ['0% 50%', '200% 50%'],
+                      }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      style={{
+                        backgroundImage: 'linear-gradient(90deg, #D4AF37, #F4D03F, #FFFFFF, #F4D03F, #D4AF37)',
+                        backgroundSize: '200% auto',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        filter: 'drop-shadow(0 0 30px #D4AF37) drop-shadow(0 0 60px #D4AF37)',
+                      }}
+                    >
+                      WINNER
+                    </motion.h1>
+
+                    {/* Congratulations */}
+                    <motion.p
+                      className="text-3xl md:text-5xl text-white mt-6"
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      style={{ textShadow: '0 0 20px rgba(255,255,255,0.8)' }}
+                    >
+                      🎉 FÉLICITATIONS ! 🎉
+                    </motion.p>
+                  </div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-[#242428]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
@@ -228,17 +597,14 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         </div>
       </div>
 
-      {/* Game area - fullscreen */}
+      {/* Game area */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="relative w-full h-full max-w-6xl max-h-[85vh] aspect-video">
-          {/* Photo underneath */}
           <img
             src={currentPhotoUrl}
             alt="Photo Mystère"
             className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-2xl"
           />
-
-          {/* Tile grid overlay */}
           <div
             className="absolute inset-0 grid rounded-2xl overflow-hidden"
             style={{
@@ -253,27 +619,15 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
                   initial={false}
                   animate={
                     tile.revealed
-                      ? {
-                          opacity: 0,
-                          scale: 0.8,
-                          rotate: Math.random() * 10 - 5,
-                        }
-                      : {
-                          opacity: 1,
-                          scale: 1,
-                          rotate: 0,
-                        }
+                      ? { opacity: 0, scale: 0.8, rotate: Math.random() * 10 - 5 }
+                      : { opacity: 1, scale: 1, rotate: 0 }
                   }
-                  transition={{
-                    duration: 0.5,
-                    ease: [0.4, 0, 0.2, 1],
-                  }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                   className={`
                     relative overflow-hidden
                     ${tile.revealed ? 'pointer-events-none' : 'bg-gradient-to-br from-[#D4AF37] to-[#B8960C] border-[0.5px] border-[#B8960C]/30'}
                   `}
                 >
-                  {/* Shine effect */}
                   {!tile.revealed && (
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
                   )}
@@ -284,7 +638,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         </div>
       </div>
 
-      {/* Progress bar at bottom */}
+      {/* Progress bar */}
       <div className="h-2 bg-[#242428]">
         <motion.div
           className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]"

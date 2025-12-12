@@ -354,6 +354,28 @@ export default function MysteryPage() {
     setIsPlaying(false)
   }
 
+  // Trigger winner animation on slideshow
+  async function triggerWinnerAnimation() {
+    if (!session) return
+
+    // Broadcast winner event to slideshow
+    const channel = supabase.channel(`mystery-winner-${session.code}`)
+    await channel.subscribe()
+
+    await channel.send({
+      type: 'broadcast',
+      event: 'mystery_winner',
+      payload: { startAnimation: true }
+    })
+
+    toast.success('Animation de victoire lancée !')
+
+    // Cleanup channel after a short delay
+    setTimeout(() => {
+      supabase.removeChannel(channel)
+    }, 1000)
+  }
+
   async function exitGame() {
     if (!session) return
 
@@ -538,14 +560,23 @@ export default function MysteryPage() {
                 </button>
               </div>
 
-              {/* Quit button */}
-              <button
-                onClick={exitGame}
-                className="w-full py-2.5 bg-red-500/80 hover:bg-red-500 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
-              >
-                <StopCircle className="h-4 w-4" />
-                Quitter le jeu
-              </button>
+              {/* Winner & Quit buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={triggerWinnerAnimation}
+                  className="py-3 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black rounded-lg font-bold flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  🏆 GAGNANT !
+                </button>
+
+                <button
+                  onClick={exitGame}
+                  className="py-3 bg-red-500/80 hover:bg-red-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all"
+                >
+                  <StopCircle className="h-4 w-4" />
+                  Quitter
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (
