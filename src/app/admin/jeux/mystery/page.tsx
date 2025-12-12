@@ -379,7 +379,14 @@ export default function MysteryPage() {
   async function exitGame() {
     if (!session) return
 
-    // Reset ALL game data when exiting
+    // Delete photos from storage
+    const photosToDelete = photos.filter(p => p !== null).map(p => p!.url)
+    if (photosToDelete.length > 0) {
+      await supabase.storage.from('photos').remove(photosToDelete)
+      console.log('[Mystery] Photos supprimées:', photosToDelete)
+    }
+
+    // Reset ALL game data when exiting (including photos)
     await supabase
       .from('sessions')
       .update({
@@ -390,14 +397,18 @@ export default function MysteryPage() {
         mystery_total_rounds: 1,
         mystery_revealed_tiles: [],
         mystery_photo_state: null,
+        mystery_photos: null,
       })
       .eq('id', session.id)
 
+    // Reset local state
     setGameActive(false)
     setIsPlaying(false)
     setCurrentRound(1)
     setRevealedTiles([])
-    toast.success('Jeu arrêté - Données réinitialisées')
+    setPhotos([null, null, null, null, null])
+
+    toast.success('Jeu arrêté - Photos supprimées')
 
     // Retour à la liste des jeux
     router.push('/admin/jeux')
