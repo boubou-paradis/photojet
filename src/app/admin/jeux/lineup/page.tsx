@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -9,7 +9,6 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Trophy,
   Users,
   Monitor,
   SkipForward,
@@ -44,9 +43,48 @@ export default function LineupPage() {
 
   const router = useRouter()
   const supabase = createClient()
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   useEffect(() => {
     fetchSession()
+  }, [])
+
+  // Setup broadcast channel
+  useEffect(() => {
+    if (!session) return
+
+    const channel = supabase.channel(`lineup-game-${session.code}`)
+    broadcastChannelRef.current = channel
+    channel.subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [session?.code, supabase])
+
+  // Broadcast game state to slideshow
+  const broadcastGameState = useCallback((state: {
+    gameActive: boolean
+    currentNumber: string
+    timeLeft: number
+    isRunning: boolean
+    isPaused: boolean
+    isGameOver: boolean
+    currentPoints: number
+    team1Score: number
+    team2Score: number
+    team1Name: string
+    team2Name: string
+    showWinner: boolean
+    clockDuration: number
+  }) => {
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'lineup_state',
+        payload: state,
+      })
+    }
   }, [])
 
   async function fetchSession() {
@@ -61,7 +99,7 @@ export default function LineupPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Initialize state from session - use defaults if game not active
       if (data.lineup_active) {
         setGameActive(true)
         setClockDuration(data.lineup_clock_duration ?? 60)
@@ -76,6 +114,21 @@ export default function LineupPage() {
         setIsGameOver(data.lineup_is_game_over ?? false)
         setCurrentPoints(data.lineup_current_points ?? 10)
         setShowWinner(data.lineup_show_winner ?? false)
+      } else {
+        // Game not active - use defaults
+        setGameActive(false)
+        setClockDuration(60)
+        setTeam1Name('Équipe 1')
+        setTeam2Name('Équipe 2')
+        setTeam1Score(0)
+        setTeam2Score(0)
+        setCurrentNumber('')
+        setTimeLeft(60)
+        setIsRunning(false)
+        setIsPaused(false)
+        setIsGameOver(false)
+        setCurrentPoints(10)
+        setShowWinner(false)
       }
     } catch (err) {
       console.error('Error fetching session:', err)
@@ -84,41 +137,6 @@ export default function LineupPage() {
       setLoading(false)
     }
   }
-
-  // Subscribe to session changes for real-time state updates
-  useEffect(() => {
-    if (!session) return
-
-    const channel = supabase
-      .channel(`lineup-admin-${session.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sessions',
-          filter: `id=eq.${session.id}`,
-        },
-        (payload) => {
-          const updated = payload.new as Session
-          setGameActive(updated.lineup_active ?? false)
-          setTeam1Score(updated.lineup_team1_score ?? 0)
-          setTeam2Score(updated.lineup_team2_score ?? 0)
-          setCurrentNumber(updated.lineup_current_number ?? '')
-          setTimeLeft(updated.lineup_time_left ?? 60)
-          setIsRunning(updated.lineup_is_running ?? false)
-          setIsPaused(updated.lineup_is_paused ?? false)
-          setIsGameOver(updated.lineup_is_game_over ?? false)
-          setCurrentPoints(updated.lineup_current_points ?? 10)
-          setShowWinner(updated.lineup_show_winner ?? false)
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [session?.id, supabase])
 
   // Generate random number with variable length (2-5 digits)
   const generateNumber = useCallback(() => {
@@ -134,55 +152,76 @@ export default function LineupPage() {
 
   // CHRONO GLOBAL - Timer effect
   useEffect(() => {
-    if (!isRunning || isPaused || isGameOver || timeLeft <= 0 || !session) return
+    if (!isRunning || isPaused || isGameOver || !session) return
 
     const timer = setInterval(async () => {
-      const newTime = timeLeft - 1
+      setTimeLeft(prevTime => {
+        if (prevTime <= 0) return 0
 
-      // Calculate points based on time remaining
-      const thirdOfTime = clockDuration / 3
-      let newPoints = 10
-      if (newTime > thirdOfTime * 2) {
-        newPoints = 10 // First third - fewest points
-      } else if (newTime > thirdOfTime) {
-        newPoints = 20 // Second third
-      } else {
-        newPoints = 30 // Last third - most points (urgency!)
-      }
+        const newTime = prevTime - 1
 
-      setTimeLeft(newTime)
-      setCurrentPoints(newPoints)
+        // Calculate points based on time remaining
+        const thirdOfTime = clockDuration / 3
+        let newPoints = 10
+        if (newTime > thirdOfTime * 2) {
+          newPoints = 10
+        } else if (newTime > thirdOfTime) {
+          newPoints = 20
+        } else {
+          newPoints = 30
+        }
 
-      // Fin du jeu !
-      if (newTime <= 0) {
-        setIsRunning(false)
-        setIsGameOver(true)
-        setShowWinner(true)
+        setCurrentPoints(newPoints)
 
-        await supabase
-          .from('sessions')
-          .update({
-            lineup_time_left: 0,
-            lineup_is_running: false,
-            lineup_is_game_over: true,
-            lineup_show_winner: true,
-            lineup_current_points: newPoints,
-          })
-          .eq('id', session.id)
-      } else {
-        // Update database
-        await supabase
-          .from('sessions')
-          .update({
-            lineup_time_left: newTime,
-            lineup_current_points: newPoints,
-          })
-          .eq('id', session.id)
-      }
+        // Broadcast state update
+        broadcastGameState({
+          gameActive: true,
+          currentNumber,
+          timeLeft: newTime,
+          isRunning: true,
+          isPaused: false,
+          isGameOver: newTime <= 0,
+          currentPoints: newPoints,
+          team1Score,
+          team2Score,
+          team1Name,
+          team2Name,
+          showWinner: newTime <= 0,
+          clockDuration,
+        })
+
+        // Fin du jeu !
+        if (newTime <= 0) {
+          setIsRunning(false)
+          setIsGameOver(true)
+          setShowWinner(true)
+
+          supabase
+            .from('sessions')
+            .update({
+              lineup_time_left: 0,
+              lineup_is_running: false,
+              lineup_is_game_over: true,
+              lineup_show_winner: true,
+              lineup_current_points: newPoints,
+            })
+            .eq('id', session.id)
+        } else {
+          supabase
+            .from('sessions')
+            .update({
+              lineup_time_left: newTime,
+              lineup_current_points: newPoints,
+            })
+            .eq('id', session.id)
+        }
+
+        return newTime
+      })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isRunning, isPaused, isGameOver, timeLeft, clockDuration, session, supabase])
+  }, [isRunning, isPaused, isGameOver, clockDuration, session, supabase, currentNumber, team1Score, team2Score, team1Name, team2Name, broadcastGameState])
 
   // Lancer le jeu (configurer et ouvrir le diaporama)
   async function launchGame() {
@@ -221,6 +260,24 @@ export default function LineupPage() {
       setIsGameOver(false)
       setCurrentPoints(10)
       setShowWinner(false)
+
+      // Broadcast initial state
+      broadcastGameState({
+        gameActive: true,
+        currentNumber: '',
+        timeLeft: clockDuration,
+        isRunning: false,
+        isPaused: false,
+        isGameOver: false,
+        currentPoints: 10,
+        team1Score: 0,
+        team2Score: 0,
+        team1Name,
+        team2Name,
+        showWinner: false,
+        clockDuration,
+      })
+
       toast.success('Jeu configuré!')
 
       // Open slideshow in new tab
@@ -233,7 +290,7 @@ export default function LineupPage() {
     }
   }
 
-  // DÉMARRER LA PARTIE - Lance le chrono et génère le premier numéro
+  // DÉMARRER LA PARTIE
   async function startGame() {
     if (!session) return
 
@@ -264,6 +321,23 @@ export default function LineupPage() {
       })
       .eq('id', session.id)
 
+    // Broadcast
+    broadcastGameState({
+      gameActive: true,
+      currentNumber: newNumber,
+      timeLeft: clockDuration,
+      isRunning: true,
+      isPaused: false,
+      isGameOver: false,
+      currentPoints: 10,
+      team1Score: 0,
+      team2Score: 0,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
+
     toast.success('Partie lancée!')
   }
 
@@ -279,8 +353,27 @@ export default function LineupPage() {
       .update({
         lineup_is_running: false,
         lineup_is_paused: true,
+        lineup_time_left: timeLeft,
+        lineup_current_points: currentPoints,
       })
       .eq('id', session.id)
+
+    // Broadcast
+    broadcastGameState({
+      gameActive: true,
+      currentNumber,
+      timeLeft,
+      isRunning: false,
+      isPaused: true,
+      isGameOver: false,
+      currentPoints,
+      team1Score,
+      team2Score,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
   }
 
   // REPRENDRE
@@ -297,6 +390,23 @@ export default function LineupPage() {
         lineup_is_paused: false,
       })
       .eq('id', session.id)
+
+    // Broadcast
+    broadcastGameState({
+      gameActive: true,
+      currentNumber,
+      timeLeft,
+      isRunning: true,
+      isPaused: false,
+      isGameOver: false,
+      currentPoints,
+      team1Score,
+      team2Score,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
   }
 
   // Attribuer les points à une équipe
@@ -312,7 +422,6 @@ export default function LineupPage() {
       setTeam2Score(newTeam2Score)
     }
 
-    // Effacer le numéro pour préparer le suivant
     setCurrentNumber('')
 
     await supabase
@@ -323,6 +432,23 @@ export default function LineupPage() {
         lineup_current_number: '',
       })
       .eq('id', session.id)
+
+    // Broadcast empty number
+    broadcastGameState({
+      gameActive: true,
+      currentNumber: '',
+      timeLeft,
+      isRunning,
+      isPaused,
+      isGameOver: false,
+      currentPoints,
+      team1Score: newTeam1Score,
+      team2Score: newTeam2Score,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
 
     toast.success(`${team === 1 ? team1Name : team2Name} +${currentPoints} points!`)
 
@@ -335,6 +461,23 @@ export default function LineupPage() {
           .from('sessions')
           .update({ lineup_current_number: newNumber })
           .eq('id', session.id)
+
+        // Broadcast new number
+        broadcastGameState({
+          gameActive: true,
+          currentNumber: newNumber,
+          timeLeft,
+          isRunning,
+          isPaused,
+          isGameOver: false,
+          currentPoints,
+          team1Score: newTeam1Score,
+          team2Score: newTeam2Score,
+          team1Name,
+          team2Name,
+          showWinner: false,
+          clockDuration,
+        })
       }, 1500)
     }
   }
@@ -350,6 +493,23 @@ export default function LineupPage() {
       .from('sessions')
       .update({ lineup_current_number: newNumber })
       .eq('id', session.id)
+
+    // Broadcast
+    broadcastGameState({
+      gameActive: true,
+      currentNumber: newNumber,
+      timeLeft,
+      isRunning,
+      isPaused,
+      isGameOver: false,
+      currentPoints,
+      team1Score,
+      team2Score,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
   }
 
   // Masquer l'écran de victoire
@@ -362,13 +522,45 @@ export default function LineupPage() {
       .from('sessions')
       .update({ lineup_show_winner: false })
       .eq('id', session.id)
+
+    // Broadcast
+    broadcastGameState({
+      gameActive: true,
+      currentNumber,
+      timeLeft,
+      isRunning,
+      isPaused,
+      isGameOver: true,
+      currentPoints,
+      team1Score,
+      team2Score,
+      team1Name,
+      team2Name,
+      showWinner: false,
+      clockDuration,
+    })
   }
 
-  // Quitter le jeu
+  // QUITTER LE JEU - Reset complet et retour à /admin/jeux
   async function exitGame() {
     if (!session) return
 
-    // Reset ALL game data when exiting
+    // Reset local state
+    setGameActive(false)
+    setIsRunning(false)
+    setIsPaused(false)
+    setIsGameOver(false)
+    setCurrentNumber('')
+    setShowWinner(false)
+    setTeam1Score(0)
+    setTeam2Score(0)
+    setTimeLeft(60)
+    setCurrentPoints(10)
+    setTeam1Name('Équipe 1')
+    setTeam2Name('Équipe 2')
+    setClockDuration(60)
+
+    // Reset ALL game data in database
     await supabase
       .from('sessions')
       .update({
@@ -380,22 +572,35 @@ export default function LineupPage() {
         lineup_show_winner: false,
         lineup_team1_score: 0,
         lineup_team2_score: 0,
-        lineup_time_left: clockDuration,
+        lineup_time_left: 60,
         lineup_current_points: 10,
+        lineup_team1_name: 'Équipe 1',
+        lineup_team2_name: 'Équipe 2',
+        lineup_clock_duration: 60,
       })
       .eq('id', session.id)
 
-    setGameActive(false)
-    setIsRunning(false)
-    setIsPaused(false)
-    setIsGameOver(false)
-    setCurrentNumber('')
-    setShowWinner(false)
-    setTeam1Score(0)
-    setTeam2Score(0)
-    setTimeLeft(clockDuration)
-    setCurrentPoints(10)
+    // Broadcast reset to slideshow
+    broadcastGameState({
+      gameActive: false,
+      currentNumber: '',
+      timeLeft: 60,
+      isRunning: false,
+      isPaused: false,
+      isGameOver: false,
+      currentPoints: 10,
+      team1Score: 0,
+      team2Score: 0,
+      team1Name: 'Équipe 1',
+      team2Name: 'Équipe 2',
+      showWinner: false,
+      clockDuration: 60,
+    })
+
     toast.success('Jeu arrêté - Données réinitialisées')
+
+    // Retour à la liste des jeux
+    router.push('/admin/jeux')
   }
 
   // Keyboard shortcuts
@@ -742,7 +947,7 @@ export default function LineupPage() {
               )}
             </div>
 
-            {/* Quitter */}
+            {/* Quitter - TOUJOURS visible */}
             <button
               onClick={exitGame}
               className="w-full mt-3 py-2 bg-red-500/30 hover:bg-red-500 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"

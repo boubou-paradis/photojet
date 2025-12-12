@@ -317,6 +317,23 @@ export default function LivePage() {
   const messageIndex = useRef(0)
   const supabase = createClient()
 
+  // Lineup game state (updated via broadcast from admin)
+  const [lineupState, setLineupState] = useState<{
+    gameActive: boolean
+    currentNumber: string
+    timeLeft: number
+    isRunning: boolean
+    isPaused: boolean
+    isGameOver: boolean
+    currentPoints: number
+    team1Score: number
+    team2Score: number
+    team1Name: string
+    team2Name: string
+    showWinner: boolean
+    clockDuration: number
+  } | null>(null)
+
   // Build slideshow items list - interleaving messages with photos
   const slideshowItems = useMemo((): SlideshowItem[] => {
     const messagesEnabled = session?.messages_enabled ?? true
@@ -597,6 +614,25 @@ export default function LivePage() {
     }
   }, [session?.id, fetchPhotos, fetchMessages, supabase])
 
+  // Subscribe to Lineup game broadcast channel for real-time sync
+  useEffect(() => {
+    if (!session?.code) return
+
+    const lineupChannel = supabase
+      .channel(`lineup-game-${session.code}`)
+      .on('broadcast', { event: 'lineup_state' }, (payload) => {
+        console.log('[Live] Received lineup broadcast:', payload)
+        if (payload.payload) {
+          setLineupState(payload.payload)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(lineupChannel)
+    }
+  }, [session?.code, supabase])
+
   // Log current item for debugging
   useEffect(() => {
     const item = slideshowItems[currentIndex]
@@ -775,21 +811,23 @@ export default function LivePage() {
   }
 
   // Show Lineup Game (Le Bon Ordre) if active
-  if (session.lineup_active) {
+  // Use broadcast state when available for real-time sync, fallback to session data
+  const isLineupActive = lineupState?.gameActive ?? session.lineup_active
+  if (isLineupActive) {
     return (
       <LineupGame
-        currentNumber={session.lineup_current_number || ''}
-        timeLeft={session.lineup_time_left || 30}
-        clockDuration={session.lineup_clock_duration || 30}
-        isRunning={session.lineup_is_running || false}
-        isPaused={session.lineup_is_paused || false}
-        isGameOver={session.lineup_is_game_over || false}
-        currentPoints={session.lineup_current_points || 10}
-        team1Name={session.lineup_team1_name || 'Équipe 1'}
-        team2Name={session.lineup_team2_name || 'Équipe 2'}
-        team1Score={session.lineup_team1_score || 0}
-        team2Score={session.lineup_team2_score || 0}
-        showWinner={session.lineup_show_winner || false}
+        currentNumber={lineupState?.currentNumber ?? session.lineup_current_number ?? ''}
+        timeLeft={lineupState?.timeLeft ?? session.lineup_time_left ?? 30}
+        clockDuration={lineupState?.clockDuration ?? session.lineup_clock_duration ?? 30}
+        isRunning={lineupState?.isRunning ?? session.lineup_is_running ?? false}
+        isPaused={lineupState?.isPaused ?? session.lineup_is_paused ?? false}
+        isGameOver={lineupState?.isGameOver ?? session.lineup_is_game_over ?? false}
+        currentPoints={lineupState?.currentPoints ?? session.lineup_current_points ?? 10}
+        team1Name={lineupState?.team1Name ?? session.lineup_team1_name ?? 'Équipe 1'}
+        team2Name={lineupState?.team2Name ?? session.lineup_team2_name ?? 'Équipe 2'}
+        team1Score={lineupState?.team1Score ?? session.lineup_team1_score ?? 0}
+        team2Score={lineupState?.team2Score ?? session.lineup_team2_score ?? 0}
+        showWinner={lineupState?.showWinner ?? session.lineup_show_winner ?? false}
       />
     )
   }

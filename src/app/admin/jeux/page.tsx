@@ -70,6 +70,38 @@ export default function JeuxPage() {
   const [cols, rows] = mysteryPhotoGrid.split('x').map(Number)
   const totalTiles = cols * rows
 
+  // Reset all games on page load
+  async function resetAllGames(sessionId: string) {
+    try {
+      await supabase
+        .from('sessions')
+        .update({
+          // Reset Photo Mystère
+          mystery_photo_active: false,
+          mystery_is_playing: false,
+          mystery_current_round: 1,
+          mystery_revealed_tiles: [],
+          mystery_photo_state: null,
+          // Reset Lineup
+          lineup_active: false,
+          lineup_is_running: false,
+          lineup_is_paused: false,
+          lineup_is_game_over: false,
+          lineup_current_number: '',
+          lineup_show_winner: false,
+          lineup_team1_score: 0,
+          lineup_team2_score: 0,
+          lineup_time_left: 60,
+          lineup_current_points: 10,
+        })
+        .eq('id', sessionId)
+
+      console.log('[Jeux] All games reset on page load')
+    } catch (err) {
+      console.error('Error resetting games:', err)
+    }
+  }
+
   useEffect(() => {
     fetchSession()
   }, [])
@@ -86,15 +118,19 @@ export default function JeuxPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Reset all games on page load (ensures clean state)
+      await resetAllGames(data.id)
+
+      // Initialize state from session (with reset defaults since we just reset)
       setMysteryPhotoEnabled(data.mystery_photo_enabled ?? false)
       setMysteryPhotoGrid(data.mystery_photo_grid ?? '12x8')
       setMysteryPhotoSpeed(data.mystery_photo_speed ?? 'medium')
-      setGameActive(data.mystery_photo_active ?? false)
-      setIsPlaying(data.mystery_is_playing ?? false)
-      setCurrentRound(data.mystery_current_round ?? 1)
+      // Force reset values for game state (we just reset in DB)
+      setGameActive(false)
+      setIsPlaying(false)
+      setCurrentRound(1)
       setTotalRounds(data.mystery_total_rounds ?? 1)
-      setRevealedTiles(data.mystery_revealed_tiles ?? [])
+      setRevealedTiles([])
 
       // Load photos
       if (data.mystery_photos) {
