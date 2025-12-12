@@ -488,38 +488,34 @@ export default function JeuxPage() {
               </div>
             </div>
 
-            {/* Game Active - Remote Control Panel */}
+            {/* Game Active - Remote Control Panel (Compact) */}
             {gameActive && (
-              <div className="p-6 bg-gradient-to-br from-[#D4AF37]/10 to-transparent border-b border-[#D4AF37]/20">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-                  <h3 className="text-white font-bold text-lg">
-                    Jeu en cours - Manche {currentRound}/{totalRounds}
-                  </h3>
+              <div className="p-4 bg-gradient-to-br from-[#D4AF37]/10 to-transparent border-b border-[#D4AF37]/20">
+                {/* Header compact */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-white font-bold">
+                      Jeu en cours - Manche {currentRound}/{totalRounds}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1 rounded-lg">
+                    <span className="text-[#D4AF37] text-lg font-bold">{revealedTiles.length}/{totalTiles}</span>
+                    <span className="text-white/60 text-xs">cases</span>
+                  </div>
                 </div>
 
-                {/* Preview miniature */}
-                <div className="bg-[#1A1A1E] rounded-lg p-3 mb-4 aspect-video relative overflow-hidden">
+                {/* Preview miniature - compact */}
+                <div className="bg-[#1A1A1E] rounded-lg overflow-hidden relative mb-3 h-[180px]">
                   {photos[currentRound - 1]?.preview && (
                     <img
                       src={photos[currentRound - 1]!.preview}
                       alt="Current photo"
-                      className="w-full h-full object-cover rounded opacity-30"
+                      className="w-full h-full object-cover opacity-40"
                     />
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <span className="text-[#D4AF37] text-3xl font-bold">
-                        {revealedTiles.length}/{totalTiles}
-                      </span>
-                      <p className="text-white/60 text-sm">cases révélées</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mb-4">
-                  <div className="h-3 bg-[#1A1A1E] rounded-full overflow-hidden">
+                  {/* Progress overlay on image */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
                     <motion.div
                       className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]"
                       initial={{ width: '0%' }}
@@ -529,62 +525,54 @@ export default function JeuxPage() {
                   </div>
                 </div>
 
-                {/* Control buttons */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Control buttons - 4 columns compact */}
+                <div className="grid grid-cols-4 gap-2 mb-2">
                   <button
                     onClick={togglePlayPause}
-                    className={`py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                    className={`py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
                       isPlaying
                         ? 'bg-orange-500 hover:bg-orange-600 text-white'
                         : 'bg-emerald-500 hover:bg-emerald-600 text-white'
                     }`}
                   >
-                    {isPlaying ? (
-                      <>
-                        <Pause className="h-5 w-5" />
-                        PAUSE
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-5 w-5" />
-                        PLAY
-                      </>
-                    )}
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isPlaying ? 'PAUSE' : 'PLAY'}
                   </button>
 
                   <button
                     onClick={revealAll}
-                    className="py-3 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#1A1A1E] rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                    className="py-2.5 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#1A1A1E] rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <Eye className="h-5 w-5" />
-                    Révéler tout
+                    <Eye className="h-4 w-4" />
+                    Révéler
                   </button>
 
                   <button
                     onClick={nextRound}
                     disabled={currentRound >= totalRounds}
-                    className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <SkipForward className="h-5 w-5" />
-                    Manche suivante
+                    <SkipForward className="h-4 w-4" />
+                    Suivante
                   </button>
 
                   <button
                     onClick={resetCurrentRound}
-                    className="py-3 bg-[#3E3E43] hover:bg-[#4E4E53] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                    className="py-2.5 bg-[#3E3E43] hover:bg-[#4E4E53] text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <RotateCcw className="h-5 w-5" />
-                    Recommencer
-                  </button>
-
-                  <button
-                    onClick={exitGame}
-                    className="col-span-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
-                  >
-                    <StopCircle className="h-5 w-5" />
-                    Quitter le jeu
+                    <RotateCcw className="h-4 w-4" />
+                    Reset
                   </button>
                 </div>
+
+                {/* Quit button - smaller */}
+                <button
+                  onClick={exitGame}
+                  className="w-full py-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <StopCircle className="h-4 w-4" />
+                  Quitter le jeu
+                </button>
               </div>
             )}
 
