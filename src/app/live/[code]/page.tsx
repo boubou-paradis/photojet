@@ -798,7 +798,8 @@ export default function LivePage() {
   }
 
   // Show Mystery Photo Game if active
-  if (session.mystery_photo_active && session.mystery_photo_url) {
+  // Check for mystery_photos (new multi-photo system) OR mystery_photo_url (legacy)
+  if (session.mystery_photo_active && (session.mystery_photos || session.mystery_photo_url)) {
     return (
       <MysteryPhotoGame
         session={session}
