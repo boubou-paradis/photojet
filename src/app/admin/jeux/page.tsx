@@ -364,13 +364,17 @@ export default function JeuxPage() {
   async function exitGame() {
     if (!session) return
 
+    // Reset ALL game data when exiting
     await supabase
       .from('sessions')
       .update({
         mystery_photo_active: false,
+        mystery_photo_enabled: false,
         mystery_is_playing: false,
         mystery_current_round: 1,
+        mystery_total_rounds: 1,
         mystery_revealed_tiles: [],
+        mystery_photo_state: null,
       })
       .eq('id', session.id)
 
@@ -378,7 +382,7 @@ export default function JeuxPage() {
     setIsPlaying(false)
     setCurrentRound(1)
     setRevealedTiles([])
-    toast.success('Jeu arrêté')
+    toast.success('Jeu arrêté - Données réinitialisées')
   }
 
   const gridOptions = [

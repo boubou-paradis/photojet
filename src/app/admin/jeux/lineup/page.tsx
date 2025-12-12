@@ -7,11 +7,13 @@ import {
   ArrowLeft,
   Loader2,
   Play,
-  Square,
-  Monitor,
+  Pause,
   RotateCcw,
   Trophy,
   Users,
+  Monitor,
+  SkipForward,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -24,8 +26,7 @@ export default function LineupPage() {
   const [launching, setLaunching] = useState(false)
 
   // Configuration
-  const [teamSize, setTeamSize] = useState(5)
-  const [clockDuration, setClockDuration] = useState(30)
+  const [clockDuration, setClockDuration] = useState(60)
   const [team1Name, setTeam1Name] = useState('Équipe 1')
   const [team2Name, setTeam2Name] = useState('Équipe 2')
 
@@ -34,8 +35,10 @@ export default function LineupPage() {
   const [team1Score, setTeam1Score] = useState(0)
   const [team2Score, setTeam2Score] = useState(0)
   const [currentNumber, setCurrentNumber] = useState('')
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(60)
   const [isRunning, setIsRunning] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [isGameOver, setIsGameOver] = useState(false)
   const [currentPoints, setCurrentPoints] = useState(10)
   const [showWinner, setShowWinner] = useState(false)
 
@@ -61,15 +64,16 @@ export default function LineupPage() {
       // Initialize state from session
       if (data.lineup_active) {
         setGameActive(true)
-        setTeamSize(data.lineup_team_size ?? 5)
-        setClockDuration(data.lineup_clock_duration ?? 30)
+        setClockDuration(data.lineup_clock_duration ?? 60)
         setTeam1Name(data.lineup_team1_name ?? 'Équipe 1')
         setTeam2Name(data.lineup_team2_name ?? 'Équipe 2')
         setTeam1Score(data.lineup_team1_score ?? 0)
         setTeam2Score(data.lineup_team2_score ?? 0)
         setCurrentNumber(data.lineup_current_number ?? '')
-        setTimeLeft(data.lineup_time_left ?? 30)
+        setTimeLeft(data.lineup_time_left ?? 60)
         setIsRunning(data.lineup_is_running ?? false)
+        setIsPaused(data.lineup_is_paused ?? false)
+        setIsGameOver(data.lineup_is_game_over ?? false)
         setCurrentPoints(data.lineup_current_points ?? 10)
         setShowWinner(data.lineup_show_winner ?? false)
       }
@@ -101,8 +105,10 @@ export default function LineupPage() {
           setTeam1Score(updated.lineup_team1_score ?? 0)
           setTeam2Score(updated.lineup_team2_score ?? 0)
           setCurrentNumber(updated.lineup_current_number ?? '')
-          setTimeLeft(updated.lineup_time_left ?? 30)
+          setTimeLeft(updated.lineup_time_left ?? 60)
           setIsRunning(updated.lineup_is_running ?? false)
+          setIsPaused(updated.lineup_is_paused ?? false)
+          setIsGameOver(updated.lineup_is_game_over ?? false)
           setCurrentPoints(updated.lineup_current_points ?? 10)
           setShowWinner(updated.lineup_show_winner ?? false)
         }
@@ -114,20 +120,21 @@ export default function LineupPage() {
     }
   }, [session?.id, supabase])
 
-  // Generate random order
+  // Generate random number with variable length (2-5 digits)
   const generateNumber = useCallback(() => {
-    const digits = Array.from({ length: teamSize }, (_, i) => i + 1)
+    const length = Math.floor(Math.random() * 4) + 2 // 2, 3, 4, or 5
+    const digits = Array.from({ length }, (_, i) => i + 1)
     // Fisher-Yates shuffle
     for (let i = digits.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[digits[i], digits[j]] = [digits[j], digits[i]]
     }
     return digits.join('')
-  }, [teamSize])
+  }, [])
 
-  // Timer effect
+  // CHRONO GLOBAL - Timer effect
   useEffect(() => {
-    if (!isRunning || timeLeft <= 0 || !session) return
+    if (!isRunning || isPaused || isGameOver || timeLeft <= 0 || !session) return
 
     const timer = setInterval(async () => {
       const newTime = timeLeft - 1
@@ -146,24 +153,38 @@ export default function LineupPage() {
       setTimeLeft(newTime)
       setCurrentPoints(newPoints)
 
-      // Update database
-      await supabase
-        .from('sessions')
-        .update({
-          lineup_time_left: newTime,
-          lineup_current_points: newPoints,
-          lineup_is_running: newTime > 0,
-        })
-        .eq('id', session.id)
-
+      // Fin du jeu !
       if (newTime <= 0) {
         setIsRunning(false)
+        setIsGameOver(true)
+        setShowWinner(true)
+
+        await supabase
+          .from('sessions')
+          .update({
+            lineup_time_left: 0,
+            lineup_is_running: false,
+            lineup_is_game_over: true,
+            lineup_show_winner: true,
+            lineup_current_points: newPoints,
+          })
+          .eq('id', session.id)
+      } else {
+        // Update database
+        await supabase
+          .from('sessions')
+          .update({
+            lineup_time_left: newTime,
+            lineup_current_points: newPoints,
+          })
+          .eq('id', session.id)
       }
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isRunning, timeLeft, clockDuration, session, supabase])
+  }, [isRunning, isPaused, isGameOver, timeLeft, clockDuration, session, supabase])
 
+  // Lancer le jeu (configurer et ouvrir le diaporama)
   async function launchGame() {
     if (!session) return
 
@@ -173,7 +194,6 @@ export default function LineupPage() {
         .from('sessions')
         .update({
           lineup_active: true,
-          lineup_team_size: teamSize,
           lineup_clock_duration: clockDuration,
           lineup_team1_name: team1Name,
           lineup_team2_name: team2Name,
@@ -182,6 +202,8 @@ export default function LineupPage() {
           lineup_current_number: '',
           lineup_time_left: clockDuration,
           lineup_is_running: false,
+          lineup_is_paused: false,
+          lineup_is_game_over: false,
           lineup_current_points: 10,
           lineup_show_winner: false,
         })
@@ -195,9 +217,11 @@ export default function LineupPage() {
       setCurrentNumber('')
       setTimeLeft(clockDuration)
       setIsRunning(false)
+      setIsPaused(false)
+      setIsGameOver(false)
       setCurrentPoints(10)
       setShowWinner(false)
-      toast.success('Jeu lancé!')
+      toast.success('Jeu configuré!')
 
       // Open slideshow in new tab
       window.open(`/live/${session.code}`, '_blank')
@@ -209,41 +233,75 @@ export default function LineupPage() {
     }
   }
 
-  async function startRound() {
+  // DÉMARRER LA PARTIE - Lance le chrono et génère le premier numéro
+  async function startGame() {
     if (!session) return
 
     const newNumber = generateNumber()
+
+    setTeam1Score(0)
+    setTeam2Score(0)
     setCurrentNumber(newNumber)
     setTimeLeft(clockDuration)
     setIsRunning(true)
+    setIsPaused(false)
+    setIsGameOver(false)
     setCurrentPoints(10)
     setShowWinner(false)
 
     await supabase
       .from('sessions')
       .update({
+        lineup_team1_score: 0,
+        lineup_team2_score: 0,
         lineup_current_number: newNumber,
         lineup_time_left: clockDuration,
         lineup_is_running: true,
+        lineup_is_paused: false,
+        lineup_is_game_over: false,
         lineup_current_points: 10,
         lineup_show_winner: false,
       })
       .eq('id', session.id)
+
+    toast.success('Partie lancée!')
   }
 
-  async function stopRound() {
+  // PAUSE
+  async function pauseGame() {
     if (!session) return
 
     setIsRunning(false)
+    setIsPaused(true)
 
     await supabase
       .from('sessions')
-      .update({ lineup_is_running: false })
+      .update({
+        lineup_is_running: false,
+        lineup_is_paused: true,
+      })
       .eq('id', session.id)
   }
 
-  async function awardPoints(team: 1 | 2) {
+  // REPRENDRE
+  async function resumeGame() {
     if (!session) return
+
+    setIsRunning(true)
+    setIsPaused(false)
+
+    await supabase
+      .from('sessions')
+      .update({
+        lineup_is_running: true,
+        lineup_is_paused: false,
+      })
+      .eq('id', session.id)
+  }
+
+  // Attribuer les points à une équipe
+  async function awardPoints(team: 1 | 2) {
+    if (!session || isGameOver) return
 
     const newTeam1Score = team === 1 ? team1Score + currentPoints : team1Score
     const newTeam2Score = team === 2 ? team2Score + currentPoints : team2Score
@@ -254,9 +312,8 @@ export default function LineupPage() {
       setTeam2Score(newTeam2Score)
     }
 
+    // Effacer le numéro pour préparer le suivant
     setCurrentNumber('')
-    setTimeLeft(clockDuration)
-    setIsRunning(false)
 
     await supabase
       .from('sessions')
@@ -264,77 +321,38 @@ export default function LineupPage() {
         lineup_team1_score: newTeam1Score,
         lineup_team2_score: newTeam2Score,
         lineup_current_number: '',
-        lineup_time_left: clockDuration,
-        lineup_is_running: false,
       })
       .eq('id', session.id)
 
-    toast.success(`${team === 1 ? team1Name : team2Name} gagne ${currentPoints} points!`)
+    toast.success(`${team === 1 ? team1Name : team2Name} +${currentPoints} points!`)
+
+    // Générer automatiquement le prochain numéro après un délai
+    if (timeLeft > 0 && !isGameOver) {
+      setTimeout(async () => {
+        const newNumber = generateNumber()
+        setCurrentNumber(newNumber)
+        await supabase
+          .from('sessions')
+          .update({ lineup_current_number: newNumber })
+          .eq('id', session.id)
+      }, 1500)
+    }
   }
 
-  async function showInitialOrder() {
-    if (!session) return
+  // Passer au numéro suivant sans attribuer de points
+  async function skipNumber() {
+    if (!session || isGameOver) return
 
-    const initial = Array.from({ length: teamSize }, (_, i) => teamSize - i).join('')
-    setCurrentNumber(initial)
-    setIsRunning(false)
+    const newNumber = generateNumber()
+    setCurrentNumber(newNumber)
 
     await supabase
       .from('sessions')
-      .update({
-        lineup_current_number: initial,
-        lineup_is_running: false,
-      })
+      .update({ lineup_current_number: newNumber })
       .eq('id', session.id)
   }
 
-  async function clearNumber() {
-    if (!session) return
-
-    setCurrentNumber('')
-    setIsRunning(false)
-
-    await supabase
-      .from('sessions')
-      .update({
-        lineup_current_number: '',
-        lineup_is_running: false,
-      })
-      .eq('id', session.id)
-  }
-
-  async function resetScores() {
-    if (!session) return
-
-    setTeam1Score(0)
-    setTeam2Score(0)
-
-    await supabase
-      .from('sessions')
-      .update({
-        lineup_team1_score: 0,
-        lineup_team2_score: 0,
-      })
-      .eq('id', session.id)
-
-    toast.success('Scores remis à zéro')
-  }
-
-  async function showWinnerScreen() {
-    if (!session) return
-
-    setShowWinner(true)
-    setIsRunning(false)
-
-    await supabase
-      .from('sessions')
-      .update({
-        lineup_show_winner: true,
-        lineup_is_running: false,
-      })
-      .eq('id', session.id)
-  }
-
+  // Masquer l'écran de victoire
   async function hideWinnerScreen() {
     if (!session) return
 
@@ -346,24 +364,38 @@ export default function LineupPage() {
       .eq('id', session.id)
   }
 
+  // Quitter le jeu
   async function exitGame() {
     if (!session) return
 
+    // Reset ALL game data when exiting
     await supabase
       .from('sessions')
       .update({
         lineup_active: false,
         lineup_is_running: false,
+        lineup_is_paused: false,
+        lineup_is_game_over: false,
         lineup_current_number: '',
         lineup_show_winner: false,
+        lineup_team1_score: 0,
+        lineup_team2_score: 0,
+        lineup_time_left: clockDuration,
+        lineup_current_points: 10,
       })
       .eq('id', session.id)
 
     setGameActive(false)
     setIsRunning(false)
+    setIsPaused(false)
+    setIsGameOver(false)
     setCurrentNumber('')
     setShowWinner(false)
-    toast.success('Jeu arrêté')
+    setTeam1Score(0)
+    setTeam2Score(0)
+    setTimeLeft(clockDuration)
+    setCurrentPoints(10)
+    toast.success('Jeu arrêté - Données réinitialisées')
   }
 
   // Keyboard shortcuts
@@ -374,22 +406,24 @@ export default function LineupPage() {
       if (e.code === 'Space') {
         e.preventDefault()
         if (isRunning) {
-          stopRound()
-        } else {
-          startRound()
+          pauseGame()
+        } else if (isPaused) {
+          resumeGame()
+        } else if (!isGameOver) {
+          startGame()
         }
       }
-      if ((e.code === 'Digit1' || e.code === 'ArrowLeft') && !isRunning && currentNumber) {
+      if ((e.code === 'Digit1' || e.code === 'ArrowLeft') && currentNumber && !isGameOver) {
         awardPoints(1)
       }
-      if ((e.code === 'Digit2' || e.code === 'ArrowRight') && !isRunning && currentNumber) {
+      if ((e.code === 'Digit2' || e.code === 'ArrowRight') && currentNumber && !isGameOver) {
         awardPoints(2)
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [gameActive, isRunning, currentNumber])
+  }, [gameActive, isRunning, isPaused, isGameOver, currentNumber])
 
   if (loading) {
     return (
@@ -411,6 +445,12 @@ export default function LineupPage() {
       </div>
     )
   }
+
+  // État du jeu pour l'affichage
+  const gameNotStarted = !isRunning && !isPaused && !isGameOver && timeLeft === clockDuration
+  const gameInProgress = isRunning && !isGameOver
+  const gamePaused = isPaused && !isGameOver
+  const gameEnded = isGameOver
 
   return (
     <div className="min-h-screen bg-[#1A1A1E]">
@@ -467,38 +507,18 @@ export default function LineupPage() {
               </div>
             </div>
 
-            {/* Nombre de joueurs par équipe */}
+            {/* Durée de la partie */}
             <div>
-              <label className="text-white mb-2 block font-medium">Joueurs par équipe</label>
-              <div className="flex gap-2">
-                {[4, 5, 6].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setTeamSize(n)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all ${
-                      teamSize === n
-                        ? 'bg-[#D4AF37] text-black'
-                        : 'bg-[#2E2E33] text-white hover:bg-[#3E3E43]'
-                    }`}
-                  >
-                    {n} joueurs
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Durée du chronomètre */}
-            <div>
-              <label className="text-white mb-2 block font-medium">Durée du chronomètre</label>
-              <div className="flex gap-2">
-                {[15, 30, 45, 60].map(sec => (
+              <label className="text-white mb-2 block font-medium">Durée de la partie</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[30, 60, 90, 120].map(sec => (
                   <button
                     key={sec}
                     onClick={() => {
                       setClockDuration(sec)
                       setTimeLeft(sec)
                     }}
-                    className={`flex-1 py-3 rounded-xl font-bold transition-all ${
+                    className={`py-3 rounded-xl font-bold transition-all ${
                       clockDuration === sec
                         ? 'bg-[#D4AF37] text-black'
                         : 'bg-[#2E2E33] text-white hover:bg-[#3E3E43]'
@@ -508,6 +528,7 @@ export default function LineupPage() {
                   </button>
                 ))}
               </div>
+              <p className="text-gray-500 text-xs mt-2">Le chrono est global pour toute la partie</p>
             </div>
 
             {/* Noms des équipes */}
@@ -541,29 +562,33 @@ export default function LineupPage() {
               {launching ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <>🚀 Lancer le jeu</>
+                <>🚀 Configurer et ouvrir le diaporama</>
               )}
             </button>
           </motion.div>
         ) : (
-          /* Control Panel - Compact */
+          /* Control Panel */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
           >
-            {/* Header compact */}
+            {/* Header avec status */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-white font-bold text-sm">Jeu en cours</span>
+                <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${
+                  isRunning ? 'bg-green-500' : isPaused ? 'bg-orange-500' : isGameOver ? 'bg-red-500' : 'bg-gray-500'
+                }`}></span>
+                <span className="text-white font-bold text-sm">
+                  {isRunning ? 'En cours' : isPaused ? 'En pause' : isGameOver ? 'Terminé' : 'Prêt'}
+                </span>
               </div>
               <div className="text-xs text-gray-500">
-                Espace = Start/Stop
+                Espace = Start/Pause
               </div>
             </div>
 
-            {/* Scores côte à côte - compact */}
+            {/* Scores côte à côte */}
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="bg-[#1A1A1E] rounded-lg p-3 text-center">
                 <p className="text-gray-400 text-xs truncate">{team1Name}</p>
@@ -575,11 +600,14 @@ export default function LineupPage() {
               </div>
             </div>
 
-            {/* Numéro + Points + Timer - compact */}
+            {/* Numéro + Points + Timer */}
             <div className="bg-[#1A1A1E] rounded-lg p-3 mb-3 text-center">
               <p className="text-4xl font-bold text-[#D4AF37] tracking-widest font-mono mb-1">
-                {currentNumber || Array(teamSize).fill('-').join('')}
+                {currentNumber || '-----'}
               </p>
+              {currentNumber && (
+                <p className="text-xs text-gray-500 mb-1">{currentNumber.length} chiffres</p>
+              )}
               <div className="flex justify-center items-center gap-4">
                 <span className={`font-bold ${
                   currentPoints === 30 ? 'text-green-400' :
@@ -596,74 +624,131 @@ export default function LineupPage() {
               </div>
             </div>
 
-            {/* Boutons principaux - grille 2x2 */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <button
-                onClick={startRound}
-                disabled={isRunning}
-                className="py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
-              >
-                <Play className="h-4 w-4" />
-                START
-              </button>
-              <button
-                onClick={stopRound}
-                disabled={!isRunning}
-                className="py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
-              >
-                <Square className="h-4 w-4" />
-                STOP
-              </button>
-              <button
-                onClick={() => awardPoints(1)}
-                disabled={isRunning || !currentNumber}
-                className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors truncate px-2"
-              >
-                ✓ {team1Name}
-              </button>
-              <button
-                onClick={() => awardPoints(2)}
-                disabled={isRunning || !currentNumber}
-                className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors truncate px-2"
-              >
-                ✓ {team2Name}
-              </button>
-            </div>
+            {/* Boutons selon l'état du jeu */}
+            <div className="space-y-2">
+              {/* Jeu pas encore commencé */}
+              {gameNotStarted && (
+                <button
+                  onClick={startGame}
+                  className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
+                >
+                  <Play className="h-5 w-5" />
+                  🚀 DÉMARRER LA PARTIE
+                </button>
+              )}
 
-            {/* Actions secondaires - une ligne */}
-            <div className="grid grid-cols-4 gap-2 mb-2">
-              <button
-                onClick={showInitialOrder}
-                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
-              >
-                📋 Initial
-              </button>
-              <button
-                onClick={clearNumber}
-                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
-              >
-                🗑️ Effacer
-              </button>
-              <button
-                onClick={resetScores}
-                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
-              >
-                🔄 Reset
-              </button>
-              <button
-                onClick={showWinner ? hideWinnerScreen : showWinnerScreen}
-                className="py-2 bg-[#D4AF37] hover:bg-[#F4D03F] text-black rounded-lg text-xs font-bold transition-colors"
-              >
-                🏆 {showWinner ? 'Masquer' : 'Gagnant'}
-              </button>
+              {/* Jeu en cours */}
+              {gameInProgress && (
+                <>
+                  <button
+                    onClick={pauseGame}
+                    className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                  >
+                    <Pause className="h-4 w-4" />
+                    PAUSE
+                  </button>
+
+                  {/* Attribution des points */}
+                  {currentNumber && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => awardPoints(1)}
+                        className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm truncate px-2"
+                      >
+                        ✓ {team1Name}
+                      </button>
+                      <button
+                        onClick={() => awardPoints(2)}
+                        className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm truncate px-2"
+                      >
+                        ✓ {team2Name}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Passer au numéro suivant */}
+                  <button
+                    onClick={skipNumber}
+                    className="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                    Numéro suivant (sans points)
+                  </button>
+                </>
+              )}
+
+              {/* Jeu en pause */}
+              {gamePaused && (
+                <>
+                  <button
+                    onClick={resumeGame}
+                    className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
+                  >
+                    <Play className="h-5 w-5" />
+                    ▶️ REPRENDRE
+                  </button>
+
+                  {/* Attribution des points même en pause */}
+                  {currentNumber && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => awardPoints(1)}
+                        className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm truncate px-2"
+                      >
+                        ✓ {team1Name}
+                      </button>
+                      <button
+                        onClick={() => awardPoints(2)}
+                        className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm truncate px-2"
+                      >
+                        ✓ {team2Name}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Jeu terminé */}
+              {gameEnded && (
+                <>
+                  <div className="bg-[#1A1A1E] rounded-lg p-4 text-center mb-2">
+                    <p className="text-2xl mb-2">🏆</p>
+                    <p className="text-[#D4AF37] font-bold text-lg">
+                      {team1Score > team2Score ? team1Name : team2Score > team1Score ? team2Name : 'Égalité'}
+                      {team1Score !== team2Score && ' gagne !'}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {team1Score} - {team2Score}
+                    </p>
+                  </div>
+
+                  {showWinner && (
+                    <button
+                      onClick={hideWinnerScreen}
+                      className="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium"
+                    >
+                      Masquer l&apos;écran de victoire
+                    </button>
+                  )}
+
+                  <button
+                    onClick={startGame}
+                    className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                    🔄 NOUVELLE PARTIE
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Quitter */}
             <button
               onClick={exitGame}
-              className="w-full py-2 bg-red-500/50 hover:bg-red-500 text-white rounded-lg text-sm transition-colors"
+              className="w-full mt-3 py-2 bg-red-500/30 hover:bg-red-500 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
             >
-              ✖️ Quitter le jeu
+              <X className="h-4 w-4" />
+              Quitter le jeu
             </button>
           </motion.div>
         )}

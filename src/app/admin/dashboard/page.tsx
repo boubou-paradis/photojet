@@ -315,6 +315,8 @@ export default function DashboardPage() {
           borne_return_delay: 5,
           borne_default_camera: 'front',
           borne_show_event_name: true,
+          borne_lock_enabled: false,
+          borne_lock_code: '0000',
           // Messages defaults
           messages_enabled: true,
           messages_frequency: 4,
@@ -337,14 +339,16 @@ export default function DashboardPage() {
           // Lineup Game defaults
           lineup_active: false,
           lineup_team_size: 5,
-          lineup_clock_duration: 30,
+          lineup_clock_duration: 60,
           lineup_team1_name: 'Équipe 1',
           lineup_team2_name: 'Équipe 2',
           lineup_team1_score: 0,
           lineup_team2_score: 0,
           lineup_current_number: '',
-          lineup_time_left: 30,
+          lineup_time_left: 60,
           lineup_is_running: false,
+          lineup_is_paused: false,
+          lineup_is_game_over: false,
           lineup_current_points: 10,
           lineup_show_winner: false,
         })

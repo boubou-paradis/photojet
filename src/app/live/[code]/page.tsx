@@ -782,13 +782,14 @@ export default function LivePage() {
         timeLeft={session.lineup_time_left || 30}
         clockDuration={session.lineup_clock_duration || 30}
         isRunning={session.lineup_is_running || false}
+        isPaused={session.lineup_is_paused || false}
+        isGameOver={session.lineup_is_game_over || false}
         currentPoints={session.lineup_current_points || 10}
         team1Name={session.lineup_team1_name || 'Équipe 1'}
         team2Name={session.lineup_team2_name || 'Équipe 2'}
         team1Score={session.lineup_team1_score || 0}
         team2Score={session.lineup_team2_score || 0}
         showWinner={session.lineup_show_winner || false}
-        teamSize={session.lineup_team_size || 5}
       />
     )
   }

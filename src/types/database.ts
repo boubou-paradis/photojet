@@ -73,6 +73,8 @@ export interface Session {
   lineup_current_number: string
   lineup_time_left: number
   lineup_is_running: boolean
+  lineup_is_paused: boolean
+  lineup_is_game_over: boolean
   lineup_current_points: number
   lineup_show_winner: boolean
 }
@@ -102,6 +104,8 @@ export interface LineupGameState {
   currentNumber: string
   timeLeft: number
   isRunning: boolean
+  isPaused: boolean
+  isGameOver: boolean
   currentPoints: number
   showWinner: boolean
 }
