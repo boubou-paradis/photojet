@@ -380,6 +380,13 @@ export default function LineupPage() {
   async function resumeGame() {
     if (!session) return
 
+    // Si pas de numéro affiché, en générer un nouveau
+    let numberToShow = currentNumber
+    if (!currentNumber) {
+      numberToShow = generateNumber()
+      setCurrentNumber(numberToShow)
+    }
+
     setIsRunning(true)
     setIsPaused(false)
 
@@ -388,13 +395,14 @@ export default function LineupPage() {
       .update({
         lineup_is_running: true,
         lineup_is_paused: false,
+        lineup_current_number: numberToShow,
       })
       .eq('id', session.id)
 
     // Broadcast
     broadcastGameState({
       gameActive: true,
-      currentNumber,
+      currentNumber: numberToShow,
       timeLeft,
       isRunning: true,
       isPaused: false,
