@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
 import { getInviteUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
+import LineupGame from '@/components/games/LineupGame'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -769,6 +770,25 @@ export default function LivePage() {
           // Re-fetch session to get updated state
           fetchSession()
         }}
+      />
+    )
+  }
+
+  // Show Lineup Game (Le Bon Ordre) if active
+  if (session.lineup_active) {
+    return (
+      <LineupGame
+        currentNumber={session.lineup_current_number || ''}
+        timeLeft={session.lineup_time_left || 30}
+        clockDuration={session.lineup_clock_duration || 30}
+        isRunning={session.lineup_is_running || false}
+        currentPoints={session.lineup_current_points || 10}
+        team1Name={session.lineup_team1_name || 'Équipe 1'}
+        team2Name={session.lineup_team2_name || 'Équipe 2'}
+        team1Score={session.lineup_team1_score || 0}
+        team2Score={session.lineup_team2_score || 0}
+        showWinner={session.lineup_show_winner || false}
+        teamSize={session.lineup_team_size || 5}
       />
     )
   }

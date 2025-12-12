@@ -62,6 +62,19 @@ export interface Session {
   // Album settings
   album_enabled: boolean
   album_password: string | null
+  // Lineup Game (Le Bon Ordre) settings
+  lineup_active: boolean
+  lineup_team_size: number
+  lineup_clock_duration: number
+  lineup_team1_name: string
+  lineup_team2_name: string
+  lineup_team1_score: number
+  lineup_team2_score: number
+  lineup_current_number: string
+  lineup_time_left: number
+  lineup_is_running: boolean
+  lineup_current_points: number
+  lineup_show_winner: boolean
 }
 
 // Mystery Photo types
@@ -76,6 +89,21 @@ export interface MysteryGameState {
   isPlaying: boolean
   revealedTiles: number[]
   photos: MysteryPhotoRound[]
+}
+
+// Lineup Game (Le Bon Ordre) types
+export interface LineupGameState {
+  teamSize: number
+  clockDuration: number
+  team1Name: string
+  team2Name: string
+  team1Score: number
+  team2Score: number
+  currentNumber: string
+  timeLeft: number
+  isRunning: boolean
+  currentPoints: number
+  showWinner: boolean
 }
 
 export interface Photo {

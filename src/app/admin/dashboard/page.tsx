@@ -334,6 +334,19 @@ export default function DashboardPage() {
           // Album defaults
           album_enabled: true,
           album_password: null,
+          // Lineup Game defaults
+          lineup_active: false,
+          lineup_team_size: 5,
+          lineup_clock_duration: 30,
+          lineup_team1_name: 'Équipe 1',
+          lineup_team2_name: 'Équipe 2',
+          lineup_team1_score: 0,
+          lineup_team2_score: 0,
+          lineup_current_number: '',
+          lineup_time_left: 30,
+          lineup_is_running: false,
+          lineup_current_points: 10,
+          lineup_show_winner: false,
         })
         .select()
         .single()

@@ -17,6 +17,8 @@ import {
   Search,
   SkipForward,
   Monitor,
+  Users,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -731,15 +733,48 @@ export default function JeuxPage() {
             )}
           </motion.div>
 
-          {/* More games coming soon */}
+          {/* Le Bon Ordre Game Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            onClick={() => router.push('/admin/jeux/lineup')}
+            className="bg-[#242428] rounded-xl border border-[#D4AF37]/20 overflow-hidden cursor-pointer hover:border-[#D4AF37]/50 transition-all group"
+          >
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 flex items-center justify-center">
+                  <Users className="h-7 w-7 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    Le Bon Ordre
+                    <span className="text-2xl">🏃</span>
+                  </h2>
+                  <p className="text-[#6B6B70] text-sm">2 équipes s&apos;affrontent pour se placer dans l&apos;ordre</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {session?.lineup_active && (
+                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-full flex items-center gap-1">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    En cours
+                  </span>
+                )}
+                <ChevronRight className="h-6 w-6 text-[#6B6B70] group-hover:text-[#D4AF37] transition-colors" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* More games coming soon */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             className="bg-[#242428]/50 rounded-xl border border-dashed border-[rgba(255,255,255,0.1)] p-8 text-center"
           >
             <Gamepad2 className="h-12 w-12 text-[#6B6B70]/50 mx-auto mb-3" />
-            <p className="text-[#6B6B70]">D'autres jeux arrivent bientôt...</p>
+            <p className="text-[#6B6B70]">D&apos;autres jeux arrivent bientôt...</p>
           </motion.div>
         </div>
       </main>
