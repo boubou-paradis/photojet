@@ -546,137 +546,122 @@ export default function LineupPage() {
             </button>
           </motion.div>
         ) : (
-          /* Control Panel */
+          /* Control Panel - Compact */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-6 border-2 border-[#D4AF37]"
+            className="bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-white font-bold">Jeu en cours</span>
-            </div>
-
-            {/* Scores actuels */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-[#1A1A1E] rounded-xl p-4 text-center">
-                <p className="text-gray-400 text-sm">{team1Name}</p>
-                <p className="text-4xl font-bold text-white">{team1Score}</p>
+            {/* Header compact */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                <span className="text-white font-bold text-sm">Jeu en cours</span>
               </div>
-              <div className="bg-[#1A1A1E] rounded-xl p-4 text-center">
-                <p className="text-gray-400 text-sm">{team2Name}</p>
-                <p className="text-4xl font-bold text-white">{team2Score}</p>
+              <div className="text-xs text-gray-500">
+                Espace = Start/Stop
               </div>
             </div>
 
-            {/* Numéro actuel */}
-            <div className="bg-[#1A1A1E] rounded-xl p-4 text-center mb-4">
-              <p className="text-gray-400 text-sm mb-1">Ordre à former</p>
-              <p className="text-5xl font-bold text-[#D4AF37] tracking-widest font-mono">
-                {currentNumber || Array(teamSize).fill('-').join(' ')}
+            {/* Scores côte à côte - compact */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-[#1A1A1E] rounded-lg p-3 text-center">
+                <p className="text-gray-400 text-xs truncate">{team1Name}</p>
+                <p className="text-3xl font-bold text-white">{team1Score}</p>
+              </div>
+              <div className="bg-[#1A1A1E] rounded-lg p-3 text-center">
+                <p className="text-gray-400 text-xs truncate">{team2Name}</p>
+                <p className="text-3xl font-bold text-white">{team2Score}</p>
+              </div>
+            </div>
+
+            {/* Numéro + Points + Timer - compact */}
+            <div className="bg-[#1A1A1E] rounded-lg p-3 mb-3 text-center">
+              <p className="text-4xl font-bold text-[#D4AF37] tracking-widest font-mono mb-1">
+                {currentNumber || Array(teamSize).fill('-').join('')}
               </p>
+              <div className="flex justify-center items-center gap-4">
+                <span className={`font-bold ${
+                  currentPoints === 30 ? 'text-green-400' :
+                  currentPoints === 20 ? 'text-yellow-400' :
+                  'text-orange-400'
+                }`}>
+                  {currentPoints} pts
+                </span>
+                <span className={`text-3xl font-bold font-mono ${
+                  timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'
+                }`}>
+                  {timeLeft}s
+                </span>
+              </div>
             </div>
 
-            {/* Points en jeu */}
-            <div className="text-center mb-4">
-              <span className="text-gray-400">Points en jeu : </span>
-              <span className={`text-2xl font-bold ${
-                currentPoints === 30 ? 'text-green-400' :
-                currentPoints === 20 ? 'text-yellow-400' :
-                'text-orange-400'
-              }`}>
-                {currentPoints} pts
-              </span>
-            </div>
-
-            {/* Chronomètre */}
-            <div className="text-center mb-6">
-              <p className={`text-6xl font-bold font-mono ${
-                timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'
-              }`}>
-                {timeLeft}s
-              </p>
-            </div>
-
-            {/* Contrôles principaux */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Boutons principaux - grille 2x2 */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
               <button
                 onClick={startRound}
                 disabled={isRunning}
-                className="py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                className="py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
               >
-                <Play className="h-5 w-5" />
+                <Play className="h-4 w-4" />
                 START
               </button>
               <button
                 onClick={stopRound}
                 disabled={!isRunning}
-                className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                className="py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-4 w-4" />
                 STOP
               </button>
-            </div>
-
-            {/* Attribution des points */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
               <button
                 onClick={() => awardPoints(1)}
                 disabled={isRunning || !currentNumber}
-                className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50 transition-colors"
+                className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors truncate px-2"
               >
-                ✓ {team1Name} gagne
+                ✓ {team1Name}
               </button>
               <button
                 onClick={() => awardPoints(2)}
                 disabled={isRunning || !currentNumber}
-                className="py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold disabled:opacity-50 transition-colors"
+                className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors truncate px-2"
               >
-                ✓ {team2Name} gagne
+                ✓ {team2Name}
               </button>
             </div>
 
-            {/* Bouton ordre initial */}
-            <button
-              onClick={showInitialOrder}
-              className="w-full py-3 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-xl font-bold mb-3 transition-colors"
-            >
-              📋 Afficher ordre initial ({teamSize === 4 ? '4321' : teamSize === 5 ? '54321' : '654321'})
-            </button>
-
-            {/* Actions secondaires */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            {/* Actions secondaires - une ligne */}
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              <button
+                onClick={showInitialOrder}
+                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
+              >
+                📋 Initial
+              </button>
               <button
                 onClick={clearNumber}
-                className="py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors"
+                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
               >
                 🗑️ Effacer
               </button>
               <button
                 onClick={resetScores}
-                className="py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-1"
+                className="py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-xs transition-colors"
               >
-                <RotateCcw className="h-3 w-3" />
-                Reset
+                🔄 Reset
               </button>
               <button
                 onClick={showWinner ? hideWinnerScreen : showWinnerScreen}
-                className="py-2 bg-[#D4AF37] hover:bg-[#F4D03F] text-black rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+                className="py-2 bg-[#D4AF37] hover:bg-[#F4D03F] text-black rounded-lg text-xs font-bold transition-colors"
               >
-                <Trophy className="h-3 w-3" />
-                {showWinner ? 'Masquer' : 'Gagnant'}
+                🏆 {showWinner ? 'Masquer' : 'Gagnant'}
               </button>
-            </div>
-
-            {/* Raccourcis clavier */}
-            <div className="text-center text-xs text-gray-500 mb-4">
-              Raccourcis: Espace = Start/Stop, 1/← = Équipe 1, 2/→ = Équipe 2
             </div>
 
             {/* Quitter */}
             <button
               onClick={exitGame}
-              className="w-full py-2 bg-red-500/50 hover:bg-red-500 text-white rounded-xl transition-colors"
+              className="w-full py-2 bg-red-500/50 hover:bg-red-500 text-white rounded-lg text-sm transition-colors"
             >
               ✖️ Quitter le jeu
             </button>
