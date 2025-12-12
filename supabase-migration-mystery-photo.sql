@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_mystery_photo_active ON sessions(mystery
 -- Add constraint for grid values
 ALTER TABLE sessions DROP CONSTRAINT IF EXISTS mystery_photo_grid_check;
 ALTER TABLE sessions ADD CONSTRAINT mystery_photo_grid_check
-  CHECK (mystery_photo_grid IS NULL OR mystery_photo_grid IN ('6x4', '8x6', '10x8'));
+  CHECK (mystery_photo_grid IS NULL OR mystery_photo_grid IN ('6x4', '8x6', '10x8', '12x8', '15x10', '20x12'));
 
 -- Add constraint for speed values
 ALTER TABLE sessions DROP CONSTRAINT IF EXISTS mystery_photo_speed_check;

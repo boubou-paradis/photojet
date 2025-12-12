@@ -232,6 +232,9 @@ export default function JeuxPage() {
 
       setMysteryPhotoActive(true)
       toast.success('Jeu lancé sur le diaporama!')
+
+      // Open the slideshow in a new tab
+      window.open(`/live/${session.code}`, '_blank')
     } catch (err) {
       console.error('Error launching game:', err)
       toast.error('Erreur lors du lancement')
@@ -269,9 +272,12 @@ export default function JeuxPage() {
   }
 
   const gridOptions = [
-    { value: '6x4', label: '6x4 (24 cases) - Facile' },
-    { value: '8x6', label: '8x6 (48 cases) - Moyen' },
-    { value: '10x8', label: '10x8 (80 cases) - Difficile' },
+    { value: '6x4', label: '6x4 (24 cases) - Très facile' },
+    { value: '8x6', label: '8x6 (48 cases) - Facile' },
+    { value: '10x8', label: '10x8 (80 cases) - Moyen' },
+    { value: '12x8', label: '12x8 (96 cases) - Difficile' },
+    { value: '15x10', label: '15x10 (150 cases) - Très difficile' },
+    { value: '20x12', label: '20x12 (240 cases) - Expert' },
   ]
 
   const speedOptions = [

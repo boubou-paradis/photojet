@@ -8,7 +8,7 @@ export type DeviceType = 'ipad' | 'android_tablet' | 'other'
 export type BackgroundType = 'color' | 'image'
 export type LogoSize = 'small' | 'medium' | 'large'
 export type LogoPosition = 'bottom-left' | 'top-center'
-export type MysteryPhotoGrid = '6x4' | '8x6' | '10x8'
+export type MysteryPhotoGrid = '6x4' | '8x6' | '10x8' | '12x8' | '15x10' | '20x12'
 export type MysteryPhotoSpeed = 'slow' | 'medium' | 'fast'
 
 export interface Session {
