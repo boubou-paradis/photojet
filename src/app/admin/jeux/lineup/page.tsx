@@ -452,8 +452,8 @@ export default function LineupPage() {
 
     toast.success(`${team === 1 ? team1Name : team2Name} +${currentPoints} points!`)
 
-    // Générer automatiquement le prochain numéro après un délai
-    if (timeLeft > 0 && !isGameOver) {
+    // Générer automatiquement le prochain numéro SEULEMENT si le chrono tourne
+    if (timeLeft > 0 && !isGameOver && isRunning && !isPaused) {
       setTimeout(async () => {
         const newNumber = generateNumber()
         setCurrentNumber(newNumber)
@@ -467,8 +467,8 @@ export default function LineupPage() {
           gameActive: true,
           currentNumber: newNumber,
           timeLeft,
-          isRunning,
-          isPaused,
+          isRunning: true,
+          isPaused: false,
           isGameOver: false,
           currentPoints,
           team1Score: newTeam1Score,
