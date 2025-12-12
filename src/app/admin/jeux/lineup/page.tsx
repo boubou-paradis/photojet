@@ -138,9 +138,18 @@ export default function LineupPage() {
     }
   }
 
-  // Generate random number with variable length (2-5 digits)
+  // Generate random number with variable length (3-5 digits, weighted toward 5)
   const generateNumber = useCallback(() => {
-    const length = Math.floor(Math.random() * 4) + 2 // 2, 3, 4, or 5
+    // Weighted distribution: 3 chiffres (20%), 4 chiffres (30%), 5 chiffres (50%)
+    const rand = Math.random()
+    let length: number
+    if (rand < 0.2) {
+      length = 3
+    } else if (rand < 0.5) {
+      length = 4
+    } else {
+      length = 5
+    }
     const digits = Array.from({ length }, (_, i) => i + 1)
     // Fisher-Yates shuffle
     for (let i = digits.length - 1; i > 0; i--) {
