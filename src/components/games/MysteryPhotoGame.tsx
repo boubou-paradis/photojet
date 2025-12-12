@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search } from 'lucide-react'
+import { Search, Maximize, Minimize } from 'lucide-react'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { createClient } from '@/lib/supabase'
 
@@ -56,6 +56,10 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const [pacmanDirection, setPacmanDirection] = useState<'right' | 'left' | 'up' | 'down'>('right')
   const [eatenTiles, setEatenTiles] = useState<number[]>([])
 
+  // Fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const supabase = createClient()
 
   // Parse grid dimensions
@@ -78,6 +82,26 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
     return null
   }, [photos, currentRound, session.mystery_photo_url, supabase])
+
+  // Fullscreen toggle
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      await document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }
+
+  // Listen for fullscreen change (ESC key exits fullscreen)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   // Initialize state from session
   useEffect(() => {
@@ -251,7 +275,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   }
 
   return (
-    <div className="fixed inset-0 bg-[#1A1A1E] flex flex-col">
+    <div ref={containerRef} className="fixed inset-0 bg-[#1A1A1E] flex flex-col">
       {/* Round transition overlay */}
       <AnimatePresence>
         {showRoundTransition && (
@@ -614,6 +638,18 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
               <span className="text-emerald-400 text-sm font-medium">En cours</span>
             </span>
           )}
+          {/* Fullscreen button */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
+            title={isFullscreen ? "Quitter plein écran (ESC)" : "Plein écran"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-5 w-5 text-white/70 group-hover:text-white" />
+            ) : (
+              <Maximize className="h-5 w-5 text-white/70 group-hover:text-white" />
+            )}
+          </button>
         </div>
       </div>
 
