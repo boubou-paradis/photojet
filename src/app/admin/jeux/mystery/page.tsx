@@ -46,8 +46,8 @@ export default function MysteryPage() {
   const [mysteryPhotoGrid, setMysteryPhotoGrid] = useState<MysteryPhotoGrid>('12x8')
   const [mysteryPhotoSpeed, setMysteryPhotoSpeed] = useState<MysteryPhotoSpeed>('medium')
 
-  // Multi-photo support
-  const [photos, setPhotos] = useState<(PhotoSlot | null)[]>([null, null, null, null, null])
+  // Multi-photo support (20 photos max)
+  const [photos, setPhotos] = useState<(PhotoSlot | null)[]>(Array(20).fill(null))
 
   // Game state (realtime)
   const [gameActive, setGameActive] = useState(false)
@@ -93,9 +93,9 @@ export default function MysteryPage() {
       if (data.mystery_photos) {
         try {
           const parsedPhotos = JSON.parse(data.mystery_photos)
-          const photoSlots: (PhotoSlot | null)[] = [null, null, null, null, null]
+          const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
           parsedPhotos.forEach((p: { url: string }, index: number) => {
-            if (index < 5 && p.url) {
+            if (index < 20 && p.url) {
               const { data: urlData } = supabase.storage.from('photos').getPublicUrl(p.url)
               photoSlots[index] = { url: p.url, preview: urlData.publicUrl }
             }
@@ -406,7 +406,7 @@ export default function MysteryPage() {
     setIsPlaying(false)
     setCurrentRound(1)
     setRevealedTiles([])
-    setPhotos([null, null, null, null, null])
+    setPhotos(Array(20).fill(null))
 
     toast.success('Jeu arrêté - Photos supprimées')
 
@@ -600,9 +600,9 @@ export default function MysteryPage() {
             {/* Multi-photo upload */}
             <div>
               <Label className="text-white text-sm mb-3 block">
-                Photos à deviner (1 à 5 manches)
+                Photos à deviner (1 à 20 manches)
               </Label>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-2">
                 {photos.map((photo, index) => (
                   <div
                     key={index}
