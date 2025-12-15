@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Maximize, Minimize } from 'lucide-react'
+import { Search, Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { createClient } from '@/lib/supabase'
@@ -15,6 +15,7 @@ interface MysteryPhotoGameProps {
 
 interface MysteryPhotoData {
   url: string
+  audioUrl?: string
 }
 
 const SPEED_MAP: Record<MysteryPhotoSpeed, number> = {
@@ -65,6 +66,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // QR Code visibility (synced with session)
   const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
 
+  // Audio states
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [audioVolume, setAudioVolume] = useState(0.8)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [hasPlayedAudio, setHasPlayedAudio] = useState(false)
+
   const supabase = createClient()
 
   // Parse grid dimensions
@@ -88,6 +96,23 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     return null
   }, [photos, currentRound, session.mystery_photo_url, supabase])
 
+  // Get current audio URL
+  const currentAudioUrl = useMemo(() => {
+    if (photos.length > 0 && currentRound <= photos.length) {
+      const photoData = photos[currentRound - 1]
+      if (photoData?.audioUrl) {
+        const { data } = supabase.storage.from('photos').getPublicUrl(photoData.audioUrl)
+        return data.publicUrl
+      }
+    }
+    return null
+  }, [photos, currentRound, supabase])
+
+  // Check if current photo has audio
+  const hasAudio = useMemo(() => {
+    return !!currentAudioUrl
+  }, [currentAudioUrl])
+
   // Fullscreen toggle
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
@@ -107,6 +132,51 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Auto-play audio when all tiles are revealed
+  useEffect(() => {
+    if (revealedTiles.length === totalTiles && currentAudioUrl && !hasPlayedAudio && !isMuted) {
+      playAudio()
+      setHasPlayedAudio(true)
+    }
+  }, [revealedTiles.length, totalTiles, currentAudioUrl, hasPlayedAudio, isMuted])
+
+  // Reset hasPlayedAudio when round changes
+  useEffect(() => {
+    setHasPlayedAudio(false)
+    setIsAudioPlaying(false)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [currentRound])
+
+  // Update audio volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : audioVolume
+    }
+  }, [audioVolume, isMuted])
+
+  // Audio control functions
+  const playAudio = () => {
+    if (audioRef.current && currentAudioUrl) {
+      audioRef.current.play()
+      setIsAudioPlaying(true)
+    }
+  }
+
+  const replayAudio = () => {
+    if (audioRef.current && currentAudioUrl) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play()
+      setIsAudioPlaying(true)
+    }
+  }
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted)
+  }
 
   // Initialize state from session
   useEffect(() => {
@@ -645,6 +715,52 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
               <span className="text-emerald-400 text-sm font-medium">En cours</span>
             </span>
           )}
+
+          {/* Audio controls - only show if current photo has audio */}
+          {hasAudio && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/30">
+              {/* Audio indicator */}
+              <Volume2 className={`h-4 w-4 ${isAudioPlaying ? 'text-[#D4AF37] animate-pulse' : 'text-[#D4AF37]/70'}`} />
+
+              {/* Volume slider */}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={isMuted ? 0 : audioVolume}
+                onChange={(e) => {
+                  setAudioVolume(parseFloat(e.target.value))
+                  if (parseFloat(e.target.value) > 0) setIsMuted(false)
+                }}
+                className="w-16 h-1 bg-[#3E3E43] rounded-lg appearance-none cursor-pointer accent-[#D4AF37]"
+                title="Volume"
+              />
+
+              {/* Mute button */}
+              <button
+                onClick={toggleMute}
+                className="p-1 rounded hover:bg-white/10 transition-colors"
+                title={isMuted ? "Activer le son" : "Couper le son"}
+              >
+                {isMuted ? (
+                  <VolumeX className="h-4 w-4 text-white/50" />
+                ) : (
+                  <Volume2 className="h-4 w-4 text-white/70" />
+                )}
+              </button>
+
+              {/* Replay button */}
+              <button
+                onClick={replayAudio}
+                className="p-1 rounded hover:bg-white/10 transition-colors"
+                title="Rejouer l'audio"
+              >
+                <RotateCcw className="h-4 w-4 text-white/70 hover:text-[#D4AF37]" />
+              </button>
+            </div>
+          )}
+
           {/* Fullscreen button */}
           <button
             onClick={toggleFullscreen}
@@ -746,6 +862,17 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden audio element */}
+      {currentAudioUrl && (
+        <audio
+          ref={audioRef}
+          src={currentAudioUrl}
+          onEnded={() => setIsAudioPlaying(false)}
+          onPlay={() => setIsAudioPlaying(true)}
+          onPause={() => setIsAudioPlaying(false)}
+        />
+      )}
     </div>
   )
 }

@@ -82,6 +82,7 @@ export interface Session {
 // Mystery Photo types
 export interface MysteryPhotoRound {
   url: string
+  audioUrl?: string // URL audio optionnel pour chaque photo
   revealedTiles: number[]
 }
 

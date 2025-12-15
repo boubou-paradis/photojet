@@ -15,6 +15,9 @@ import {
   StopCircle,
   SkipForward,
   Monitor,
+  Music,
+  Volume2,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -33,6 +36,8 @@ import imageCompression from 'browser-image-compression'
 interface PhotoSlot {
   url: string
   preview: string
+  audioUrl?: string
+  audioPreview?: string
 }
 
 export default function MysteryPage() {
@@ -57,6 +62,10 @@ export default function MysteryPage() {
   const [revealedTiles, setRevealedTiles] = useState<number[]>([])
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const audioInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const audioPreviewRefs = useRef<(HTMLAudioElement | null)[]>([])
+  const [uploadingAudio, setUploadingAudio] = useState<number | null>(null)
+  const [playingAudio, setPlayingAudio] = useState<number | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -94,10 +103,16 @@ export default function MysteryPage() {
         try {
           const parsedPhotos = JSON.parse(data.mystery_photos)
           const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
-          parsedPhotos.forEach((p: { url: string }, index: number) => {
+          parsedPhotos.forEach((p: { url: string; audioUrl?: string }, index: number) => {
             if (index < 20 && p.url) {
               const { data: urlData } = supabase.storage.from('photos').getPublicUrl(p.url)
-              photoSlots[index] = { url: p.url, preview: urlData.publicUrl }
+              const slot: PhotoSlot = { url: p.url, preview: urlData.publicUrl }
+              if (p.audioUrl) {
+                const { data: audioUrlData } = supabase.storage.from('photos').getPublicUrl(p.audioUrl)
+                slot.audioUrl = p.audioUrl
+                slot.audioPreview = audioUrlData.publicUrl
+              }
+              photoSlots[index] = slot
             }
           })
           setPhotos(photoSlots)
@@ -198,8 +213,12 @@ export default function MysteryPage() {
     if (!photo) return
 
     try {
-      // Delete from storage
-      await supabase.storage.from('photos').remove([photo.url])
+      // Delete photo and audio from storage
+      const filesToDelete = [photo.url]
+      if (photo.audioUrl) {
+        filesToDelete.push(photo.audioUrl)
+      }
+      await supabase.storage.from('photos').remove(filesToDelete)
 
       // Update local state
       const newPhotos = [...photos]
@@ -216,12 +235,127 @@ export default function MysteryPage() {
     }
   }
 
+  async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>, index: number) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    // Vérifier le type de fichier
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format audio non supporté (MP3, WAV, OGG)')
+      return
+    }
+
+    // Vérifier la taille (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fichier audio trop volumineux (max 10MB)')
+      return
+    }
+
+    setUploadingAudio(index)
+    try {
+      const fileName = `mystery_audio_${session.id}_${index}_${Date.now()}.${file.name.split('.').pop()}`
+      const filePath = `mystery-audio/${fileName}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('photos')
+        .getPublicUrl(filePath)
+
+      // Update local state
+      const newPhotos = [...photos]
+      if (newPhotos[index]) {
+        newPhotos[index] = {
+          ...newPhotos[index]!,
+          audioUrl: filePath,
+          audioPreview: urlData.publicUrl
+        }
+        setPhotos(newPhotos)
+
+        // Save to database
+        await savePhotosToDatabase(newPhotos)
+
+        toast.success(`Audio ajouté à la photo ${index + 1}`)
+      }
+    } catch (err) {
+      console.error('Error uploading audio:', err)
+      toast.error('Erreur lors de l\'upload audio')
+    } finally {
+      setUploadingAudio(null)
+      if (audioInputRefs.current[index]) {
+        audioInputRefs.current[index]!.value = ''
+      }
+    }
+  }
+
+  async function removeAudio(index: number) {
+    if (!session) return
+
+    const photo = photos[index]
+    if (!photo?.audioUrl) return
+
+    try {
+      // Delete audio from storage
+      await supabase.storage.from('photos').remove([photo.audioUrl])
+
+      // Update local state
+      const newPhotos = [...photos]
+      newPhotos[index] = {
+        ...newPhotos[index]!,
+        audioUrl: undefined,
+        audioPreview: undefined
+      }
+      setPhotos(newPhotos)
+
+      // Save to database
+      await savePhotosToDatabase(newPhotos)
+
+      // Stop playing if this audio was playing
+      if (playingAudio === index) {
+        setPlayingAudio(null)
+      }
+
+      toast.success(`Audio supprimé de la photo ${index + 1}`)
+    } catch (err) {
+      console.error('Error removing audio:', err)
+      toast.error('Erreur lors de la suppression audio')
+    }
+  }
+
+  function toggleAudioPreview(index: number) {
+    const audio = audioPreviewRefs.current[index]
+    if (!audio) return
+
+    if (playingAudio === index) {
+      audio.pause()
+      setPlayingAudio(null)
+    } else {
+      // Pause any other playing audio
+      audioPreviewRefs.current.forEach((a, i) => {
+        if (a && i !== index) a.pause()
+      })
+      audio.currentTime = 0
+      audio.play()
+      setPlayingAudio(index)
+    }
+  }
+
   async function savePhotosToDatabase(photoSlots: (PhotoSlot | null)[]) {
     if (!session) return
 
     const photosJson = photoSlots
       .filter(p => p !== null)
-      .map(p => ({ url: p!.url }))
+      .map(p => ({
+        url: p!.url,
+        audioUrl: p!.audioUrl || null
+      }))
 
     await supabase
       .from('sessions')
@@ -379,11 +513,17 @@ export default function MysteryPage() {
   async function exitGame() {
     if (!session) return
 
-    // Delete photos from storage
-    const photosToDelete = photos.filter(p => p !== null).map(p => p!.url)
-    if (photosToDelete.length > 0) {
-      await supabase.storage.from('photos').remove(photosToDelete)
-      console.log('[Mystery] Photos supprimées:', photosToDelete)
+    // Delete photos and audio from storage
+    const filesToDelete: string[] = []
+    photos.filter(p => p !== null).forEach(p => {
+      filesToDelete.push(p!.url)
+      if (p!.audioUrl) {
+        filesToDelete.push(p!.audioUrl)
+      }
+    })
+    if (filesToDelete.length > 0) {
+      await supabase.storage.from('photos').remove(filesToDelete)
+      console.log('[Mystery] Fichiers supprimés:', filesToDelete)
     }
 
     // Reset ALL game data when exiting (including photos)
@@ -597,55 +737,111 @@ export default function MysteryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#242428] rounded-xl p-6 space-y-6"
           >
-            {/* Multi-photo upload */}
+            {/* Multi-photo upload with audio */}
             <div>
               <Label className="text-white text-sm mb-3 block">
-                Photos à deviner (1 à 20 manches)
+                Photos à deviner (1 à 20 manches) + Audio optionnel
               </Label>
-              <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2">
                 {photos.map((photo, index) => (
                   <div
                     key={index}
-                    onClick={() => !uploading && fileInputRefs.current[index]?.click()}
                     className={`
-                      aspect-square rounded-xl border-2 border-dashed relative overflow-hidden cursor-pointer
+                      rounded-xl border-2 relative overflow-hidden
                       transition-all duration-200
                       ${photo
-                        ? 'border-[#D4AF37] bg-[#242428]'
-                        : 'border-[#3E3E43] bg-[#1A1A1E] hover:border-[#D4AF37]/50'
+                        ? 'border-[#D4AF37] bg-[#1A1A1E]'
+                        : 'border-dashed border-[#3E3E43] bg-[#1A1A1E]'
                       }
                     `}
                   >
-                    {uploading === index ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
-                        <Loader2 className="h-6 w-6 text-[#D4AF37] animate-spin" />
-                      </div>
-                    ) : photo ? (
-                      <>
-                        <img
-                          src={photo.preview}
-                          alt={`Photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold px-2 py-0.5 rounded">
-                          #{index + 1}
+                    {/* Photo section */}
+                    <div
+                      onClick={() => !uploading && !photo && fileInputRefs.current[index]?.click()}
+                      className={`aspect-square relative ${!photo ? 'cursor-pointer hover:bg-[#242428]' : ''}`}
+                    >
+                      {uploading === index ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
+                          <Loader2 className="h-6 w-6 text-[#D4AF37] animate-spin" />
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removePhoto(index)
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70]">
-                        <Upload className="h-6 w-6 mb-1" />
-                        <span className="text-xs">Photo {index + 1}</span>
+                      ) : photo ? (
+                        <>
+                          <img
+                            src={photo.preview}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                            #{index + 1}
+                            {photo.audioUrl && <Volume2 className="h-3 w-3" />}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removePhoto(index)
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70]">
+                          <Upload className="h-6 w-6 mb-1" />
+                          <span className="text-xs">Photo {index + 1}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Audio section - only show if photo exists */}
+                    {photo && (
+                      <div className="p-2 border-t border-[#3E3E43] bg-[#242428]">
+                        {uploadingAudio === index ? (
+                          <div className="flex items-center justify-center py-1">
+                            <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
+                          </div>
+                        ) : photo.audioUrl ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleAudioPreview(index)}
+                              className={`flex-1 py-1 px-2 rounded text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
+                                playingAudio === index
+                                  ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                                  : 'bg-[#3E3E43] text-white hover:bg-[#4E4E53]'
+                              }`}
+                            >
+                              {playingAudio === index ? (
+                                <><Pause className="h-3 w-3" /> Stop</>
+                              ) : (
+                                <><Play className="h-3 w-3" /> Play</>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => removeAudio(index)}
+                              className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors"
+                              title="Supprimer l'audio"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                            <audio
+                              ref={(el) => { audioPreviewRefs.current[index] = el }}
+                              src={photo.audioPreview}
+                              onEnded={() => setPlayingAudio(null)}
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => audioInputRefs.current[index]?.click()}
+                            className="w-full py-1 px-2 rounded bg-[#3E3E43] text-[#6B6B70] hover:bg-[#4E4E53] hover:text-white text-xs font-medium flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <Music className="h-3 w-3" />
+                            + Audio
+                          </button>
+                        )}
                       </div>
                     )}
+
+                    {/* Hidden inputs */}
                     <input
                       ref={(el) => { fileInputRefs.current[index] = el }}
                       type="file"
@@ -653,11 +849,23 @@ export default function MysteryPage() {
                       onChange={(e) => handleFileUpload(e, index)}
                       className="hidden"
                     />
+                    <input
+                      ref={(el) => { audioInputRefs.current[index] = el }}
+                      type="file"
+                      accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3,.mp3,.wav,.ogg"
+                      onChange={(e) => handleAudioUpload(e, index)}
+                      className="hidden"
+                    />
                   </div>
                 ))}
               </div>
               <p className="text-[#6B6B70] text-sm mt-2">
                 {validPhotosCount} photo(s) chargée(s) = {validPhotosCount || 1} manche(s)
+                {photos.filter(p => p?.audioUrl).length > 0 && (
+                  <span className="ml-2 text-[#D4AF37]">
+                    ({photos.filter(p => p?.audioUrl).length} avec audio)
+                  </span>
+                )}
               </p>
             </div>
 
