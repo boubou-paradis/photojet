@@ -630,7 +630,7 @@ export default function MysteryPage() {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
+      <main className="mx-auto px-6 py-6 max-w-5xl">
         {gameActive ? (
           /* Remote Control Panel */
           <motion.div
@@ -753,12 +753,12 @@ export default function MysteryPage() {
                   )}
                 </span>
               </div>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-3">
                 {photos.map((photo, index) => (
                   <div
                     key={index}
                     className={`
-                      w-[72px] h-[72px] rounded-lg border-2 relative overflow-hidden cursor-pointer
+                      aspect-square rounded-xl border-2 relative overflow-hidden cursor-pointer
                       transition-all duration-200 group
                       ${photo
                         ? 'border-[#D4AF37]'
@@ -789,19 +789,19 @@ export default function MysteryPage() {
                         />
 
                         {/* Number badge */}
-                        <div className="absolute top-0.5 left-0.5 bg-[#D4AF37] text-[#1A1A1E] text-[10px] font-bold w-4 h-4 rounded flex items-center justify-center">
+                        <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold w-6 h-6 rounded-lg flex items-center justify-center shadow-lg">
                           {index + 1}
                         </div>
 
                         {/* Audio indicator */}
                         {photo.audioUrl && (
-                          <div className="absolute top-0.5 right-0.5 bg-emerald-500 text-white w-4 h-4 rounded flex items-center justify-center">
-                            <Volume2 className="h-2.5 w-2.5" />
+                          <div className="absolute top-1 right-1 bg-emerald-500 text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-lg">
+                            <Volume2 className="h-3.5 w-3.5" />
                           </div>
                         )}
 
                         {/* Hover overlay with actions */}
-                        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                           {/* Audio button */}
                           {photo.audioUrl ? (
                             <button
@@ -809,10 +809,10 @@ export default function MysteryPage() {
                                 e.stopPropagation()
                                 toggleAudioPreview(index)
                               }}
-                              className={`p-1.5 rounded ${playingAudio === index ? 'bg-[#D4AF37] text-black' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                              className={`p-2 rounded-lg ${playingAudio === index ? 'bg-[#D4AF37] text-black' : 'bg-white/20 text-white hover:bg-white/30'}`}
                               title={playingAudio === index ? "Stop" : "Play audio"}
                             >
-                              {playingAudio === index ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                              {playingAudio === index ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                             </button>
                           ) : (
                             <button
@@ -820,25 +820,25 @@ export default function MysteryPage() {
                                 e.stopPropagation()
                                 audioInputRefs.current[index]?.click()
                               }}
-                              className="p-1.5 rounded bg-white/20 text-white hover:bg-white/30"
+                              className="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30"
                               title="Ajouter audio"
                             >
-                              <Music className="h-3 w-3" />
+                              <Music className="h-5 w-5" />
                             </button>
                           )}
 
                           {/* Delete buttons row */}
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             {photo.audioUrl && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   removeAudio(index)
                                 }}
-                                className="p-1 rounded bg-orange-500/80 text-white hover:bg-orange-500"
+                                className="p-1.5 rounded-lg bg-orange-500/80 text-white hover:bg-orange-500"
                                 title="Supprimer audio"
                               >
-                                <VolumeX className="h-2.5 w-2.5" />
+                                <VolumeX className="h-4 w-4" />
                               </button>
                             )}
                             <button
@@ -846,10 +846,10 @@ export default function MysteryPage() {
                                 e.stopPropagation()
                                 removePhoto(index)
                               }}
-                              className="p-1 rounded bg-red-500/80 text-white hover:bg-red-500"
+                              className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500"
                               title="Supprimer photo"
                             >
-                              <Trash2 className="h-2.5 w-2.5" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </div>
@@ -864,9 +864,9 @@ export default function MysteryPage() {
                         )}
                       </>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70] group-hover:text-[#D4AF37]/70">
-                        <span className="text-[10px] font-medium">{index + 1}</span>
-                        <Upload className="h-4 w-4" />
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70] group-hover:text-[#D4AF37]/70 transition-colors">
+                        <span className="text-sm font-bold mb-1">{index + 1}</span>
+                        <Upload className="h-6 w-6" />
                       </div>
                     )}
 
