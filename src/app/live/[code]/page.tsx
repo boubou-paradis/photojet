@@ -11,6 +11,8 @@ import { Session, Photo, Message } from '@/types/database'
 import { getInviteUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
+import WheelGame from '@/components/games/WheelGame'
+import { WheelSegment } from '@/types/database'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -334,6 +336,15 @@ export default function LivePage() {
     clockDuration: number
   } | null>(null)
 
+  // Wheel game state (updated via broadcast from admin)
+  const [wheelState, setWheelState] = useState<{
+    gameActive: boolean
+    segments: WheelSegment[]
+    isSpinning: boolean
+    result: string | null
+    spinToIndex?: number
+  } | null>(null)
+
   // Build slideshow items list - interleaving messages with photos
   const slideshowItems = useMemo((): SlideshowItem[] => {
     const messagesEnabled = session?.messages_enabled ?? true
@@ -633,6 +644,25 @@ export default function LivePage() {
     }
   }, [session?.code, supabase])
 
+  // Subscribe to Wheel game broadcast channel for real-time sync
+  useEffect(() => {
+    if (!session?.code) return
+
+    const wheelChannel = supabase
+      .channel(`wheel-game-${session.code}`)
+      .on('broadcast', { event: 'wheel_state' }, (payload) => {
+        console.log('[Live] Received wheel broadcast:', payload)
+        if (payload.payload) {
+          setWheelState(payload.payload)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(wheelChannel)
+    }
+  }, [session?.code, supabase])
+
   // Log current item for debugging
   useEffect(() => {
     const item = slideshowItems[currentIndex]
@@ -829,6 +859,19 @@ export default function LivePage() {
         team1Score={lineupState?.team1Score ?? session.lineup_team1_score ?? 0}
         team2Score={lineupState?.team2Score ?? session.lineup_team2_score ?? 0}
         showWinner={lineupState?.showWinner ?? session.lineup_show_winner ?? false}
+      />
+    )
+  }
+
+  // Show Wheel Game (Roue de la Fortune) if active
+  const isWheelActive = wheelState?.gameActive ?? session.wheel_active
+  if (isWheelActive && wheelState?.segments && wheelState.segments.length >= 2) {
+    return (
+      <WheelGame
+        segments={wheelState.segments}
+        isSpinning={wheelState.isSpinning}
+        result={wheelState.result}
+        spinToIndex={wheelState.spinToIndex}
       />
     )
   }
