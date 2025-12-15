@@ -865,13 +865,22 @@ export default function LivePage() {
 
   // Show Wheel Game (Roue de la Fortune) if active
   const isWheelActive = wheelState?.gameActive ?? session.wheel_active
-  if (isWheelActive && wheelState?.segments && wheelState.segments.length >= 2) {
+  // Get segments from broadcast state or from session database
+  const wheelSegments: WheelSegment[] = wheelState?.segments ?? (session.wheel_segments ? (() => {
+    try {
+      return JSON.parse(session.wheel_segments)
+    } catch {
+      return []
+    }
+  })() : [])
+
+  if (isWheelActive && wheelSegments.length >= 2) {
     return (
       <WheelGame
-        segments={wheelState.segments}
-        isSpinning={wheelState.isSpinning}
-        result={wheelState.result}
-        spinToIndex={wheelState.spinToIndex}
+        segments={wheelSegments}
+        isSpinning={wheelState?.isSpinning ?? session.wheel_is_spinning ?? false}
+        result={wheelState?.result ?? session.wheel_result ?? null}
+        spinToIndex={wheelState?.spinToIndex}
       />
     )
   }
