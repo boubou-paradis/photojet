@@ -77,6 +77,44 @@ export interface Session {
   lineup_is_game_over: boolean
   lineup_current_points: number
   lineup_show_winner: boolean
+  // Vote Photo settings
+  vote_active: boolean
+  vote_photos: string | null // JSON array of VotePhotoCandidate
+  vote_votes: string | null // JSON array of VoteRecord
+  vote_is_open: boolean
+  vote_show_results: boolean
+  vote_show_podium: boolean
+  vote_timer: number | null // Optional timer in seconds
+  vote_timer_left: number | null
+  // Wheel (Roue de la Fortune) settings
+  wheel_active: boolean
+  wheel_segments: string | null // JSON array of WheelSegment
+  wheel_is_spinning: boolean
+  wheel_result: string | null // Current result text
+  wheel_history: string | null // JSON array of WheelResult
+  // Challenges (Défis Photo) settings
+  challenges_active: boolean
+  challenges_list: string | null // JSON array of PhotoChallenge
+  challenges_submissions: string | null // JSON array of ChallengeSubmission
+  challenges_current: string | null // Current challenge ID being displayed
+  // Quiz settings
+  quiz_active: boolean
+  quiz_questions: string | null // JSON array of QuizQuestion
+  quiz_current_question: number
+  quiz_is_answering: boolean
+  quiz_show_results: boolean
+  quiz_time_left: number | null
+  quiz_answers: string | null // JSON array of QuizAnswer
+  quiz_participants: string | null // JSON array of QuizParticipant
+  // Blind Test settings
+  blindtest_active: boolean
+  blindtest_songs: string | null // JSON array of BlindTestSong
+  blindtest_current_song: number
+  blindtest_is_playing: boolean
+  blindtest_show_answer: boolean
+  blindtest_time_left: number | null
+  blindtest_answers: string | null // JSON array of BlindTestAnswer
+  blindtest_participants: string | null // JSON array of BlindTestParticipant
 }
 
 // Mystery Photo types
@@ -109,6 +147,108 @@ export interface LineupGameState {
   isGameOver: boolean
   currentPoints: number
   showWinner: boolean
+}
+
+// Vote Photo types
+export interface VotePhotoCandidate {
+  photoId: string
+  photoUrl: string
+  votes: number
+}
+
+export interface VoteRecord {
+  odientId: string
+  photoId: string
+  timestamp: string
+}
+
+// Wheel (Roue de la Fortune) types
+export interface WheelSegment {
+  id: string
+  text: string
+  color: string
+  probability?: number
+}
+
+export interface WheelResult {
+  segmentId: string
+  text: string
+  timestamp: string
+}
+
+// Challenges (Défis Photo) types
+export interface PhotoChallenge {
+  id: string
+  title: string
+  description?: string
+  points: number
+  enabled: boolean
+}
+
+export interface ChallengeSubmission {
+  id: string
+visitorId: string
+  visitorName: string
+  challengeId: string
+  photoUrl: string
+  status: 'pending' | 'approved' | 'rejected'
+  submittedAt: string
+}
+
+// Quiz types
+export interface QuizQuestion {
+  id: string
+  question: string
+  answers: string[]
+  correctAnswer: number // Index of correct answer
+  timeLimit: number // Seconds
+  points: number
+}
+
+export interface QuizAnswer {
+  odientId: string
+  odientName: string
+  questionId: string
+  answerIndex: number
+  timeToAnswer: number // Milliseconds
+  correct: boolean
+  pointsEarned: number
+}
+
+export interface QuizParticipant {
+  odientId: string
+  odientName: string
+  totalScore: number
+  correctAnswers: number
+}
+
+// Blind Test types
+export interface BlindTestSong {
+  id: string
+  title: string
+  artist: string
+  audioUrl?: string // URL to audio file or YouTube/Spotify link
+  coverUrl?: string
+  startTime?: number // Start position in seconds
+  duration?: number // Clip duration in seconds
+  points: number
+}
+
+export interface BlindTestAnswer {
+  odientId: string
+  odientName: string
+  songId: string
+  answer: string
+  correct: boolean
+  timeToAnswer: number
+  pointsEarned: number
+}
+
+export interface BlindTestParticipant {
+  odientId: string
+  odientName: string
+  totalScore: number
+  correctAnswers: number
 }
 
 export interface Photo {

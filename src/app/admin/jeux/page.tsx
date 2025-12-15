@@ -33,7 +33,7 @@ const games = [
     emoji: '🗳️',
     description: 'Votez pour la meilleure photo',
     path: '/admin/jeux/vote',
-    available: false,
+    available: true,
   },
   {
     id: 'wheel',
@@ -41,7 +41,15 @@ const games = [
     emoji: '🎡',
     description: 'Défis et gages aléatoires',
     path: '/admin/jeux/wheel',
-    available: false,
+    available: true,
+  },
+  {
+    id: 'defis',
+    name: 'Défis Photo',
+    emoji: '📸',
+    description: 'Réalisez des défis photo',
+    path: '/admin/jeux/defis',
+    available: true,
   },
   {
     id: 'quiz',
@@ -49,7 +57,7 @@ const games = [
     emoji: '❓',
     description: 'Questions-réponses interactif',
     path: '/admin/jeux/quiz',
-    available: false,
+    available: true,
   },
   {
     id: 'blindtest',
@@ -57,7 +65,7 @@ const games = [
     emoji: '🎵',
     description: 'Devinez les musiques',
     path: '/admin/jeux/blindtest',
-    available: false,
+    available: true,
   },
 ]
 
@@ -92,6 +100,31 @@ export default function JeuxPage() {
           lineup_team2_score: 0,
           lineup_time_left: 60,
           lineup_current_points: 10,
+          // Reset Vote Photo
+          vote_active: false,
+          vote_is_open: false,
+          vote_show_results: false,
+          vote_show_podium: false,
+          vote_timer_left: null,
+          // Reset Wheel
+          wheel_active: false,
+          wheel_is_spinning: false,
+          wheel_result: null,
+          // Reset Challenges
+          challenges_active: false,
+          challenges_current: null,
+          // Reset Quiz
+          quiz_active: false,
+          quiz_current_question: 0,
+          quiz_is_answering: false,
+          quiz_show_results: false,
+          quiz_time_left: null,
+          // Reset Blind Test
+          blindtest_active: false,
+          blindtest_current_song: 0,
+          blindtest_is_playing: false,
+          blindtest_show_answer: false,
+          blindtest_time_left: null,
         })
         .eq('id', sessionId)
 
