@@ -17,6 +17,7 @@ import {
   Monitor,
   Music,
   Volume2,
+  VolumeX,
   Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -737,111 +738,139 @@ export default function MysteryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#242428] rounded-xl p-6 space-y-6"
           >
-            {/* Multi-photo upload with audio */}
+            {/* Compact photo grid 5x4 */}
             <div>
-              <Label className="text-white text-sm mb-3 block">
-                Photos à deviner (1 à 20 manches) + Audio optionnel
-              </Label>
-              <div className="grid grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-white text-sm">
+                  Photos à deviner (1 à 20 manches)
+                </Label>
+                <span className="text-xs text-[#6B6B70]">
+                  {validPhotosCount}/20 photos
+                  {photos.filter(p => p?.audioUrl).length > 0 && (
+                    <span className="ml-1 text-[#D4AF37]">
+                      • {photos.filter(p => p?.audioUrl).length} audio
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-2">
                 {photos.map((photo, index) => (
                   <div
                     key={index}
                     className={`
-                      rounded-xl border-2 relative overflow-hidden
-                      transition-all duration-200
+                      w-[72px] h-[72px] rounded-lg border-2 relative overflow-hidden cursor-pointer
+                      transition-all duration-200 group
                       ${photo
-                        ? 'border-[#D4AF37] bg-[#1A1A1E]'
-                        : 'border-dashed border-[#3E3E43] bg-[#1A1A1E]'
+                        ? 'border-[#D4AF37]'
+                        : 'border-dashed border-[#3E3E43] hover:border-[#D4AF37]/50 bg-[#1A1A1E]'
                       }
                     `}
+                    onClick={() => {
+                      if (!uploading && !photo) {
+                        fileInputRefs.current[index]?.click()
+                      }
+                    }}
                   >
-                    {/* Photo section */}
-                    <div
-                      onClick={() => !uploading && !photo && fileInputRefs.current[index]?.click()}
-                      className={`aspect-square relative ${!photo ? 'cursor-pointer hover:bg-[#242428]' : ''}`}
-                    >
-                      {uploading === index ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
-                          <Loader2 className="h-6 w-6 text-[#D4AF37] animate-spin" />
-                        </div>
-                      ) : photo ? (
-                        <>
-                          <img
-                            src={photo.preview}
-                            alt={`Photo ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                            #{index + 1}
-                            {photo.audioUrl && <Volume2 className="h-3 w-3" />}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removePhoto(index)
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70]">
-                          <Upload className="h-6 w-6 mb-1" />
-                          <span className="text-xs">Photo {index + 1}</span>
-                        </div>
-                      )}
-                    </div>
+                    {uploading === index ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
+                        <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
+                      </div>
+                    ) : uploadingAudio === index ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
+                        <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
+                      </div>
+                    ) : photo ? (
+                      <>
+                        {/* Photo thumbnail */}
+                        <img
+                          src={photo.preview}
+                          alt={`Photo ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
 
-                    {/* Audio section - only show if photo exists */}
-                    {photo && (
-                      <div className="p-2 border-t border-[#3E3E43] bg-[#242428]">
-                        {uploadingAudio === index ? (
-                          <div className="flex items-center justify-center py-1">
-                            <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
+                        {/* Number badge */}
+                        <div className="absolute top-0.5 left-0.5 bg-[#D4AF37] text-[#1A1A1E] text-[10px] font-bold w-4 h-4 rounded flex items-center justify-center">
+                          {index + 1}
+                        </div>
+
+                        {/* Audio indicator */}
+                        {photo.audioUrl && (
+                          <div className="absolute top-0.5 right-0.5 bg-emerald-500 text-white w-4 h-4 rounded flex items-center justify-center">
+                            <Volume2 className="h-2.5 w-2.5" />
                           </div>
-                        ) : photo.audioUrl ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => toggleAudioPreview(index)}
-                              className={`flex-1 py-1 px-2 rounded text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
-                                playingAudio === index
-                                  ? 'bg-[#D4AF37] text-[#1A1A1E]'
-                                  : 'bg-[#3E3E43] text-white hover:bg-[#4E4E53]'
-                              }`}
-                            >
-                              {playingAudio === index ? (
-                                <><Pause className="h-3 w-3" /> Stop</>
-                              ) : (
-                                <><Play className="h-3 w-3" /> Play</>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => removeAudio(index)}
-                              className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors"
-                              title="Supprimer l'audio"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                            <audio
-                              ref={(el) => { audioPreviewRefs.current[index] = el }}
-                              src={photo.audioPreview}
-                              onEnded={() => setPlayingAudio(null)}
-                            />
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => audioInputRefs.current[index]?.click()}
-                            className="w-full py-1 px-2 rounded bg-[#3E3E43] text-[#6B6B70] hover:bg-[#4E4E53] hover:text-white text-xs font-medium flex items-center justify-center gap-1 transition-colors"
-                          >
-                            <Music className="h-3 w-3" />
-                            + Audio
-                          </button>
                         )}
+
+                        {/* Hover overlay with actions */}
+                        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                          {/* Audio button */}
+                          {photo.audioUrl ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleAudioPreview(index)
+                              }}
+                              className={`p-1.5 rounded ${playingAudio === index ? 'bg-[#D4AF37] text-black' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                              title={playingAudio === index ? "Stop" : "Play audio"}
+                            >
+                              {playingAudio === index ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                audioInputRefs.current[index]?.click()
+                              }}
+                              className="p-1.5 rounded bg-white/20 text-white hover:bg-white/30"
+                              title="Ajouter audio"
+                            >
+                              <Music className="h-3 w-3" />
+                            </button>
+                          )}
+
+                          {/* Delete buttons row */}
+                          <div className="flex gap-1">
+                            {photo.audioUrl && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  removeAudio(index)
+                                }}
+                                className="p-1 rounded bg-orange-500/80 text-white hover:bg-orange-500"
+                                title="Supprimer audio"
+                              >
+                                <VolumeX className="h-2.5 w-2.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removePhoto(index)
+                              }}
+                              className="p-1 rounded bg-red-500/80 text-white hover:bg-red-500"
+                              title="Supprimer photo"
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Hidden audio element */}
+                        {photo.audioUrl && (
+                          <audio
+                            ref={(el) => { audioPreviewRefs.current[index] = el }}
+                            src={photo.audioPreview}
+                            onEnded={() => setPlayingAudio(null)}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70] group-hover:text-[#D4AF37]/70">
+                        <span className="text-[10px] font-medium">{index + 1}</span>
+                        <Upload className="h-4 w-4" />
                       </div>
                     )}
 
-                    {/* Hidden inputs */}
+                    {/* Hidden file inputs */}
                     <input
                       ref={(el) => { fileInputRefs.current[index] = el }}
                       type="file"
@@ -859,14 +888,6 @@ export default function MysteryPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[#6B6B70] text-sm mt-2">
-                {validPhotosCount} photo(s) chargée(s) = {validPhotosCount || 1} manche(s)
-                {photos.filter(p => p?.audioUrl).length > 0 && (
-                  <span className="ml-2 text-[#D4AF37]">
-                    ({photos.filter(p => p?.audioUrl).length} avec audio)
-                  </span>
-                )}
-              </p>
             </div>
 
             {/* Settings grid */}
