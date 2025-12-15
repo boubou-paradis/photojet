@@ -630,7 +630,7 @@ export default function MysteryPage() {
       </header>
 
       {/* Main content */}
-      <main className="mx-auto px-6 py-6 max-w-5xl">
+      <main className="w-full px-4 py-4">
         {gameActive ? (
           /* Remote Control Panel */
           <motion.div
@@ -736,7 +736,7 @@ export default function MysteryPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-6 space-y-6"
+            className="bg-[#242428] rounded-xl p-4 space-y-4 w-full"
           >
             {/* Compact photo grid 5x4 */}
             <div>
@@ -753,7 +753,7 @@ export default function MysteryPage() {
                   )}
                 </span>
               </div>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 gap-4 w-full">
                 {photos.map((photo, index) => (
                   <div
                     key={index}
