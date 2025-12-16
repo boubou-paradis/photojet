@@ -3,10 +3,13 @@ import Stripe from 'stripe'
 import { stripe, STRIPE_PRICE_ID } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialization to avoid build-time errors
+const getSupabaseAdmin = () => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Apply promo code if provided
     if (promoCode) {
       // Check if promo code is valid
-      const { data: promo } = await supabaseAdmin
+      const { data: promo } = await getSupabaseAdmin()
         .from('promo_codes')
         .select('*')
         .eq('code', promoCode.toUpperCase())

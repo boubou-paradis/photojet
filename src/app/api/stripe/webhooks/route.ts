@@ -5,10 +5,13 @@ import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
 import { sendWelcomeEmail, sendExpiredEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialization to avoid build-time errors
+const getSupabaseAdmin = () => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -96,7 +99,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const sessionCode = generateSessionCode()
 
   // Create user in Supabase Auth
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+  const { data: authData, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -107,7 +110,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log('[Webhook] User might already exist:', authError.message)
 
     // Try to get existing user
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: existingUsers } = await getSupabaseAdmin().auth.admin.listUsers()
     const existingUser = existingUsers?.users?.find(u => u.email === email)
 
     if (existingUser) {
@@ -122,7 +125,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = authData.user.id
 
   // Create user profile
-  await supabaseAdmin.from('user_profiles').insert({
+  await getSupabaseAdmin().from('user_profiles').insert({
     id: userId,
     email,
     role: 'user',
@@ -131,7 +134,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Handle promo code usage
   let promoCodeId: string | null = null
   if (promoCode) {
-    const { data: promo } = await supabaseAdmin
+    const { data: promo } = await getSupabaseAdmin()
       .from('promo_codes')
       .select('id')
       .eq('code', promoCode.toUpperCase())
@@ -141,18 +144,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       promoCodeId = promo.id
 
       // Record promo code usage
-      await supabaseAdmin.from('promo_code_uses').insert({
+      await getSupabaseAdmin().from('promo_code_uses').insert({
         promo_code_id: promo.id,
         user_id: userId,
       })
 
       // Increment usage count
-      await supabaseAdmin.rpc('increment_promo_uses', { promo_id: promo.id })
+      await getSupabaseAdmin().rpc('increment_promo_uses', { promo_id: promo.id })
     }
   }
 
   // Create subscription record
-  const { data: subscriptionData } = await supabaseAdmin
+  const { data: subscriptionData } = await getSupabaseAdmin()
     .from('subscriptions')
     .insert({
       user_id: userId,
@@ -177,7 +180,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const expiresAt = new Date()
   expiresAt.setMonth(expiresAt.getMonth() + 1)
 
-  await supabaseAdmin.from('sessions').insert({
+  await getSupabaseAdmin().from('sessions').insert({
     code: sessionCode,
     name: 'Mon evenement',
     expires_at: expiresAt.toISOString(),
@@ -205,7 +208,7 @@ async function updateExistingUser(
   promoCode?: string
 ) {
   // Update or create subscription
-  const { data: existingSub } = await supabaseAdmin
+  const { data: existingSub } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id')
     .eq('user_id', userId)
@@ -222,16 +225,16 @@ async function updateExistingUser(
   }
 
   if (existingSub) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('subscriptions')
       .update(subscriptionData)
       .eq('id', existingSub.id)
   } else {
-    await supabaseAdmin.from('subscriptions').insert(subscriptionData)
+    await getSupabaseAdmin().from('subscriptions').insert(subscriptionData)
   }
 
   // Reactivate sessions
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('sessions')
     .update({ is_active: true })
     .eq('user_id', userId)
@@ -240,7 +243,7 @@ async function updateExistingUser(
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { current_period_start: number; current_period_end: number }) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id, user_id')
     .eq('stripe_subscription_id', subscription.id)
@@ -248,7 +251,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { c
 
   if (!data) return
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('subscriptions')
     .update({
       status: subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due',
@@ -265,7 +268,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { c
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id, user_id')
     .eq('stripe_subscription_id', subscription.id)
@@ -274,19 +277,19 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   if (!data) return
 
   // Update subscription status
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('subscriptions')
     .update({ status: 'expired' })
     .eq('id', data.id)
 
   // Deactivate sessions
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('sessions')
     .update({ is_active: false })
     .eq('user_id', data.user_id)
 
   // Get user email and send expired notification
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await getSupabaseAdmin()
     .from('user_profiles')
     .select('email')
     .eq('id', data.user_id)
@@ -304,7 +307,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const subscriptionId = (invoice as any).subscription as string
   if (!subscriptionId) return
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id')
     .eq('stripe_subscription_id', subscriptionId)
@@ -312,7 +315,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   if (!data) return
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('subscriptions')
     .update({ status: 'past_due' })
     .eq('id', data.id)
