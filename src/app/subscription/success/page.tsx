@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, Mail, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PhotoJetFullLogo } from '@/components/branding/PhotoJetLogo'
+import { AnimaJetFullLogo } from '@/components/branding/AnimaJetLogo'
 
 export default function SubscriptionSuccessPage() {
   const searchParams = useSearchParams()
@@ -53,10 +53,10 @@ export default function SubscriptionSuccessPage() {
           </motion.div>
 
           {/* Logo */}
-          <PhotoJetFullLogo size={80} className="mx-auto mb-4" />
+          <AnimaJetFullLogo size={80} className="mx-auto mb-4" />
 
           <h1 className="text-2xl font-bold text-white mb-2">
-            Bienvenue sur PhotoJet !
+            Bienvenue sur AnimaJet !
           </h1>
 
           <p className="text-[#B0B0B5] mb-8">

@@ -26,38 +26,40 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://photojet.vercel.app'),
-  title: "PhotoJet - Partage de photos en temps réel",
-  description: "Application premium de partage de photos en temps réel pour événements. Partagez vos photos instantanément lors de mariages, soirées et événements d'entreprise.",
-  keywords: ["photo", "événement", "mariage", "partage", "temps réel", "diaporama", "borne photo", "photobooth"],
-  authors: [{ name: "PhotoJet" }],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'),
+  title: "AnimaJet - L'animation de vos événements, simplifiée",
+  description: "Plateforme tout-en-un pour DJ et animateurs : photos en direct, 7 jeux interactifs, QR codes personnalisés. 29,90€/mois tout inclus.",
+  keywords: ["animation événement", "DJ", "mariage", "photo booth", "jeux interactifs", "diaporama", "borne photo", "photobooth"],
+  authors: [{ name: "AnimaJet" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PhotoJet",
+    title: "AnimaJet",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
-    title: "PhotoJet - Partage de photos en temps réel",
-    description: "Application premium de partage de photos pour vos événements",
-    images: ["/logo-full.png"],
+    title: "AnimaJet - L'animation de vos événements, simplifiée",
+    description: "Plateforme tout-en-un pour DJ et animateurs : photos en direct, 7 jeux interactifs, QR codes personnalisés.",
+    images: ["/animajet_logo_principal.png"],
+    url: "https://animajet.fr",
+    siteName: "AnimaJet",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PhotoJet",
-    description: "Partage de photos en temps réel pour événements",
-    images: ["/logo-full.png"],
+    title: "AnimaJet",
+    description: "L'animation de vos événements, simplifiée",
+    images: ["/animajet_logo_principal.png"],
   },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/animajet_logo_vector.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/logo.png",
+    apple: "/animajet_logo_vector.png",
   },
   other: {
     "mobile-web-app-capable": "yes",

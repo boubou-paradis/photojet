@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 
-interface PhotoJetLogoProps {
+interface AnimaJetLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   showText?: boolean
   showIcon?: boolean
@@ -91,8 +91,8 @@ export function ShutterIcon({ size = 24, className = '' }: { size?: number; clas
   )
 }
 
-// Combined PhotoJet icon (rocket + shutter)
-export function PhotoJetIcon({ size = 40, animated = false, className = '' }: { size?: number; animated?: boolean; className?: string }) {
+// Combined AnimaJet icon (rocket + shutter)
+export function AnimaJetIcon({ size = 40, animated = false, className = '' }: { size?: number; animated?: boolean; className?: string }) {
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       {/* Shutter background */}
@@ -108,13 +108,13 @@ export function PhotoJetIcon({ size = 40, animated = false, className = '' }: { 
 }
 
 // Main logo component
-export default function PhotoJetLogo({
+export default function AnimaJetLogo({
   size = 'md',
   showText = true,
   showIcon = true,
   animated = false,
   className = '',
-}: PhotoJetLogoProps) {
+}: AnimaJetLogoProps) {
   const { icon: iconSize, text: textSize } = sizes[size]
 
   return (
@@ -125,7 +125,7 @@ export default function PhotoJetLogo({
           animate={animated ? { scale: 1, rotate: 0 } : false}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
         >
-          <PhotoJetIcon size={iconSize} animated={animated} />
+          <AnimaJetIcon size={iconSize} animated={animated} />
         </motion.div>
       )}
       {showText && (
@@ -135,7 +135,7 @@ export default function PhotoJetLogo({
           transition={{ delay: 0.2 }}
           className={`font-heading font-bold ${textSize}`}
         >
-          <span className="text-white">Photo</span>
+          <span className="text-white">Anima</span>
           <span className="text-gold-gradient">Jet</span>
         </motion.div>
       )}
@@ -144,7 +144,7 @@ export default function PhotoJetLogo({
 }
 
 // Full logo with image (for pages that need the original logo)
-export function PhotoJetFullLogo({
+export function AnimaJetFullLogo({
   size = 80,
   animated = false,
   className = '',
@@ -161,8 +161,8 @@ export function PhotoJetFullLogo({
       className={`relative ${className}`}
     >
       <Image
-        src="/logo-full.png"
-        alt="PhotoJet"
+        src="/animajet_logo_principal.png"
+        alt="AnimaJet"
         width={size}
         height={size}
         className={`drop-shadow-lg ${animated ? 'float' : ''}`}
@@ -172,8 +172,8 @@ export function PhotoJetFullLogo({
   )
 }
 
-// Loading spinner with PhotoJet branding
-export function PhotoJetLoader({ size = 60 }: { size?: number }) {
+// Loading spinner with AnimaJet branding
+export function AnimaJetLoader({ size = 60 }: { size?: number }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <motion.div
@@ -187,7 +187,7 @@ export function PhotoJetLoader({ size = 60 }: { size?: number }) {
         transition={{ duration: 1, repeat: Infinity }}
         className="font-heading font-bold text-lg"
       >
-        <span className="text-white">Photo</span>
+        <span className="text-white">Anima</span>
         <span className="text-gold-gradient">Jet</span>
       </motion.div>
     </div>

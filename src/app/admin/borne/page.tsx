@@ -233,7 +233,7 @@ export default function BornePage() {
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="PhotoJet"
+                alt="AnimaJet"
                 width={32}
                 height={32}
                 className="drop-shadow-lg"

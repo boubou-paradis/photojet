@@ -9,7 +9,7 @@ import {
   Tablet,
   ExternalLink,
 } from 'lucide-react'
-import PhotoJetLogo from '@/components/branding/PhotoJetLogo'
+import AnimaJetLogo from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
 
 const navItems = [
@@ -33,7 +33,7 @@ export default function AdminLayout({
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/admin/dashboard" className="flex items-center gap-3">
-              <PhotoJetLogo size="md" showText showIcon />
+              <AnimaJetLogo size="md" showText showIcon />
             </Link>
 
             {/* Navigation */}

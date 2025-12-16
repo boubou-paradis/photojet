@@ -283,7 +283,7 @@ export default function AlbumPage() {
       {/* Header */}
       <div className="bg-[#242428] py-6 px-4 text-center border-b border-[rgba(255,255,255,0.1)]">
         <div className="flex justify-center mb-4">
-          <Image src="/logo.png" alt="PhotoJet" width={40} height={40} />
+          <Image src="/logo.png" alt="AnimaJet" width={40} height={40} />
         </div>
         <h1 className="text-2xl font-bold text-white mb-1">{session.name}</h1>
         <p className="text-[#6B6B70]">
@@ -483,7 +483,7 @@ export default function AlbumPage() {
       {/* Footer */}
       <footer className="py-8 text-center border-t border-[rgba(255,255,255,0.1)] mt-8">
         <p className="text-[#6B6B70] text-sm">
-          © 2025 PhotoJet • Créé avec 🚀
+          © 2025 AnimaJet • Créé avec 🚀
         </p>
       </footer>
     </div>

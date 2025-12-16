@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
-import { ShutterIcon } from '@/components/branding/PhotoJetLogo'
+import { ShutterIcon } from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
 
 const PRICE = 29.90
@@ -180,8 +180,8 @@ export default function Home() {
             >
               <div className="logo-glow mb-6">
                 <Image
-                  src="/photojet_logo_clean.png"
-                  alt="PhotoJet"
+                  src="/animajet_logo_principal.png"
+                  alt="AnimaJet"
                   width={300}
                   height={300}
                   className="w-[200px] md:w-[250px] lg:w-[300px] h-auto"

@@ -816,7 +816,7 @@ export default function LivePage() {
         <div className="text-center text-white relative z-10">
           <Image
             src="/logo.png"
-            alt="PhotoJet"
+            alt="AnimaJet"
             width={80}
             height={80}
             className="mx-auto mb-4 animate-pulse"

@@ -272,7 +272,7 @@ export default function InvitePage() {
         >
           <Image
             src="/logo.png"
-            alt="PhotoJet"
+            alt="AnimaJet"
             width={70}
             height={70}
             className="mx-auto mb-3 drop-shadow-lg"

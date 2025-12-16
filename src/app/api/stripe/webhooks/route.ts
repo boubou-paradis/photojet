@@ -176,7 +176,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .select()
     .single()
 
-  // Create initial PhotoJet session
+  // Create initial AnimaJet session
   const expiresAt = new Date()
   expiresAt.setMonth(expiresAt.getMonth() + 1)
 

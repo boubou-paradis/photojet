@@ -7,7 +7,7 @@ import { Loader2, LogIn, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
-import { PhotoJetFullLogo } from '@/components/branding/PhotoJetLogo'
+import { AnimaJetFullLogo } from '@/components/branding/AnimaJetLogo'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -109,7 +109,7 @@ export default function LoginPage() {
         <div className="card-gold rounded-2xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            <PhotoJetFullLogo size={100} className="mx-auto mb-4" />
+            <AnimaJetFullLogo size={100} className="mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-white">Connexion</h1>
             <p className="text-[#6B6B70] text-sm mt-1">
               Accedez a votre dashboard

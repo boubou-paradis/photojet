@@ -105,10 +105,10 @@ export default function BornePage() {
 
   // Generate or retrieve device ID
   useEffect(() => {
-    let id = localStorage.getItem('photojet-device-id')
+    let id = localStorage.getItem('animajet-device-id')
     if (!id) {
       id = `device-${Date.now()}-${Math.random().toString(36).substring(7)}`
-      localStorage.setItem('photojet-device-id', id)
+      localStorage.setItem('animajet-device-id', id)
     }
     setDeviceId(id)
   }, [])
@@ -456,7 +456,7 @@ export default function BornePage() {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>PhotoJet - Impression</title>
+            <title>AnimaJet - Impression</title>
             <style>
               @page { margin: 0; }
               body {
@@ -537,7 +537,7 @@ export default function BornePage() {
         <div className="relative z-10 text-center">
           <Image
             src="/logo.png"
-            alt="PhotoJet"
+            alt="AnimaJet"
             width={100}
             height={100}
             className="mx-auto mb-4 animate-pulse"

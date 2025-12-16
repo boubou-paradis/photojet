@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from 'next'
 
 export const metadata: Metadata = {
-  title: 'PhotoJet Borne',
+  title: 'AnimaJet Borne',
   description: 'Borne photo pour événements',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'PhotoJet Borne',
+    title: 'AnimaJet Borne',
   },
-  applicationName: 'PhotoJet Borne',
+  applicationName: 'AnimaJet Borne',
   manifest: '/manifest.json',
 }
 

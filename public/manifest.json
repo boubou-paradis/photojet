@@ -1,7 +1,7 @@
 {
-  "name": "PhotoJet - Borne Photo",
-  "short_name": "PhotoJet",
-  "description": "Borne photo interactive pour événements - Mariages, soirées, corporate",
+  "name": "AnimaJet - Animation d'événements",
+  "short_name": "AnimaJet",
+  "description": "Plateforme tout-en-un pour DJ et animateurs : photos en direct, jeux interactifs, QR codes personnalisés",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -9,19 +9,19 @@
   "theme_color": "#D4AF37",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/animajet_logo_vector.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.png",
+      "src": "/animajet_logo_principal.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["photo", "events", "entertainment"],
+  "categories": ["photo", "events", "entertainment", "dj", "animation"],
   "lang": "fr-FR",
   "screenshots": [],
   "related_applications": [],

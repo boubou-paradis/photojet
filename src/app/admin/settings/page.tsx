@@ -342,7 +342,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="PhotoJet"
+                alt="AnimaJet"
                 width={32}
                 height={32}
                 className="drop-shadow-lg"
@@ -706,11 +706,11 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <div className="h-16 w-16 bg-[#2E2E33] rounded-lg flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.2)]">
-                        <Image src="/logo.png" alt="PhotoJet" width={32} height={32} />
+                        <Image src="/logo.png" alt="AnimaJet" width={32} height={32} />
                       </div>
                     )}
                     <p className="text-xs text-[#6B6B70]">
-                      {formData.custom_logo ? 'Logo personnalisé actif' : 'Logo PhotoJet par défaut'}
+                      {formData.custom_logo ? 'Logo personnalisé actif' : 'Logo AnimaJet par défaut'}
                     </p>
                   </div>
 

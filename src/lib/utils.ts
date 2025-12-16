@@ -19,7 +19,7 @@ export function getAppBaseUrl(): string {
     return window.location.origin
   }
   // Server-side fallback
-  return 'https://photojet.vercel.app'
+  return 'https://animajet.vercel.app'
 }
 
 /**

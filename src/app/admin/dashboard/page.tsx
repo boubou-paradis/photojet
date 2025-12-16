@@ -484,17 +484,17 @@ export default function DashboardPage() {
       <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* Logo PhotoJet */}
+            {/* Logo AnimaJet */}
             <div className="flex items-center gap-2">
               <Image
                 src="/logo.png"
-                alt="PhotoJet"
+                alt="AnimaJet"
                 width={32}
                 height={32}
                 className="drop-shadow-lg"
                 priority
               />
-              <span className="text-sm font-medium text-[#6B6B70]">PhotoJet</span>
+              <span className="text-sm font-medium text-[#6B6B70]">AnimaJet</span>
             </div>
 
             {/* Session Info Card */}
