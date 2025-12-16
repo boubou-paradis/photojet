@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.log('[Webhook] handleCheckoutCompleted started')
+  console.log('[Webhook] Session:', JSON.stringify({
+    id: session.id,
+    customer_email: session.customer_email,
+    metadata: session.metadata,
+    subscription: session.subscription,
+  }))
+
   const email = session.customer_email || session.metadata?.email
   const promoCode = session.metadata?.promoCode
 
@@ -191,12 +199,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   })
 
   // Send welcome email
-  await sendWelcomeEmail({
+  console.log('[Webhook] Sending welcome email to:', email)
+  console.log('[Webhook] Password generated:', password)
+  console.log('[Webhook] Session code:', sessionCode)
+
+  const emailResult = await sendWelcomeEmail({
     to: email,
     password,
     sessionCode,
   })
 
+  console.log('[Webhook] Email result:', emailResult)
   console.log('[Webhook] New user created:', email, 'Session:', sessionCode)
 }
 
@@ -207,6 +220,31 @@ async function updateExistingUser(
   sessionCode: string,
   promoCode?: string
 ) {
+  console.log('[Webhook] updateExistingUser called for userId:', userId)
+
+  // Get user email
+  const { data: profile } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('email')
+    .eq('id', userId)
+    .single()
+
+  const email = profile?.email || checkoutSession.customer_email
+
+  // Generate new password for existing user
+  const newPassword = generatePassword()
+
+  // Update user password
+  const { error: updateError } = await getSupabaseAdmin().auth.admin.updateUserById(userId, {
+    password: newPassword,
+  })
+
+  if (updateError) {
+    console.error('[Webhook] Error updating password:', updateError)
+  } else {
+    console.log('[Webhook] Password updated for user:', userId)
+  }
+
   // Update or create subscription
   const { data: existingSub } = await getSupabaseAdmin()
     .from('subscriptions')
@@ -233,11 +271,34 @@ async function updateExistingUser(
     await getSupabaseAdmin().from('subscriptions').insert(subscriptionData)
   }
 
-  // Reactivate sessions
-  await getSupabaseAdmin()
+  // Reactivate sessions or create new one
+  const { data: existingSession } = await getSupabaseAdmin()
     .from('sessions')
-    .update({ is_active: true })
+    .select('code')
     .eq('user_id', userId)
+    .single()
+
+  let userSessionCode = sessionCode
+  if (existingSession) {
+    await getSupabaseAdmin()
+      .from('sessions')
+      .update({ is_active: true })
+      .eq('user_id', userId)
+    userSessionCode = existingSession.code
+  }
+
+  // Send welcome email with new password
+  if (email) {
+    console.log('[Webhook] Sending reactivation email to:', email)
+    const emailResult = await sendWelcomeEmail({
+      to: email,
+      password: newPassword,
+      sessionCode: userSessionCode,
+    })
+    console.log('[Webhook] Email result:', emailResult)
+  } else {
+    console.error('[Webhook] No email found for existing user')
+  }
 
   console.log('[Webhook] Existing user reactivated:', userId)
 }
