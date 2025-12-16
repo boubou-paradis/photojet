@@ -1,15 +1,23 @@
 import { Resend } from 'resend'
 
-if (!process.env.RESEND_API_KEY) {
-  console.warn('RESEND_API_KEY is not set - emails will not be sent')
+// Debug: Check if API key is set
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+console.log('[Resend] API Key configured:', RESEND_API_KEY ? `Yes (${RESEND_API_KEY.substring(0, 8)}...)` : 'No')
+
+if (!RESEND_API_KEY) {
+  console.warn('[Resend] RESEND_API_KEY is not set - emails will not be sent')
 }
 
-export const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null
+export const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'
 const FROM_EMAIL = 'AnimaJet <noreply@animajet.fr>'
+
+console.log('[Resend] Configuration:', {
+  apiKeySet: !!RESEND_API_KEY,
+  appUrl: APP_URL,
+  fromEmail: FROM_EMAIL,
+})
 
 // Welcome email after subscription
 export async function sendWelcomeEmail(params: {
@@ -17,15 +25,24 @@ export async function sendWelcomeEmail(params: {
   password: string
   sessionCode: string
 }) {
+  console.log('[Email] sendWelcomeEmail called with:', { to: params.to, sessionCode: params.sessionCode })
+
   if (!resend) {
-    console.log('[Email] Resend not configured, skipping welcome email')
-    return
+    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
+    console.error('[Email] Current env:', {
+      hasKey: !!process.env.RESEND_API_KEY,
+      nodeEnv: process.env.NODE_ENV
+    })
+    return { success: false, error: 'Resend not configured' }
   }
 
   const { to, password, sessionCode } = params
 
   try {
-    await resend.emails.send({
+    console.log('[Email] Attempting to send welcome email to:', to)
+    console.log('[Email] From:', FROM_EMAIL)
+
+    const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: 'Bienvenue sur AnimaJet !',
@@ -107,9 +124,17 @@ export async function sendWelcomeEmail(params: {
 </html>
       `,
     })
-    console.log('[Email] Welcome email sent to', to)
-  } catch (error) {
+
+    console.log('[Email] Welcome email sent successfully:', result)
+    return { success: true, data: result }
+  } catch (error: unknown) {
     console.error('[Email] Error sending welcome email:', error)
+    console.error('[Email] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    })
+    return { success: false, error }
   }
 }
 
@@ -118,12 +143,19 @@ export async function sendExpiringEmail(params: {
   to: string
   daysLeft: number
 }) {
-  if (!resend) return
+  console.log('[Email] sendExpiringEmail called with:', params)
+
+  if (!resend) {
+    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
+    return { success: false, error: 'Resend not configured' }
+  }
 
   const { to, daysLeft } = params
 
   try {
-    await resend.emails.send({
+    console.log('[Email] Attempting to send expiring email to:', to)
+
+    const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: `Votre abonnement AnimaJet expire dans ${daysLeft} jours`,
@@ -170,20 +202,33 @@ export async function sendExpiringEmail(params: {
 </html>
       `,
     })
-    console.log('[Email] Expiring email sent to', to)
-  } catch (error) {
+
+    console.log('[Email] Expiring email sent successfully:', result)
+    return { success: true, data: result }
+  } catch (error: unknown) {
     console.error('[Email] Error sending expiring email:', error)
+    console.error('[Email] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+    return { success: false, error }
   }
 }
 
 // Subscription canceled/expired email
 export async function sendExpiredEmail(params: { to: string }) {
-  if (!resend) return
+  console.log('[Email] sendExpiredEmail called with:', params)
+
+  if (!resend) {
+    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
+    return { success: false, error: 'Resend not configured' }
+  }
 
   const { to } = params
 
   try {
-    await resend.emails.send({
+    console.log('[Email] Attempting to send expired email to:', to)
+
+    const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: 'Votre abonnement AnimaJet a expiré',
@@ -230,8 +275,14 @@ export async function sendExpiredEmail(params: { to: string }) {
 </html>
       `,
     })
-    console.log('[Email] Expired email sent to', to)
-  } catch (error) {
+
+    console.log('[Email] Expired email sent successfully:', result)
+    return { success: true, data: result }
+  } catch (error: unknown) {
     console.error('[Email] Error sending expired email:', error)
+    console.error('[Email] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+    return { success: false, error }
   }
 }
