@@ -23,9 +23,9 @@ import Footer from '@/components/Footer'
 const PRICE = 29.90
 
 const features = [
-  { icon: Camera, text: 'Photos illimitees' },
+  { icon: Camera, text: 'Photos illimitées' },
   { icon: Tv, text: 'Diaporama en direct' },
-  { icon: QrCode, text: 'QR codes personnalises' },
+  { icon: QrCode, text: 'QR codes personnalisés' },
   { icon: Gamepad2, text: '7 jeux interactifs' },
 ]
 
@@ -55,7 +55,7 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!code || code.length !== 4) {
-      setError('Entrez un code a 4 caracteres')
+      setError('Entrez un code à 4 caractères')
       return
     }
 
@@ -71,14 +71,14 @@ export default function Home() {
         .single()
 
       if (error || !data) {
-        setError('Code invalide ou session expiree')
+        setError('Code invalide ou session expirée')
         return
       }
 
       const now = new Date()
       const expiresAt = new Date(data.expires_at)
       if (expiresAt < now) {
-        setError('Cette session a expire')
+        setError('Cette session a expiré')
         return
       }
 
@@ -171,7 +171,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-4xl mx-auto"
           >
-            {/* Logo avec effet glow */}
+            {/* Logo avec effet glow - Plus grand, sans fond */}
             <motion.div
               className="flex flex-col items-center justify-center mb-8"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -179,13 +179,12 @@ export default function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <div className="logo-glow mb-6">
-                {/* Remplacez par /photojet_logo_transparent.png une fois uploadé */}
                 <Image
-                  src="/logo.png"
+                  src="/photojet_logo_clean.png"
                   alt="PhotoJet"
-                  width={200}
-                  height={200}
-                  className="w-[150px] md:w-[180px] lg:w-[200px] h-auto"
+                  width={300}
+                  height={300}
+                  className="w-[200px] md:w-[250px] lg:w-[300px] h-auto"
                   priority
                 />
               </div>
@@ -197,7 +196,7 @@ export default function Home() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                L&apos;animation de vos evenements, simplifiee
+                L&apos;animation de vos événements, simplifiée
               </motion.p>
             </motion.div>
 
@@ -244,21 +243,22 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Pas de surprise, pas de frais caches
+                Pas de surprise, pas de frais cachés
               </p>
             </motion.div>
 
             <div className="grid md:grid-cols-2 gap-8 items-start">
-              {/* Pricing Card */}
+              {/* Pricing Card - Avec glow doré */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border border-[#D4AF37]/20 shadow-2xl shadow-black/50"
+                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border border-[#D4AF37]/30 shadow-2xl shadow-black/50"
+                style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
               >
                 <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1 rounded-bl-xl font-bold text-sm">
-                  POPULAIRE
+                  TOUT INCLUS
                 </div>
 
                 <div className="mb-6">
@@ -273,13 +273,13 @@ export default function Home() {
 
                 <ul className="space-y-4 mb-8">
                   {[
-                    'Photos et messages illimites',
+                    'Photos et messages illimités',
                     'Diaporama en direct HD',
-                    'Borne photo integree',
+                    'Borne photo intégrée',
                     '7 jeux interactifs',
-                    'QR codes personnalises',
-                    'Moderation des contenus',
-                    'Telechargement album ZIP',
+                    'QR codes personnalisés',
+                    'Modération des contenus',
+                    'Téléchargement album ZIP',
                     'Support prioritaire',
                   ].map((feature, i) => (
                     <li key={i} className="flex items-center gap-3 text-gray-400">
@@ -336,7 +336,7 @@ export default function Home() {
                   </Button>
 
                   <p className="text-xs text-gray-600 text-center">
-                    Paiement securise par Stripe. Annulable a tout moment.
+                    Paiement sécurisé par Stripe. Annulable à tout moment.
                   </p>
                 </div>
               </motion.div>
@@ -353,9 +353,9 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4 border border-[#D4AF37]/30">
                     <QrCode className="h-8 w-8 text-[#D4AF37]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Vous etes invite ?</h3>
+                  <h3 className="text-2xl font-bold text-white mb-2">Vous êtes invité ?</h3>
                   <p className="text-gray-400">
-                    Entrez le code de l&apos;evenement pour partager vos photos
+                    Entrez le code de l&apos;événement pour partager vos photos
                   </p>
                 </div>
 
@@ -381,7 +381,7 @@ export default function Home() {
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
                       <>
-                        Rejoindre l&apos;evenement
+                        Rejoindre l&apos;événement
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </>
                     )}
@@ -389,12 +389,12 @@ export default function Home() {
                 </form>
 
                 <p className="text-center text-sm text-gray-500 mt-6">
-                  Scannez le QR code ou entrez le code a 4 caracteres
+                  Scannez le QR code ou entrez le code à 4 caractères
                 </p>
 
                 <div className="mt-8 pt-8 border-t border-[#D4AF37]/10">
                   <p className="text-center text-sm text-gray-500">
-                    Deja abonne ?{' '}
+                    Déjà abonné ?{' '}
                     <a href="/login" className="text-[#D4AF37] hover:text-[#F4E4BC] transition-colors font-medium">
                       Se connecter
                     </a>
