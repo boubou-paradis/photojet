@@ -514,6 +514,40 @@ export default function MysteryPage() {
   async function exitGame() {
     if (!session) return
 
+    // Ne PAS supprimer les photos/audio - on garde la configuration !
+    // On désactive juste le jeu et reset l'état de la partie
+    await supabase
+      .from('sessions')
+      .update({
+        mystery_photo_active: false,
+        mystery_is_playing: false,
+        mystery_current_round: 1,
+        mystery_revealed_tiles: [],
+        // On garde mystery_photos et mystery_total_rounds intacts !
+      })
+      .eq('id', session.id)
+
+    // Reset local state (mais photos reste intact car chargé depuis DB)
+    setGameActive(false)
+    setIsPlaying(false)
+    setCurrentRound(1)
+    setRevealedTiles([])
+
+    toast.success('Jeu arrêté - Configuration conservée')
+
+    // Retour à la liste des jeux
+    router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données (photos, audio)
+  async function clearAllData() {
+    if (!session) return
+
+    // Demander confirmation
+    if (!window.confirm('Supprimer toutes les photos et audio ? Cette action est irréversible.')) {
+      return
+    }
+
     // Delete photos and audio from storage
     const filesToDelete: string[] = []
     photos.filter(p => p !== null).forEach(p => {
@@ -527,7 +561,7 @@ export default function MysteryPage() {
       console.log('[Mystery] Fichiers supprimés:', filesToDelete)
     }
 
-    // Reset ALL game data when exiting (including photos)
+    // Reset ALL game data
     await supabase
       .from('sessions')
       .update({
@@ -549,10 +583,7 @@ export default function MysteryPage() {
     setRevealedTiles([])
     setPhotos(Array(20).fill(null))
 
-    toast.success('Jeu arrêté - Photos supprimées')
-
-    // Retour à la liste des jeux
-    router.push('/admin/jeux')
+    toast.success('Toutes les données ont été supprimées')
   }
 
   const gridOptions = [
@@ -962,6 +993,18 @@ export default function MysteryPage() {
               )}
               Lancer le jeu ({validPhotosCount} manche{validPhotosCount > 1 ? 's' : ''})
             </Button>
+
+            {/* Clear data button */}
+            {validPhotosCount > 0 && (
+              <Button
+                onClick={clearAllData}
+                variant="outline"
+                className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer toutes les photos ({validPhotosCount})
+              </Button>
+            )}
           </motion.div>
         )}
       </main>

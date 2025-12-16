@@ -100,17 +100,19 @@ export default function WheelPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Charger les segments depuis la DB (même si le jeu n'est pas actif)
+      if (data.wheel_segments) {
+        try {
+          setSegments(JSON.parse(data.wheel_segments))
+        } catch {
+          setSegments(DEFAULT_SEGMENTS)
+        }
+      }
+
+      // Initialize game state from session si le jeu est actif
       if (data.wheel_active) {
         setGameActive(true)
         setResult(data.wheel_result ?? null)
-        if (data.wheel_segments) {
-          try {
-            setSegments(JSON.parse(data.wheel_segments))
-          } catch {
-            setSegments(DEFAULT_SEGMENTS)
-          }
-        }
         if (data.wheel_history) {
           try {
             setHistory(JSON.parse(data.wheel_history))
@@ -127,6 +129,15 @@ export default function WheelPage() {
     }
   }
 
+  // Sauvegarder les segments dans la DB
+  async function saveSegmentsToDatabase(updatedSegments: WheelSegment[]) {
+    if (!session) return
+    await supabase
+      .from('sessions')
+      .update({ wheel_segments: JSON.stringify(updatedSegments) })
+      .eq('id', session.id)
+  }
+
   function addSegment() {
     if (!newSegmentText.trim()) return
     if (segments.length >= 12) {
@@ -139,7 +150,9 @@ export default function WheelPage() {
       text: newSegmentText.trim(),
       color: COLORS[segments.length % COLORS.length],
     }
-    setSegments([...segments, newSegment])
+    const updatedSegments = [...segments, newSegment]
+    setSegments(updatedSegments)
+    saveSegmentsToDatabase(updatedSegments)
     setNewSegmentText('')
   }
 
@@ -148,15 +161,21 @@ export default function WheelPage() {
       toast.error('Minimum 2 segments')
       return
     }
-    setSegments(segments.filter(s => s.id !== id))
+    const updatedSegments = segments.filter(s => s.id !== id)
+    setSegments(updatedSegments)
+    saveSegmentsToDatabase(updatedSegments)
   }
 
   function updateSegmentColor(id: string, color: string) {
-    setSegments(segments.map(s => s.id === id ? { ...s, color } : s))
+    const updatedSegments = segments.map(s => s.id === id ? { ...s, color } : s)
+    setSegments(updatedSegments)
+    saveSegmentsToDatabase(updatedSegments)
   }
 
   function updateSegmentText(id: string, text: string) {
-    setSegments(segments.map(s => s.id === id ? { ...s, text } : s))
+    const updatedSegments = segments.map(s => s.id === id ? { ...s, text } : s)
+    setSegments(updatedSegments)
+    saveSegmentsToDatabase(updatedSegments)
   }
 
   async function launchGame() {
@@ -284,11 +303,42 @@ export default function WheelPage() {
   async function exitGame() {
     if (!session) return
 
+    // On garde les segments dans la DB, on reset juste l'état du jeu
     setGameActive(false)
     setIsSpinning(false)
     setResult(null)
     setHistory([])
-    setSegments(DEFAULT_SEGMENTS)
+    // Ne pas reset à DEFAULT_SEGMENTS - garder la configuration
+
+    await supabase
+      .from('sessions')
+      .update({
+        wheel_active: false,
+        // On garde wheel_segments intact !
+        wheel_is_spinning: false,
+        wheel_result: null,
+        wheel_history: JSON.stringify([]),
+      })
+      .eq('id', session.id)
+
+    broadcastGameState({
+      gameActive: false,
+      segments: [],
+      isSpinning: false,
+      result: null,
+    })
+
+    toast.success('Jeu arrêté - Configuration conservée')
+    router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données
+  async function clearAllData() {
+    if (!session) return
+
+    if (!window.confirm('Supprimer tous les segments ? Cette action est irréversible.')) {
+      return
+    }
 
     await supabase
       .from('sessions')
@@ -301,15 +351,11 @@ export default function WheelPage() {
       })
       .eq('id', session.id)
 
-    broadcastGameState({
-      gameActive: false,
-      segments: [],
-      isSpinning: false,
-      result: null,
-    })
+    setGameActive(false)
+    setSegments(DEFAULT_SEGMENTS)
+    setHistory([])
 
-    toast.success('Jeu arrêté')
-    router.push('/admin/jeux')
+    toast.success('Toutes les données ont été supprimées')
   }
 
   if (loading) {
@@ -458,6 +504,17 @@ export default function WheelPage() {
                 <>🚀 Configurer et ouvrir le diaporama</>
               )}
             </button>
+
+            {/* Clear data button */}
+            {segments.length > 0 && segments !== DEFAULT_SEGMENTS && (
+              <button
+                onClick={clearAllData}
+                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Réinitialiser les segments
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Control Panel */

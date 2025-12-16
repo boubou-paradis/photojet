@@ -95,17 +95,19 @@ export default function DefisPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Charger les challenges depuis la DB (même si le jeu n'est pas actif)
+      if (data.challenges_list) {
+        try {
+          setChallenges(JSON.parse(data.challenges_list))
+        } catch {
+          setChallenges(DEFAULT_CHALLENGES)
+        }
+      }
+
+      // Initialize game state from session si le jeu est actif
       if (data.challenges_active) {
         setGameActive(true)
         setCurrentChallenge(data.challenges_current ?? null)
-        if (data.challenges_list) {
-          try {
-            setChallenges(JSON.parse(data.challenges_list))
-          } catch {
-            setChallenges(DEFAULT_CHALLENGES)
-          }
-        }
         if (data.challenges_submissions) {
           try {
             setSubmissions(JSON.parse(data.challenges_submissions))
@@ -153,6 +155,15 @@ export default function DefisPage() {
     }
   }, [session, gameActive, supabase])
 
+  // Sauvegarder les challenges dans la DB
+  async function saveChallengesToDatabase(updatedChallenges: PhotoChallenge[]) {
+    if (!session) return
+    await supabase
+      .from('sessions')
+      .update({ challenges_list: JSON.stringify(updatedChallenges) })
+      .eq('id', session.id)
+  }
+
   function addChallenge() {
     if (!newChallengeTitle.trim()) return
 
@@ -162,17 +173,23 @@ export default function DefisPage() {
       points: newChallengePoints,
       enabled: true,
     }
-    setChallenges([...challenges, newChallenge])
+    const updatedChallenges = [...challenges, newChallenge]
+    setChallenges(updatedChallenges)
+    saveChallengesToDatabase(updatedChallenges)
     setNewChallengeTitle('')
     setNewChallengePoints(10)
   }
 
   function removeChallenge(id: string) {
-    setChallenges(challenges.filter(c => c.id !== id))
+    const updatedChallenges = challenges.filter(c => c.id !== id)
+    setChallenges(updatedChallenges)
+    saveChallengesToDatabase(updatedChallenges)
   }
 
   function toggleChallenge(id: string) {
-    setChallenges(challenges.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c))
+    const updatedChallenges = challenges.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c)
+    setChallenges(updatedChallenges)
+    saveChallengesToDatabase(updatedChallenges)
   }
 
   async function launchGame() {
@@ -292,17 +309,18 @@ export default function DefisPage() {
   async function exitGame() {
     if (!session) return
 
+    // On garde les challenges dans la DB, on reset juste l'état du jeu
     setGameActive(false)
     setSubmissions([])
     setCurrentChallenge(null)
-    setChallenges(DEFAULT_CHALLENGES)
+    // Ne pas reset à DEFAULT_CHALLENGES - garder la configuration
 
     await supabase
       .from('sessions')
       .update({
         challenges_active: false,
-        challenges_list: null,
-        challenges_submissions: null,
+        // On garde challenges_list intact !
+        challenges_submissions: JSON.stringify([]),
         challenges_current: null,
       })
       .eq('id', session.id)
@@ -314,8 +332,33 @@ export default function DefisPage() {
       submissions: [],
     })
 
-    toast.success('Jeu arrêté')
+    toast.success('Jeu arrêté - Configuration conservée')
     router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données
+  async function clearAllData() {
+    if (!session) return
+
+    if (!window.confirm('Supprimer tous les défis ? Cette action est irréversible.')) {
+      return
+    }
+
+    await supabase
+      .from('sessions')
+      .update({
+        challenges_active: false,
+        challenges_list: null,
+        challenges_submissions: null,
+        challenges_current: null,
+      })
+      .eq('id', session.id)
+
+    setGameActive(false)
+    setChallenges(DEFAULT_CHALLENGES)
+    setSubmissions([])
+
+    toast.success('Toutes les données ont été supprimées')
   }
 
   // Stats
@@ -491,6 +534,17 @@ export default function DefisPage() {
                 <>🚀 Configurer et ouvrir le diaporama</>
               )}
             </button>
+
+            {/* Clear data button */}
+            {challenges.length > 0 && challenges !== DEFAULT_CHALLENGES && (
+              <button
+                onClick={clearAllData}
+                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Réinitialiser les défis
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Control Panel */

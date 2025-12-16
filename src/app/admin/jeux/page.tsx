@@ -76,64 +76,6 @@ export default function JeuxPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Reset all games on page load
-  async function resetAllGames(sessionId: string) {
-    try {
-      await supabase
-        .from('sessions')
-        .update({
-          // Reset Photo Mystère
-          mystery_photo_enabled: false,
-          mystery_photo_active: false,
-          mystery_is_playing: false,
-          mystery_current_round: 1,
-          mystery_revealed_tiles: [],
-          mystery_photo_state: null,
-          // Reset Lineup
-          lineup_active: false,
-          lineup_is_running: false,
-          lineup_is_paused: false,
-          lineup_is_game_over: false,
-          lineup_current_number: '',
-          lineup_show_winner: false,
-          lineup_team1_score: 0,
-          lineup_team2_score: 0,
-          lineup_time_left: 60,
-          lineup_current_points: 10,
-          // Reset Vote Photo
-          vote_active: false,
-          vote_is_open: false,
-          vote_show_results: false,
-          vote_show_podium: false,
-          vote_timer_left: null,
-          // Reset Wheel
-          wheel_active: false,
-          wheel_is_spinning: false,
-          wheel_result: null,
-          // Reset Challenges
-          challenges_active: false,
-          challenges_current: null,
-          // Reset Quiz
-          quiz_active: false,
-          quiz_current_question: 0,
-          quiz_is_answering: false,
-          quiz_show_results: false,
-          quiz_time_left: null,
-          // Reset Blind Test
-          blindtest_active: false,
-          blindtest_current_song: 0,
-          blindtest_is_playing: false,
-          blindtest_show_answer: false,
-          blindtest_time_left: null,
-        })
-        .eq('id', sessionId)
-
-      console.log('[Jeux] All games reset on page load')
-    } catch (err) {
-      console.error('Error resetting games:', err)
-    }
-  }
-
   useEffect(() => {
     fetchSession()
   }, [])
@@ -150,8 +92,9 @@ export default function JeuxPage() {
       if (error) throw error
       setSession(data)
 
-      // Reset all games on page load (ensures clean state)
-      await resetAllGames(data.id)
+      // Note: On ne reset plus les jeux automatiquement
+      // Les configurations (photos, audio, questions, etc.) persistent
+      // tant que la session existe
     } catch (err) {
       console.error('Error fetching session:', err)
       toast.error('Erreur lors du chargement de la session')

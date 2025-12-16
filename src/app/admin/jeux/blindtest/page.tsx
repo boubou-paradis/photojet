@@ -106,20 +106,22 @@ export default function BlindTestPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Charger les songs depuis la DB (même si le jeu n'est pas actif)
+      if (data.blindtest_songs) {
+        try {
+          setSongs(JSON.parse(data.blindtest_songs))
+        } catch {
+          setSongs(DEFAULT_SONGS)
+        }
+      }
+
+      // Initialize game state from session si le jeu est actif
       if (data.blindtest_active) {
         setGameActive(true)
         setCurrentSongIndex(data.blindtest_current_song ?? 0)
         setIsPlaying(data.blindtest_is_playing ?? false)
         setShowAnswer(data.blindtest_show_answer ?? false)
         setTimeLeft(data.blindtest_time_left ?? null)
-        if (data.blindtest_songs) {
-          try {
-            setSongs(JSON.parse(data.blindtest_songs))
-          } catch {
-            setSongs(DEFAULT_SONGS)
-          }
-        }
         if (data.blindtest_participants) {
           try {
             setParticipants(JSON.parse(data.blindtest_participants))
@@ -181,6 +183,15 @@ export default function BlindTestPage() {
     }
   }, [session, gameActive, supabase])
 
+  // Sauvegarder les songs dans la DB
+  async function saveSongsToDatabase(updatedSongs: BlindTestSong[]) {
+    if (!session) return
+    await supabase
+      .from('sessions')
+      .update({ blindtest_songs: JSON.stringify(updatedSongs) })
+      .eq('id', session.id)
+  }
+
   function addSong() {
     if (!newTitle.trim() || !newArtist.trim()) return
 
@@ -190,13 +201,17 @@ export default function BlindTestPage() {
       artist: newArtist.trim(),
       points: 10,
     }
-    setSongs([...songs, newSong])
+    const updatedSongs = [...songs, newSong]
+    setSongs(updatedSongs)
+    saveSongsToDatabase(updatedSongs)
     setNewTitle('')
     setNewArtist('')
   }
 
   function removeSong(id: string) {
-    setSongs(songs.filter(s => s.id !== id))
+    const updatedSongs = songs.filter(s => s.id !== id)
+    setSongs(updatedSongs)
+    saveSongsToDatabase(updatedSongs)
   }
 
   async function handleAudioUpload(songId: string, e: React.ChangeEvent<HTMLInputElement>) {
@@ -213,7 +228,9 @@ export default function BlindTestPage() {
 
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(filePath)
 
-      setSongs(songs.map(s => s.id === songId ? { ...s, audioUrl: urlData.publicUrl } : s))
+      const updatedSongs = songs.map(s => s.id === songId ? { ...s, audioUrl: urlData.publicUrl } : s)
+      setSongs(updatedSongs)
+      saveSongsToDatabase(updatedSongs)
       toast.success('Audio ajouté!')
     } catch (err) {
       console.error('Error uploading audio:', err)
@@ -408,17 +425,69 @@ export default function BlindTestPage() {
   async function exitGame() {
     if (!session) return
 
+    // On garde les songs dans la DB, on reset juste l'état du jeu
     setGameActive(false)
     setCurrentSongIndex(0)
     setIsPlaying(false)
     setShowAnswer(false)
     setTimeLeft(null)
     setParticipants([])
-    setSongs(DEFAULT_SONGS)
+    // Ne pas reset à DEFAULT_SONGS - garder la liste actuelle
     if (audioRef.current) {
       audioRef.current.pause()
     }
 
+    await supabase
+      .from('sessions')
+      .update({
+        blindtest_active: false,
+        // On garde blindtest_songs intact !
+        blindtest_current_song: 0,
+        blindtest_is_playing: false,
+        blindtest_show_answer: false,
+        blindtest_time_left: null,
+        blindtest_answers: JSON.stringify([]),
+        blindtest_participants: JSON.stringify([]),
+      })
+      .eq('id', session.id)
+
+    broadcastGameState({
+      gameActive: false,
+      songs: [],
+      currentSongIndex: 0,
+      isPlaying: false,
+      showAnswer: false,
+      timeLeft: null,
+      participants: [],
+    })
+
+    toast.success('Jeu arrêté - Configuration conservée')
+    router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données (songs, audio)
+  async function clearAllData() {
+    if (!session) return
+
+    if (!window.confirm('Supprimer toutes les chansons et audio ? Cette action est irréversible.')) {
+      return
+    }
+
+    // Delete audio files from storage
+    const audioUrls = songs.filter(s => s.audioUrl).map(s => s.audioUrl!)
+    if (audioUrls.length > 0) {
+      // Extract file paths from URLs
+      const filePaths = audioUrls.map(url => {
+        const match = url.match(/blindtest-audio\/[^?]+/)
+        return match ? match[0] : null
+      }).filter(Boolean) as string[]
+
+      if (filePaths.length > 0) {
+        await supabase.storage.from('photos').remove(filePaths)
+      }
+    }
+
+    // Reset tout
     await supabase
       .from('sessions')
       .update({
@@ -433,18 +502,11 @@ export default function BlindTestPage() {
       })
       .eq('id', session.id)
 
-    broadcastGameState({
-      gameActive: false,
-      songs: [],
-      currentSongIndex: 0,
-      isPlaying: false,
-      showAnswer: false,
-      timeLeft: null,
-      participants: [],
-    })
+    setGameActive(false)
+    setSongs(DEFAULT_SONGS)
+    setParticipants([])
 
-    toast.success('Jeu arrêté')
-    router.push('/admin/jeux')
+    toast.success('Toutes les données ont été supprimées')
   }
 
   const currentSong = songs[currentSongIndex]
@@ -615,6 +677,17 @@ export default function BlindTestPage() {
                 <>🚀 Lancer le blind test ({songs.length} chansons)</>
               )}
             </button>
+
+            {/* Clear data button */}
+            {songs.length > 0 && songs !== DEFAULT_SONGS && (
+              <button
+                onClick={clearAllData}
+                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer toutes les chansons
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Control Panel */

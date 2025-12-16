@@ -122,20 +122,22 @@ export default function QuizPage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Charger les questions depuis la DB (même si le jeu n'est pas actif)
+      if (data.quiz_questions) {
+        try {
+          setQuestions(JSON.parse(data.quiz_questions))
+        } catch {
+          setQuestions(DEFAULT_QUESTIONS)
+        }
+      }
+
+      // Initialize game state from session si le jeu est actif
       if (data.quiz_active) {
         setGameActive(true)
         setCurrentQuestionIndex(data.quiz_current_question ?? 0)
         setIsAnswering(data.quiz_is_answering ?? false)
         setShowResults(data.quiz_show_results ?? false)
         setTimeLeft(data.quiz_time_left ?? null)
-        if (data.quiz_questions) {
-          try {
-            setQuestions(JSON.parse(data.quiz_questions))
-          } catch {
-            setQuestions(DEFAULT_QUESTIONS)
-          }
-        }
         if (data.quiz_participants) {
           try {
             setParticipants(JSON.parse(data.quiz_participants))
@@ -247,6 +249,15 @@ export default function QuizPage() {
     }
   }, [session, gameActive, questions, currentQuestionIndex, supabase])
 
+  // Sauvegarder les questions dans la DB
+  async function saveQuestionsToDatabase(updatedQuestions: QuizQuestion[]) {
+    if (!session) return
+    await supabase
+      .from('sessions')
+      .update({ quiz_questions: JSON.stringify(updatedQuestions) })
+      .eq('id', session.id)
+  }
+
   function addQuestion() {
     const newQuestion: QuizQuestion = {
       id: Date.now().toString(),
@@ -256,16 +267,22 @@ export default function QuizPage() {
       timeLimit: 20,
       points: 10,
     }
-    setQuestions([...questions, newQuestion])
+    const updatedQuestions = [...questions, newQuestion]
+    setQuestions(updatedQuestions)
+    saveQuestionsToDatabase(updatedQuestions)
     setEditingQuestion(newQuestion)
   }
 
   function updateQuestion(updated: QuizQuestion) {
-    setQuestions(questions.map(q => q.id === updated.id ? updated : q))
+    const updatedQuestions = questions.map(q => q.id === updated.id ? updated : q)
+    setQuestions(updatedQuestions)
+    saveQuestionsToDatabase(updatedQuestions)
   }
 
   function removeQuestion(id: string) {
-    setQuestions(questions.filter(q => q.id !== id))
+    const updatedQuestions = questions.filter(q => q.id !== id)
+    setQuestions(updatedQuestions)
+    saveQuestionsToDatabase(updatedQuestions)
     if (editingQuestion?.id === id) setEditingQuestion(null)
   }
 
@@ -423,6 +440,7 @@ export default function QuizPage() {
   async function exitGame() {
     if (!session) return
 
+    // On garde les questions dans la DB, on reset juste l'état du jeu
     setGameActive(false)
     setCurrentQuestionIndex(0)
     setIsAnswering(false)
@@ -430,7 +448,44 @@ export default function QuizPage() {
     setTimeLeft(null)
     setParticipants([])
     setAnswerStats([0, 0, 0, 0])
-    setQuestions(DEFAULT_QUESTIONS)
+    // Ne pas reset à DEFAULT_QUESTIONS - garder la liste actuelle
+
+    await supabase
+      .from('sessions')
+      .update({
+        quiz_active: false,
+        // On garde quiz_questions intact !
+        quiz_current_question: 0,
+        quiz_is_answering: false,
+        quiz_show_results: false,
+        quiz_time_left: null,
+        quiz_answers: JSON.stringify([]),
+        quiz_participants: JSON.stringify([]),
+      })
+      .eq('id', session.id)
+
+    broadcastGameState({
+      gameActive: false,
+      questions: [],
+      currentQuestionIndex: 0,
+      isAnswering: false,
+      showResults: false,
+      timeLeft: null,
+      participants: [],
+      answerStats: [0, 0, 0, 0],
+    })
+
+    toast.success('Jeu arrêté - Configuration conservée')
+    router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données (questions)
+  async function clearAllData() {
+    if (!session) return
+
+    if (!window.confirm('Supprimer toutes les questions ? Cette action est irréversible.')) {
+      return
+    }
 
     await supabase
       .from('sessions')
@@ -446,19 +501,12 @@ export default function QuizPage() {
       })
       .eq('id', session.id)
 
-    broadcastGameState({
-      gameActive: false,
-      questions: [],
-      currentQuestionIndex: 0,
-      isAnswering: false,
-      showResults: false,
-      timeLeft: null,
-      participants: [],
-      answerStats: [0, 0, 0, 0],
-    })
+    setGameActive(false)
+    setQuestions(DEFAULT_QUESTIONS)
+    setParticipants([])
+    setEditingQuestion(null)
 
-    toast.success('Jeu arrêté')
-    router.push('/admin/jeux')
+    toast.success('Toutes les données ont été supprimées')
   }
 
   const currentQuestion = questions[currentQuestionIndex]
@@ -678,6 +726,17 @@ export default function QuizPage() {
                 <>🚀 Lancer le quiz ({questions.length} questions)</>
               )}
             </button>
+
+            {/* Clear data button */}
+            {questions.length > 0 && questions !== DEFAULT_QUESTIONS && (
+              <button
+                onClick={clearAllData}
+                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer toutes les questions
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Control Panel */

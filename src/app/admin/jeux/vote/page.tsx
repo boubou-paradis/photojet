@@ -94,20 +94,22 @@ export default function VotePage() {
       if (error) throw error
       setSession(data)
 
-      // Initialize state from session
+      // Charger les photos sélectionnées depuis la DB (même si le jeu n'est pas actif)
+      if (data.vote_photos) {
+        try {
+          setSelectedPhotos(JSON.parse(data.vote_photos))
+        } catch {
+          setSelectedPhotos([])
+        }
+      }
+
+      // Initialize game state from session si le jeu est actif
       if (data.vote_active) {
         setGameActive(true)
         setIsVoteOpen(data.vote_is_open ?? false)
         setShowResults(data.vote_show_results ?? false)
         setShowPodium(data.vote_show_podium ?? false)
         setTimeLeft(data.vote_timer_left ?? null)
-        if (data.vote_photos) {
-          try {
-            setSelectedPhotos(JSON.parse(data.vote_photos))
-          } catch {
-            setSelectedPhotos([])
-          }
-        }
       }
 
       // Fetch session photos
@@ -226,22 +228,34 @@ export default function VotePage() {
     }
   }, [session, gameActive, supabase])
 
+  // Sauvegarder les photos sélectionnées dans la DB
+  async function savePhotosToDatabase(updatedPhotos: VotePhotoCandidate[]) {
+    if (!session) return
+    await supabase
+      .from('sessions')
+      .update({ vote_photos: JSON.stringify(updatedPhotos) })
+      .eq('id', session.id)
+  }
+
   function togglePhotoSelection(photo: Photo) {
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(photo.storage_path)
     const exists = selectedPhotos.find(p => p.photoId === photo.id)
 
+    let updatedPhotos: VotePhotoCandidate[]
     if (exists) {
-      setSelectedPhotos(prev => prev.filter(p => p.photoId !== photo.id))
+      updatedPhotos = selectedPhotos.filter(p => p.photoId !== photo.id)
     } else {
       if (selectedPhotos.length >= 10) {
         toast.error('Maximum 10 photos')
         return
       }
-      setSelectedPhotos(prev => [
-        ...prev,
+      updatedPhotos = [
+        ...selectedPhotos,
         { photoId: photo.id, photoUrl: urlData.publicUrl, votes: 0 }
-      ])
+      ]
     }
+    setSelectedPhotos(updatedPhotos)
+    savePhotosToDatabase(updatedPhotos)
   }
 
   async function launchGame() {
@@ -409,19 +423,20 @@ export default function VotePage() {
   async function exitGame() {
     if (!session) return
 
+    // On garde les photos sélectionnées dans la DB, on reset juste l'état du jeu
     setGameActive(false)
     setIsVoteOpen(false)
     setShowResults(false)
     setShowPodium(false)
-    setSelectedPhotos([])
     setTimeLeft(null)
+    // Ne pas vider selectedPhotos - garder la sélection
 
     await supabase
       .from('sessions')
       .update({
         vote_active: false,
-        vote_photos: null,
-        vote_votes: null,
+        // On garde vote_photos intact !
+        vote_votes: JSON.stringify([]),
         vote_is_open: false,
         vote_show_results: false,
         vote_show_podium: false,
@@ -439,8 +454,36 @@ export default function VotePage() {
       timeLeft: null,
     })
 
-    toast.success('Jeu arrêté')
+    toast.success('Jeu arrêté - Configuration conservée')
     router.push('/admin/jeux')
+  }
+
+  // Fonction pour supprimer toutes les données
+  async function clearAllData() {
+    if (!session) return
+
+    if (!window.confirm('Désélectionner toutes les photos ?')) {
+      return
+    }
+
+    await supabase
+      .from('sessions')
+      .update({
+        vote_active: false,
+        vote_photos: null,
+        vote_votes: null,
+        vote_is_open: false,
+        vote_show_results: false,
+        vote_show_podium: false,
+        vote_timer: null,
+        vote_timer_left: null,
+      })
+      .eq('id', session.id)
+
+    setGameActive(false)
+    setSelectedPhotos([])
+
+    toast.success('Sélection réinitialisée')
   }
 
   // Sort photos by votes for display
@@ -616,6 +659,17 @@ export default function VotePage() {
                 <>🚀 Configurer et ouvrir le diaporama</>
               )}
             </button>
+
+            {/* Clear data button */}
+            {selectedPhotos.length > 0 && (
+              <button
+                onClick={clearAllData}
+                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Désélectionner toutes les photos ({selectedPhotos.length})
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Control Panel */
