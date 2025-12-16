@@ -1,3 +1,64 @@
+// ===========================================
+// SUBSCRIPTION & AUTH TYPES
+// ===========================================
+
+export type UserRole = 'owner' | 'admin' | 'user'
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
+export type PromoType = 'trial' | 'percent' | 'fixed'
+
+export interface UserProfile {
+  id: string
+  email: string
+  role: UserRole
+  created_at: string
+  updated_at: string
+}
+
+export interface Subscription {
+  id: string
+  user_id: string
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  stripe_price_id: string | null
+  status: SubscriptionStatus
+  current_period_start: string | null
+  current_period_end: string | null
+  cancel_at_period_end: boolean
+  canceled_at: string | null
+  trial_start: string | null
+  trial_end: string | null
+  promo_code_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PromoCode {
+  id: string
+  code: string
+  type: PromoType
+  value: number // trial: days, percent: %, fixed: cents
+  max_uses: number | null
+  uses_count: number
+  expires_at: string | null
+  influencer_name: string | null
+  influencer_commission_percent: number
+  is_active: boolean
+  created_at: string
+  created_by: string | null
+}
+
+export interface PromoCodeUse {
+  id: string
+  promo_code_id: string
+  user_id: string
+  subscription_id: string | null
+  used_at: string
+}
+
+// ===========================================
+// SESSION & MEDIA TYPES
+// ===========================================
+
 export type TransitionType = 'fade' | 'slide' | 'zoom'
 export type PhotoStatus = 'pending' | 'approved' | 'rejected'
 export type MessageStatus = 'pending' | 'approved' | 'rejected'
@@ -24,6 +85,7 @@ export interface Session {
   album_qr_code: string | null
   is_active: boolean
   user_id: string | null
+  subscription_id: string | null
   // Borne photo settings
   borne_enabled: boolean
   borne_qr_code: string | null
