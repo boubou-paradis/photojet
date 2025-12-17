@@ -797,21 +797,6 @@ export default function DashboardPage() {
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* Logo AnimaJet */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#D4AF37]/30 blur-2xl rounded-full" />
-                <Image
-                  src="/images/animajet_logo_principal.png"
-                  alt="AnimaJet"
-                  width={60}
-                  height={60}
-                  className="relative z-10 drop-shadow-lg"
-                  priority
-                />
-              </div>
-            </div>
-
             {/* Session Info Card */}
             {selectedSession && (
               <div className="flex items-center gap-3 px-4 py-2 bg-[#1A1A1E] rounded-xl border border-[#D4AF37]/20">
