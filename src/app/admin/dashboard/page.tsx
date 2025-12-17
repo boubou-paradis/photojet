@@ -440,9 +440,24 @@ export default function DashboardPage() {
     }
   }
 
+  async function generateUniqueCode(): Promise<string> {
+    const maxAttempts = 10
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const code = Math.floor(1000 + Math.random() * 9000).toString()
+      const { data: existing } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('code', code)
+        .single()
+      if (!existing) return code
+    }
+    // Fallback: use timestamp-based code
+    return Date.now().toString().slice(-6)
+  }
+
   async function createNewSession() {
     try {
-      const code = Math.floor(1000 + Math.random() * 9000).toString()
+      const code = await generateUniqueCode()
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7)
 

@@ -305,8 +305,24 @@ export default function SettingsPage() {
     }
   }
 
-  function handleRegenerateCode() {
-    setFormData((prev) => ({ ...prev, code: generateSessionCode() }))
+  async function handleRegenerateCode() {
+    // Generate unique code by checking database
+    const maxAttempts = 10
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const newCode = generateSessionCode()
+      const { data: existing } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('code', newCode)
+        .neq('id', selectedSession?.id || '') // Exclude current session
+        .single()
+      if (!existing) {
+        setFormData((prev) => ({ ...prev, code: newCode }))
+        return
+      }
+    }
+    // Fallback
+    setFormData((prev) => ({ ...prev, code: Date.now().toString().slice(-4) }))
   }
 
   if (loading) {

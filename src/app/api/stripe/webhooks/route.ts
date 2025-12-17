@@ -76,6 +76,35 @@ const getSupabaseAdmin = () => {
   return createClient(url, key)
 }
 
+// Generate a unique session code (checks database for duplicates)
+async function generateUniqueSessionCode(): Promise<string> {
+  const maxAttempts = 10
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const code = generateSessionCode()
+    console.log(`[Code] Attempt ${attempt + 1}: Generated code ${code}`)
+
+    // Check if code already exists
+    const { data: existing } = await getSupabaseAdmin()
+      .from('sessions')
+      .select('id')
+      .eq('code', code)
+      .single()
+
+    if (!existing) {
+      console.log(`[Code] Code ${code} is unique!`)
+      return code
+    }
+
+    console.log(`[Code] Code ${code} already exists, regenerating...`)
+  }
+
+  // Fallback: add timestamp suffix to make it unique
+  const fallbackCode = generateSessionCode() + Date.now().toString(36).slice(-2).toUpperCase()
+  console.log(`[Code] Max attempts reached, using fallback: ${fallbackCode}`)
+  return fallbackCode
+}
+
 export async function POST(request: NextRequest) {
   console.log('[Webhook] POST received')
 
@@ -222,10 +251,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       throw err
     }
 
-    // Step 2: Generate password and session code
+    // Step 2: Generate password and unique session code
     console.log('[Webhook] Step 2: Generating credentials...')
     const password = generatePassword()
-    const sessionCode = generateSessionCode()
+    const sessionCode = await generateUniqueSessionCode()
     console.log('[Webhook] Step 2: SUCCESS - Password length:', password.length, 'Session code:', sessionCode)
 
     // Step 3: Create user in Supabase Auth
