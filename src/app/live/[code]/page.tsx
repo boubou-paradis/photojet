@@ -865,7 +865,7 @@ export default function LivePage() {
     )
   }
 
-  // Show Wheel Game (Roue de la Fortune) if active
+  // Show Wheel Game (Roue de la Destinée) if active
   const isWheelActive = wheelState?.gameActive ?? session.wheel_active
   // Get segments from broadcast state or from session database
   const wheelSegments: WheelSegment[] = wheelState?.segments ?? (session.wheel_segments ? (() => {

@@ -436,7 +436,7 @@ export default function WheelPage() {
                 <span className="text-xl">🎡</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Roue de la Fortune</h1>
+                <h1 className="text-xl font-bold text-white">Roue de la Destinée</h1>
                 <p className="text-sm text-[#6B6B70]">{session.name}</p>
               </div>
             </div>
@@ -467,7 +467,7 @@ export default function WheelPage() {
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-4xl">🎡</span>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Roue de la Fortune</h2>
+                  <h2 className="text-xl font-bold text-white">Roue de la Destinée</h2>
                   <p className="text-gray-400 text-sm">Personnalisez les segments de la roue</p>
                 </div>
               </div>

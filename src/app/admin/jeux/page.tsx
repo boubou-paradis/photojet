@@ -37,7 +37,7 @@ const games = [
   },
   {
     id: 'wheel',
-    name: 'Roue de la Fortune',
+    name: 'Roue de la Destinée',
     emoji: '🎡',
     description: 'Défis et gages aléatoires',
     path: '/admin/jeux/wheel',

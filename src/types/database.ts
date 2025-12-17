@@ -148,7 +148,7 @@ export interface Session {
   vote_show_podium: boolean
   vote_timer: number | null // Optional timer in seconds
   vote_timer_left: number | null
-  // Wheel (Roue de la Fortune) settings
+  // Wheel (Roue de la Destinée) settings
   wheel_active: boolean
   wheel_segments: string | null // JSON array of WheelSegment
   wheel_is_spinning: boolean
@@ -224,7 +224,7 @@ export interface VoteRecord {
   timestamp: string
 }
 
-// Wheel (Roue de la Fortune) types
+// Wheel (Roue de la Destinée) types
 export interface WheelSegment {
   id: string
   text: string
