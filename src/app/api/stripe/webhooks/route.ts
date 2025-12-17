@@ -78,18 +78,24 @@ const getSupabaseAdmin = () => {
 
 // Generate a unique session code (checks database for duplicates)
 async function generateUniqueSessionCode(): Promise<string> {
-  const maxAttempts = 10
+  const maxAttempts = 50 // Increased attempts since we must stay at 4 chars
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const code = generateSessionCode()
-    console.log(`[Code] Attempt ${attempt + 1}: Generated code ${code}`)
+    console.log(`[Code] Attempt ${attempt + 1}: Generated code ${code} (length: ${code.length})`)
 
     // Check if code already exists
-    const { data: existing } = await getSupabaseAdmin()
+    const { data: existing, error } = await getSupabaseAdmin()
       .from('sessions')
       .select('id')
       .eq('code', code)
       .single()
+
+    if (error && error.code === 'PGRST116') {
+      // PGRST116 = no rows returned, code is unique
+      console.log(`[Code] Code ${code} is unique!`)
+      return code
+    }
 
     if (!existing) {
       console.log(`[Code] Code ${code} is unique!`)
@@ -99,9 +105,13 @@ async function generateUniqueSessionCode(): Promise<string> {
     console.log(`[Code] Code ${code} already exists, regenerating...`)
   }
 
-  // Fallback: add timestamp suffix to make it unique
-  const fallbackCode = generateSessionCode() + Date.now().toString(36).slice(-2).toUpperCase()
-  console.log(`[Code] Max attempts reached, using fallback: ${fallbackCode}`)
+  // Fallback: generate a completely different 4-char code using different charset
+  const fallbackChars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+  let fallbackCode = ''
+  for (let i = 0; i < 4; i++) {
+    fallbackCode += fallbackChars.charAt(Math.floor(Math.random() * fallbackChars.length))
+  }
+  console.log(`[Code] Max attempts reached, using fallback: ${fallbackCode} (length: ${fallbackCode.length})`)
   return fallbackCode
 }
 
@@ -462,11 +472,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       name: 'Mon evenement',
       expires_at: expiresAt.toISOString(),
       user_id: userId,
-      subscription_id: subscriptionData?.id,
+      subscription_id: subscriptionData?.id || null,
       moderation_enabled: true,
       is_active: true,
     }
-    console.log('[Webhook] Step 7: Payload:', JSON.stringify(sessionPayload, null, 2))
+
+    // Detailed logging before insert
+    console.log('[Webhook] Step 7: ============ SESSION DATA TO INSERT ============')
+    console.log('[Webhook] Step 7: code:', sessionCode, '(length:', sessionCode.length, ', type:', typeof sessionCode, ')')
+    console.log('[Webhook] Step 7: name:', sessionPayload.name)
+    console.log('[Webhook] Step 7: expires_at:', sessionPayload.expires_at)
+    console.log('[Webhook] Step 7: user_id:', sessionPayload.user_id, '(type:', typeof sessionPayload.user_id, ')')
+    console.log('[Webhook] Step 7: subscription_id:', sessionPayload.subscription_id, '(type:', typeof sessionPayload.subscription_id, ')')
+    console.log('[Webhook] Step 7: moderation_enabled:', sessionPayload.moderation_enabled)
+    console.log('[Webhook] Step 7: is_active:', sessionPayload.is_active)
+    console.log('[Webhook] Step 7: Full payload:', JSON.stringify(sessionPayload, null, 2))
+    console.log('[Webhook] Step 7: =================================================')
+
+    // Validate code length before insert
+    if (sessionCode.length !== 4) {
+      console.error('[Webhook] Step 7: CRITICAL - Code length is not 4!', sessionCode.length)
+      throw new Error(`Session code must be exactly 4 characters, got ${sessionCode.length}: "${sessionCode}"`)
+    }
 
     try {
       const { data: sessionData, error: sessionError } = await getSupabaseAdmin()
@@ -480,6 +507,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         console.error('[Webhook] - Message:', sessionError.message)
         console.error('[Webhook] - Details:', sessionError.details)
         console.error('[Webhook] - Hint:', sessionError.hint)
+        console.error('[Webhook] - Full error:', JSON.stringify(sessionError, null, 2))
         throw sessionError
       }
       console.log('[Webhook] Step 7: SUCCESS')
@@ -488,6 +516,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } catch (err) {
       console.error('[Webhook] Step 7: EXCEPTION')
       console.error('[Webhook] - Error:', err instanceof Error ? err.message : String(err))
+      console.error('[Webhook] - Error type:', err?.constructor?.name)
+      if (err && typeof err === 'object') {
+        console.error('[Webhook] - Error keys:', Object.keys(err))
+        console.error('[Webhook] - Error JSON:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
+      }
       throw err
     }
 
