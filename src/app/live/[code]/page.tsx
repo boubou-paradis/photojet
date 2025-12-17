@@ -825,10 +825,24 @@ export default function LivePage() {
   }
 
   // Show Wheel Game (Roue de la Destinée) if active
-  // Only show wheel when there's an active broadcast (admin is controlling)
-  const isWheelActive = wheelState?.gameActive === true
-  // Get segments from broadcast state only (not from stale database)
-  const wheelSegments: WheelSegment[] = wheelState?.segments ?? []
+  // Check broadcast state first, then fall back to database state
+  const isWheelActive = wheelState?.gameActive === true || (wheelState?.gameActive === undefined && session.wheel_active === true)
+
+  // Get segments from broadcast state, or parse from database as fallback
+  const wheelSegments: WheelSegment[] = useMemo(() => {
+    if (wheelState?.segments && wheelState.segments.length > 0) {
+      return wheelState.segments
+    }
+    // Fallback: parse from database
+    if (session.wheel_segments) {
+      try {
+        return JSON.parse(session.wheel_segments as string)
+      } catch {
+        return []
+      }
+    }
+    return []
+  }, [wheelState?.segments, session.wheel_segments])
 
   if (isWheelActive && wheelSegments.length >= 2) {
     return (
