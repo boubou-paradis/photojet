@@ -62,6 +62,8 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // Fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const gameAreaRef = useRef<HTMLDivElement>(null)
+  const [gameAreaSize, setGameAreaSize] = useState({ width: 672, height: 378 })
 
   // QR Code visibility (synced with session)
   const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
@@ -132,6 +134,34 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Calculate game area size based on container and aspect ratio
+  useEffect(() => {
+    const calculateSize = () => {
+      if (!gameAreaRef.current) return
+      const container = gameAreaRef.current
+      const containerWidth = container.clientWidth
+      const containerHeight = container.clientHeight
+      const aspectRatio = cols / rows
+
+      let width, height
+      if (containerWidth / containerHeight > aspectRatio) {
+        // Container is wider, height is the constraint
+        height = Math.min(containerHeight, window.innerHeight * 0.49)
+        width = height * aspectRatio
+      } else {
+        // Container is taller, width is the constraint
+        width = Math.min(containerWidth, 672) // 42rem = 672px
+        height = width / aspectRatio
+      }
+
+      setGameAreaSize({ width, height })
+    }
+
+    calculateSize()
+    window.addEventListener('resize', calculateSize)
+    return () => window.removeEventListener('resize', calculateSize)
+  }, [cols, rows])
 
   // Auto-play audio when all tiles are revealed
   useEffect(() => {
@@ -392,28 +422,30 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
             {/* Phase 1 & 2: Photo with tiles + Pac-Man eating them */}
             {(animationPhase === 1 || animationPhase === 2) && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
                 <div
                   className="relative"
                   style={{
                     width: '64vw',
                     maxWidth: '900px',
-                    aspectRatio: `${cols}/${rows}`,
+                    paddingBottom: `${(rows / cols) * 64}vw`,
+                    maxHeight: `${(rows / cols) * 900}px`,
                   }}
                 >
                   {/* Photo underneath */}
                   <img
                     src={currentPhotoUrl || ''}
                     alt="Photo révélée"
-                    className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                    className="absolute top-0 left-0 w-full h-full object-cover rounded-xl"
                   />
 
                   {/* Tile grid overlay */}
                   <div
-                    className="absolute inset-0 grid rounded-xl overflow-hidden"
+                    className="absolute top-0 left-0 right-0 bottom-0 rounded-xl overflow-hidden"
                     style={{
-                      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                      gridTemplateRows: `repeat(${rows}, 1fr)`,
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
                     }}
                   >
                     {Array.from({ length: totalTiles }, (_, index) => {
@@ -777,18 +809,25 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       </div>
 
       {/* Game area */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="relative w-full h-full max-w-2xl max-h-[49vh] aspect-video">
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-6 overflow-hidden">
+        <div
+          className="relative"
+          style={{
+            width: gameAreaSize.width + 'px',
+            height: gameAreaSize.height + 'px',
+          }}
+        >
           <img
             src={currentPhotoUrl}
             alt="Photo Mystère"
-            className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-2xl"
+            className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl shadow-2xl"
           />
           <div
-            className="absolute inset-0 grid rounded-2xl overflow-hidden"
+            className="absolute top-0 left-0 right-0 bottom-0 rounded-2xl overflow-hidden"
             style={{
-              gridTemplateColumns: `repeat(${cols}, 1fr)`,
-              gridTemplateRows: `repeat(${rows}, 1fr)`,
+              display: 'grid',
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
             }}
           >
             <AnimatePresence>
