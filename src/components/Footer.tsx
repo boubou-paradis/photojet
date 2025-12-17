@@ -1,7 +1,5 @@
 'use client'
 
-import { Rocket } from 'lucide-react'
-
 interface FooterProps {
   fixed?: boolean
   className?: string
@@ -21,9 +19,7 @@ export default function Footer({ fixed = false, className = '' }: FooterProps) {
       <p className="flex items-center justify-center gap-1.5">
         <span>© 2025 AnimaJet</span>
         <span className="text-[#D4AF37]/40">•</span>
-        <span className="inline-flex items-center gap-1">
-          Créé avec <Rocket className="h-3 w-3 text-[#D4AF37]/60" /> par Guillaume Morel
-        </span>
+        <span>Créé par MG Events Animation</span>
         <span className="text-[#D4AF37]/40">•</span>
         <span>Tous droits réservés</span>
       </p>
