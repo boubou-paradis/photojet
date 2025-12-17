@@ -173,10 +173,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[Webhook] Error processing event:', error)
+    console.error('[Webhook] Error type:', typeof error)
+    console.error('[Webhook] Error constructor:', error?.constructor?.name)
     console.error('[Webhook] Error stack:', error instanceof Error ? error.stack : 'No stack')
+    console.error('[Webhook] Error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2))
+
+    let errorMessage = 'Unknown error'
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error && typeof error === 'object') {
+      errorMessage = JSON.stringify(error)
+    }
+
     return NextResponse.json({
       error: 'Webhook handler failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage
     }, { status: 500 })
   }
 }
