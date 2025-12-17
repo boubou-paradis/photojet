@@ -382,7 +382,7 @@ export default function DefisPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
       </div>
     )
@@ -390,7 +390,7 @@ export default function DefisPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
         <div className="text-center">
           <p className="text-white mb-4">Aucune session trouvée</p>
           <Button onClick={() => router.push('/admin/dashboard')}>
@@ -402,7 +402,7 @@ export default function DefisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E]">
+    <div className="min-h-screen bg-[#0D0D0F]">
       {/* Header */}
       <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
