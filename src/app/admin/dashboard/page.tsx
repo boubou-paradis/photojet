@@ -29,6 +29,7 @@ import {
   FolderOpen,
   CalendarClock,
   AlertTriangle,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -537,6 +538,126 @@ export default function DashboardPage() {
     const url = getInviteUrl(selectedSession.code)
     navigator.clipboard.writeText(url)
     toast.success('Lien copié')
+  }
+
+  function printQRCode() {
+    if (!selectedSession) return
+
+    const inviteUrl = getInviteUrl(selectedSession.code)
+    const logoUrl = selectedSession.custom_logo || '/images/animajet_logo_principal.png'
+    const eventName = selectedSession.name || 'Événement'
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      toast.error('Impossible d\'ouvrir la fenêtre d\'impression')
+      return
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QR Code - ${eventName}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { size: A5; margin: 0; }
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              background: white;
+            }
+            .card {
+              width: 148mm;
+              padding: 15mm;
+              text-align: center;
+              border: 3px solid #D4AF37;
+              border-radius: 12px;
+              background: linear-gradient(135deg, #fefefe 0%, #f8f6f0 100%);
+            }
+            .logo {
+              width: 80px;
+              height: auto;
+              margin-bottom: 15px;
+            }
+            .title {
+              font-size: 18px;
+              font-weight: 700;
+              color: #1A1A1E;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              font-size: 13px;
+              color: #6B6B70;
+              margin-bottom: 20px;
+            }
+            .qr-container {
+              display: inline-block;
+              padding: 15px;
+              background: white;
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+              border: 2px solid #D4AF37;
+            }
+            .qr-container svg {
+              display: block;
+            }
+            .code {
+              font-size: 28px;
+              font-weight: 800;
+              color: #D4AF37;
+              margin-top: 20px;
+              font-family: 'Courier New', monospace;
+              letter-spacing: 3px;
+            }
+            .instruction {
+              font-size: 14px;
+              color: #1A1A1E;
+              margin-top: 15px;
+              font-weight: 500;
+            }
+            .footer {
+              font-size: 11px;
+              color: #6B6B70;
+              margin-top: 20px;
+            }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <img src="${logoUrl}" alt="Logo" class="logo" crossorigin="anonymous" />
+            <div class="title">${eventName}</div>
+            <div class="subtitle">Partagez vos plus beaux moments !</div>
+            <div class="qr-container">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="180" height="180" id="qr-placeholder"></svg>
+            </div>
+            <div class="code">#${selectedSession.code}</div>
+            <div class="instruction">📱 Scannez pour envoyer vos photos</div>
+            <div class="footer">Propulsé par AnimaJet</div>
+          </div>
+          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
+          <script>
+            QRCode.toString('${inviteUrl}', {
+              type: 'svg',
+              width: 180,
+              margin: 0,
+              color: { dark: '#1A1A1E', light: '#ffffff' }
+            }, function(err, svg) {
+              if (!err) {
+                document.querySelector('.qr-container').innerHTML = svg;
+              }
+            });
+            setTimeout(() => window.print(), 500);
+          <\/script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   function getAlbumUrl(code: string) {
@@ -1105,6 +1226,15 @@ export default function DashboardPage() {
                       Ouvrir
                     </Button>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={printQRCode}
+                    className="w-full mt-2 h-8 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] text-xs"
+                  >
+                    <Printer className="h-3 w-3 mr-1" />
+                    Imprimer pour table
+                  </Button>
                 </div>
               </div>
 
