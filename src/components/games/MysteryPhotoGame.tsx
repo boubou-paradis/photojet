@@ -673,6 +673,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
                   animate={{ rotate: 360 }}
                   transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
                   style={{
+                    backgroundColor: 'transparent', // Fallback for browsers without conic-gradient
                     background: 'conic-gradient(from 0deg, transparent, #D4AF37 10deg, transparent 20deg, transparent 30deg, #D4AF37 40deg, transparent 50deg, transparent 60deg, #D4AF37 70deg, transparent 80deg)',
                   }}
                 />

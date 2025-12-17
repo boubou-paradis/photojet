@@ -19,7 +19,7 @@ interface LineupGameProps {
 }
 
 // Floating particle component
-function FloatingParticle({ delay, duration, x, size }: { delay: number; duration: number; x: number; size: number }) {
+function FloatingParticle({ delay, duration, x, size, windowHeight }: { delay: number; duration: number; x: number; size: number; windowHeight: number }) {
   return (
     <motion.div
       className="absolute rounded-full bg-[#D4AF37]"
@@ -31,7 +31,7 @@ function FloatingParticle({ delay, duration, x, size }: { delay: number; duratio
       }}
       initial={{ y: 0, opacity: 0 }}
       animate={{
-        y: [0, -window.innerHeight - 100],
+        y: [0, -(windowHeight || 800) - 100],
         opacity: [0, 0.6, 0.6, 0],
         x: [0, Math.sin(x) * 30, -Math.sin(x) * 20, Math.sin(x) * 10],
       }}
@@ -150,6 +150,15 @@ export default function LineupGame({
   const [displayNumber, setDisplayNumber] = useState(currentNumber)
   const [isRolling, setIsRolling] = useState(false)
   const prevNumberRef = useRef(currentNumber)
+  const [windowHeight, setWindowHeight] = useState(800)
+
+  // Get window height on mount (client-side only)
+  useEffect(() => {
+    setWindowHeight(window.innerHeight)
+    const handleResize = () => setWindowHeight(window.innerHeight)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Animate number changes with rolling effect
   useEffect(() => {
@@ -203,7 +212,7 @@ export default function LineupGame({
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a]">
         {/* Particules flottantes dorées */}
         {PARTICLES.map((particle) => (
-          <FloatingParticle key={particle.id} {...particle} />
+          <FloatingParticle key={particle.id} {...particle} windowHeight={windowHeight} />
         ))}
 
         {/* Rayons lumineux en arrière-plan */}
@@ -314,6 +323,7 @@ export default function LineupGame({
             <div
               className="relative w-48 h-48 md:w-56 md:h-56 rounded-full"
               style={{
+                backgroundColor: '#121220', // Fallback for browsers without conic-gradient
                 background: 'conic-gradient(from 0deg, #1a1a2a, #0a0a1a)',
                 boxShadow: '0 0 40px rgba(212, 175, 55, 0.4), inset 0 0 40px rgba(0,0,0,0.9)',
               }}
@@ -583,7 +593,7 @@ export default function LineupGame({
                 }}
                 initial={{ y: -50, rotate: 0, opacity: 1 }}
                 animate={{
-                  y: window.innerHeight + 100,
+                  y: windowHeight + 100,
                   rotate: Math.random() * 720,
                   opacity: [1, 1, 0],
                 }}
