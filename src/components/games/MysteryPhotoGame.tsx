@@ -145,15 +145,18 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       const aspectRatio = cols / rows
 
       let width, height
-      if (containerWidth / containerHeight > aspectRatio) {
-        // Container is wider, height is the constraint
-        // Use 85% of viewport height for maximum display
-        height = Math.min(containerHeight - 20, window.innerHeight * 0.85)
+
+      // Use maximum available space (98% of container)
+      const maxWidth = containerWidth * 0.98
+      const maxHeight = containerHeight * 0.98
+
+      if (maxWidth / maxHeight > aspectRatio) {
+        // Container is wider than aspect ratio - height is the constraint
+        height = maxHeight
         width = height * aspectRatio
       } else {
-        // Container is taller, width is the constraint
-        // Allow up to 95% of container width
-        width = Math.min(containerWidth - 20, window.innerWidth * 0.95)
+        // Container is taller than aspect ratio - width is the constraint
+        width = maxWidth
         height = width / aspectRatio
       }
 
@@ -812,7 +815,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       </div>
 
       {/* Game area */}
-      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-2 overflow-hidden">
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
         <div
           className="relative"
           style={{
