@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Camera,
   Download,
   X,
   ChevronLeft,
@@ -15,6 +14,7 @@ import {
   Check,
   Package,
   Lock,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -208,24 +208,42 @@ export default function AlbumPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1E]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0F]">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="relative">
+          <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
+          <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
+        </div>
       </div>
     )
   }
 
   if (error || !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1E] p-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
-        <div className="bg-[#242428] border border-[rgba(255,255,255,0.1)] rounded-xl w-full max-w-sm p-8 text-center relative z-10">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E53935]/10 flex items-center justify-center">
-            <X className="h-8 w-8 text-[#E53935]" />
-          </div>
-          <h1 className="text-xl font-semibold mb-2 text-white">{error || 'Album introuvable'}</h1>
-          <p className="text-[#6B6B70]">Vérifiez le code ou le lien fourni</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0F] p-4">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl animate-pulse" />
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative"
+        >
+          <div className="absolute -inset-1 bg-red-500/10 rounded-3xl blur-xl" />
+          <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-red-500/20 w-full max-w-sm overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center border-2 border-red-500/20">
+                <X className="h-10 w-10 text-red-500" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">{error || 'Album introuvable'}</h1>
+              <p className="text-gray-500">Vérifiez le code ou le lien fourni</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
     )
   }
@@ -233,89 +251,117 @@ export default function AlbumPage() {
   // Password protection screen
   if (session.album_password && !isUnlocked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1A1A1E] p-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0F] p-4">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-[#242428] border border-[rgba(255,255,255,0.1)] rounded-xl w-full max-w-sm p-8 text-center relative z-10"
+          className="relative"
         >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
-            <Lock className="h-8 w-8 text-[#D4AF37]" />
+          <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-3xl blur-xl" />
+          <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/20 w-full max-w-sm overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 flex items-center justify-center">
+                <Lock className="h-10 w-10 text-[#D4AF37]" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Album protégé</h1>
+              <p className="text-gray-500 mb-6">Entrez le mot de passe pour accéder aux photos</p>
+
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setPasswordError(false)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
+                placeholder="Mot de passe"
+                className={`w-full bg-[#0D0D0F] text-white rounded-xl p-4 mb-4 text-center border-2 ${
+                  passwordError ? 'border-red-500' : 'border-white/10'
+                } focus:border-[#D4AF37] focus:outline-none transition-colors`}
+              />
+
+              {passwordError && (
+                <p className="text-red-400 text-sm mb-4">Mot de passe incorrect</p>
+              )}
+
+              <Button
+                onClick={checkPassword}
+                className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25"
+              >
+                Accéder à l'album
+              </Button>
+            </div>
           </div>
-          <h1 className="text-xl font-semibold mb-2 text-white">Album protégé</h1>
-          <p className="text-[#6B6B70] mb-6">Entrez le mot de passe pour accéder aux photos</p>
-
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value)
-              setPasswordError(false)
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
-            placeholder="Mot de passe"
-            className={`w-full bg-[#2E2E33] text-white rounded-lg p-3 mb-4 text-center border ${
-              passwordError ? 'border-red-500' : 'border-transparent'
-            } focus:border-[#D4AF37] focus:outline-none transition-colors`}
-          />
-
-          {passwordError && (
-            <p className="text-red-400 text-sm mb-4">Mot de passe incorrect</p>
-          )}
-
-          <Button
-            onClick={checkPassword}
-            className="w-full py-3 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#1A1A1E] font-bold hover:opacity-90"
-          >
-            Accéder à l'album
-          </Button>
         </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E]">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5 pointer-events-none" />
-
-      {/* Header */}
-      <div className="bg-[#242428] py-6 px-4 text-center border-b border-[rgba(255,255,255,0.1)]">
-        <div className="flex justify-center mb-4">
-          <Image src="/images/animajet_logo_principal.png" alt="AnimaJet" width={62} height={62} />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-1">{session.name}</h1>
-        <p className="text-[#6B6B70]">
-          {photos.length} photo{photos.length > 1 ? 's' : ''} • {eventDate}
-        </p>
+    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
+      {/* Header */}
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl py-8 px-4 text-center border-b border-white/5">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="relative inline-block mb-4">
+            <div className="absolute inset-0 bg-[#D4AF37]/20 blur-2xl rounded-full" />
+            <Image
+              src="/images/animajet_logo_principal.png"
+              alt="AnimaJet"
+              width={80}
+              height={80}
+              className="relative z-10 drop-shadow-2xl"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+            <Sparkles className="h-6 w-6 text-[#D4AF37]" />
+            {session.name}
+            <Sparkles className="h-6 w-6 text-[#D4AF37]" />
+          </h1>
+          <p className="text-gray-500">
+            {photos.length} photo{photos.length > 1 ? 's' : ''} • {eventDate}
+          </p>
+        </motion.div>
+      </header>
+
       {/* Actions bar */}
-      <div className="sticky top-0 bg-[#1A1A1E]/95 backdrop-blur-sm z-40 p-4 border-b border-[rgba(255,255,255,0.1)]">
+      <div className="sticky top-0 bg-[#0D0D0F]/90 backdrop-blur-xl z-40 p-4 border-b border-white/5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             {photos.length > 0 && (
               <button
                 onClick={selectAll}
-                className="text-sm text-[#6B6B70] hover:text-[#D4AF37] transition-colors"
+                className="text-sm text-gray-500 hover:text-[#D4AF37] transition-colors"
               >
                 {selectedPhotos.length === photos.length ? 'Tout désélectionner' : 'Tout sélectionner'}
               </button>
             )}
-            <p className="text-[#6B6B70] text-sm">
+            <p className="text-gray-600 text-sm">
               {selectedPhotos.length > 0
                 ? `${selectedPhotos.length} photo(s) sélectionnée(s)`
                 : 'Cliquez pour sélectionner'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {selectedPhotos.length > 0 && (
               <Button
                 onClick={() => downloadZip(selectedPhotos)}
                 disabled={downloading}
-                size="sm"
-                className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+                className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#0D0D0F] font-semibold shadow-lg shadow-[#D4AF37]/20"
               >
                 {downloading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -329,9 +375,8 @@ export default function AlbumPage() {
               <Button
                 onClick={() => downloadZip(null)}
                 disabled={downloading}
-                size="sm"
                 variant="outline"
-                className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#1A1A1E]"
+                className="border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50"
               >
                 {downloading && selectedPhotos.length === 0 ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -345,20 +390,24 @@ export default function AlbumPage() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         {photos.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#2E2E33] flex items-center justify-center">
-              <ImageIcon className="h-10 w-10 text-[#6B6B70]" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20"
+          >
+            <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-gray-500/10 to-gray-600/5 flex items-center justify-center border border-white/5">
+              <ImageIcon className="h-12 w-12 text-gray-600" />
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Aucune photo</h2>
-            <p className="text-[#6B6B70]">Les photos approuvées apparaîtront ici</p>
-          </div>
+            <h2 className="text-2xl font-bold mb-2 text-white">Aucune photo</h2>
+            <p className="text-gray-500">Les photos approuvées apparaîtront ici</p>
+          </motion.div>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
           >
             {photos.map((photo, index) => (
               <motion.div
@@ -366,10 +415,10 @@ export default function AlbumPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.02 }}
-                className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer group ${
+                className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer group transition-all duration-300 ${
                   selectedPhotos.includes(photo.id)
-                    ? 'ring-4 ring-[#D4AF37]'
-                    : ''
+                    ? 'ring-4 ring-[#D4AF37] scale-[0.98]'
+                    : 'hover:scale-[1.02]'
                 }`}
                 onClick={() => toggleSelect(photo.id)}
                 onDoubleClick={() => openLightbox(index)}
@@ -377,34 +426,36 @@ export default function AlbumPage() {
                 <img
                   src={getPhotoUrl(photo.storage_path)}
                   alt={`Photo ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   loading="lazy"
                 />
 
+                {/* Gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                 {/* Selection checkbox */}
                 <div
-                  className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  className={`absolute top-3 left-3 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
                     selectedPhotos.includes(photo.id)
-                      ? 'bg-[#D4AF37] border-[#D4AF37]'
-                      : 'border-white/60 bg-black/40'
+                      ? 'bg-[#D4AF37] border-[#D4AF37] scale-110'
+                      : 'border-white/70 bg-black/40 group-hover:border-[#D4AF37]'
                   }`}
                 >
                   {selectedPhotos.includes(photo.id) && (
-                    <Check className="h-4 w-4 text-[#1A1A1E]" />
+                    <Check className="h-4 w-4 text-[#0D0D0F]" />
                   )}
                 </div>
 
                 {/* Download button on hover */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       downloadSingle(photo)
                     }}
-                    className="bg-white text-[#1A1A1E] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-[#D4AF37] transition-colors"
+                    className="bg-white/90 backdrop-blur-sm text-[#0D0D0F] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-[#D4AF37] transition-colors shadow-lg"
                   >
                     <Download className="h-4 w-4" />
-                    Télécharger
                   </button>
                 </div>
               </motion.div>
@@ -420,14 +471,14 @@ export default function AlbumPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+            className="fixed inset-0 z-50 bg-black/98 flex items-center justify-center"
             onClick={closeLightbox}
           >
             <button
               onClick={closeLightbox}
-              className="absolute top-4 right-4 p-2 text-white/70 hover:text-[#D4AF37] transition-colors"
+              className="absolute top-6 right-6 p-3 rounded-xl bg-white/10 text-white/70 hover:text-[#D4AF37] hover:bg-white/20 transition-all"
             >
-              <X className="h-8 w-8" />
+              <X className="h-6 w-6" />
             </button>
 
             <button
@@ -435,9 +486,9 @@ export default function AlbumPage() {
                 e.stopPropagation()
                 prevPhoto()
               }}
-              className="absolute left-4 p-2 text-white/70 hover:text-[#D4AF37] transition-colors"
+              className="absolute left-6 p-3 rounded-xl bg-white/10 text-white/70 hover:text-[#D4AF37] hover:bg-white/20 transition-all"
             >
-              <ChevronLeft className="h-10 w-10" />
+              <ChevronLeft className="h-8 w-8" />
             </button>
 
             <motion.img
@@ -447,7 +498,7 @@ export default function AlbumPage() {
               exit={{ opacity: 0, scale: 0.9 }}
               src={getPhotoUrl(photos[currentPhotoIndex].storage_path)}
               alt={`Photo ${currentPhotoIndex + 1}`}
-              className="max-w-[90vw] max-h-[85vh] object-contain"
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
 
@@ -456,13 +507,13 @@ export default function AlbumPage() {
                 e.stopPropagation()
                 nextPhoto()
               }}
-              className="absolute right-4 p-2 text-white/70 hover:text-[#D4AF37] transition-colors"
+              className="absolute right-6 p-3 rounded-xl bg-white/10 text-white/70 hover:text-[#D4AF37] hover:bg-white/20 transition-all"
             >
-              <ChevronRight className="h-10 w-10" />
+              <ChevronRight className="h-8 w-8" />
             </button>
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
-              <span className="text-white/70 text-sm bg-black/50 px-3 py-1 rounded-full">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
+              <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
                 {currentPhotoIndex + 1} / {photos.length}
               </span>
               <Button
@@ -470,7 +521,7 @@ export default function AlbumPage() {
                   e.stopPropagation()
                   downloadSingle(photos[currentPhotoIndex])
                 }}
-                className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+                className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#0D0D0F] font-semibold shadow-lg shadow-[#D4AF37]/25"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Télécharger
@@ -481,9 +532,9 @@ export default function AlbumPage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="py-8 text-center border-t border-[rgba(255,255,255,0.1)] mt-8">
-        <p className="text-[#6B6B70] text-sm">
-          © 2025 AnimaJet • Créé avec 🚀
+      <footer className="relative z-10 py-8 text-center border-t border-white/5 mt-8">
+        <p className="text-gray-600 text-sm">
+          © 2025 AnimaJet • Créé par MG Events Animation
         </p>
       </footer>
     </div>

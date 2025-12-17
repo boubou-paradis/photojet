@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Loader2, LogIn, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
+import { Loader2, LogIn, ArrowLeft, Sparkles, Lock, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
-import { AnimaJetFullLogo } from '@/components/branding/AnimaJetLogo'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -86,97 +86,163 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center p-4">
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#D4AF37]/10 blur-[120px] rounded-full" />
+    <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center p-4 overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-sm w-full relative z-10"
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md relative z-10"
       >
         {/* Back link */}
-        <a
+        <motion.a
           href="/"
-          className="inline-flex items-center gap-2 text-[#6B6B70] hover:text-white transition-colors mb-8"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-[#D4AF37] transition-colors mb-8 group"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           Retour
-        </a>
+        </motion.a>
 
-        <div className="card-gold rounded-2xl p-8">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <AnimaJetFullLogo size={125} className="mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white">Connexion</h1>
-            <p className="text-[#6B6B70] text-sm mt-1">
-              Accedez a votre dashboard
-            </p>
-          </div>
+        {/* Card with glow effect */}
+        <div className="relative">
+          {/* Glow behind card */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37]/20 via-amber-500/10 to-[#D4AF37]/20 rounded-3xl blur-xl opacity-50" />
 
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-[#B0B0B5] mb-2 block">
-                Email
-              </label>
-              <Input
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] text-white"
-              />
-            </div>
+          <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/20 overflow-hidden">
+            {/* Top golden line */}
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
 
-            <div>
-              <label className="text-sm font-medium text-[#B0B0B5] mb-2 block">
-                Mot de passe
-              </label>
-              <Input
-                type="password"
-                placeholder="••••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] text-white"
-              />
-            </div>
+            <div className="p-8">
+              {/* Logo */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, type: 'spring' }}
+                className="text-center mb-8"
+              >
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 bg-[#D4AF37]/20 blur-2xl rounded-full" />
+                  <Image
+                    src="/images/animajet_logo_principal.png"
+                    alt="AnimaJet"
+                    width={140}
+                    height={140}
+                    className="relative z-10 drop-shadow-2xl"
+                  />
+                </div>
 
-            {error && (
-              <motion.p
+                <motion.h1
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-3xl font-bold text-white mt-6 flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="h-6 w-6 text-[#D4AF37]" />
+                  Connexion
+                  <Sparkles className="h-6 w-6 text-[#D4AF37]" />
+                </motion.h1>
+                <p className="text-gray-500 text-sm mt-2">
+                  Accedez a votre dashboard
+                </p>
+              </motion.div>
+
+              {/* Form */}
+              <form onSubmit={handleLogin} className="space-y-5">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <label className="text-sm font-medium text-gray-400 mb-2 block flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-[#D4AF37]" />
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 bg-[#0D0D0F] border-white/10 focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-600 rounded-xl"
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <label className="text-sm font-medium text-gray-400 mb-2 block flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-[#D4AF37]" />
+                    Mot de passe
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 bg-[#0D0D0F] border-white/10 focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-600 rounded-xl"
+                  />
+                </motion.div>
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-sm text-red-500 text-center bg-red-500/10 py-2 px-4 rounded-lg border border-red-500/20"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] hover:opacity-90 text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25 transition-all hover:shadow-[#D4AF37]/40 hover:scale-[1.02]"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <>
+                        <LogIn className="h-5 w-5 mr-2" />
+                        Se connecter
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+
+              {/* Bottom link */}
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-sm text-[#E53935] text-center"
+                transition={{ delay: 0.8 }}
+                className="mt-8 pt-6 border-t border-white/5 text-center"
               >
-                {error}
-              </motion.p>
-            )}
+                <p className="text-sm text-gray-500">
+                  Pas encore de compte ?{' '}
+                  <a href="/#pricing" className="text-[#D4AF37] hover:text-[#F4D03F] transition-colors font-semibold">
+                    S&apos;abonner
+                  </a>
+                </p>
+              </motion.div>
+            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 bg-gold-gradient hover:opacity-90 text-[#1A1A1E] font-bold"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  <LogIn className="h-5 w-5 mr-2" />
-                  Se connecter
-                </>
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.1)] text-center">
-            <p className="text-sm text-[#6B6B70]">
-              Pas encore de compte ?{' '}
-              <a href="/#pricing" className="text-[#D4AF37] hover:text-[#F4D03F] transition-colors">
-                S&apos;abonner
-              </a>
-            </p>
+            {/* Bottom golden line */}
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
           </div>
         </div>
       </motion.div>

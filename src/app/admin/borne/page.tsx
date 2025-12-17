@@ -16,6 +16,7 @@ import {
   Settings,
   Loader2,
   Lock,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -202,42 +203,72 @@ export default function BornePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
+            <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
+          </div>
+          <p className="text-gray-400 text-sm">Chargement...</p>
+        </motion.div>
       </div>
     )
   }
 
   if (!selectedSession) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
-        <p className="text-[#B0B0B5]">Aucune session disponible</p>
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white mb-4">Aucune session disponible</p>
+          <Button onClick={() => router.push('/admin/dashboard')}>
+            Retour au dashboard
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E]">
-      <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)] sticky top-0 z-50">
+    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push('/admin/dashboard')}
-              className="text-white hover:text-[#D4AF37] hover:bg-[#2E2E33]"
+              className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
             <div className="flex items-center gap-3">
-              <Image
-                src="/images/animajet_logo_principal.png"
-                alt="AnimaJet"
-                width={50}
-                height={50}
-                className="drop-shadow-lg"
-              />
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#D4AF37]/20 blur-xl rounded-full" />
+                <Image
+                  src="/images/animajet_logo_principal.png"
+                  alt="AnimaJet"
+                  width={50}
+                  height={50}
+                  className="relative z-10 drop-shadow-lg"
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <Tablet className="h-5 w-5 text-[#D4AF37]" />
                 <h1 className="text-xl font-bold text-white">Borne Photo</h1>
@@ -248,204 +279,257 @@ export default function BornePage() {
             variant="outline"
             size="sm"
             onClick={() => router.push('/admin/settings')}
-            className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+            className="border-white/10 text-white hover:bg-white/5 hover:text-[#D4AF37]"
           >
             <Settings className="h-4 w-4 mr-2" />
-            Paramètres borne
+            Paramètres
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <main className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: '80px' }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-6"
+          />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 mb-4">
+            <Tablet className="h-8 w-8 text-cyan-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
+            <Sparkles className="h-5 w-5 text-[#D4AF37]" />
+            Configuration Borne
+            <Sparkles className="h-5 w-5 text-[#D4AF37]" />
+          </h2>
+          <p className="text-gray-500 text-sm mt-2">{selectedSession.name}</p>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
+          className="space-y-6"
         >
           {/* Enable/Disable Card */}
-          <motion.div
-            whileHover={{ scale: 1.005 }}
-            className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-          >
-            <div className="p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-white">Activer la borne photo</h3>
-                <p className="text-xs text-[#6B6B70] mt-0.5">
-                  Transformez une tablette en borne photo
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Label htmlFor="borne-toggle" className="text-xs text-[#B0B0B5]">
-                  {selectedSession.borne_enabled ? 'Activée' : 'Désactivée'}
-                </Label>
-                <Switch
-                  id="borne-toggle"
-                  checked={selectedSession.borne_enabled}
-                  onCheckedChange={toggleBorneEnabled}
-                  disabled={saving}
-                />
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37]/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-[#D4AF37]/30 transition-all">
+              <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+              <div className="p-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Activer la borne photo</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Transformez une tablette en borne photo
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label htmlFor="borne-toggle" className="text-sm text-gray-400">
+                    {selectedSession.borne_enabled ? 'Activée' : 'Désactivée'}
+                  </Label>
+                  <Switch
+                    id="borne-toggle"
+                    checked={selectedSession.borne_enabled}
+                    onCheckedChange={toggleBorneEnabled}
+                    disabled={saving}
+                  />
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {selectedSession.borne_enabled && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* QR Code Card */}
                 <motion.div
-                  whileHover={{ scale: 1.005 }}
-                  className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="relative group"
                 >
-                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                    <h3 className="text-sm font-semibold text-white">QR Code connexion</h3>
-                    <p className="text-xs text-[#6B6B70] mt-0.5">
-                      Scannez avec la tablette
-                    </p>
-                  </div>
-                  <div className="p-4 flex flex-col items-center">
-                    {selectedSession.borne_qr_code && (
-                      <>
-                        <div className="bg-white p-3 rounded-lg shadow-gold">
-                          <QRCode
-                            value={getBorneUrl(selectedSession.borne_qr_code)}
-                            size={140}
-                          />
-                        </div>
-                        <p className="text-[10px] text-[#6B6B70] mt-2 font-mono break-all text-center">
-                          {selectedSession.borne_qr_code}
-                        </p>
-                        <div className="flex gap-2 mt-3 w-full">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={copyBorneLink}
-                            className="flex-1 h-8 text-xs border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                          >
-                            <Copy className="h-3 w-3 mr-1" />
-                            Copier
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              window.open(`/borne/${selectedSession.borne_qr_code}`, '_blank')
-                            }
-                            className="flex-1 h-8 text-xs border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            Ouvrir
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={regenerateBorneQr}
-                            disabled={saving}
-                            className="h-8 w-8 p-0 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                          >
-                            <RefreshCw className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-cyan-400/30 transition-all h-full">
+                    <div className="h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+                    <div className="p-4 border-b border-white/5">
+                      <h3 className="text-base font-semibold text-white">QR Code connexion</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Scannez avec la tablette
+                      </p>
+                    </div>
+                    <div className="p-6 flex flex-col items-center">
+                      {selectedSession.borne_qr_code && (
+                        <>
+                          <div className="bg-white p-4 rounded-xl shadow-2xl shadow-black/50">
+                            <QRCode
+                              value={getBorneUrl(selectedSession.borne_qr_code)}
+                              size={160}
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-600 mt-3 font-mono break-all text-center">
+                            {selectedSession.borne_qr_code}
+                          </p>
+                          <div className="flex gap-2 mt-4 w-full">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={copyBorneLink}
+                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                            >
+                              <Copy className="h-3.5 w-3.5 mr-1.5" />
+                              Copier
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                window.open(`/borne/${selectedSession.borne_qr_code}`, '_blank')
+                              }
+                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                              Ouvrir
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={regenerateBorneQr}
+                              disabled={saving}
+                              className="h-10 w-10 p-0 border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${saving ? 'animate-spin' : ''}`} />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
 
                 {/* Connection Status Card */}
                 <motion.div
-                  whileHover={{ scale: 1.005 }}
-                  className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="relative group"
                 >
-                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                    <h3 className="text-sm font-semibold text-white">Statut de connexion</h3>
-                    <p className="text-xs text-[#6B6B70] mt-0.5">
-                      État de la tablette
-                    </p>
-                  </div>
-                  <div className="p-4">
-                    {borneConnection ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          {borneConnection.is_online ? (
-                            <div className="flex items-center gap-2 text-[#4CAF50]">
-                              <Wifi className="h-5 w-5" />
-                              <span className="font-medium">En ligne</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-[#6B6B70]">
-                              <WifiOff className="h-5 w-5" />
-                              <span className="font-medium">Hors ligne</span>
-                            </div>
-                          )}
-                          <Badge
-                            className={
-                              borneConnection.is_online
-                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30'
-                                : 'bg-[#2E2E33] text-[#B0B0B5] border-[rgba(255,255,255,0.1)]'
-                            }
-                          >
-                            {getDeviceTypeLabel(borneConnection.device_type)}
-                          </Badge>
+                  <div className={`absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                    borneConnection?.is_online ? 'bg-emerald-500/20' : 'bg-gray-500/20'
+                  }`} />
+                  <div className={`relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden transition-all h-full ${
+                    borneConnection?.is_online ? 'hover:border-emerald-400/30' : 'hover:border-white/20'
+                  }`}>
+                    <div className={`h-1 bg-gradient-to-r from-transparent to-transparent ${
+                      borneConnection?.is_online ? 'via-emerald-500/50' : 'via-gray-500/50'
+                    }`} />
+                    <div className="p-4 border-b border-white/5">
+                      <h3 className="text-base font-semibold text-white">Statut de connexion</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        État de la tablette
+                      </p>
+                    </div>
+                    <div className="p-6">
+                      {borneConnection ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            {borneConnection.is_online ? (
+                              <div className="flex items-center gap-2 text-emerald-500">
+                                <div className="relative">
+                                  <Wifi className="h-6 w-6" />
+                                  <div className="absolute inset-0 animate-ping opacity-30">
+                                    <Wifi className="h-6 w-6" />
+                                  </div>
+                                </div>
+                                <span className="font-semibold">En ligne</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-gray-500">
+                                <WifiOff className="h-6 w-6" />
+                                <span className="font-semibold">Hors ligne</span>
+                              </div>
+                            )}
+                            <Badge
+                              className={
+                                borneConnection.is_online
+                                  ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30'
+                                  : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                              }
+                            >
+                              {getDeviceTypeLabel(borneConnection.device_type)}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            <p>Dernière activité : {formatLastSeen(borneConnection.last_seen)}</p>
+                            <p className="text-xs mt-1 font-mono text-gray-600">
+                              ID: {borneConnection.device_id.slice(0, 12)}...
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-sm text-[#6B6B70]">
-                          <p>Dernière activité : {formatLastSeen(borneConnection.last_seen)}</p>
-                          <p className="text-xs mt-1 font-mono">
-                            ID: {borneConnection.device_id.slice(0, 12)}...
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gray-500/10 flex items-center justify-center border border-gray-500/20">
+                            <WifiOff className="h-10 w-10 text-gray-600" />
+                          </div>
+                          <p className="text-gray-400 font-medium">
+                            Aucune tablette connectée
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Scannez le QR code avec votre tablette
                           </p>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[#2E2E33] flex items-center justify-center">
-                          <WifiOff className="h-8 w-8 text-[#6B6B70]" />
-                        </div>
-                        <p className="text-[#B0B0B5]">
-                          Aucune tablette connectée
-                        </p>
-                        <p className="text-sm text-[#6B6B70] mt-1">
-                          Scannez le QR code avec votre tablette
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               </div>
 
               {/* Installation Guide */}
               <motion.div
-                whileHover={{ scale: 1.002 }}
-                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="relative group"
               >
-                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="text-sm font-semibold text-white">Guide d&apos;installation</h3>
-                  <p className="text-xs text-[#6B6B70] mt-0.5">
-                    Configuration sur tablette
-                  </p>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
-                        <span className="w-5 h-5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-xs">1</span>
-                        iPad / iOS
-                      </h3>
-                      <ol className="text-xs text-[#B0B0B5] space-y-1 ml-7">
-                        <li>Ouvrez Safari sur votre iPad</li>
-                        <li>Scannez le QR code ou entrez le lien</li>
-                        <li>Appuyez sur Partager → &quot;Sur l&apos;écran d&apos;accueil&quot;</li>
-                        <li>Activez l&apos;Accès guidé (Réglages &gt; Accessibilité)</li>
-                      </ol>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
-                        <span className="w-5 h-5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-xs">2</span>
-                        Android
-                      </h3>
-                      <ol className="text-xs text-[#B0B0B5] space-y-1 ml-7">
-                        <li>Ouvrez Chrome sur votre tablette</li>
-                        <li>Scannez le QR code ou entrez le lien</li>
-                        <li>Menu (⋮) → &quot;Ajouter à l&apos;écran d&apos;accueil&quot;</li>
-                        <li>Activez le mode kiosque si disponible</li>
-                      </ol>
+                <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-violet-400/30 transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+                  <div className="p-4 border-b border-white/5">
+                    <h3 className="text-base font-semibold text-white">Guide d&apos;installation</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Configuration sur tablette
+                    </p>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
+                          <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 text-[#D4AF37] flex items-center justify-center text-xs font-bold">1</span>
+                          iPad / iOS
+                        </h3>
+                        <ol className="text-sm text-gray-400 space-y-1.5 ml-8">
+                          <li>Ouvrez Safari sur votre iPad</li>
+                          <li>Scannez le QR code ou entrez le lien</li>
+                          <li>Appuyez sur Partager → &quot;Sur l&apos;écran d&apos;accueil&quot;</li>
+                          <li>Activez l&apos;Accès guidé (Réglages &gt; Accessibilité)</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-white">
+                          <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 text-[#D4AF37] flex items-center justify-center text-xs font-bold">2</span>
+                          Android
+                        </h3>
+                        <ol className="text-sm text-gray-400 space-y-1.5 ml-8">
+                          <li>Ouvrez Chrome sur votre tablette</li>
+                          <li>Scannez le QR code ou entrez le lien</li>
+                          <li>Menu (⋮) → &quot;Ajouter à l&apos;écran d&apos;accueil&quot;</li>
+                          <li>Activez le mode kiosque si disponible</li>
+                        </ol>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -453,147 +537,158 @@ export default function BornePage() {
 
               {/* Current Configuration */}
               <motion.div
-                whileHover={{ scale: 1.002 }}
-                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="relative group"
               >
-                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="text-sm font-semibold text-white">Configuration actuelle</h3>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
-                      <p className="text-[#6B6B70]">Compte à rebours</p>
-                      <p className="font-semibold text-[#D4AF37] mt-0.5">
-                        {selectedSession.borne_countdown
-                          ? `${selectedSession.borne_countdown_duration}s`
-                          : 'Désactivé'}
-                      </p>
-                    </div>
-                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
-                      <p className="text-[#6B6B70]">Retour auto</p>
-                      <p className="font-semibold text-[#D4AF37] mt-0.5">{selectedSession.borne_return_delay}s</p>
-                    </div>
-                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
-                      <p className="text-[#6B6B70]">Caméra par défaut</p>
-                      <p className="font-semibold text-white mt-0.5">
-                        {selectedSession.borne_default_camera === 'front' ? 'Frontale' : 'Arrière'}
-                      </p>
-                    </div>
-                    <div className="p-2 bg-[#2E2E33]/50 rounded-lg">
-                      <p className="text-[#6B6B70]">Nom événement</p>
-                      <p className="font-semibold text-white mt-0.5">
-                        {selectedSession.borne_show_event_name ? 'Affiché' : 'Masqué'}
-                      </p>
-                    </div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37]/20 to-amber-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-[#D4AF37]/30 transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+                  <div className="p-4 border-b border-white/5">
+                    <h3 className="text-base font-semibold text-white">Configuration actuelle</h3>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 h-8 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
-                    onClick={() => router.push('/admin/settings')}
-                  >
-                    <Settings className="h-3 w-3 mr-1.5" />
-                    Modifier les paramètres
-                  </Button>
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-[#0D0D0F] rounded-xl border border-white/5">
+                        <p className="text-xs text-gray-500">Compte à rebours</p>
+                        <p className="font-bold text-[#D4AF37] mt-1 text-lg">
+                          {selectedSession.borne_countdown
+                            ? `${selectedSession.borne_countdown_duration}s`
+                            : 'Désactivé'}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-[#0D0D0F] rounded-xl border border-white/5">
+                        <p className="text-xs text-gray-500">Retour auto</p>
+                        <p className="font-bold text-[#D4AF37] mt-1 text-lg">{selectedSession.borne_return_delay}s</p>
+                      </div>
+                      <div className="p-4 bg-[#0D0D0F] rounded-xl border border-white/5">
+                        <p className="text-xs text-gray-500">Caméra par défaut</p>
+                        <p className="font-bold text-white mt-1 text-lg">
+                          {selectedSession.borne_default_camera === 'front' ? 'Frontale' : 'Arrière'}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-[#0D0D0F] rounded-xl border border-white/5">
+                        <p className="text-xs text-gray-500">Nom événement</p>
+                        <p className="font-bold text-white mt-1 text-lg">
+                          {selectedSession.borne_show_event_name ? 'Affiché' : 'Masqué'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50"
+                      onClick={() => router.push('/admin/settings')}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Modifier les paramètres
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
 
               {/* Lock Settings */}
               <motion.div
-                whileHover={{ scale: 1.002 }}
-                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="relative group"
               >
-                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-[#D4AF37]" />
-                    <h3 className="text-sm font-semibold text-white">Verrouillage de la borne</h3>
-                  </div>
-                  <p className="text-xs text-[#6B6B70] mt-0.5">
-                    Empêche de quitter l&apos;application borne
-                  </p>
-                </div>
-                <div className="p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="lock-toggle" className="text-white text-sm font-medium">
-                        Activer le verrouillage
-                      </Label>
-                      <p className="text-xs text-[#6B6B70] mt-0.5">
-                        Code PIN requis pour le dashboard
-                      </p>
+                <div className="absolute -inset-1 bg-gradient-to-r from-rose-500/20 to-red-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-rose-400/30 transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+                  <div className="p-4 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-rose-400" />
+                      <h3 className="text-base font-semibold text-white">Verrouillage de la borne</h3>
                     </div>
-                    <Switch
-                      id="lock-toggle"
-                      checked={selectedSession.borne_lock_enabled || false}
-                      onCheckedChange={async (checked) => {
-                        setSaving(true)
-                        try {
-                          const { error } = await supabase
-                            .from('sessions')
-                            .update({ borne_lock_enabled: checked })
-                            .eq('id', selectedSession.id)
-                          if (error) throw error
-                          setSelectedSession({ ...selectedSession, borne_lock_enabled: checked })
-                          toast.success(checked ? 'Verrouillage activé' : 'Verrouillage désactivé')
-                        } catch {
-                          toast.error('Erreur lors de la mise à jour')
-                        } finally {
-                          setSaving(false)
-                        }
-                      }}
-                      disabled={saving}
-                    />
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Empêche de quitter l&apos;application borne
+                    </p>
                   </div>
-
-                  {selectedSession.borne_lock_enabled && (
-                    <div className="space-y-2 pt-2 border-t border-[rgba(255,255,255,0.05)]">
-                      <Label htmlFor="lock-code" className="text-white text-sm font-medium">
-                        Code PIN (4 chiffres)
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="lock-code"
-                          type="password"
-                          inputMode="numeric"
-                          maxLength={4}
-                          placeholder="1234"
-                          value={selectedSession.borne_lock_code || ''}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '').slice(0, 4)
-                            setSelectedSession({ ...selectedSession, borne_lock_code: value })
-                          }}
-                          className="w-28 h-9 text-center text-base tracking-widest bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            if (!selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4) {
-                              toast.error('Le code doit contenir 4 chiffres')
-                              return
-                            }
-                            setSaving(true)
-                            try {
-                              const { error } = await supabase
-                                .from('sessions')
-                                .update({ borne_lock_code: selectedSession.borne_lock_code })
-                                .eq('id', selectedSession.id)
-                              if (error) throw error
-                              toast.success('Code PIN enregistré')
-                            } catch {
-                              toast.error('Erreur lors de l\'enregistrement')
-                            } finally {
-                              setSaving(false)
-                            }
-                          }}
-                          disabled={saving || !selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4}
-                          className="h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
-                        >
-                          Enregistrer
-                        </Button>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="lock-toggle" className="text-white font-medium">
+                          Activer le verrouillage
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Code PIN requis pour le dashboard
+                        </p>
                       </div>
+                      <Switch
+                        id="lock-toggle"
+                        checked={selectedSession.borne_lock_enabled || false}
+                        onCheckedChange={async (checked) => {
+                          setSaving(true)
+                          try {
+                            const { error } = await supabase
+                              .from('sessions')
+                              .update({ borne_lock_enabled: checked })
+                              .eq('id', selectedSession.id)
+                            if (error) throw error
+                            setSelectedSession({ ...selectedSession, borne_lock_enabled: checked })
+                            toast.success(checked ? 'Verrouillage activé' : 'Verrouillage désactivé')
+                          } catch {
+                            toast.error('Erreur lors de la mise à jour')
+                          } finally {
+                            setSaving(false)
+                          }
+                        }}
+                        disabled={saving}
+                      />
                     </div>
-                  )}
+
+                    {selectedSession.borne_lock_enabled && (
+                      <div className="space-y-3 pt-4 border-t border-white/5">
+                        <Label htmlFor="lock-code" className="text-white font-medium">
+                          Code PIN (4 chiffres)
+                        </Label>
+                        <div className="flex gap-3">
+                          <Input
+                            id="lock-code"
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={4}
+                            placeholder="1234"
+                            value={selectedSession.borne_lock_code || ''}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                              setSelectedSession({ ...selectedSession, borne_lock_code: value })
+                            }}
+                            className="w-32 h-12 text-center text-xl tracking-widest bg-[#0D0D0F] border-white/10 text-white rounded-xl"
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              if (!selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4) {
+                                toast.error('Le code doit contenir 4 chiffres')
+                                return
+                              }
+                              setSaving(true)
+                              try {
+                                const { error } = await supabase
+                                  .from('sessions')
+                                  .update({ borne_lock_code: selectedSession.borne_lock_code })
+                                  .eq('id', selectedSession.id)
+                                if (error) throw error
+                                toast.success('Code PIN enregistré')
+                              } catch {
+                                toast.error('Erreur lors de l\'enregistrement')
+                              } finally {
+                                setSaving(false)
+                              }
+                            }}
+                            disabled={saving || !selectedSession.borne_lock_code || selectedSession.borne_lock_code.length !== 4}
+                            className="h-12 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/50"
+                          >
+                            Enregistrer
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </>
