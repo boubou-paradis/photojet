@@ -547,6 +547,10 @@ export default function DashboardPage() {
     const logoUrl = selectedSession.custom_logo || '/images/animajet_logo_principal.png'
     const eventName = selectedSession.name || 'Événement'
 
+    // Récupérer le SVG du QR code existant dans la page
+    const qrContainer = document.querySelector('.shadow-gold svg')
+    const qrSvg = qrContainer ? qrContainer.outerHTML.replace(/width="120"/, 'width="250"').replace(/height="120"/, 'height="250"') : ''
+
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       toast.error('Impossible d\'ouvrir la fenêtre d\'impression')
@@ -603,6 +607,8 @@ export default function DashboardPage() {
             }
             .qr-container svg {
               display: block;
+              width: 250px;
+              height: 250px;
             }
             .code {
               font-size: 42px;
@@ -630,29 +636,20 @@ export default function DashboardPage() {
         </head>
         <body>
           <div class="card">
-            <img src="${logoUrl}" alt="Logo" class="logo" crossorigin="anonymous" />
+            <img src="${logoUrl}" alt="Logo" class="logo" />
             <div class="title">${eventName}</div>
             <div class="subtitle">Partagez vos plus beaux moments !</div>
             <div class="qr-container">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="250" height="250" id="qr-placeholder"></svg>
+              ${qrSvg}
             </div>
             <div class="code">#${selectedSession.code}</div>
             <div class="instruction">📱 Scannez pour envoyer vos photos</div>
             <div class="footer">Propulsé par AnimaJet</div>
           </div>
-          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
           <script>
-            QRCode.toString('${inviteUrl}', {
-              type: 'svg',
-              width: 250,
-              margin: 0,
-              color: { dark: '#1A1A1E', light: '#ffffff' }
-            }, function(err, svg) {
-              if (!err) {
-                document.querySelector('.qr-container').innerHTML = svg;
-              }
-            });
-            setTimeout(() => window.print(), 500);
+            window.onload = function() {
+              setTimeout(function() { window.print(); }, 300);
+            };
           <\/script>
         </body>
       </html>
