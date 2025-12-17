@@ -122,17 +122,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background - Plus sombre avec gradient radial subtil */}
-      <div className="fixed inset-0 bg-[#0f0f12]">
-        {/* Gradient radial central doré subtil */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.06) 0%, transparent 50%)'
-          }}
-        />
-        {/* Lueur supérieure */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[#D4AF37]/8 blur-[150px] rounded-full" />
+      {/* Background - Premium dark with animated effects */}
+      <div className="fixed inset-0 bg-[#0D0D0F]">
+        {/* Animated blur orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/5 to-transparent rounded-full" />
+        {/* Top glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-[#D4AF37]/8 blur-[150px] rounded-full" />
       </div>
 
       {/* Floating Particles */}
