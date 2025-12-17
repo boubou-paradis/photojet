@@ -837,17 +837,30 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
                   initial={false}
                   animate={
                     tile.revealed
-                      ? { opacity: 0, scale: 0.8, rotate: Math.random() * 10 - 5 }
-                      : { opacity: 1, scale: 1, rotate: 0 }
+                      ? { opacity: 0, scale: 0.8 }
+                      : { opacity: 1, scale: 1 }
                   }
                   transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  className={`
-                    relative overflow-hidden
-                    ${tile.revealed ? 'pointer-events-none' : 'bg-gradient-to-br from-[#D4AF37] to-[#B8960C] border-[0.5px] border-[#B8960C]/30'}
-                  `}
+                  style={{
+                    backgroundColor: tile.revealed ? 'transparent' : '#D4AF37',
+                    background: tile.revealed ? 'transparent' : 'linear-gradient(135deg, #D4AF37 0%, #B8960C 100%)',
+                    border: tile.revealed ? 'none' : '0.5px solid rgba(184, 150, 12, 0.3)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  className={tile.revealed ? 'pointer-events-none' : ''}
                 >
                   {!tile.revealed && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, transparent 100%)',
+                      }}
+                    />
                   )}
                 </motion.div>
               ))}
