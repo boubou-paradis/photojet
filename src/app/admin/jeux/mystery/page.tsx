@@ -697,12 +697,12 @@ export default function MysteryPage() {
               </div>
 
               {/* Preview miniature */}
-              <div className="bg-[#1A1A1E] rounded-lg overflow-hidden relative mb-4 h-[200px]">
+              <div className="bg-black rounded-lg overflow-hidden relative mb-4 flex items-center justify-center" style={{ minHeight: '250px', maxHeight: '350px' }}>
                 {photos[currentRound - 1]?.preview && (
                   <img
                     src={photos[currentRound - 1]!.preview}
                     alt="Current photo"
-                    className="w-full h-full object-cover opacity-40"
+                    className="max-w-full max-h-[350px] object-contain opacity-40"
                   />
                 )}
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
