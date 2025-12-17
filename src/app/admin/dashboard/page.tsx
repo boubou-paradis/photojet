@@ -85,21 +85,12 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
     : 'bg-[#D4AF37]'
 
   return (
-    <div className={`card-gold rounded-xl flex-shrink-0 border-2 ${borderColor}`}>
-      <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
-        <div className="flex items-center gap-2">
-          <CalendarClock className={`h-4 w-4 ${statusColor}`} />
-          <h3 className="font-semibold text-white text-sm">Abonnement</h3>
-          {(isCritical || isWarning) && !isExpired && (
-            <AlertTriangle className={`h-3.5 w-3.5 ml-auto ${statusColor}`} />
-          )}
-        </div>
-      </div>
-      <div className="p-3 space-y-3">
-        {/* Status */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-[#6B6B70]">Statut</span>
-          <Badge className={`text-[10px] px-1.5 py-0.5 ${
+    <div className={`card-gold rounded-xl flex-shrink-0 border ${borderColor}`}>
+      <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)]">
+        <div className="flex items-center gap-1.5">
+          <CalendarClock className={`h-3.5 w-3.5 ${statusColor}`} />
+          <h3 className="font-semibold text-white text-xs">Abonnement</h3>
+          <Badge className={`ml-auto text-[9px] px-1 py-0 ${
             isExpired
               ? 'bg-red-500/20 text-red-500 border-red-500/30'
               : subscription.cancel_at_period_end
@@ -109,52 +100,39 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
             {isExpired ? 'Expiré' : subscription.cancel_at_period_end ? 'Annulé' : 'Actif'}
           </Badge>
         </div>
-
+      </div>
+      <div className="p-2 space-y-1.5">
         {/* Time remaining */}
-        <div className="text-center py-2">
+        <div className="flex items-center justify-between">
           {isExpired ? (
-            <p className="text-red-500 font-bold text-lg">Abonnement expiré</p>
+            <p className="text-red-500 font-bold text-sm">Expiré</p>
           ) : (
             <>
-              <p className={`font-bold text-2xl ${statusColor}`}>
+              <span className={`font-bold text-lg ${statusColor}`}>
                 {days > 0 ? `${days}j ${hours}h` : `${hours}h`}
-              </p>
-              <p className="text-xs text-[#6B6B70] mt-1">
-                {days > 0
-                  ? `${days} jour${days > 1 ? 's' : ''} et ${hours} heure${hours > 1 ? 's' : ''} restant${days > 1 || hours > 1 ? 's' : ''}`
-                  : `${hours} heure${hours > 1 ? 's' : ''} restante${hours > 1 ? 's' : ''}`
-                }
-              </p>
+              </span>
+              <span className="text-[10px] text-[#6B6B70]">
+                jusqu&apos;au {end.toLocaleDateString('fr-FR')}
+              </span>
             </>
           )}
         </div>
 
         {/* Progress bar */}
-        <div className="space-y-1">
-          <div className="h-2 bg-[#1A1A1E] rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-              className={`h-full ${progressColor} rounded-full`}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-[#6B6B70]">
-            <span>Début</span>
-            <span>Fin: {end.toLocaleDateString('fr-FR')}</span>
-          </div>
+        <div className="h-1.5 bg-[#1A1A1E] rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+            className={`h-full ${progressColor} rounded-full`}
+          />
         </div>
 
         {/* Warning message */}
         {(isCritical || isWarning) && !isExpired && (
-          <div className={`p-2 rounded-lg ${isCritical ? 'bg-red-500/10' : 'bg-orange-500/10'}`}>
-            <p className={`text-xs ${isCritical ? 'text-red-400' : 'text-orange-400'}`}>
-              {isCritical
-                ? '⚠️ Votre abonnement expire très bientôt !'
-                : '⏰ Pensez à renouveler votre abonnement'
-              }
-            </p>
-          </div>
+          <p className={`text-[10px] ${isCritical ? 'text-red-400' : 'text-orange-400'}`}>
+            {isCritical ? '⚠️ Expire bientôt !' : '⏰ Renouveler bientôt'}
+          </p>
         )}
       </div>
     </div>
