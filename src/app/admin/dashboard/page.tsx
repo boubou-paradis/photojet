@@ -1224,50 +1224,50 @@ export default function DashboardPage() {
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[280px] flex flex-col gap-3 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+            <div className="lg:w-[280px] flex flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
               {/* Actions rapides Card - Premium Style - EN HAUT */}
               <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
-                  <div className="p-3 border-b border-white/5">
-                    <h3 className="font-bold text-white text-sm">⚡ Actions rapides</h3>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
+                  <div className="h-0.5 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+                  <div className="px-2.5 py-1.5 border-b border-white/5">
+                    <h3 className="font-bold text-white text-xs">⚡ Actions rapides</h3>
                   </div>
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 space-y-1.5">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-9 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-xs font-medium"
+                      className="w-full h-7 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
                       onClick={() => router.push('/admin/borne')}
                     >
-                      <Tablet className="h-4 w-4 mr-2" />
+                      <Tablet className="h-3.5 w-3.5 mr-1.5" />
                       Borne photo
                       {selectedSession.borne_enabled && borneConnection?.is_online && (
-                        <span className="ml-auto w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                       )}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-9 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                      className="w-full h-7 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[11px] font-medium"
                       onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
                     >
-                      <ImageIcon className="h-4 w-4 mr-2" />
+                      <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
                       Voir l&apos;album
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-9 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-medium"
+                      className="w-full h-7 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-medium"
                       onClick={downloadAllPhotos}
                       disabled={downloading || approvedCount === 0}
                     >
                       {downloading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                       ) : (
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="h-3.5 w-3.5 mr-1.5" />
                       )}
-                      {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
+                      {downloading ? 'Téléchargement...' : `Télécharger (${approvedCount})`}
                     </Button>
                   </div>
                 </div>
@@ -1275,36 +1275,36 @@ export default function DashboardPage() {
 
               {/* QR Code Card - Premium Gaming Style */}
               <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-2xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/30 overflow-hidden">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
-                  <div className="p-3 border-b border-white/5">
-                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                      <span className="text-lg">📱</span>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-[#D4AF37]/30 overflow-hidden">
+                  <div className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+                  <div className="px-2.5 py-1.5 border-b border-white/5">
+                    <h3 className="font-bold text-white text-xs flex items-center gap-1.5">
+                      <span className="text-sm">📱</span>
                       QR Code invités
                     </h3>
                   </div>
-                  <div className="p-4 flex flex-col items-center">
+                  <div className="p-2.5 flex flex-col items-center">
                     <div className="relative" id="qr-invite">
-                      <div className="absolute -inset-2 bg-[#D4AF37]/10 rounded-xl blur-lg" />
-                      <div className="relative bg-white p-3 rounded-xl shadow-2xl shadow-black/50">
+                      <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-lg blur-md" />
+                      <div className="relative bg-white p-2 rounded-lg shadow-xl shadow-black/50">
                         <QRCode
                           value={getInviteUrl(selectedSession.code)}
-                          size={130}
+                          size={100}
                         />
                       </div>
                     </div>
-                    <p className="text-2xl font-mono font-black mt-3 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
+                    <p className="text-lg font-mono font-black mt-2 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
                       #{selectedSession.code}
                     </p>
-                    <div className="flex gap-2 mt-3 w-full">
+                    <div className="flex gap-1.5 mt-2 w-full">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={copyInviteLink}
-                        className="flex-1 h-9 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                        className="flex-1 h-7 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
                       >
-                        <Copy className="h-3.5 w-3.5 mr-1.5" />
+                        <Copy className="h-3 w-3 mr-1" />
                         Copier
                       </Button>
                       <Button
@@ -1313,9 +1313,9 @@ export default function DashboardPage() {
                         onClick={() =>
                           window.open(`/invite/${selectedSession.code}`, '_blank')
                         }
-                        className="flex-1 h-9 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                        className="flex-1 h-7 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
                       >
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                        <ExternalLink className="h-3 w-3 mr-1" />
                         Ouvrir
                       </Button>
                     </div>
@@ -1323,10 +1323,10 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={printQRCode}
-                      className="w-full mt-2 h-9 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                      className="w-full mt-1.5 h-7 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
                     >
-                      <Printer className="h-3.5 w-3.5 mr-1.5" />
-                      Imprimer pour table
+                      <Printer className="h-3 w-3 mr-1" />
+                      Imprimer
                     </Button>
                   </div>
                 </div>
@@ -1334,45 +1334,45 @@ export default function DashboardPage() {
 
               {/* QR Code Album - Premium Style */}
               <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-violet-500/20 group-hover:border-violet-500/40 overflow-hidden transition-all">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-                  <div className="p-3 border-b border-white/5">
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="h-4 w-4 text-violet-500" />
-                      <h3 className="font-bold text-white text-sm">Album post-event</h3>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-violet-500/20 group-hover:border-violet-500/40 overflow-hidden transition-all">
+                  <div className="h-0.5 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+                  <div className="px-2.5 py-1.5 border-b border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <FolderOpen className="h-3.5 w-3.5 text-violet-500" />
+                      <h3 className="font-bold text-white text-xs">Album post-event</h3>
                     </div>
                   </div>
-                  <div className="p-4 flex flex-col items-center">
+                  <div className="p-2.5 flex flex-col items-center">
                     <div className="relative">
-                      <div className="absolute -inset-2 bg-violet-500/10 rounded-xl blur-lg" />
-                      <div className="relative bg-white p-2.5 rounded-xl shadow-xl shadow-black/30">
+                      <div className="absolute -inset-1 bg-violet-500/10 rounded-lg blur-md" />
+                      <div className="relative bg-white p-1.5 rounded-lg shadow-lg shadow-black/30">
                         <QRCode
                           value={getAlbumUrl(selectedSession.code)}
-                          size={100}
+                          size={70}
                         />
                       </div>
                     </div>
-                    <p className="text-sm text-gray-400 mt-3">
-                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos disponibles
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos
                     </p>
-                    <div className="flex gap-2 mt-2 w-full">
+                    <div className="flex gap-1.5 mt-1.5 w-full">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={copyAlbumLink}
-                        className="flex-1 h-8 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                        className="flex-1 h-6 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[10px] font-medium"
                       >
-                        <Copy className="h-3 w-3 mr-1" />
+                        <Copy className="h-2.5 w-2.5 mr-1" />
                         Copier
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                        className="flex-1 h-8 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                        className="flex-1 h-6 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[10px] font-medium"
                       >
-                        <ExternalLink className="h-3 w-3 mr-1" />
+                        <ExternalLink className="h-2.5 w-2.5 mr-1" />
                         Voir
                       </Button>
                     </div>
@@ -1382,35 +1382,35 @@ export default function DashboardPage() {
 
               {/* Informations Card - Premium Style */}
               <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-emerald-500/20 group-hover:border-emerald-500/30 overflow-hidden transition-all">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-                  <div className="p-3 border-b border-white/5">
-                    <h3 className="font-bold text-white text-sm">📋 Informations</h3>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-emerald-500/20 group-hover:border-emerald-500/30 overflow-hidden transition-all">
+                  <div className="h-0.5 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+                  <div className="px-2.5 py-1.5 border-b border-white/5">
+                    <h3 className="font-bold text-white text-xs">📋 Infos</h3>
                   </div>
-                  <div className="p-3 space-y-2.5">
+                  <div className="p-2 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Événement</span>
-                      <span className="font-semibold text-white text-sm truncate ml-2">{selectedSession.name}</span>
+                      <span className="text-[10px] text-gray-500">Événement</span>
+                      <span className="font-semibold text-white text-xs truncate ml-2">{selectedSession.name}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Créé le</span>
-                      <span className="font-semibold text-white text-sm">
+                      <span className="text-[10px] text-gray-500">Créé le</span>
+                      <span className="font-semibold text-white text-xs">
                         {new Date(selectedSession.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
                     {selectedSession.borne_enabled && (
-                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                        <span className="text-xs text-gray-500">Borne</span>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+                        <span className="text-[10px] text-gray-500">Borne</span>
                         {borneConnection?.is_online ? (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 rounded-full">
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-xs text-emerald-400 font-medium">En ligne</span>
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 rounded-full">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] text-emerald-400 font-medium">En ligne</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-500/10 rounded-full">
-                            <WifiOff className="h-3 w-3 text-gray-500" />
-                            <span className="text-xs text-gray-500">Hors ligne</span>
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-500/10 rounded-full">
+                            <WifiOff className="h-2.5 w-2.5 text-gray-500" />
+                            <span className="text-[10px] text-gray-500">Hors ligne</span>
                           </div>
                         )}
                       </div>
