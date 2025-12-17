@@ -788,8 +788,8 @@ export default function DashboardPage() {
                 <Image
                   src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
-                  width={140}
-                  height={140}
+                  width={280}
+                  height={280}
                   className="relative z-10 drop-shadow-lg"
                   priority
                 />
