@@ -825,15 +825,10 @@ export default function LivePage() {
   }
 
   // Show Wheel Game (Roue de la Destinée) if active
-  const isWheelActive = wheelState?.gameActive ?? session.wheel_active
-  // Get segments from broadcast state or from session database
-  const wheelSegments: WheelSegment[] = wheelState?.segments ?? (session.wheel_segments ? (() => {
-    try {
-      return JSON.parse(session.wheel_segments)
-    } catch {
-      return []
-    }
-  })() : [])
+  // Only show wheel when there's an active broadcast (admin is controlling)
+  const isWheelActive = wheelState?.gameActive === true
+  // Get segments from broadcast state only (not from stale database)
+  const wheelSegments: WheelSegment[] = wheelState?.segments ?? []
 
   if (isWheelActive && wheelSegments.length >= 2) {
     return (

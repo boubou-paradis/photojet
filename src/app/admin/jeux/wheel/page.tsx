@@ -71,6 +71,40 @@ export default function WheelPage() {
     }
   }, [session?.code, supabase])
 
+  // Cleanup: désactiver la roue quand l'admin quitte la page
+  useEffect(() => {
+    if (!session?.id) return
+
+    const cleanup = async () => {
+      // Broadcast que le jeu n'est plus actif
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'wheel_state',
+          payload: {
+            gameActive: false,
+            segments: [],
+            isSpinning: false,
+            result: null,
+          },
+        })
+      }
+      // Mettre à jour la base de données
+      await supabase
+        .from('sessions')
+        .update({ wheel_active: false })
+        .eq('id', session.id)
+    }
+
+    // Cleanup on unmount or page unload
+    window.addEventListener('beforeunload', cleanup)
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanup)
+      cleanup()
+    }
+  }, [session?.id, supabase])
+
   // Calculer les segments utilisés à partir de l'historique
   const usedSegmentIds = useMemo(() => {
     return history.map(h => h.segmentId)
