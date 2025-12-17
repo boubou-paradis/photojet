@@ -902,113 +902,137 @@ export default function DashboardPage() {
           <div className="h-full flex flex-col lg:flex-row gap-3 p-4 overflow-hidden">
             {/* Colonne gauche : Stats + Photos */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-5 gap-2 flex-shrink-0">
+              {/* Stats Cards - Premium Gaming Style */}
+              <div className="grid grid-cols-5 gap-3 flex-shrink-0">
+                {/* Photos Total */}
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="card-gold rounded-xl p-2.5 cursor-pointer transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  className="relative group"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0">
-                      <ImageIcon className="h-3.5 w-3.5 text-[#D4AF37]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-[#6B6B70]">Photos</p>
-                      <span className="text-lg font-bold text-[#D4AF37]">{photos.length}</span>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-[#D4AF37]/20 group-hover:border-[#D4AF37]/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 flex items-center justify-center">
+                        <ImageIcon className="h-5 w-5 text-[#D4AF37]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Photos</p>
+                        <span className="text-2xl font-black text-[#D4AF37]">{photos.length}</span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
 
+                {/* Invités */}
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="card-gold rounded-xl p-2.5 cursor-pointer transition-all duration-200 hover:border-[#4CAF50]/50 hover:shadow-[0_0_15px_rgba(76,175,80,0.15)]"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  className="relative group"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#4CAF50]/10 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="h-3.5 w-3.5 text-[#4CAF50]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-[#6B6B70]">Invités</p>
-                      <span className="text-lg font-bold text-[#D4AF37]">{invitePhotosCount}</span>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Invités</p>
+                        <span className="text-2xl font-black text-emerald-500">{invitePhotosCount}</span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
 
+                {/* Borne */}
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="card-gold rounded-xl p-2.5 cursor-pointer transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  className="relative group"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0">
-                      <Tablet className="h-3.5 w-3.5 text-[#D4AF37]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-[#6B6B70]">Borne</p>
-                      <span className="text-lg font-bold text-[#D4AF37]">{bornePhotosCount}</span>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 flex items-center justify-center">
+                        <Tablet className="h-5 w-5 text-cyan-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Borne</p>
+                        <span className="text-2xl font-black text-cyan-500">{bornePhotosCount}</span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Messages Counter Card */}
+                {/* Messages */}
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="card-gold rounded-xl p-2.5 cursor-pointer transition-all duration-200 hover:border-[#9C27B0]/50 hover:shadow-[0_0_15px_rgba(156,39,176,0.15)]"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  className="relative group"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#9C27B0]/10 flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="h-3.5 w-3.5 text-[#9C27B0]" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-[#6B6B70]">Messages</p>
-                      <span className="text-lg font-bold text-[#D4AF37]">{totalMessagesCount}</span>
-                      {pendingMessagesCount > 0 && (
-                        <span className="ml-1 px-1 py-0 text-[9px] font-bold bg-[#FF9800] text-white rounded-full">
-                          {pendingMessagesCount}
-                        </span>
-                      )}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-violet-500/20 group-hover:border-violet-500/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/10 flex items-center justify-center">
+                        <MessageCircle className="h-5 w-5 text-violet-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Messages</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-black text-violet-500">{totalMessagesCount}</span>
+                          {pendingMessagesCount > 0 && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
+                              {pendingMessagesCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Moderation Toggle Card */}
+                {/* Moderation Toggle */}
                 <motion.div
                   onClick={toggleModeration}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`rounded-xl p-2.5 cursor-pointer transition-all duration-300 ${
-                    moderationEnabled
-                      ? 'bg-[#242428] border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)]'
-                      : 'card-gold hover:border-[#D4AF37]/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)]'
-                  }`}
+                  className="relative group cursor-pointer"
                 >
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotate: togglingModeration ? 360 : 0 }}
-                      transition={{ duration: 0.5 }}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        moderationEnabled ? 'bg-[#D4AF37]/20' : 'bg-[#6B6B70]/10'
-                      }`}
-                    >
-                      {togglingModeration ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D4AF37]" />
-                      ) : moderationEnabled ? (
-                        <Shield className="h-3.5 w-3.5 text-[#D4AF37]" />
-                      ) : (
-                        <ShieldOff className="h-3.5 w-3.5 text-[#6B6B70]" />
-                      )}
-                    </motion.div>
-                    <div>
-                      <p className="text-[10px] text-[#6B6B70]">Modération</p>
-                      <span className={`text-sm font-semibold ${
-                        moderationEnabled ? 'text-[#D4AF37]' : 'text-[#6B6B70]'
-                      }`}>
-                        {moderationEnabled ? 'ON' : 'OFF'}
-                      </span>
-                      {moderationEnabled && (pendingCount + pendingMessagesCount) > 0 && (
-                        <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-[#FF9800] text-white rounded-full">
-                          {pendingCount + pendingMessagesCount}
-                        </span>
-                      )}
+                  <div className={`absolute -inset-0.5 rounded-xl blur transition-opacity duration-300 ${
+                    moderationEnabled
+                      ? 'bg-gradient-to-r from-[#D4AF37]/50 to-amber-500/50 opacity-100'
+                      : 'bg-gradient-to-r from-gray-500/30 to-gray-600/30 opacity-0 group-hover:opacity-100'
+                  }`} />
+                  <div className={`relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border-2 transition-all ${
+                    moderationEnabled
+                      ? 'border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.3)]'
+                      : 'border-gray-600/30 group-hover:border-gray-500/50'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        animate={{ rotate: togglingModeration ? 360 : 0 }}
+                        transition={{ duration: 0.5 }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          moderationEnabled ? 'bg-gradient-to-br from-[#D4AF37]/30 to-amber-600/20' : 'bg-gray-600/10'
+                        }`}
+                      >
+                        {togglingModeration ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-[#D4AF37]" />
+                        ) : moderationEnabled ? (
+                          <Shield className="h-5 w-5 text-[#D4AF37]" />
+                        ) : (
+                          <ShieldOff className="h-5 w-5 text-gray-500" />
+                        )}
+                      </motion.div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Modération</p>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-lg font-black ${moderationEnabled ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
+                            {moderationEnabled ? 'ON' : 'OFF'}
+                          </span>
+                          {moderationEnabled && (pendingCount + pendingMessagesCount) > 0 && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
+                              {pendingCount + pendingMessagesCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -1201,128 +1225,149 @@ export default function DashboardPage() {
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
             <div className="lg:w-[280px] flex flex-col gap-3 lg:overflow-auto flex-shrink-0">
-              {/* QR Code Card - Compact */}
-              <div className="card-gold rounded-xl flex-shrink-0">
-                <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="font-semibold text-white text-sm">QR Code invités</h3>
-                </div>
-                <div className="p-3 flex flex-col items-center">
-                  <div className="bg-white p-2 rounded-lg shadow-gold">
-                    <QRCode
-                      value={getInviteUrl(selectedSession.code)}
-                      size={120}
-                    />
+              {/* QR Code Card - Premium Gaming Style */}
+              <div className="relative group flex-shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-2xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/30 overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+                  <div className="p-3 border-b border-white/5">
+                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                      <span className="text-lg">📱</span>
+                      QR Code invités
+                    </h3>
                   </div>
-                  <p className="text-xl font-mono font-bold mt-2 text-gold-gradient">
-                    #{selectedSession.code}
-                  </p>
-                  <div className="flex gap-2 mt-2 w-full">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyInviteLink}
-                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    >
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copier
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        window.open(`/invite/${selectedSession.code}`, '_blank')
-                      }
-                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Ouvrir
-                    </Button>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={printQRCode}
-                    className="w-full mt-2 h-8 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] text-xs"
-                  >
-                    <Printer className="h-3 w-3 mr-1" />
-                    Imprimer pour table
-                  </Button>
-                </div>
-              </div>
-
-              {/* QR Code Album - Post-Event */}
-              <div className="card-gold rounded-xl flex-shrink-0">
-                <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 text-[#D4AF37]" />
-                    <h3 className="font-semibold text-white text-sm">Album post-event</h3>
-                  </div>
-                </div>
-                <div className="p-3 flex flex-col items-center">
-                  <div className="bg-white p-2 rounded-lg shadow-gold">
-                    <QRCode
-                      value={getAlbumUrl(selectedSession.code)}
-                      size={100}
-                    />
-                  </div>
-                  <p className="text-xs text-[#6B6B70] mt-2 text-center">
-                    {approvedCount} photos disponibles
-                  </p>
-                  <div className="flex gap-2 mt-2 w-full">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyAlbumLink}
-                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    >
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copier
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                      className="flex-1 h-8 border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Voir
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations Card - Compact */}
-              <div className="card-gold rounded-xl flex-shrink-0">
-                <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="font-semibold text-white text-sm">Informations</h3>
-                </div>
-                <div className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#6B6B70]">Événement</span>
-                    <span className="font-medium text-white text-sm truncate ml-2">{selectedSession.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#6B6B70]">Créé le</span>
-                    <span className="font-medium text-white text-sm">
-                      {new Date(selectedSession.created_at).toLocaleDateString('fr-FR')}
-                    </span>
-                  </div>
-                  {selectedSession.borne_enabled && (
-                    <div className="flex items-center justify-between pt-1 border-t border-[rgba(255,255,255,0.05)]">
-                      <span className="text-xs text-[#6B6B70]">Borne</span>
-                      {borneConnection?.is_online ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 bg-[#4CAF50] rounded-full animate-pulse" />
-                          <span className="text-xs text-[#4CAF50]">En ligne</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <WifiOff className="h-3 w-3 text-[#6B6B70]" />
-                          <span className="text-xs text-[#6B6B70]">Hors ligne</span>
-                        </div>
-                      )}
+                  <div className="p-4 flex flex-col items-center">
+                    <div className="relative">
+                      <div className="absolute -inset-2 bg-[#D4AF37]/10 rounded-xl blur-lg" />
+                      <div className="relative bg-white p-3 rounded-xl shadow-2xl shadow-black/50">
+                        <QRCode
+                          value={getInviteUrl(selectedSession.code)}
+                          size={130}
+                        />
+                      </div>
                     </div>
-                  )}
+                    <p className="text-2xl font-mono font-black mt-3 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
+                      #{selectedSession.code}
+                    </p>
+                    <div className="flex gap-2 mt-3 w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyInviteLink}
+                        className="flex-1 h-9 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                      >
+                        <Copy className="h-3.5 w-3.5 mr-1.5" />
+                        Copier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          window.open(`/invite/${selectedSession.code}`, '_blank')
+                        }
+                        className="flex-1 h-9 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                        Ouvrir
+                      </Button>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={printQRCode}
+                      className="w-full mt-2 h-9 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50 text-xs font-semibold"
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-1.5" />
+                      Imprimer pour table
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Album - Premium Style */}
+              <div className="relative group flex-shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-violet-500/20 group-hover:border-violet-500/40 overflow-hidden transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+                  <div className="p-3 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-violet-500" />
+                      <h3 className="font-bold text-white text-sm">Album post-event</h3>
+                    </div>
+                  </div>
+                  <div className="p-4 flex flex-col items-center">
+                    <div className="relative">
+                      <div className="absolute -inset-2 bg-violet-500/10 rounded-xl blur-lg" />
+                      <div className="relative bg-white p-2.5 rounded-xl shadow-xl shadow-black/30">
+                        <QRCode
+                          value={getAlbumUrl(selectedSession.code)}
+                          size={100}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-3">
+                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos disponibles
+                    </p>
+                    <div className="flex gap-2 mt-2 w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyAlbumLink}
+                        className="flex-1 h-8 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
+                        className="flex-1 h-8 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Voir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations Card - Premium Style */}
+              <div className="relative group flex-shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-emerald-500/20 group-hover:border-emerald-500/30 overflow-hidden transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+                  <div className="p-3 border-b border-white/5">
+                    <h3 className="font-bold text-white text-sm">📋 Informations</h3>
+                  </div>
+                  <div className="p-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Événement</span>
+                      <span className="font-semibold text-white text-sm truncate ml-2">{selectedSession.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Créé le</span>
+                      <span className="font-semibold text-white text-sm">
+                        {new Date(selectedSession.created_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                    {selectedSession.borne_enabled && (
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <span className="text-xs text-gray-500">Borne</span>
+                        {borneConnection?.is_online ? (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 rounded-full">
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-emerald-400 font-medium">En ligne</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-500/10 rounded-full">
+                            <WifiOff className="h-3 w-3 text-gray-500" />
+                            <span className="text-xs text-gray-500">Hors ligne</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1334,47 +1379,51 @@ export default function DashboardPage() {
               {/* Speed Meter */}
               <SpeedMeter className="flex-shrink-0" />
 
-              {/* Actions rapides Card - Compact */}
-              <div className="card-gold rounded-xl flex-shrink-0">
-                <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="font-semibold text-white text-sm">Actions rapides</h3>
-                </div>
-                <div className="p-2.5 space-y-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 justify-start border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    onClick={() => router.push('/admin/borne')}
-                  >
-                    <Tablet className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
-                    Borne photo
-                    {selectedSession.borne_enabled && borneConnection?.is_online && (
-                      <span className="ml-auto w-2 h-2 bg-[#4CAF50] rounded-full" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 justify-start border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                  >
-                    <ImageIcon className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
-                    Voir l&apos;album
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 justify-start border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37] text-xs"
-                    onClick={downloadAllPhotos}
-                    disabled={downloading || approvedCount === 0}
-                  >
-                    {downloading ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-2 text-[#D4AF37] animate-spin" />
-                    ) : (
-                      <Download className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
-                    )}
-                    {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
-                  </Button>
+              {/* Actions rapides Card - Premium Style */}
+              <div className="relative group flex-shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+                  <div className="p-3 border-b border-white/5">
+                    <h3 className="font-bold text-white text-sm">⚡ Actions rapides</h3>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-xs font-medium"
+                      onClick={() => router.push('/admin/borne')}
+                    >
+                      <Tablet className="h-4 w-4 mr-2" />
+                      Borne photo
+                      {selectedSession.borne_enabled && borneConnection?.is_online && (
+                        <span className="ml-auto w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Voir l&apos;album
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-medium"
+                      onClick={downloadAllPhotos}
+                      disabled={downloading || approvedCount === 0}
+                    >
+                      {downloading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
