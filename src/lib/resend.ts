@@ -63,7 +63,7 @@ export async function sendWelcomeEmail(params: {
           <!-- HEADER avec Logo -->
           <tr>
             <td align="center" style="padding: 40px 40px 30px 40px; background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); border-radius: 20px 20px 0 0;">
-              <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="180" style="display: block; max-width: 180px; height: auto;" />
+              <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="220" style="display: block; max-width: 220px; height: auto; border: 0;" />
               <h1 style="margin: 25px 0 0 0; color: #D4AF37; font-size: 28px; font-weight: bold; letter-spacing: -0.5px;">
                 Bienvenue sur AnimaJet !
               </h1>
