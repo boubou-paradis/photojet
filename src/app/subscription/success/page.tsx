@@ -54,7 +54,7 @@ export default function SubscriptionSuccessPage() {
 
           {/* Logo */}
           <Image
-            src="/animajet_logo_principal.png"
+            src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
             width={120}
             height={120}

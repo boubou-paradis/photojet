@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AnimaJet - L'animation de vos événements, simplifiée",
     description: "Plateforme tout-en-un pour DJ et animateurs : photos en direct, 7 jeux interactifs, QR codes personnalisés.",
-    images: ["/animajet_logo_principal.png"],
+    images: ["/images/animajet_logo_principal.png"],
     url: "https://animajet.fr",
     siteName: "AnimaJet",
     type: "website",
@@ -52,14 +52,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AnimaJet",
     description: "L'animation de vos événements, simplifiée",
-    images: ["/animajet_logo_principal.png"],
+    images: ["/images/animajet_logo_principal.png"],
   },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/animajet_logo_vector.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/animajet_logo_vector.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/animajet_logo_vector.png",
+    apple: "/images/animajet_logo_vector.png",
   },
   other: {
     "mobile-web-app-capable": "yes",

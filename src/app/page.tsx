@@ -180,7 +180,7 @@ export default function Home() {
             >
               <div className="logo-glow mb-6">
                 <Image
-                  src="/animajet_logo_principal.png"
+                  src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
                   width={300}
                   height={300}

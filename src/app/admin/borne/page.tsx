@@ -232,10 +232,10 @@ export default function BornePage() {
             </Button>
             <div className="flex items-center gap-3">
               <Image
-                src="/logo.png"
+                src="/images/animajet_logo_principal.png"
                 alt="AnimaJet"
-                width={32}
-                height={32}
+                width={40}
+                height={40}
                 className="drop-shadow-lg"
               />
               <div className="flex items-center gap-2">

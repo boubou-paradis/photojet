@@ -536,10 +536,10 @@ export default function BornePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
         <div className="relative z-10 text-center">
           <Image
-            src="/logo.png"
+            src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
-            width={100}
-            height={100}
+            width={120}
+            height={120}
             className="mx-auto mb-4 animate-pulse"
           />
           <Loader2 className="h-10 w-10 animate-spin text-[#D4AF37] mx-auto" />

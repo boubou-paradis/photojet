@@ -9,13 +9,14 @@ interface AnimaJetLogoProps {
   showIcon?: boolean
   animated?: boolean
   className?: string
+  variant?: 'icon' | 'horizontal' | 'full'
 }
 
 const sizes = {
-  sm: { icon: 32, text: 'text-lg' },
-  md: { icon: 40, text: 'text-xl' },
-  lg: { icon: 56, text: 'text-2xl' },
-  xl: { icon: 80, text: 'text-4xl' },
+  sm: { icon: 36, horizontal: 120, text: 'text-lg' },
+  md: { icon: 48, horizontal: 160, text: 'text-xl' },
+  lg: { icon: 56, horizontal: 200, text: 'text-2xl' },
+  xl: { icon: 80, horizontal: 280, text: 'text-4xl' },
 }
 
 // Simplified rocket icon SVG
@@ -107,16 +108,60 @@ export function AnimaJetIcon({ size = 40, animated = false, className = '' }: { 
   )
 }
 
-// Main logo component
+// Main logo component - Now uses PNG images by default
 export default function AnimaJetLogo({
   size = 'md',
   showText = true,
   showIcon = true,
   animated = false,
   className = '',
+  variant = 'horizontal',
 }: AnimaJetLogoProps) {
-  const { icon: iconSize, text: textSize } = sizes[size]
+  const { icon: iconSize, horizontal: horizontalWidth } = sizes[size]
 
+  // Use horizontal logo image for header/navbar
+  if (variant === 'horizontal') {
+    return (
+      <motion.div
+        initial={animated ? { opacity: 0, x: -20 } : false}
+        animate={animated ? { opacity: 1, x: 0 } : false}
+        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        className={className}
+      >
+        <Image
+          src="/images/animajet_logo_horizontal.png"
+          alt="AnimaJet"
+          width={horizontalWidth}
+          height={Math.round(horizontalWidth * 0.35)}
+          className="object-contain"
+          priority
+        />
+      </motion.div>
+    )
+  }
+
+  // Use principal logo (square) for icon variant
+  if (variant === 'icon' || variant === 'full') {
+    return (
+      <motion.div
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        className={className}
+      >
+        <Image
+          src="/images/animajet_logo_principal.png"
+          alt="AnimaJet"
+          width={iconSize}
+          height={iconSize}
+          className="object-contain"
+          priority
+        />
+      </motion.div>
+    )
+  }
+
+  // Legacy SVG-based logo (fallback)
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {showIcon && (
@@ -133,7 +178,7 @@ export default function AnimaJetLogo({
           initial={animated ? { opacity: 0, x: -20 } : false}
           animate={animated ? { opacity: 1, x: 0 } : false}
           transition={{ delay: 0.2 }}
-          className={`font-heading font-bold ${textSize}`}
+          className={`font-heading font-bold ${sizes[size].text}`}
         >
           <span className="text-white">Anima</span>
           <span className="text-gold-gradient">Jet</span>
@@ -143,9 +188,9 @@ export default function AnimaJetLogo({
   )
 }
 
-// Full logo with image (for pages that need the original logo)
+// Full logo with image (for pages that need the principal/square logo)
 export function AnimaJetFullLogo({
-  size = 80,
+  size = 100,
   animated = false,
   className = '',
 }: {
@@ -161,11 +206,40 @@ export function AnimaJetFullLogo({
       className={`relative ${className}`}
     >
       <Image
-        src="/animajet_logo_principal.png"
+        src="/images/animajet_logo_principal.png"
         alt="AnimaJet"
         width={size}
         height={size}
         className={`drop-shadow-lg ${animated ? 'float' : ''}`}
+        priority
+      />
+    </motion.div>
+  )
+}
+
+// Horizontal logo for headers (wider aspect ratio)
+export function AnimaJetHorizontalLogo({
+  width = 180,
+  animated = false,
+  className = '',
+}: {
+  width?: number
+  animated?: boolean
+  className?: string
+}) {
+  return (
+    <motion.div
+      initial={animated ? { opacity: 0, x: -20 } : false}
+      animate={animated ? { opacity: 1, x: 0 } : false}
+      transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+      className={className}
+    >
+      <Image
+        src="/images/animajet_logo_horizontal.png"
+        alt="AnimaJet"
+        width={width}
+        height={Math.round(width * 0.35)}
+        className="object-contain"
         priority
       />
     </motion.div>

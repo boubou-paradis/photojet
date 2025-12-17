@@ -739,7 +739,7 @@ export default function LivePage() {
   const customLogo = session?.custom_logo
   const logoSize = session?.logo_size || 'medium'
   const logoPosition = session?.logo_position || 'bottom-left'
-  const logoUrl = customLogo ? getStorageUrl(customLogo) : '/logo.png'
+  const logoUrl = customLogo ? getStorageUrl(customLogo) : '/images/animajet_logo_principal.png'
   const logoSizeValues = logoSizes[logoSize]
 
   // Render background
@@ -769,7 +769,7 @@ export default function LivePage() {
   // Render logo component
   const renderLogo = () => (
     <motion.img
-      src={logoUrl || '/logo.png'}
+      src={logoUrl || '/images/animajet_logo_principal.png'}
       alt="Logo"
       width={logoSizeValues.width}
       height={logoSizeValues.height}
@@ -815,10 +815,10 @@ export default function LivePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#D4AF37]/5" />
         <div className="text-center text-white relative z-10">
           <Image
-            src="/logo.png"
+            src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
-            width={80}
-            height={80}
+            width={100}
+            height={100}
             className="mx-auto mb-4 animate-pulse"
           />
           <p className="text-xl text-[#B0B0B5]">Chargement...</p>
@@ -944,7 +944,7 @@ export default function LivePage() {
             >
               <div className="mb-6">
                 <img
-                  src={logoUrl || '/logo.png'}
+                  src={logoUrl || '/images/animajet_logo_principal.png'}
                   alt="Logo"
                   className="mx-auto drop-shadow-lg"
                   style={{

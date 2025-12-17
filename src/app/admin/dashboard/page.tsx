@@ -487,10 +487,10 @@ export default function DashboardPage() {
             {/* Logo AnimaJet */}
             <div className="flex items-center gap-2">
               <Image
-                src="/logo.png"
+                src="/images/animajet_logo_principal.png"
                 alt="AnimaJet"
-                width={32}
-                height={32}
+                width={40}
+                height={40}
                 className="drop-shadow-lg"
                 priority
               />

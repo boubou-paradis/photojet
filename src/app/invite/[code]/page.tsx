@@ -271,10 +271,10 @@ export default function InvitePage() {
           className="text-center mb-6"
         >
           <Image
-            src="/logo.png"
+            src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
-            width={70}
-            height={70}
+            width={80}
+            height={80}
             className="mx-auto mb-3 drop-shadow-lg"
           />
           <p className="text-[#B0B0B5] text-sm">{session?.name}</p>
