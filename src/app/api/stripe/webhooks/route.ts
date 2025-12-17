@@ -5,6 +5,35 @@ import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
 import { sendWelcomeEmail, sendExpiredEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
 
+// Helper function to safely convert Stripe timestamp to ISO string
+function safeTimestampToISO(timestamp: number | null | undefined, fieldName: string): string | null {
+  console.log(`[Date] Converting ${fieldName}:`, timestamp)
+
+  if (timestamp === null || timestamp === undefined) {
+    console.log(`[Date] ${fieldName} is null/undefined, returning null`)
+    return null
+  }
+
+  if (typeof timestamp !== 'number' || isNaN(timestamp)) {
+    console.error(`[Date] ${fieldName} is not a valid number:`, typeof timestamp, timestamp)
+    return null
+  }
+
+  // Stripe timestamps are in seconds, convert to milliseconds
+  const milliseconds = timestamp * 1000
+  const date = new Date(milliseconds)
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    console.error(`[Date] ${fieldName} produced invalid date. Timestamp:`, timestamp, 'Milliseconds:', milliseconds)
+    return null
+  }
+
+  const isoString = date.toISOString()
+  console.log(`[Date] ${fieldName} converted successfully:`, isoString)
+  return isoString
+}
+
 // Lazy initialization to avoid build-time errors
 const getSupabaseAdmin = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -301,20 +330,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     // Step 6: Create subscription record
     console.log('[Webhook] Step 6: Creating subscription record...')
+    console.log('[Webhook] Step 6: Raw Stripe subscription dates:')
+    console.log('[Webhook] - current_period_start:', stripeSubscription.current_period_start)
+    console.log('[Webhook] - current_period_end:', stripeSubscription.current_period_end)
+    console.log('[Webhook] - trial_start:', stripeSubscription.trial_start)
+    console.log('[Webhook] - trial_end:', stripeSubscription.trial_end)
+
+    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start')
+    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end')
+    const trialStart = safeTimestampToISO(stripeSubscription.trial_start, 'trial_start')
+    const trialEnd = safeTimestampToISO(stripeSubscription.trial_end, 'trial_end')
+
+    // Validate required dates
+    if (!periodStart || !periodEnd) {
+      console.error('[Webhook] Step 6: CRITICAL - Required dates are invalid!')
+      console.error('[Webhook] - periodStart:', periodStart)
+      console.error('[Webhook] - periodEnd:', periodEnd)
+      throw new Error('Invalid subscription period dates from Stripe')
+    }
+
     const subscriptionPayload = {
       user_id: userId,
       stripe_customer_id: session.customer as string,
       stripe_subscription_id: stripeSubscription.id,
       stripe_price_id: stripeSubscription.items.data[0]?.price.id,
       status: stripeSubscription.status === 'trialing' ? 'trialing' : 'active',
-      current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-      trial_start: stripeSubscription.trial_start
-        ? new Date(stripeSubscription.trial_start * 1000).toISOString()
-        : null,
-      trial_end: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000).toISOString()
-        : null,
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
+      trial_start: trialStart,
+      trial_end: trialEnd,
       promo_code_id: promoCodeId,
     }
     console.log('[Webhook] Step 6: Payload:', JSON.stringify(subscriptionPayload, null, 2))
@@ -471,14 +515,23 @@ async function updateExistingUser(
       .eq('user_id', userId)
       .single()
 
+    console.log('[Webhook] updateExistingUser: Converting dates...')
+    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start')
+    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end')
+
+    if (!periodStart || !periodEnd) {
+      console.error('[Webhook] updateExistingUser: Invalid dates!')
+      throw new Error('Invalid subscription period dates')
+    }
+
     const subscriptionData = {
       user_id: userId,
       stripe_customer_id: checkoutSession.customer as string,
       stripe_subscription_id: stripeSubscription.id,
       stripe_price_id: stripeSubscription.items.data[0]?.price.id,
       status: stripeSubscription.status === 'trialing' ? 'trialing' : 'active',
-      current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
     }
 
     if (existingSub) {
@@ -529,24 +582,37 @@ async function updateExistingUser(
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { current_period_start: number; current_period_end: number }) {
+  console.log('[Webhook] handleSubscriptionUpdated:', subscription.id)
+
   const { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id, user_id')
     .eq('stripe_subscription_id', subscription.id)
     .single()
 
-  if (!data) return
+  if (!data) {
+    console.log('[Webhook] Subscription not found in DB, skipping')
+    return
+  }
+
+  console.log('[Webhook] Converting subscription dates...')
+  const periodStart = safeTimestampToISO(subscription.current_period_start, 'current_period_start')
+  const periodEnd = safeTimestampToISO(subscription.current_period_end, 'current_period_end')
+  const canceledAt = safeTimestampToISO(subscription.canceled_at, 'canceled_at')
+
+  if (!periodStart || !periodEnd) {
+    console.error('[Webhook] handleSubscriptionUpdated: Invalid dates, skipping update')
+    return
+  }
 
   await getSupabaseAdmin()
     .from('subscriptions')
     .update({
       status: subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due',
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,
-      canceled_at: subscription.canceled_at
-        ? new Date(subscription.canceled_at * 1000).toISOString()
-        : null,
+      canceled_at: canceledAt,
     })
     .eq('id', data.id)
 
