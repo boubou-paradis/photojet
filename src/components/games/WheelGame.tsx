@@ -108,10 +108,10 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           <h1 className="text-4xl md:text-6xl font-black tracking-wider"
             style={{ textShadow: '0 0 10px #D4AF37, 0 0 20px #D4AF37, 0 0 40px #D4AF37, 0 0 80px #D4AF37' }}>
             <span className="text-white">ROUE DE LA</span>
-            <span className="text-[#D4AF37]"> FORTUNE</span>
+            <span className="text-[#D4AF37]"> DESTINÉE</span>
           </h1>
           <p className="text-gray-300 mt-3 text-base md:text-lg tracking-widest uppercase">
-            Tournez la roue et tentez votre chance !
+            Tournez la roue et découvrez votre défi !
           </p>
         </motion.div>
 
@@ -320,7 +320,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}>
-                La roue de la fortune est terminée
+                La roue de la destinée est terminée
               </motion.p>
 
               {/* Étoiles décoratives */}
