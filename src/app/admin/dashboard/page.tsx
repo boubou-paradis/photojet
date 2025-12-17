@@ -562,7 +562,11 @@ export default function DashboardPage() {
           <title>QR Code - ${eventName}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            @page { size: A4; margin: 0; }
+            @page { size: A4 portrait; margin: 15mm; }
+            html, body {
+              width: 210mm;
+              min-height: 297mm;
+            }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               display: flex;
@@ -570,65 +574,77 @@ export default function DashboardPage() {
               align-items: center;
               min-height: 100vh;
               background: white;
+              padding: 20mm;
             }
             .card {
-              width: 190mm;
-              padding: 20mm;
+              width: 100%;
+              max-width: 180mm;
+              padding: 15mm;
               text-align: center;
-              border: 4px solid #D4AF37;
-              border-radius: 16px;
+              border: 5px solid #D4AF37;
+              border-radius: 20px;
               background: linear-gradient(135deg, #fefefe 0%, #f8f6f0 100%);
+              box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
             }
             .logo {
-              width: 150px;
+              width: 280px;
               height: auto;
-              margin-bottom: 25px;
+              margin-bottom: 20px;
             }
             .title {
-              font-size: 28px;
-              font-weight: 700;
+              font-size: 36px;
+              font-weight: 800;
               color: #1A1A1E;
               margin-bottom: 8px;
             }
             .subtitle {
-              font-size: 18px;
+              font-size: 20px;
               color: #6B6B70;
-              margin-bottom: 30px;
+              margin-bottom: 25px;
             }
             .qr-container {
               display: inline-block;
-              padding: 20px;
+              padding: 25px;
               background: white;
-              border-radius: 16px;
-              box-shadow: 0 6px 30px rgba(212, 175, 55, 0.3);
-              border: 3px solid #D4AF37;
+              border-radius: 20px;
+              box-shadow: 0 8px 40px rgba(212, 175, 55, 0.35);
+              border: 4px solid #D4AF37;
             }
             .qr-container svg {
               display: block;
-              width: 250px;
-              height: 250px;
+              width: 280px;
+              height: 280px;
             }
             .code {
-              font-size: 42px;
-              font-weight: 800;
+              font-size: 56px;
+              font-weight: 900;
               color: #D4AF37;
-              margin-top: 30px;
+              margin-top: 25px;
               font-family: 'Courier New', monospace;
-              letter-spacing: 5px;
+              letter-spacing: 8px;
+              text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
             }
             .instruction {
-              font-size: 20px;
+              font-size: 24px;
               color: #1A1A1E;
-              margin-top: 25px;
-              font-weight: 500;
+              margin-top: 20px;
+              font-weight: 600;
             }
             .footer {
-              font-size: 14px;
+              font-size: 16px;
               color: #6B6B70;
-              margin-top: 30px;
+              margin-top: 25px;
+              font-style: italic;
             }
             @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                padding: 0;
+              }
+              .card {
+                box-shadow: none;
+              }
             }
           </style>
         </head>
@@ -788,8 +804,8 @@ export default function DashboardPage() {
                 <Image
                   src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
-                  width={280}
-                  height={280}
+                  width={60}
+                  height={60}
                   className="relative z-10 drop-shadow-lg"
                   priority
                 />
