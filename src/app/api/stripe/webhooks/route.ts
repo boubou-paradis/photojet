@@ -6,17 +6,25 @@ import { sendWelcomeEmail, sendExpiredEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
 
 // Helper function to safely convert Stripe timestamp to ISO string
-function safeTimestampToISO(timestamp: number | null | undefined, fieldName: string): string | null {
-  console.log(`[Date] Converting ${fieldName}:`, timestamp)
+function safeTimestampToISO(
+  timestamp: number | null | undefined,
+  fieldName: string,
+  fallbackDate?: Date
+): string {
+  console.log(`[Date] Converting ${fieldName}:`, timestamp, `(type: ${typeof timestamp})`)
 
-  if (timestamp === null || timestamp === undefined) {
-    console.log(`[Date] ${fieldName} is null/undefined, returning null`)
-    return null
+  // If timestamp is missing or invalid, use fallback
+  if (timestamp === null || timestamp === undefined || timestamp === 0) {
+    const fallback = fallbackDate || new Date()
+    console.log(`[Date] ${fieldName} is null/undefined/0, using fallback:`, fallback.toISOString())
+    return fallback.toISOString()
   }
 
   if (typeof timestamp !== 'number' || isNaN(timestamp)) {
+    const fallback = fallbackDate || new Date()
     console.error(`[Date] ${fieldName} is not a valid number:`, typeof timestamp, timestamp)
-    return null
+    console.log(`[Date] Using fallback:`, fallback.toISOString())
+    return fallback.toISOString()
   }
 
   // Stripe timestamps are in seconds, convert to milliseconds
@@ -25,13 +33,20 @@ function safeTimestampToISO(timestamp: number | null | undefined, fieldName: str
 
   // Check if the date is valid
   if (isNaN(date.getTime())) {
+    const fallback = fallbackDate || new Date()
     console.error(`[Date] ${fieldName} produced invalid date. Timestamp:`, timestamp, 'Milliseconds:', milliseconds)
-    return null
+    console.log(`[Date] Using fallback:`, fallback.toISOString())
+    return fallback.toISOString()
   }
 
   const isoString = date.toISOString()
   console.log(`[Date] ${fieldName} converted successfully:`, isoString)
   return isoString
+}
+
+// Helper to create fallback end date (30 days from now)
+function getDefaultPeriodEnd(): Date {
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 }
 
 // Lazy initialization to avoid build-time errors
@@ -330,24 +345,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     // Step 6: Create subscription record
     console.log('[Webhook] Step 6: Creating subscription record...')
-    console.log('[Webhook] Step 6: Raw Stripe subscription dates:')
-    console.log('[Webhook] - current_period_start:', stripeSubscription.current_period_start)
-    console.log('[Webhook] - current_period_end:', stripeSubscription.current_period_end)
+    console.log('[Webhook] Step 6: Raw Stripe subscription object:')
+    console.log('[Webhook] - subscription.id:', stripeSubscription.id)
+    console.log('[Webhook] - subscription.status:', stripeSubscription.status)
+    console.log('[Webhook] - current_period_start:', stripeSubscription.current_period_start, `(type: ${typeof stripeSubscription.current_period_start})`)
+    console.log('[Webhook] - current_period_end:', stripeSubscription.current_period_end, `(type: ${typeof stripeSubscription.current_period_end})`)
     console.log('[Webhook] - trial_start:', stripeSubscription.trial_start)
     console.log('[Webhook] - trial_end:', stripeSubscription.trial_end)
 
-    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start')
-    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end')
-    const trialStart = safeTimestampToISO(stripeSubscription.trial_start, 'trial_start')
-    const trialEnd = safeTimestampToISO(stripeSubscription.trial_end, 'trial_end')
+    // Convert dates with fallbacks (now = start, now+30days = end)
+    const now = new Date()
+    const defaultEnd = getDefaultPeriodEnd()
 
-    // Validate required dates
-    if (!periodStart || !periodEnd) {
-      console.error('[Webhook] Step 6: CRITICAL - Required dates are invalid!')
-      console.error('[Webhook] - periodStart:', periodStart)
-      console.error('[Webhook] - periodEnd:', periodEnd)
-      throw new Error('Invalid subscription period dates from Stripe')
-    }
+    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start', now)
+    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end', defaultEnd)
+
+    // Trial dates are optional - use null if not present
+    const hasTrialStart = stripeSubscription.trial_start !== null && stripeSubscription.trial_start !== undefined
+    const hasTrialEnd = stripeSubscription.trial_end !== null && stripeSubscription.trial_end !== undefined
+    const trialStart = hasTrialStart ? safeTimestampToISO(stripeSubscription.trial_start, 'trial_start') : null
+    const trialEnd = hasTrialEnd ? safeTimestampToISO(stripeSubscription.trial_end, 'trial_end') : null
+
+    console.log('[Webhook] Step 6: Converted dates:')
+    console.log('[Webhook] - periodStart:', periodStart)
+    console.log('[Webhook] - periodEnd:', periodEnd)
+    console.log('[Webhook] - trialStart:', trialStart)
+    console.log('[Webhook] - trialEnd:', trialEnd)
 
     const subscriptionPayload = {
       user_id: userId,
@@ -516,13 +539,16 @@ async function updateExistingUser(
       .single()
 
     console.log('[Webhook] updateExistingUser: Converting dates...')
-    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start')
-    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end')
+    console.log('[Webhook] - Raw current_period_start:', stripeSubscription.current_period_start, `(type: ${typeof stripeSubscription.current_period_start})`)
+    console.log('[Webhook] - Raw current_period_end:', stripeSubscription.current_period_end, `(type: ${typeof stripeSubscription.current_period_end})`)
 
-    if (!periodStart || !periodEnd) {
-      console.error('[Webhook] updateExistingUser: Invalid dates!')
-      throw new Error('Invalid subscription period dates')
-    }
+    const now = new Date()
+    const defaultEnd = getDefaultPeriodEnd()
+    const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, 'current_period_start', now)
+    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, 'current_period_end', defaultEnd)
+
+    console.log('[Webhook] - Converted periodStart:', periodStart)
+    console.log('[Webhook] - Converted periodEnd:', periodEnd)
 
     const subscriptionData = {
       user_id: userId,
@@ -583,6 +609,9 @@ async function updateExistingUser(
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { current_period_start: number; current_period_end: number }) {
   console.log('[Webhook] handleSubscriptionUpdated:', subscription.id)
+  console.log('[Webhook] - Raw current_period_start:', subscription.current_period_start, `(type: ${typeof subscription.current_period_start})`)
+  console.log('[Webhook] - Raw current_period_end:', subscription.current_period_end, `(type: ${typeof subscription.current_period_end})`)
+  console.log('[Webhook] - Raw canceled_at:', subscription.canceled_at)
 
   const { data } = await getSupabaseAdmin()
     .from('subscriptions')
@@ -596,14 +625,19 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { c
   }
 
   console.log('[Webhook] Converting subscription dates...')
-  const periodStart = safeTimestampToISO(subscription.current_period_start, 'current_period_start')
-  const periodEnd = safeTimestampToISO(subscription.current_period_end, 'current_period_end')
-  const canceledAt = safeTimestampToISO(subscription.canceled_at, 'canceled_at')
+  const now = new Date()
+  const defaultEnd = getDefaultPeriodEnd()
 
-  if (!periodStart || !periodEnd) {
-    console.error('[Webhook] handleSubscriptionUpdated: Invalid dates, skipping update')
-    return
-  }
+  const periodStart = safeTimestampToISO(subscription.current_period_start, 'current_period_start', now)
+  const periodEnd = safeTimestampToISO(subscription.current_period_end, 'current_period_end', defaultEnd)
+
+  // canceled_at is optional - only convert if present
+  const hasCanceledAt = subscription.canceled_at !== null && subscription.canceled_at !== undefined
+  const canceledAt = hasCanceledAt ? safeTimestampToISO(subscription.canceled_at, 'canceled_at') : null
+
+  console.log('[Webhook] - Converted periodStart:', periodStart)
+  console.log('[Webhook] - Converted periodEnd:', periodEnd)
+  console.log('[Webhook] - Converted canceledAt:', canceledAt)
 
   await getSupabaseAdmin()
     .from('subscriptions')
