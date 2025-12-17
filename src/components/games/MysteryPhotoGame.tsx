@@ -778,7 +778,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
       {/* Game area */}
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="relative w-full h-full max-w-6xl max-h-[85vh] aspect-video">
+        <div className="relative w-full h-full max-w-4xl max-h-[65vh] aspect-video">
           <img
             src={currentPhotoUrl}
             alt="Photo Mystère"
