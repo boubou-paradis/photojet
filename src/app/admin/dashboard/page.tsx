@@ -189,12 +189,13 @@ export default function DashboardPage() {
         fetchBorneConnection(selectedSession.id)
         subscribeToBorneConnection(selectedSession.id)
       }
-      // Fetch subscription if session has one
-      if (selectedSession.subscription_id) {
-        fetchSubscription(selectedSession.subscription_id)
-      }
     }
   }, [selectedSession])
+
+  // Fetch subscription on mount
+  useEffect(() => {
+    fetchSubscription()
+  }, [])
 
   async function fetchSessions() {
     try {
@@ -262,15 +263,22 @@ export default function DashboardPage() {
     }
   }
 
-  async function fetchSubscription(subscriptionId: string) {
+  async function fetchSubscription() {
     try {
+      // Récupérer l'abonnement le plus récent (actif ou non)
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('id', subscriptionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single()
 
-      if (error) throw error
+      if (error) {
+        // Table might not exist or no subscriptions
+        console.log('No subscription found:', error.message)
+        setSubscription(null)
+        return
+      }
       setSubscription(data)
     } catch (err) {
       console.error('Error fetching subscription:', err)
