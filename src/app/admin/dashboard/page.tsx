@@ -582,7 +582,7 @@ export default function DashboardPage() {
               background: linear-gradient(135deg, #fefefe 0%, #f8f6f0 100%);
             }
             .logo {
-              width: 120px;
+              width: 150px;
               height: auto;
               margin-bottom: 25px;
             }
