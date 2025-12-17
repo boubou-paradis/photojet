@@ -1160,9 +1160,9 @@ export default function DashboardPage() {
                     <span className="font-medium text-white text-sm truncate ml-2">{selectedSession.name}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#6B6B70]">Expire le</span>
+                    <span className="text-xs text-[#6B6B70]">Créé le</span>
                     <span className="font-medium text-white text-sm">
-                      {new Date(selectedSession.expires_at).toLocaleDateString('fr-FR')}
+                      {new Date(selectedSession.created_at).toLocaleDateString('fr-FR')}
                     </span>
                   </div>
                   {selectedSession.borne_enabled && (
