@@ -186,9 +186,14 @@ export default function WheelPage() {
 
     setLaunching(true)
     try {
+      // Désactiver tous les autres jeux avant d'activer la roue
       const { error } = await supabase
         .from('sessions')
         .update({
+          // Désactiver les autres jeux
+          mystery_photo_active: false,
+          lineup_active: false,
+          // Activer la roue
           wheel_active: true,
           wheel_segments: JSON.stringify(segments),
           wheel_is_spinning: false,

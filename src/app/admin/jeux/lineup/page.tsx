@@ -238,9 +238,14 @@ export default function LineupPage() {
 
     setLaunching(true)
     try {
+      // Désactiver tous les autres jeux avant d'activer Le Bon Ordre
       const { error } = await supabase
         .from('sessions')
         .update({
+          // Désactiver les autres jeux
+          mystery_photo_active: false,
+          wheel_active: false,
+          // Activer Le Bon Ordre
           lineup_active: true,
           lineup_clock_duration: clockDuration,
           lineup_team1_name: team1Name,

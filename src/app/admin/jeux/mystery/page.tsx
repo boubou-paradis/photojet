@@ -401,9 +401,14 @@ export default function MysteryPage() {
 
     setLaunching(true)
     try {
+      // Désactiver tous les autres jeux avant d'activer Photo Mystère
       const { error } = await supabase
         .from('sessions')
         .update({
+          // Désactiver les autres jeux
+          lineup_active: false,
+          wheel_active: false,
+          // Activer Photo Mystère
           mystery_photo_active: true,
           mystery_photo_enabled: true,
           mystery_is_playing: false,
