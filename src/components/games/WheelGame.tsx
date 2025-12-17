@@ -37,11 +37,15 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
   useEffect(() => { setWindowHeight(window.innerHeight) }, [])
 
-  // Afficher l'écran de fin quand le jeu est terminé
+  // Afficher l'écran de fin quand le jeu est terminé (avec délai pour voir le dernier résultat)
   useEffect(() => {
     if (isGameFinished) {
-      setShowFinished(true)
-      setShowConfetti(true)
+      // Attendre 6 secondes pour que l'utilisateur voie le dernier résultat
+      const timer = setTimeout(() => {
+        setShowFinished(true)
+        setShowConfetti(true)
+      }, 6000)
+      return () => clearTimeout(timer)
     }
   }, [isGameFinished])
 
