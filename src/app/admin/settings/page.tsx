@@ -327,23 +327,37 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="relative">
+          <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
+          <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
+        </div>
       </div>
     )
   }
 
   if (!selectedSession) {
     return (
-      <div className="min-h-screen bg-[#1A1A1E] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
         <p className="text-[#B0B0B5]">Aucune session sélectionnée</p>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-[#1A1A1E] flex flex-col overflow-hidden">
-      <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
+    <div className="h-screen bg-[#0D0D0F] flex flex-col overflow-hidden relative">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
+      </div>
+
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -356,13 +370,16 @@ export default function SettingsPage() {
               Retour
             </Button>
             <div className="flex items-center gap-3">
-              <Image
-                src="/images/animajet_logo_principal.png"
-                alt="AnimaJet"
-                width={50}
-                height={50}
-                className="drop-shadow-lg"
-              />
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#D4AF37]/20 blur-xl rounded-full" />
+                <Image
+                  src="/images/animajet_logo_principal.png"
+                  alt="AnimaJet"
+                  width={50}
+                  height={50}
+                  className="relative z-10 drop-shadow-lg"
+                />
+              </div>
               <h1 className="text-xl font-bold text-white">Paramètres</h1>
             </div>
           </div>
@@ -417,7 +434,7 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-3 flex-1 overflow-auto">
+      <main className="relative z-10 container mx-auto px-4 py-3 flex-1 overflow-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
