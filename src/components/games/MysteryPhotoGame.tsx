@@ -63,7 +63,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const gameAreaRef = useRef<HTMLDivElement>(null)
-  const [gameAreaSize, setGameAreaSize] = useState({ width: 672, height: 378 })
 
   // QR Code visibility (synced with session)
   const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
@@ -135,38 +134,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // Calculate game area size based on container and aspect ratio
-  useEffect(() => {
-    const calculateSize = () => {
-      if (!gameAreaRef.current) return
-      const container = gameAreaRef.current
-      const containerWidth = container.clientWidth
-      const containerHeight = container.clientHeight
-      const aspectRatio = cols / rows
-
-      let width, height
-
-      // Use maximum available space (98% of container)
-      const maxWidth = containerWidth * 0.98
-      const maxHeight = containerHeight * 0.98
-
-      if (maxWidth / maxHeight > aspectRatio) {
-        // Container is wider than aspect ratio - height is the constraint
-        height = maxHeight
-        width = height * aspectRatio
-      } else {
-        // Container is taller than aspect ratio - width is the constraint
-        width = maxWidth
-        height = width / aspectRatio
-      }
-
-      setGameAreaSize({ width, height })
-    }
-
-    calculateSize()
-    window.addEventListener('resize', calculateSize)
-    return () => window.removeEventListener('resize', calculateSize)
-  }, [cols, rows])
 
   // Auto-play audio when all tiles are revealed
   useEffect(() => {
@@ -814,22 +781,24 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         </div>
       </div>
 
-      {/* Game area */}
-      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
+      {/* Game area - uses 85vh height with aspect ratio */}
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center overflow-hidden p-1">
         <div
-          className="relative"
+          className="relative rounded-2xl shadow-2xl overflow-hidden"
           style={{
-            width: gameAreaSize.width + 'px',
-            height: gameAreaSize.height + 'px',
+            width: '95vw',
+            height: '85vh',
+            maxWidth: `calc(85vh * ${cols / rows})`,
+            maxHeight: `calc(95vw / ${cols / rows})`,
           }}
         >
           <img
             src={currentPhotoUrl}
             alt="Photo Mystère"
-            className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl shadow-2xl"
+            className="absolute top-0 left-0 w-full h-full object-cover"
           />
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 rounded-2xl overflow-hidden"
+            className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden"
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
