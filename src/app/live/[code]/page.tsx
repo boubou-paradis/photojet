@@ -345,6 +345,22 @@ export default function LivePage() {
     isGameFinished?: boolean
   } | null>(null)
 
+  // Get wheel segments from broadcast state, or parse from database as fallback
+  const wheelSegments: WheelSegment[] = useMemo(() => {
+    if (wheelState?.segments && wheelState.segments.length > 0) {
+      return wheelState.segments
+    }
+    // Fallback: parse from database
+    if (session?.wheel_segments) {
+      try {
+        return JSON.parse(session.wheel_segments as string)
+      } catch {
+        return []
+      }
+    }
+    return []
+  }, [wheelState?.segments, session?.wheel_segments])
+
   // Build slideshow items list - interleaving messages with photos
   const slideshowItems = useMemo((): SlideshowItem[] => {
     const messagesEnabled = session?.messages_enabled ?? true
@@ -827,22 +843,6 @@ export default function LivePage() {
   // Show Wheel Game (Roue de la Destinée) if active
   // Check broadcast state first, then fall back to database state
   const isWheelActive = wheelState?.gameActive === true || (wheelState?.gameActive === undefined && session.wheel_active === true)
-
-  // Get segments from broadcast state, or parse from database as fallback
-  const wheelSegments: WheelSegment[] = useMemo(() => {
-    if (wheelState?.segments && wheelState.segments.length > 0) {
-      return wheelState.segments
-    }
-    // Fallback: parse from database
-    if (session.wheel_segments) {
-      try {
-        return JSON.parse(session.wheel_segments as string)
-      } catch {
-        return []
-      }
-    }
-    return []
-  }, [wheelState?.segments, session.wheel_segments])
 
   if (isWheelActive && wheelSegments.length >= 2) {
     return (
