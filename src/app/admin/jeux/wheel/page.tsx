@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -71,6 +71,21 @@ export default function WheelPage() {
     }
   }, [session?.code, supabase])
 
+  // Calculer les segments utilisés à partir de l'historique
+  const usedSegmentIds = useMemo(() => {
+    return history.map(h => h.segmentId)
+  }, [history])
+
+  // Segments disponibles (non utilisés)
+  const availableSegments = useMemo(() => {
+    return segments.filter(s => !usedSegmentIds.includes(s.id))
+  }, [segments, usedSegmentIds])
+
+  // Jeu terminé quand tous les segments sont utilisés
+  const isGameFinished = useMemo(() => {
+    return gameActive && availableSegments.length === 0
+  }, [gameActive, availableSegments.length])
+
   // Broadcast game state
   const broadcastGameState = useCallback((state: {
     gameActive: boolean
@@ -78,6 +93,8 @@ export default function WheelPage() {
     isSpinning: boolean
     result: string | null
     spinToIndex?: number
+    usedSegmentIds?: string[]
+    isGameFinished?: boolean
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -214,6 +231,8 @@ export default function WheelPage() {
         segments,
         isSpinning: false,
         result: null,
+        usedSegmentIds: [],
+        isGameFinished: false,
       })
 
       toast.success('Jeu configuré!')
@@ -227,14 +246,14 @@ export default function WheelPage() {
   }
 
   async function spinWheel() {
-    if (!session || isSpinning) return
+    if (!session || isSpinning || availableSegments.length === 0) return
 
     setIsSpinning(true)
     setResult(null)
 
-    // Choose random segment
-    const randomIndex = Math.floor(Math.random() * segments.length)
-    const selectedSegment = segments[randomIndex]
+    // Choose random segment from AVAILABLE segments only
+    const randomIndex = Math.floor(Math.random() * availableSegments.length)
+    const selectedSegment = availableSegments[randomIndex]
 
     // Update DB
     await supabase
@@ -245,13 +264,15 @@ export default function WheelPage() {
       })
       .eq('id', session.id)
 
-    // Broadcast spin start with target index
+    // Broadcast spin start with target index (index in available segments)
     broadcastGameState({
       gameActive: true,
       segments,
       isSpinning: true,
       result: null,
       spinToIndex: randomIndex,
+      usedSegmentIds,
+      isGameFinished: false,
     })
 
     // Wait for spin animation (5 seconds)
@@ -262,6 +283,9 @@ export default function WheelPage() {
         timestamp: new Date().toISOString(),
       }
       const newHistory = [newResult, ...history].slice(0, 20) // Keep last 20
+      const newUsedSegmentIds = [...usedSegmentIds, selectedSegment.id]
+      const newAvailableCount = segments.length - newUsedSegmentIds.length
+      const gameFinished = newAvailableCount === 0
 
       setIsSpinning(false)
       setResult(selectedSegment.text)
@@ -281,9 +305,15 @@ export default function WheelPage() {
         segments,
         isSpinning: false,
         result: selectedSegment.text,
+        usedSegmentIds: newUsedSegmentIds,
+        isGameFinished: gameFinished,
       })
 
       toast.success(`Résultat: ${selectedSegment.text}`)
+
+      if (gameFinished) {
+        toast.success('🎉 Tous les segments ont été utilisés!', { duration: 5000 })
+      }
     }, 5000)
   }
 
@@ -302,6 +332,8 @@ export default function WheelPage() {
       segments,
       isSpinning: false,
       result: null,
+      usedSegmentIds,
+      isGameFinished,
     })
   }
 
@@ -532,13 +564,16 @@ export default function WheelPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className={`w-2.5 h-2.5 rounded-full ${
+                  isGameFinished ? 'bg-[#D4AF37] animate-pulse' :
                   isSpinning ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
                 }`}></span>
                 <span className="text-white font-bold">
-                  {isSpinning ? 'Rotation...' : result ? 'Résultat affiché' : 'Prêt'}
+                  {isGameFinished ? '🏆 Jeu terminé!' : isSpinning ? 'Rotation...' : result ? 'Résultat affiché' : 'Prêt'}
                 </span>
               </div>
-              <span className="text-[#D4AF37] text-sm">{segments.length} segments</span>
+              <span className={`text-sm ${availableSegments.length === 0 ? 'text-[#D4AF37]' : 'text-gray-400'}`}>
+                {availableSegments.length}/{segments.length} restants
+              </span>
             </div>
 
             {/* Current result */}
@@ -552,9 +587,9 @@ export default function WheelPage() {
             {/* Spin button */}
             <button
               onClick={spinWheel}
-              disabled={isSpinning}
+              disabled={isSpinning || isGameFinished}
               className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                isSpinning
+                isSpinning || isGameFinished
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black hover:opacity-90'
               }`}
@@ -563,6 +598,10 @@ export default function WheelPage() {
                 <>
                   <Loader2 className="h-6 w-6 animate-spin" />
                   Rotation en cours...
+                </>
+              ) : isGameFinished ? (
+                <>
+                  🏆 Tous les segments utilisés!
                 </>
               ) : (
                 <>

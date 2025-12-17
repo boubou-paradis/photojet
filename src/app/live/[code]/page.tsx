@@ -343,6 +343,8 @@ export default function LivePage() {
     isSpinning: boolean
     result: string | null
     spinToIndex?: number
+    usedSegmentIds?: string[]
+    isGameFinished?: boolean
   } | null>(null)
 
   // Build slideshow items list - interleaving messages with photos
@@ -881,6 +883,8 @@ export default function LivePage() {
         isSpinning={wheelState?.isSpinning ?? session.wheel_is_spinning ?? false}
         result={wheelState?.result ?? session.wheel_result ?? null}
         spinToIndex={wheelState?.spinToIndex}
+        usedSegmentIds={wheelState?.usedSegmentIds ?? []}
+        isGameFinished={wheelState?.isGameFinished ?? false}
       />
     )
   }

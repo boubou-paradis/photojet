@@ -9,6 +9,8 @@ interface WheelGameProps {
   isSpinning: boolean
   result: string | null
   spinToIndex?: number
+  usedSegmentIds?: string[]
+  isGameFinished?: boolean
 }
 
 const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
@@ -18,22 +20,37 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
 
 const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FFA500']
 
-export default function WheelGame({ segments, isSpinning, result, spinToIndex }: WheelGameProps) {
+export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false }: WheelGameProps) {
   const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showFinished, setShowFinished] = useState(false)
   const previousSpinning = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [windowHeight, setWindowHeight] = useState(800)
 
+  // Filtrer les segments disponibles (non utilisés)
+  const availableSegments = useMemo(() =>
+    segments.filter(s => !usedSegmentIds.includes(s.id)),
+    [segments, usedSegmentIds]
+  )
+
   useEffect(() => { setWindowHeight(window.innerHeight) }, [])
+
+  // Afficher l'écran de fin quand le jeu est terminé
+  useEffect(() => {
+    if (isGameFinished) {
+      setShowFinished(true)
+      setShowConfetti(true)
+    }
+  }, [isGameFinished])
 
   useEffect(() => {
     if (isSpinning && !previousSpinning.current) {
       setShowResult(false)
       setShowConfetti(false)
       if (audioRef.current) { audioRef.current.play().catch(() => {}) }
-      const segmentAngle = 360 / segments.length
+      const segmentAngle = 360 / availableSegments.length
       const targetAngle = spinToIndex !== undefined
         ? 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
         : Math.random() * 360
@@ -43,12 +60,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex }:
       setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 300)
     }
     previousSpinning.current = isSpinning
-  }, [isSpinning, spinToIndex, segments.length, rotation])
+  }, [isSpinning, spinToIndex, availableSegments.length, rotation])
 
   const wheelSegments = useMemo(() => {
-    const cx = 200, cy = 200, r = 170, count = segments.length
+    const cx = 200, cy = 200, r = 170, count = availableSegments.length
+    if (count === 0) return []
     const anglePerSegment = (2 * Math.PI) / count
-    return segments.map((segment, index) => {
+    return availableSegments.map((segment, index) => {
       const startAngle = index * anglePerSegment - Math.PI / 2
       const endAngle = startAngle + anglePerSegment
       const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle)
@@ -62,7 +80,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex }:
       const textRotation = (textAngle * 180) / Math.PI + 90
       return { id: segment.id, pathData, color: segment.color, text: segment.text, textX, textY, textRotation }
     })
-  }, [segments])
+  }, [availableSegments])
 
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -104,12 +122,12 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex }:
             style={{ background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, transparent 70%)', transform: 'translateY(20px) scale(1.1)' }} />
 
           {/* Fleche premium */}
-          <motion.div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30"
-            animate={isSpinning ? { y: [-4, 0, -4] } : {}}
+          <motion.div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 z-30"
+            animate={isSpinning ? { y: [-6, 0, -6] } : {}}
             transition={{ duration: 0.3, repeat: Infinity }}>
             <div className="absolute inset-0 blur-md"
-              style={{ background: 'linear-gradient(to bottom, #D4AF37, #FFD700)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)', width: '50px', height: '60px' }} />
-            <div className="relative w-12 h-14"
+              style={{ background: 'linear-gradient(to bottom, #D4AF37, #FFD700)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)', width: '60px', height: '75px' }} />
+            <div className="relative w-14 h-[70px]"
               style={{ background: 'linear-gradient(to bottom, #F4D03F, #D4AF37, #B8960C)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }} />
           </motion.div>
 
@@ -117,7 +135,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex }:
           <motion.div animate={{ rotate: rotation }}
             transition={{ duration: isSpinning ? 5 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }}
             className="relative">
-            <svg width="420" height="420" viewBox="0 0 400 400" className="drop-shadow-2xl">
+            <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">
               <defs>
                 <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#F4D03F" />
@@ -251,6 +269,73 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex }:
                   ))}
                 </motion.div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ÉCRAN DE FIN - TOUS LES SEGMENTS UTILISÉS */}
+      <AnimatePresence>
+        {showFinished && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center z-50">
+            <motion.div className="absolute inset-0 bg-black/90 backdrop-blur-md"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
+
+            {/* Effet radial doré */}
+            <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] h-[300%]"
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 40%)' }}
+              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }} />
+
+            <motion.div className="relative z-10 text-center px-8" initial={{ scale: 0.5, y: 50 }} animate={{ scale: 1, y: 0 }}
+              transition={{ type: 'spring', damping: 12 }}>
+
+              {/* Trophée animé */}
+              <motion.div className="text-[120px] md:text-[180px] mb-4"
+                initial={{ scale: 0, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', delay: 0.2, damping: 10 }}>
+                🏆
+              </motion.div>
+
+              {/* Titre */}
+              <motion.h1 className="text-5xl md:text-7xl font-black mb-4"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                style={{ color: '#D4AF37', textShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}>
+                FÉLICITATIONS !
+              </motion.h1>
+
+              <motion.p className="text-2xl md:text-3xl text-white mb-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+                Tous les défis ont été relevés !
+              </motion.p>
+
+              <motion.p className="text-lg text-gray-400 uppercase tracking-widest"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}>
+                La roue de la fortune est terminée
+              </motion.p>
+
+              {/* Étoiles décoratives */}
+              <motion.div className="flex justify-center gap-4 mt-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}>
+                {[...Array(5)].map((_, i) => (
+                  <motion.span key={i} className="text-4xl"
+                    animate={{ scale: [1, 1.3, 1], rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}>
+                    ⭐
+                  </motion.span>
+                ))}
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
