@@ -147,11 +147,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       let width, height
       if (containerWidth / containerHeight > aspectRatio) {
         // Container is wider, height is the constraint
-        height = Math.min(containerHeight, window.innerHeight * 0.49)
+        // Use 85% of viewport height for maximum display
+        height = Math.min(containerHeight - 20, window.innerHeight * 0.85)
         width = height * aspectRatio
       } else {
         // Container is taller, width is the constraint
-        width = Math.min(containerWidth, 672) // 42rem = 672px
+        // Allow up to 95% of container width
+        width = Math.min(containerWidth - 20, window.innerWidth * 0.95)
         height = width / aspectRatio
       }
 
@@ -726,21 +728,21 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-[#242428]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-            <Search className="h-5 w-5 text-[#D4AF37]" />
+      <div className="flex items-center justify-between px-4 py-2 bg-[#242428]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+            <Search className="h-4 w-4 text-[#D4AF37]" />
           </div>
-          <h1 className="text-xl font-bold text-white">Photo Mystère</h1>
+          <h1 className="text-lg font-bold text-white">Photo Mystère</h1>
           {totalRounds > 1 && (
-            <span className="ml-4 px-3 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-sm font-semibold">
+            <span className="ml-2 px-2 py-0.5 bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-semibold">
               Manche {currentRound}/{totalRounds}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-[#D4AF37] font-bold text-lg">
-            {revealedTiles.length}/{totalTiles} cases révélées
+        <div className="flex items-center gap-3">
+          <span className="text-[#D4AF37] font-bold text-sm">
+            {revealedTiles.length}/{totalTiles} cases
           </span>
           {isPlaying && (
             <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full">
@@ -810,7 +812,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       </div>
 
       {/* Game area */}
-      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-6 overflow-hidden">
+      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center p-2 overflow-hidden">
         <div
           className="relative"
           style={{
