@@ -237,10 +237,7 @@ export default function BornePage() {
       // Check if video is connected to stream
       const videoConnected = videoRef.current && videoRef.current.srcObject === streamRef.current
 
-      console.log('[Borne] Camera check:', { state, streamActive, videoConnected })
-
       if (!streamActive || !videoConnected) {
-        console.log('[Borne] Starting/reconnecting camera')
         startCamera()
       }
     }
@@ -258,7 +255,6 @@ export default function BornePage() {
 
   // Reset to camera state
   const resetToCamera = useCallback(() => {
-    console.log('[Borne] Resetting to camera')
     setCapturedImage(null)
     setCapturedBlob(null)
     setCountdown(session?.borne_countdown_duration || 3)
@@ -342,13 +338,11 @@ export default function BornePage() {
     if (state !== 'countdown') return
 
     if (countdown === 0) {
-      console.log('[Borne] Countdown finished, capturing photo')
       capturePhoto()
       return
     }
 
     const timer = setTimeout(() => {
-      console.log('[Borne] Countdown:', countdown - 1)
       setCountdown((prev) => prev - 1)
     }, 1000)
 
@@ -368,7 +362,6 @@ export default function BornePage() {
 
   function startCountdown() {
     if (!session) return
-    console.log('[Borne] Starting countdown, borne_countdown:', session.borne_countdown)
 
     if (session.borne_countdown) {
       setCountdown(session.borne_countdown_duration)

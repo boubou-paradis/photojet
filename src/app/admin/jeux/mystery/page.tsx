@@ -563,7 +563,6 @@ export default function MysteryPage() {
     })
     if (filesToDelete.length > 0) {
       await supabase.storage.from('photos').remove(filesToDelete)
-      console.log('[Mystery] Fichiers supprimés:', filesToDelete)
     }
 
     // Reset ALL game data

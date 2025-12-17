@@ -1,47 +1,23 @@
 import { Resend } from 'resend'
 
-// Debug: Check if API key is set
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-console.log('[Resend] API Key configured:', RESEND_API_KEY ? `Yes (${RESEND_API_KEY.substring(0, 8)}...)` : 'No')
-
-if (!RESEND_API_KEY) {
-  console.warn('[Resend] RESEND_API_KEY is not set - emails will not be sent')
-}
-
 export const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'
 const FROM_EMAIL = 'AnimaJet <noreply@animajet.fr>'
 
-console.log('[Resend] Configuration:', {
-  apiKeySet: !!RESEND_API_KEY,
-  appUrl: APP_URL,
-  fromEmail: FROM_EMAIL,
-})
-
-// Welcome email after subscription
 export async function sendWelcomeEmail(params: {
   to: string
   password: string
   sessionCode: string
 }) {
-  console.log('[Email] sendWelcomeEmail called with:', { to: params.to, sessionCode: params.sessionCode })
-
   if (!resend) {
-    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
-    console.error('[Email] Current env:', {
-      hasKey: !!process.env.RESEND_API_KEY,
-      nodeEnv: process.env.NODE_ENV
-    })
     return { success: false, error: 'Resend not configured' }
   }
 
   const { to, password, sessionCode } = params
 
   try {
-    console.log('[Email] Attempting to send welcome email to:', to)
-    console.log('[Email] From:', FROM_EMAIL)
-
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
@@ -59,8 +35,6 @@ export async function sendWelcomeEmail(params: {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
-
-          <!-- HEADER avec Logo -->
           <tr>
             <td align="center" style="padding: 40px 40px 30px 40px; background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); border-radius: 20px 20px 0 0;">
               <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="220" style="display: block; max-width: 220px; height: auto; border: 0;" />
@@ -72,23 +46,15 @@ export async function sendWelcomeEmail(params: {
               </p>
             </td>
           </tr>
-
-          <!-- CORPS Principal -->
           <tr>
             <td style="background-color: #242428; padding: 40px;">
-
-              <!-- Message personnalise -->
               <p style="margin: 0 0 30px 0; color: #ffffff; font-size: 16px; line-height: 1.6;">
                 Bonjour et merci pour votre confiance !<br><br>
                 Voici vos identifiants de connexion pour acceder a votre espace AnimaJet :
               </p>
-
-              <!-- Encadre Identifiants avec bordure doree -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #1A1A1E; border: 2px solid #D4AF37; border-radius: 16px; overflow: hidden;">
                 <tr>
                   <td style="padding: 30px;">
-
-                    <!-- Email -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
                       <tr>
                         <td width="40" valign="top" style="padding-top: 2px;">
@@ -100,15 +66,11 @@ export async function sendWelcomeEmail(params: {
                         </td>
                       </tr>
                     </table>
-
-                    <!-- Separateur -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
                       <tr>
                         <td style="border-bottom: 1px solid #3A3A3F;"></td>
                       </tr>
                     </table>
-
-                    <!-- Mot de passe -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
                       <tr>
                         <td width="40" valign="top" style="padding-top: 2px;">
@@ -120,15 +82,11 @@ export async function sendWelcomeEmail(params: {
                         </td>
                       </tr>
                     </table>
-
-                    <!-- Separateur -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
                       <tr>
                         <td style="border-bottom: 1px solid #3A3A3F;"></td>
                       </tr>
                     </table>
-
-                    <!-- Code Session - Plus gros -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td width="40" valign="top" style="padding-top: 2px;">
@@ -141,12 +99,9 @@ export async function sendWelcomeEmail(params: {
                         </td>
                       </tr>
                     </table>
-
                   </td>
                 </tr>
               </table>
-
-              <!-- Bouton CTA -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 35px;">
                 <tr>
                   <td align="center">
@@ -162,41 +117,28 @@ export async function sendWelcomeEmail(params: {
                   </td>
                 </tr>
               </table>
-
-              <!-- Note -->
               <p style="margin: 30px 0 0 0; color: #6B6B70; font-size: 14px; text-align: center; line-height: 1.6;">
                 Conservez cet email precieusement.<br>
                 Vous pourrez modifier votre mot de passe dans les parametres.
               </p>
-
             </td>
           </tr>
-
-          <!-- FOOTER -->
           <tr>
             <td style="background-color: #1A1A1E; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #3A3A3F;">
-
-              <!-- Contact -->
               <p style="margin: 0 0 15px 0; color: #B0B0B5; font-size: 14px; text-align: center;">
                 Des questions ? Contactez-nous a <a href="mailto:support@animajet.fr" style="color: #D4AF37; text-decoration: none;">support@animajet.fr</a>
               </p>
-
-              <!-- Separateur -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
                 <tr>
                   <td style="border-bottom: 1px solid #3A3A3F;"></td>
                 </tr>
               </table>
-
-              <!-- Copyright -->
               <p style="margin: 0; color: #6B6B70; font-size: 12px; text-align: center;">
                 &copy; 2025 AnimaJet - Tous droits reserves<br>
                 <span style="color: #4A4A4F;">L'animation de vos evenements, simplifiee.</span>
               </p>
-
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -206,36 +148,24 @@ export async function sendWelcomeEmail(params: {
       `,
     })
 
-    console.log('[Email] Welcome email sent successfully:', result)
     return { success: true, data: result }
   } catch (error: unknown) {
-    console.error('[Email] Error sending welcome email:', error)
-    console.error('[Email] Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined,
-    })
+    console.error('[Email] Error:', error instanceof Error ? error.message : error)
     return { success: false, error }
   }
 }
 
-// Subscription expiring soon email
 export async function sendExpiringEmail(params: {
   to: string
   daysLeft: number
 }) {
-  console.log('[Email] sendExpiringEmail called with:', params)
-
   if (!resend) {
-    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
     return { success: false, error: 'Resend not configured' }
   }
 
   const { to, daysLeft } = params
 
   try {
-    console.log('[Email] Attempting to send expiring email to:', to)
-
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
@@ -253,7 +183,7 @@ export async function sendExpiringEmail(params: {
         <table width="100%" style="max-width: 600px; background-color: #242428; border-radius: 16px; overflow: hidden;">
           <tr>
             <td style="background: linear-gradient(135deg, #E53935 0%, #FF5722 100%); padding: 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Votre abonnement expire bientôt</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Votre abonnement expire bientot</h1>
             </td>
           </tr>
           <tr>
@@ -262,7 +192,7 @@ export async function sendExpiringEmail(params: {
                 Votre abonnement AnimaJet expire dans <strong style="color: #E53935;">${daysLeft} jours</strong>.
               </p>
               <p style="margin: 0 0 30px; color: #B0B0B5; font-size: 16px; line-height: 1.6;">
-                Si vous ne renouvelez pas, vos photos et sessions seront supprimées après l'expiration.
+                Si vous ne renouvelez pas, vos photos et sessions seront supprimees apres l'expiration.
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
@@ -284,35 +214,25 @@ export async function sendExpiringEmail(params: {
       `,
     })
 
-    console.log('[Email] Expiring email sent successfully:', result)
     return { success: true, data: result }
   } catch (error: unknown) {
-    console.error('[Email] Error sending expiring email:', error)
-    console.error('[Email] Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
+    console.error('[Email] Error:', error instanceof Error ? error.message : error)
     return { success: false, error }
   }
 }
 
-// Subscription canceled/expired email
 export async function sendExpiredEmail(params: { to: string }) {
-  console.log('[Email] sendExpiredEmail called with:', params)
-
   if (!resend) {
-    console.error('[Email] Resend client is null - RESEND_API_KEY not configured')
     return { success: false, error: 'Resend not configured' }
   }
 
   const { to } = params
 
   try {
-    console.log('[Email] Attempting to send expired email to:', to)
-
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: 'Votre abonnement AnimaJet a expiré',
+      subject: 'Votre abonnement AnimaJet a expire',
       html: `
 <!DOCTYPE html>
 <html>
@@ -326,22 +246,22 @@ export async function sendExpiredEmail(params: { to: string }) {
         <table width="100%" style="max-width: 600px; background-color: #242428; border-radius: 16px; overflow: hidden;">
           <tr>
             <td style="background-color: #E53935; padding: 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Abonnement expiré</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Abonnement expire</h1>
             </td>
           </tr>
           <tr>
             <td style="padding: 40px;">
               <p style="margin: 0 0 20px; color: #B0B0B5; font-size: 16px; line-height: 1.6;">
-                Votre abonnement AnimaJet a expiré. Vos sessions et photos ont été désactivées.
+                Votre abonnement AnimaJet a expire. Vos sessions et photos ont ete desactivees.
               </p>
               <p style="margin: 0 0 30px; color: #B0B0B5; font-size: 16px; line-height: 1.6;">
-                Réabonnez-vous pour retrouver l'accès à vos données.
+                Reabonnez-vous pour retrouver l'acces a vos donnees.
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
                     <a href="${APP_URL}" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #1A1A1E; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: bold;">
-                      Se réabonner
+                      Se reabonner
                     </a>
                   </td>
                 </tr>
@@ -357,13 +277,9 @@ export async function sendExpiredEmail(params: { to: string }) {
       `,
     })
 
-    console.log('[Email] Expired email sent successfully:', result)
     return { success: true, data: result }
   } catch (error: unknown) {
-    console.error('[Email] Error sending expired email:', error)
-    console.error('[Email] Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
+    console.error('[Email] Error:', error instanceof Error ? error.message : error)
     return { success: false, error }
   }
 }

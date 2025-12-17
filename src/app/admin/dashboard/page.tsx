@@ -275,8 +275,6 @@ export default function DashboardPage() {
         .single()
 
       if (error) {
-        // Table might not exist or no subscriptions
-        console.log('No subscription found:', error.message)
         setSubscription(null)
         return
       }

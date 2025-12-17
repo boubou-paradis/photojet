@@ -180,8 +180,6 @@ function MessageDisplay({ message }: { message: Message }) {
     return '1.25rem'
   }
 
-  console.log('[MessageDisplay] Rendering message:', message.id, content.substring(0, 30) + '...')
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -353,14 +351,6 @@ export default function LivePage() {
     const frequency = session?.messages_frequency || 4
     const approvedMessages = messages.filter(m => m.status === 'approved')
 
-    console.log('[Live] Building slideshow:', {
-      photosCount: photos.length,
-      messagesCount: messages.length,
-      approvedMessagesCount: approvedMessages.length,
-      messagesEnabled,
-      frequency
-    })
-
     // If no photos and no messages, return empty
     if (photos.length === 0 && approvedMessages.length === 0) {
       return []
@@ -368,7 +358,6 @@ export default function LivePage() {
 
     // If only messages (no photos), show all messages
     if (photos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
-      console.log('[Live] No photos, showing only messages')
       return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
     }
 
@@ -396,7 +385,6 @@ export default function LivePage() {
       items.push({ type: 'message', data: approvedMessages[0] })
     }
 
-    console.log('[Live] Slideshow items built:', items.length, 'items with', items.filter(i => i.type === 'message').length, 'messages')
     return items
   }, [photos, messages, session?.messages_enabled, session?.messages_frequency])
 
@@ -499,20 +487,6 @@ export default function LivePage() {
   const fetchMessages = useCallback(async () => {
     if (!session) return
     try {
-      // First fetch ALL messages to see what's in the DB
-      const { data: allMessages, error: allError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('session_id', session.id)
-        .order('created_at', { ascending: true })
-
-      if (allError) {
-        console.error('[Live] Error fetching all messages:', allError)
-      } else {
-        console.log('[Live] ALL messages in DB:', allMessages?.length || 0, allMessages?.map(m => ({ id: m.id, status: m.status, content: m.content?.substring(0, 20) })))
-      }
-
-      // Now fetch only approved ones
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -521,7 +495,6 @@ export default function LivePage() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      console.log('[Live] APPROVED messages:', data?.length || 0, 'messages_enabled:', session.messages_enabled)
       setMessages(data || [])
     } catch (err) {
       console.error('Error fetching messages:', err)
@@ -634,7 +607,6 @@ export default function LivePage() {
     const lineupChannel = supabase
       .channel(`lineup-game-${session.code}`)
       .on('broadcast', { event: 'lineup_state' }, (payload) => {
-        console.log('[Live] Received lineup broadcast:', payload)
         if (payload.payload) {
           setLineupState(payload.payload)
         }
@@ -653,7 +625,6 @@ export default function LivePage() {
     const wheelChannel = supabase
       .channel(`wheel-game-${session.code}`)
       .on('broadcast', { event: 'wheel_state' }, (payload) => {
-        console.log('[Live] Received wheel broadcast:', payload)
         if (payload.payload) {
           setWheelState(payload.payload)
         }
@@ -664,18 +635,6 @@ export default function LivePage() {
       supabase.removeChannel(wheelChannel)
     }
   }, [session?.code, supabase])
-
-  // Log current item for debugging
-  useEffect(() => {
-    const item = slideshowItems[currentIndex]
-    console.log('[Live] Current slide:', {
-      index: currentIndex,
-      total: slideshowItems.length,
-      type: item?.type,
-      id: item?.data?.id,
-      content: item?.type === 'message' ? item.data.content?.substring(0, 30) : 'photo'
-    })
-  }, [currentIndex, slideshowItems])
 
   // Slideshow timer with variable duration
   // Use ref to get current items without triggering effect re-run
