@@ -211,6 +211,25 @@
   .flex.gap-8 > * { margin: 1rem; }
 }
 
+/* Fix bg-clip-text for browsers needing -webkit- prefix */
+.bg-clip-text {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+/* Ensure text-transparent works with bg-clip-text */
+.text-transparent.bg-clip-text {
+  -webkit-text-fill-color: transparent;
+}
+
+/* Fallback for browsers that don't support background-clip: text */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .text-transparent.bg-clip-text {
+    color: #D4AF37 !important;
+    background: none !important;
+  }
+}
+
 @layer utilities {
   /* Gold gradient background */
   .bg-gold-gradient {
