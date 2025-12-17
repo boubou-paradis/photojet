@@ -1224,7 +1224,55 @@ export default function DashboardPage() {
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[280px] flex flex-col gap-3 lg:overflow-auto flex-shrink-0">
+            <div className="lg:w-[280px] flex flex-col gap-3 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+              {/* Actions rapides Card - Premium Style - EN HAUT */}
+              <div className="relative group flex-shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
+                  <div className="h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+                  <div className="p-3 border-b border-white/5">
+                    <h3 className="font-bold text-white text-sm">⚡ Actions rapides</h3>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-xs font-medium"
+                      onClick={() => router.push('/admin/borne')}
+                    >
+                      <Tablet className="h-4 w-4 mr-2" />
+                      Borne photo
+                      {selectedSession.borne_enabled && borneConnection?.is_online && (
+                        <span className="ml-auto w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
+                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Voir l&apos;album
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-medium"
+                      onClick={downloadAllPhotos}
+                      disabled={downloading || approvedCount === 0}
+                    >
+                      {downloading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {/* QR Code Card - Premium Gaming Style */}
               <div className="relative group flex-shrink-0">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-2xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1378,54 +1426,6 @@ export default function DashboardPage() {
 
               {/* Speed Meter */}
               <SpeedMeter className="flex-shrink-0" />
-
-              {/* Actions rapides Card - Premium Style */}
-              <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
-                  <div className="h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
-                  <div className="p-3 border-b border-white/5">
-                    <h3 className="font-bold text-white text-sm">⚡ Actions rapides</h3>
-                  </div>
-                  <div className="p-3 space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-9 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-xs font-medium"
-                      onClick={() => router.push('/admin/borne')}
-                    >
-                      <Tablet className="h-4 w-4 mr-2" />
-                      Borne photo
-                      {selectedSession.borne_enabled && borneConnection?.is_online && (
-                        <span className="ml-auto w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-9 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-xs font-medium"
-                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                    >
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Voir l&apos;album
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-9 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-xs font-medium"
-                      onClick={downloadAllPhotos}
-                      disabled={downloading || approvedCount === 0}
-                    >
-                      {downloading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4 mr-2" />
-                      )}
-                      {downloading ? 'Téléchargement...' : `Télécharger tout (${approvedCount})`}
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
