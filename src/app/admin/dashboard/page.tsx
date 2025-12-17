@@ -178,9 +178,17 @@ export default function DashboardPage() {
 
   async function fetchSessions() {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
       const { data, error } = await supabase
         .from('sessions')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -244,10 +252,15 @@ export default function DashboardPage() {
 
   async function fetchSubscription() {
     try {
-      // Récupérer l'abonnement le plus récent (actif ou non)
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Récupérer l'abonnement le plus récent de l'utilisateur (actif ou non)
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
@@ -434,6 +447,14 @@ export default function DashboardPage() {
 
   async function createNewSession() {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Vous devez être connecté')
+        router.push('/login')
+        return
+      }
+
       const code = await generateUniqueCode()
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7)
@@ -449,7 +470,7 @@ export default function DashboardPage() {
           transition_type: 'fade',
           transition_duration: 5,
           is_active: true,
-          user_id: null,
+          user_id: user.id,
           album_qr_code: null,
           // Borne defaults
           borne_enabled: false,

@@ -85,9 +85,17 @@ export default function DefisPage() {
 
   async function fetchSession() {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
       const { data, error } = await supabase
         .from('sessions')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
