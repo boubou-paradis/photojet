@@ -784,12 +784,12 @@ export default function DashboardPage() {
             {/* Logo AnimaJet */}
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-[#D4AF37]/30 blur-xl rounded-full" />
+                <div className="absolute inset-0 bg-[#D4AF37]/30 blur-2xl rounded-full" />
                 <Image
                   src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
-                  width={70}
-                  height={70}
+                  width={140}
+                  height={140}
                   className="relative z-10 drop-shadow-lg"
                   priority
                 />
