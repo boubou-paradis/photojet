@@ -546,8 +546,8 @@ export default function DashboardPage() {
     const eventName = selectedSession.name || 'Événement'
 
     // Récupérer le SVG du QR code existant dans la page
-    const qrContainer = document.querySelector('.shadow-gold svg')
-    const qrSvg = qrContainer ? qrContainer.outerHTML.replace(/width="120"/, 'width="250"').replace(/height="120"/, 'height="250"') : ''
+    const qrContainer = document.querySelector('#qr-invite svg')
+    const qrSvg = qrContainer ? qrContainer.outerHTML.replace(/width="130"/, 'width="250"').replace(/height="130"/, 'height="250"') : ''
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
@@ -782,19 +782,18 @@ export default function DashboardPage() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Logo AnimaJet */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-[#D4AF37]/20 blur-xl rounded-full" />
+                <div className="absolute inset-0 bg-[#D4AF37]/30 blur-xl rounded-full" />
                 <Image
                   src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
-                  width={50}
-                  height={50}
+                  width={70}
+                  height={70}
                   className="relative z-10 drop-shadow-lg"
                   priority
                 />
               </div>
-              <span className="text-sm font-medium text-[#6B6B70]">AnimaJet</span>
             </div>
 
             {/* Session Info Card */}
@@ -1237,7 +1236,7 @@ export default function DashboardPage() {
                     </h3>
                   </div>
                   <div className="p-4 flex flex-col items-center">
-                    <div className="relative">
+                    <div className="relative" id="qr-invite">
                       <div className="absolute -inset-2 bg-[#D4AF37]/10 rounded-xl blur-lg" />
                       <div className="relative bg-white p-3 rounded-xl shadow-2xl shadow-black/50">
                         <QRCode
