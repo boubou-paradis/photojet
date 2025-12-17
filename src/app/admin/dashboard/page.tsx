@@ -27,15 +27,138 @@ import {
   Aperture,
   Gamepad2,
   FolderOpen,
+  CalendarClock,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase'
-import { Session, Photo, Message, BorneConnection } from '@/types/database'
+import { Session, Photo, Message, BorneConnection, Subscription } from '@/types/database'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import SpeedMeter from '@/components/SpeedMeter'
 import { toast } from 'sonner'
 import { getInviteUrl } from '@/lib/utils'
+
+// Subscription Status Card Component
+function SubscriptionStatusCard({ subscription }: { subscription: Subscription }) {
+  const now = new Date()
+  const end = new Date(subscription.current_period_end!)
+  const diff = end.getTime() - now.getTime()
+
+  // Calculate days and hours remaining
+  const totalHours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+
+  // Calculate progress (assuming 30-day subscription)
+  const start = subscription.current_period_start
+    ? new Date(subscription.current_period_start)
+    : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const totalDuration = end.getTime() - start.getTime()
+  const elapsed = now.getTime() - start.getTime()
+  const progressPercent = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100))
+
+  // Determine status color
+  const isExpired = diff <= 0
+  const isCritical = days < 1 && !isExpired
+  const isWarning = days < 7 && days >= 1
+
+  const statusColor = isExpired
+    ? 'text-red-500'
+    : isCritical
+    ? 'text-red-500'
+    : isWarning
+    ? 'text-orange-500'
+    : 'text-[#4CAF50]'
+
+  const borderColor = isExpired || isCritical
+    ? 'border-red-500/50'
+    : isWarning
+    ? 'border-orange-500/50'
+    : 'border-[#D4AF37]/30'
+
+  const progressColor = isExpired || isCritical
+    ? 'bg-red-500'
+    : isWarning
+    ? 'bg-orange-500'
+    : 'bg-[#D4AF37]'
+
+  return (
+    <div className={`card-gold rounded-xl flex-shrink-0 border-2 ${borderColor}`}>
+      <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)]">
+        <div className="flex items-center gap-2">
+          <CalendarClock className={`h-4 w-4 ${statusColor}`} />
+          <h3 className="font-semibold text-white text-sm">Abonnement</h3>
+          {(isCritical || isWarning) && !isExpired && (
+            <AlertTriangle className={`h-3.5 w-3.5 ml-auto ${statusColor}`} />
+          )}
+        </div>
+      </div>
+      <div className="p-3 space-y-3">
+        {/* Status */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[#6B6B70]">Statut</span>
+          <Badge className={`text-[10px] px-1.5 py-0.5 ${
+            isExpired
+              ? 'bg-red-500/20 text-red-500 border-red-500/30'
+              : subscription.cancel_at_period_end
+              ? 'bg-orange-500/20 text-orange-500 border-orange-500/30'
+              : 'bg-[#4CAF50]/20 text-[#4CAF50] border-[#4CAF50]/30'
+          }`}>
+            {isExpired ? 'Expiré' : subscription.cancel_at_period_end ? 'Annulé' : 'Actif'}
+          </Badge>
+        </div>
+
+        {/* Time remaining */}
+        <div className="text-center py-2">
+          {isExpired ? (
+            <p className="text-red-500 font-bold text-lg">Abonnement expiré</p>
+          ) : (
+            <>
+              <p className={`font-bold text-2xl ${statusColor}`}>
+                {days > 0 ? `${days}j ${hours}h` : `${hours}h`}
+              </p>
+              <p className="text-xs text-[#6B6B70] mt-1">
+                {days > 0
+                  ? `${days} jour${days > 1 ? 's' : ''} et ${hours} heure${hours > 1 ? 's' : ''} restant${days > 1 || hours > 1 ? 's' : ''}`
+                  : `${hours} heure${hours > 1 ? 's' : ''} restante${hours > 1 ? 's' : ''}`
+                }
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="space-y-1">
+          <div className="h-2 bg-[#1A1A1E] rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+              className={`h-full ${progressColor} rounded-full`}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-[#6B6B70]">
+            <span>Début</span>
+            <span>Fin: {end.toLocaleDateString('fr-FR')}</span>
+          </div>
+        </div>
+
+        {/* Warning message */}
+        {(isCritical || isWarning) && !isExpired && (
+          <div className={`p-2 rounded-lg ${isCritical ? 'bg-red-500/10' : 'bg-orange-500/10'}`}>
+            <p className={`text-xs ${isCritical ? 'text-red-400' : 'text-orange-400'}`}>
+              {isCritical
+                ? '⚠️ Votre abonnement expire très bientôt !'
+                : '⏰ Pensez à renouveler votre abonnement'
+              }
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const [, setSessions] = useState<Session[]>([])
@@ -43,6 +166,7 @@ export default function DashboardPage() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [borneConnection, setBorneConnection] = useState<BorneConnection | null>(null)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [togglingModeration, setTogglingModeration] = useState(false)
@@ -64,6 +188,10 @@ export default function DashboardPage() {
       if (selectedSession.borne_enabled) {
         fetchBorneConnection(selectedSession.id)
         subscribeToBorneConnection(selectedSession.id)
+      }
+      // Fetch subscription if session has one
+      if (selectedSession.subscription_id) {
+        fetchSubscription(selectedSession.subscription_id)
       }
     }
   }, [selectedSession])
@@ -131,6 +259,22 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Error fetching borne connection:', err)
       setBorneConnection(null)
+    }
+  }
+
+  async function fetchSubscription(subscriptionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single()
+
+      if (error) throw error
+      setSubscription(data)
+    } catch (err) {
+      console.error('Error fetching subscription:', err)
+      setSubscription(null)
     }
   }
 
@@ -1016,6 +1160,11 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
+
+              {/* Subscription Status Card */}
+              {subscription && subscription.current_period_end && (
+                <SubscriptionStatusCard subscription={subscription} />
+              )}
 
               {/* Speed Meter */}
               <SpeedMeter className="flex-shrink-0" />
