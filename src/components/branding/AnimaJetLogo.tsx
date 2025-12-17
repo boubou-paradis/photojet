@@ -13,10 +13,10 @@ interface AnimaJetLogoProps {
 }
 
 const sizes = {
-  sm: { icon: 36, horizontal: 120, text: 'text-lg' },
-  md: { icon: 48, horizontal: 160, text: 'text-xl' },
-  lg: { icon: 56, horizontal: 200, text: 'text-2xl' },
-  xl: { icon: 80, horizontal: 280, text: 'text-4xl' },
+  sm: { icon: 45, horizontal: 150, text: 'text-lg' },
+  md: { icon: 60, horizontal: 200, text: 'text-xl' },
+  lg: { icon: 70, horizontal: 250, text: 'text-2xl' },
+  xl: { icon: 100, horizontal: 350, text: 'text-4xl' },
 }
 
 // Simplified rocket icon SVG

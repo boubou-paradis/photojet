@@ -359,8 +359,8 @@ export default function SettingsPage() {
               <Image
                 src="/images/animajet_logo_principal.png"
                 alt="AnimaJet"
-                width={40}
-                height={40}
+                width={50}
+                height={50}
                 className="drop-shadow-lg"
               />
               <h1 className="text-xl font-bold text-white">Paramètres</h1>
@@ -721,8 +721,8 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     ) : (
-                      <div className="h-16 w-16 bg-[#2E2E33] rounded-lg flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.2)]">
-                        <Image src="/images/animajet_logo_principal.png" alt="AnimaJet" width={40} height={40} />
+                      <div className="h-20 w-20 bg-[#2E2E33] rounded-lg flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.2)]">
+                        <Image src="/images/animajet_logo_principal.png" alt="AnimaJet" width={50} height={50} />
                       </div>
                     )}
                     <p className="text-xs text-[#6B6B70]">

@@ -531,8 +531,8 @@ export default function BornePage() {
           <Image
             src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
-            width={120}
-            height={120}
+            width={150}
+            height={150}
             className="mx-auto mb-4 animate-pulse"
           />
           <Loader2 className="h-10 w-10 animate-spin text-[#D4AF37] mx-auto" />

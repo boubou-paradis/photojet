@@ -295,9 +295,9 @@ const transitions = {
 }
 
 const logoSizes = {
-  small: { width: 40, height: 40 },
-  medium: { width: 60, height: 60 },
-  large: { width: 80, height: 80 },
+  small: { width: 50, height: 50 },
+  medium: { width: 75, height: 75 },
+  large: { width: 100, height: 100 },
 }
 
 export default function LivePage() {
@@ -778,8 +778,8 @@ export default function LivePage() {
           <Image
             src="/images/animajet_logo_principal.png"
             alt="AnimaJet"
-            width={100}
-            height={100}
+            width={125}
+            height={125}
             className="mx-auto mb-4 animate-pulse"
           />
           <p className="text-xl text-[#B0B0B5]">Chargement...</p>

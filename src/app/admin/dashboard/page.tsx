@@ -772,8 +772,8 @@ export default function DashboardPage() {
               <Image
                 src="/images/animajet_logo_principal.png"
                 alt="AnimaJet"
-                width={40}
-                height={40}
+                width={50}
+                height={50}
                 className="drop-shadow-lg"
                 priority
               />

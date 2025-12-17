@@ -234,8 +234,8 @@ export default function BornePage() {
               <Image
                 src="/images/animajet_logo_principal.png"
                 alt="AnimaJet"
-                width={40}
-                height={40}
+                width={50}
+                height={50}
                 className="drop-shadow-lg"
               />
               <div className="flex items-center gap-2">

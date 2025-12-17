@@ -178,13 +178,13 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <div className="logo-glow mb-6">
+              <div className="logo-glow mb-6 flex items-center justify-center">
                 <Image
                   src="/images/animajet_logo_principal.png"
                   alt="AnimaJet"
-                  width={300}
-                  height={300}
-                  className="w-[200px] md:w-[250px] lg:w-[300px] h-auto"
+                  width={375}
+                  height={375}
+                  className="w-[250px] md:w-[312px] lg:w-[375px] h-auto"
                   priority
                 />
               </div>
