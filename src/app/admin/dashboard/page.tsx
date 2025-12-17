@@ -560,7 +560,7 @@ export default function DashboardPage() {
           <title>QR Code - ${eventName}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            @page { size: A5; margin: 0; }
+            @page { size: A4; margin: 0; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               display: flex;
@@ -570,58 +570,58 @@ export default function DashboardPage() {
               background: white;
             }
             .card {
-              width: 148mm;
-              padding: 15mm;
+              width: 190mm;
+              padding: 20mm;
               text-align: center;
-              border: 3px solid #D4AF37;
-              border-radius: 12px;
+              border: 4px solid #D4AF37;
+              border-radius: 16px;
               background: linear-gradient(135deg, #fefefe 0%, #f8f6f0 100%);
             }
             .logo {
-              width: 80px;
+              width: 120px;
               height: auto;
-              margin-bottom: 15px;
+              margin-bottom: 25px;
             }
             .title {
-              font-size: 18px;
+              font-size: 28px;
               font-weight: 700;
               color: #1A1A1E;
-              margin-bottom: 5px;
+              margin-bottom: 8px;
             }
             .subtitle {
-              font-size: 13px;
+              font-size: 18px;
               color: #6B6B70;
-              margin-bottom: 20px;
+              margin-bottom: 30px;
             }
             .qr-container {
               display: inline-block;
-              padding: 15px;
+              padding: 20px;
               background: white;
-              border-radius: 12px;
-              box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
-              border: 2px solid #D4AF37;
+              border-radius: 16px;
+              box-shadow: 0 6px 30px rgba(212, 175, 55, 0.3);
+              border: 3px solid #D4AF37;
             }
             .qr-container svg {
               display: block;
             }
             .code {
-              font-size: 28px;
+              font-size: 42px;
               font-weight: 800;
               color: #D4AF37;
-              margin-top: 20px;
+              margin-top: 30px;
               font-family: 'Courier New', monospace;
-              letter-spacing: 3px;
+              letter-spacing: 5px;
             }
             .instruction {
-              font-size: 14px;
+              font-size: 20px;
               color: #1A1A1E;
-              margin-top: 15px;
+              margin-top: 25px;
               font-weight: 500;
             }
             .footer {
-              font-size: 11px;
+              font-size: 14px;
               color: #6B6B70;
-              margin-top: 20px;
+              margin-top: 30px;
             }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -634,7 +634,7 @@ export default function DashboardPage() {
             <div class="title">${eventName}</div>
             <div class="subtitle">Partagez vos plus beaux moments !</div>
             <div class="qr-container">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="180" height="180" id="qr-placeholder"></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="250" height="250" id="qr-placeholder"></svg>
             </div>
             <div class="code">#${selectedSession.code}</div>
             <div class="instruction">📱 Scannez pour envoyer vos photos</div>
@@ -644,7 +644,7 @@ export default function DashboardPage() {
           <script>
             QRCode.toString('${inviteUrl}', {
               type: 'svg',
-              width: 180,
+              width: 250,
               margin: 0,
               color: { dark: '#1A1A1E', light: '#ffffff' }
             }, function(err, svg) {
