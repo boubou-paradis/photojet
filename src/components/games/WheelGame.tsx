@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Maximize, Minimize } from 'lucide-react'
 import { WheelSegment, WheelAudioSettings } from '@/types/database'
 
 interface WheelGameProps {
@@ -38,6 +39,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const [showFinished, setShowFinished] = useState(false)
   const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
   const [bulbPhase, setBulbPhase] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const previousSpinning = useRef(false)
   const previousSpinToIndex = useRef<number | undefined>(undefined)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -45,6 +47,26 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const infiniteRotationRef = useRef(0)
   const [windowHeight, setWindowHeight] = useState(800)
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }, [])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   // Animation des ampoules
   useEffect(() => {
@@ -207,6 +229,23 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           animate={{ scale: [1, 1.05, 1], opacity: [0.4, 0.6, 0.4] }}
           transition={{ duration: 3, repeat: Infinity }} />
       </div>
+
+      {/* Bouton plein écran */}
+      <motion.button
+        onClick={toggleFullscreen}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        transition={{ duration: 0.3 }}
+        className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
+        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+      >
+        {isFullscreen ? (
+          <Minimize className="h-6 w-6 text-[#D4AF37]" />
+        ) : (
+          <Maximize className="h-6 w-6 text-[#D4AF37]" />
+        )}
+      </motion.button>
 
       {/* CONTENU PRINCIPAL */}
       <div className="relative z-10 h-full flex flex-col items-center justify-start pt-6 pb-8">
