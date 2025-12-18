@@ -484,7 +484,7 @@ export default function WheelPage() {
       audioSettings,
     })
 
-    // Wait for spin animation (5 seconds)
+    // Wait for spin animation (8 seconds for suspense)
     setTimeout(async () => {
       const newResult: WheelResult = {
         segmentId: selectedSegment.id,
@@ -524,7 +524,7 @@ export default function WheelPage() {
       if (gameFinished) {
         toast.success('🎉 Tous les segments ont été utilisés!', { duration: 5000 })
       }
-    }, 5000)
+    }, 8000)
   }
 
   async function clearResult() {

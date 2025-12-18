@@ -194,7 +194,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
           {/* LA ROUE SVG */}
           <motion.div animate={{ rotate: rotation }}
-            transition={{ duration: isSpinning ? 5 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }}
+            transition={{ duration: isSpinning ? 8 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }}
             className="relative">
             <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">
               <defs>
