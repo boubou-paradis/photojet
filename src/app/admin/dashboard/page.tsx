@@ -794,7 +794,7 @@ export default function DashboardPage() {
       </div>
 
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Session Info Card */}
             {selectedSession && (
@@ -877,7 +877,7 @@ export default function DashboardPage() {
 
       <main className="relative z-10 flex-1 overflow-hidden">
         {!selectedSession ? (
-          <div className="h-full max-w-7xl mx-auto flex items-center justify-center p-4">
+          <div className="h-full w-full flex items-center justify-center px-6">
             <div className="card-gold rounded-xl max-w-md">
               <div className="p-8 text-center">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
@@ -898,11 +898,11 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="h-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+          <div className="h-full w-full flex flex-col lg:flex-row gap-4 px-6 py-4 overflow-hidden">
             {/* Colonne gauche : Stats + Photos */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
               {/* Stats Cards - Premium Gaming Style */}
-              <div className="grid grid-cols-5 gap-3 flex-shrink-0">
+              <div className="grid grid-cols-5 gap-4 flex-shrink-0">
                 {/* Photos Total */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
@@ -1223,7 +1223,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[280px] flex flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+            <div className="lg:w-[320px] flex flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
               {/* Actions rapides Card - Premium Style - EN HAUT */}
               <div className="relative group flex-shrink-0">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
