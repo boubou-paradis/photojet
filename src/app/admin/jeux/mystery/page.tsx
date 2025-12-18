@@ -618,7 +618,17 @@ export default function MysteryPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-cyan-400" />
+            <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-cyan-400" />
+          </div>
+          <p className="text-gray-400 text-sm">Chargement...</p>
+        </motion.div>
       </div>
     )
   }
@@ -637,25 +647,36 @@ export default function MysteryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F]">
+    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-cyan-500/3 to-transparent rounded-full" />
+      </div>
+
       {/* Header */}
-      <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)]">
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push('/admin/jeux')}
-              className="text-white hover:text-[#D4AF37]"
+              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
+            <div className="h-4 w-px bg-white/10" />
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🔍</span>
+              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-600/30 flex items-center justify-center">
+                <span className="text-xl">🔍</span>
+                <div className="absolute inset-0 rounded-xl bg-cyan-400/20 blur-xl opacity-50" />
+              </div>
               <div>
                 <h1 className="text-lg font-bold text-white">Photo Mystère</h1>
-                <p className="text-xs text-gray-400">{session.name}</p>
+                <p className="text-xs text-gray-500">{session.name}</p>
               </div>
             </div>
           </div>
@@ -663,7 +684,7 @@ export default function MysteryPage() {
             <Button
               size="sm"
               onClick={() => window.open(`/live/${session.code}`, '_blank')}
-              className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:opacity-90 transition-opacity"
             >
               <Monitor className="h-4 w-4 mr-2" />
               Diaporama
@@ -673,7 +694,7 @@ export default function MysteryPage() {
       </header>
 
       {/* Main content */}
-      <main className="w-full px-4 py-4">
+      <main className="relative z-10 w-full px-4 py-4">
         {gameActive ? (
           /* Remote Control Panel */
           <motion.div

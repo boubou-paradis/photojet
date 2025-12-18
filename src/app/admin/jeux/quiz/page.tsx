@@ -543,9 +543,16 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F]">
+    <div className="min-h-screen bg-[#0D0D0F] relative">
+      {/* Animated background effects - Red/Orange theme */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
       {/* Header */}
-      <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)]">
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -581,7 +588,7 @@ export default function QuizPage() {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
         {!gameActive ? (
           /* Configuration */
           <motion.div

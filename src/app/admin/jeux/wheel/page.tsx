@@ -19,11 +19,15 @@ import {
   Upload,
   Play,
   Pause,
+  Square,
+  Timer,
+  Hand,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
+import WheelPreview from '@/components/games/WheelPreview'
 
 // Default segments
 const DEFAULT_SEGMENTS: WheelSegment[] = [
@@ -55,6 +59,9 @@ export default function WheelPage() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [history, setHistory] = useState<WheelResult[]>([])
+  const [spinMode, setSpinMode] = useState<'auto' | 'manual'>('auto')
+  const pendingResultRef = useRef<{ segment: WheelSegment; index: number } | null>(null)
+  const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Audio state
   const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
@@ -147,6 +154,7 @@ export default function WheelPage() {
     usedSegmentIds?: string[]
     isGameFinished?: boolean
     audioSettings?: WheelAudioSettings
+    spinMode?: 'auto' | 'manual'
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -463,6 +471,9 @@ export default function WheelPage() {
     const randomIndex = Math.floor(Math.random() * availableSegments.length)
     const selectedSegment = availableSegments[randomIndex]
 
+    // Store pending result for manual mode
+    pendingResultRef.current = { segment: selectedSegment, index: randomIndex }
+
     // Update DB
     await supabase
       .from('sessions')
@@ -473,58 +484,100 @@ export default function WheelPage() {
       .eq('id', session.id)
 
     // Broadcast spin start with target index (index in available segments)
+    // In manual mode, don't send spinToIndex so the wheel spins infinitely
     broadcastGameState({
       gameActive: true,
       segments,
       isSpinning: true,
       result: null,
+      spinToIndex: spinMode === 'auto' ? randomIndex : undefined,
+      usedSegmentIds,
+      isGameFinished: false,
+      audioSettings,
+      spinMode,
+    })
+
+    // In auto mode, stop after 8 seconds
+    if (spinMode === 'auto') {
+      spinTimeoutRef.current = setTimeout(() => {
+        finishSpin(selectedSegment)
+      }, 8000)
+    }
+    // In manual mode, wait for stopWheel() to be called
+  }
+
+  async function stopWheel() {
+    if (!session || !isSpinning || !pendingResultRef.current) return
+
+    // Clear any pending auto timeout
+    if (spinTimeoutRef.current) {
+      clearTimeout(spinTimeoutRef.current)
+      spinTimeoutRef.current = null
+    }
+
+    const { segment: selectedSegment, index: randomIndex } = pendingResultRef.current
+
+    // Broadcast the stop with target index so wheel animates to result
+    broadcastGameState({
+      gameActive: true,
+      segments,
+      isSpinning: true, // Still spinning, but now with target
+      result: null,
       spinToIndex: randomIndex,
       usedSegmentIds,
       isGameFinished: false,
       audioSettings,
+      spinMode: 'manual',
     })
 
-    // Wait for spin animation (8 seconds for suspense)
-    setTimeout(async () => {
-      const newResult: WheelResult = {
-        segmentId: selectedSegment.id,
-        text: selectedSegment.text,
-        timestamp: new Date().toISOString(),
-      }
-      const newHistory = [newResult, ...history].slice(0, 20) // Keep last 20
-      const newUsedSegmentIds = [...usedSegmentIds, selectedSegment.id]
-      const newAvailableCount = segments.length - newUsedSegmentIds.length
-      const gameFinished = newAvailableCount === 0
+    // Wait for the deceleration animation (3 seconds)
+    setTimeout(() => {
+      finishSpin(selectedSegment)
+    }, 3000)
+  }
 
-      setIsSpinning(false)
-      setResult(selectedSegment.text)
-      setHistory(newHistory)
+  async function finishSpin(selectedSegment: WheelSegment) {
+    if (!session) return
 
-      await supabase
-        .from('sessions')
-        .update({
-          wheel_is_spinning: false,
-          wheel_result: selectedSegment.text,
-          wheel_history: JSON.stringify(newHistory),
-        })
-        .eq('id', session.id)
+    const newResult: WheelResult = {
+      segmentId: selectedSegment.id,
+      text: selectedSegment.text,
+      timestamp: new Date().toISOString(),
+    }
+    const newHistory = [newResult, ...history].slice(0, 20) // Keep last 20
+    const newUsedSegmentIds = [...usedSegmentIds, selectedSegment.id]
+    const newAvailableCount = segments.length - newUsedSegmentIds.length
+    const gameFinished = newAvailableCount === 0
 
-      broadcastGameState({
-        gameActive: true,
-        segments,
-        isSpinning: false,
-        result: selectedSegment.text,
-        usedSegmentIds: newUsedSegmentIds,
-        isGameFinished: gameFinished,
-        audioSettings,
+    setIsSpinning(false)
+    setResult(selectedSegment.text)
+    setHistory(newHistory)
+    pendingResultRef.current = null
+
+    await supabase
+      .from('sessions')
+      .update({
+        wheel_is_spinning: false,
+        wheel_result: selectedSegment.text,
+        wheel_history: JSON.stringify(newHistory),
       })
+      .eq('id', session.id)
 
-      toast.success(`Résultat: ${selectedSegment.text}`)
+    broadcastGameState({
+      gameActive: true,
+      segments,
+      isSpinning: false,
+      result: selectedSegment.text,
+      usedSegmentIds: newUsedSegmentIds,
+      isGameFinished: gameFinished,
+      audioSettings,
+    })
 
-      if (gameFinished) {
-        toast.success('🎉 Tous les segments ont été utilisés!', { duration: 5000 })
-      }
-    }, 8000)
+    toast.success(`Résultat: ${selectedSegment.text}`)
+
+    if (gameFinished) {
+      toast.success('🎉 Tous les segments ont été utilisés!', { duration: 5000 })
+    }
   }
 
   async function clearResult() {
@@ -609,7 +662,17 @@ export default function WheelPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
+            <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
+          </div>
+          <p className="text-gray-400 text-sm">Chargement...</p>
+        </motion.div>
       </div>
     )
   }
@@ -628,27 +691,35 @@ export default function WheelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F]">
+    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
+      </div>
       {/* Header */}
-      <header className="bg-[#242428] border-b border-[rgba(255,255,255,0.1)]">
+      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push('/admin/jeux')}
-              className="text-white hover:text-[#D4AF37]"
+              className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
+            <div className="h-4 w-px bg-white/10" />
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-yellow-500/30 flex items-center justify-center">
                 <span className="text-xl">🎡</span>
+                <div className="absolute inset-0 rounded-xl bg-[#D4AF37]/20 blur-xl opacity-50" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Roue de la Destinée</h1>
-                <p className="text-sm text-[#6B6B70]">{session.name}</p>
+                <h1 className="text-lg font-bold text-white">Roue de la Destinée</h1>
+                <p className="text-xs text-gray-500">{session.name}</p>
               </div>
             </div>
           </div>
@@ -656,7 +727,7 @@ export default function WheelPage() {
             <Button
               size="sm"
               onClick={() => window.open(`/live/${session.code}`, '_blank')}
-              className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+              className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-semibold hover:opacity-90 transition-opacity"
             >
               <Monitor className="h-4 w-4 mr-2" />
               Voir le diaporama
@@ -666,174 +737,102 @@ export default function WheelPage() {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="relative z-10 container mx-auto px-4 py-4 lg:py-6 max-w-6xl">
         {!gameActive ? (
-          /* Configuration */
+          /* Configuration - 2 colonnes sur desktop */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="flex flex-col lg:flex-row gap-6"
           >
-            <div className="bg-[#242428] rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-4xl">🎡</span>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Roue de la Destinée</h2>
-                  <p className="text-gray-400 text-sm">Personnalisez les segments de la roue</p>
-                </div>
-              </div>
-
-              {/* Add segment */}
-              <div className="flex gap-2 mb-4">
-                <input
-                  value={newSegmentText}
-                  onChange={(e) => setNewSegmentText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addSegment()}
-                  placeholder="Nouveau défi..."
-                  className="flex-1 bg-[#2E2E33] text-white rounded-xl px-4 py-3 border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
-                />
-                <button
-                  onClick={addSegment}
-                  disabled={segments.length >= 12}
-                  className="px-4 py-3 bg-[#D4AF37] text-black rounded-xl font-bold hover:bg-[#F4D03F] disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Segments list */}
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {segments.map((segment, index) => (
-                  <div
-                    key={segment.id}
-                    className="flex items-center gap-3 bg-[#1A1A1E] rounded-lg p-3"
-                  >
-                    <span className="text-gray-500 font-mono text-sm w-6">{index + 1}.</span>
-                    <div
-                      className="w-6 h-6 rounded-full flex-shrink-0 cursor-pointer relative group"
-                      style={{ backgroundColor: segment.color }}
-                    >
-                      <input
-                        type="color"
-                        value={segment.color}
-                        onChange={(e) => updateSegmentColor(segment.id, e.target.value)}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                    </div>
-                    <input
-                      value={segment.text}
-                      onChange={(e) => updateSegmentText(segment.id, e.target.value)}
-                      className="flex-1 bg-transparent text-white border-none focus:outline-none"
-                    />
-                    <button
-                      onClick={() => removeSegment(segment.id)}
-                      className="p-1 text-gray-500 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+            {/* Colonne gauche - Configuration */}
+            <div className="flex-1 space-y-4">
+              {/* Segments */}
+              <div className="bg-[#242428] rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🎡</span>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Segments</h2>
+                    <p className="text-gray-400 text-xs">{segments.length}/12 segments</p>
                   </div>
-                ))}
-              </div>
-
-              <p className="text-gray-500 text-xs mt-3">
-                {segments.length}/12 segments • Cliquez sur la couleur pour la modifier
-              </p>
-            </div>
-
-            {/* Audio Section */}
-            <div className="bg-[#242428] rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                  <Music className="h-5 w-5 text-[#D4AF37]" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Musique de la roue</h3>
-                  <p className="text-gray-400 text-sm">Ajouter un son pendant la rotation</p>
-                </div>
-              </div>
 
-              {/* Upload zone */}
-              {!audioSettings.url ? (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors bg-[#1A1A1E]">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {audioUploading ? (
-                      <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37] mb-2" />
-                    ) : (
-                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    )}
-                    <p className="text-sm text-gray-400">
-                      {audioUploading ? 'Upload en cours...' : 'Cliquez pour uploader un fichier audio'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">MP3, WAV, OGG (max 10MB)</p>
-                  </div>
+                {/* Add segment */}
+                <div className="flex gap-2 mb-3">
                   <input
-                    ref={audioInputRef}
-                    type="file"
-                    accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
-                    onChange={handleAudioUpload}
-                    className="hidden"
-                    disabled={audioUploading}
+                    value={newSegmentText}
+                    onChange={(e) => setNewSegmentText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addSegment()}
+                    placeholder="Nouveau défi..."
+                    className="flex-1 bg-[#2E2E33] text-white rounded-lg px-3 py-2 text-sm border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
                   />
-                </label>
-              ) : (
-                <div className="space-y-3">
-                  {/* File info */}
-                  <div className="flex items-center gap-3 bg-[#1A1A1E] rounded-lg p-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0">
-                      <Music className="h-5 w-5 text-[#D4AF37]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {audioSettings.filename || 'Fichier audio'}
-                      </p>
-                      <p className="text-gray-500 text-xs">Prêt à jouer</p>
-                    </div>
-                    <button
-                      onClick={toggleAudioPreview}
-                      className="p-2 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30 transition-colors"
-                    >
-                      {isPreviewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </button>
-                    <button
-                      onClick={deleteAudio}
-                      className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={addSegment}
+                    disabled={segments.length >= 12}
+                    className="px-3 py-2 bg-[#D4AF37] text-black rounded-lg font-bold hover:bg-[#F4D03F] disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
 
-                  {/* Audio toggle */}
-                  <div className="flex items-center justify-between bg-[#1A1A1E] rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      {audioSettings.enabled ? (
-                        <Volume2 className="h-4 w-4 text-[#D4AF37]" />
-                      ) : (
-                        <VolumeX className="h-4 w-4 text-gray-500" />
-                      )}
-                      <span className="text-white text-sm">Activer le son</span>
-                    </div>
-                    <button
-                      onClick={toggleAudioEnabled}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        audioSettings.enabled ? 'bg-[#D4AF37]' : 'bg-gray-600'
-                      }`}
+                {/* Segments list - hauteur fixe avec scroll */}
+                <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+                  {segments.map((segment, index) => (
+                    <div
+                      key={segment.id}
+                      className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2"
                     >
-                      <span
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          audioSettings.enabled ? 'left-7' : 'left-1'
-                        }`}
+                      <span className="text-gray-500 font-mono text-xs w-5">{index + 1}.</span>
+                      <div
+                        className="w-5 h-5 rounded-full flex-shrink-0 cursor-pointer relative"
+                        style={{ backgroundColor: segment.color }}
+                      >
+                        <input
+                          type="color"
+                          value={segment.color}
+                          onChange={(e) => updateSegmentColor(segment.id, e.target.value)}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <input
+                        value={segment.text}
+                        onChange={(e) => updateSegmentText(segment.id, e.target.value)}
+                        className="flex-1 bg-transparent text-white text-sm border-none focus:outline-none"
                       />
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => removeSegment(segment.id)}
+                        className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                  {/* Replace audio */}
-                  <label className="flex items-center justify-center w-full py-2 border border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-[#D4AF37]/50 transition-colors text-gray-400 text-sm hover:text-white">
+              {/* Audio Section - Compact */}
+              <div className="bg-[#242428] rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                    <Music className="h-4 w-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Musique de la roue</h3>
+                    <p className="text-gray-400 text-xs">Son pendant la rotation</p>
+                  </div>
+                </div>
+
+                {/* Upload zone */}
+                {!audioSettings.url ? (
+                  <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-[#D4AF37]/50 transition-colors bg-[#1A1A1E]">
                     {audioUploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <Loader2 className="h-5 w-5 animate-spin text-[#D4AF37]" />
                     ) : (
-                      <Upload className="h-4 w-4 mr-2" />
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <Upload className="h-5 w-5" />
+                        <span className="text-sm">Uploader (MP3, WAV, OGG)</span>
+                      </div>
                     )}
-                    Remplacer le fichier
                     <input
                       ref={audioInputRef}
                       type="file"
@@ -843,42 +842,98 @@ export default function WheelPage() {
                       disabled={audioUploading}
                     />
                   </label>
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0">
+                        <Music className="h-4 w-4 text-[#D4AF37]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium truncate">
+                          {audioSettings.filename || 'Fichier audio'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={toggleAudioPreview}
+                        className="p-1.5 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30"
+                      >
+                        {isPreviewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={deleteAudio}
+                        className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between bg-[#1A1A1E] rounded-lg p-2">
+                      <div className="flex items-center gap-2">
+                        {audioSettings.enabled ? (
+                          <Volume2 className="h-3.5 w-3.5 text-[#D4AF37]" />
+                        ) : (
+                          <VolumeX className="h-3.5 w-3.5 text-gray-500" />
+                        )}
+                        <span className="text-white text-xs">Son activé</span>
+                      </div>
+                      <button
+                        onClick={toggleAudioEnabled}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                          audioSettings.enabled ? 'bg-[#D4AF37]' : 'bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                            audioSettings.enabled ? 'left-5' : 'left-0.5'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-              {/* Hidden audio element for preview */}
-              {audioSettings.url && (
-                <audio
-                  ref={audioPreviewRef}
-                  src={audioSettings.url}
-                  onEnded={() => setIsPreviewPlaying(false)}
-                />
-              )}
+                {audioSettings.url && (
+                  <audio
+                    ref={audioPreviewRef}
+                    src={audioSettings.url}
+                    onEnded={() => setIsPreviewPlaying(false)}
+                  />
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-2">
+                <button
+                  onClick={launchGame}
+                  disabled={launching || segments.length < 2}
+                  className="w-full py-3 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {launching ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>🚀 Configurer et ouvrir le diaporama</>
+                  )}
+                </button>
+
+                {segments.length > 0 && segments !== DEFAULT_SEGMENTS && (
+                  <button
+                    onClick={clearAllData}
+                    className="w-full py-2 border border-red-500/50 text-red-400 rounded-xl text-sm hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Launch button */}
-            <button
-              onClick={launchGame}
-              disabled={launching || segments.length < 2}
-              className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {launching ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>🚀 Configurer et ouvrir le diaporama</>
-              )}
-            </button>
-
-            {/* Clear data button */}
-            {segments.length > 0 && segments !== DEFAULT_SEGMENTS && (
-              <button
-                onClick={clearAllData}
-                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Réinitialiser les segments
-              </button>
-            )}
+            {/* Colonne droite - Prévisualisation (hidden on mobile) */}
+            <div className="hidden lg:flex flex-col items-center justify-center bg-[#242428] rounded-xl p-6 min-w-[340px]">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Prévisualisation</h3>
+              <WheelPreview segments={segments} size={280} />
+              <p className="text-gray-500 text-xs mt-4 text-center">
+                La roue se met à jour en temps réel
+              </p>
+            </div>
           </motion.div>
         ) : (
           /* Control Panel */
@@ -903,6 +958,34 @@ export default function WheelPage() {
               </span>
             </div>
 
+            {/* Mode selector */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setSpinMode('auto')}
+                disabled={isSpinning}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+                  spinMode === 'auto'
+                    ? 'bg-[#D4AF37] text-black'
+                    : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
+                } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Timer className="h-4 w-4" />
+                Auto (8s)
+              </button>
+              <button
+                onClick={() => setSpinMode('manual')}
+                disabled={isSpinning}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+                  spinMode === 'manual'
+                    ? 'bg-[#D4AF37] text-black'
+                    : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
+                } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Hand className="h-4 w-4" />
+                Manuel
+              </button>
+            </div>
+
             {/* Current result */}
             {result && (
               <div className="bg-gradient-to-r from-[#D4AF37]/20 to-[#F4D03F]/20 rounded-lg p-4 mb-4 text-center border border-[#D4AF37]">
@@ -911,32 +994,43 @@ export default function WheelPage() {
               </div>
             )}
 
-            {/* Spin button */}
-            <button
-              onClick={spinWheel}
-              disabled={isSpinning || isGameFinished}
-              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                isSpinning || isGameFinished
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black hover:opacity-90'
-              }`}
-            >
-              {isSpinning ? (
-                <>
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  Rotation en cours...
-                </>
-              ) : isGameFinished ? (
-                <>
-                  🏆 Tous les segments utilisés!
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-6 w-6" />
-                  🎡 FAIRE TOURNER
-                </>
-              )}
-            </button>
+            {/* Spin / Stop buttons */}
+            {!isSpinning ? (
+              <button
+                onClick={spinWheel}
+                disabled={isGameFinished}
+                className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
+                  isGameFinished
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black hover:opacity-90'
+                }`}
+              >
+                {isGameFinished ? (
+                  <>🏆 Tous les segments utilisés!</>
+                ) : (
+                  <>
+                    <RotateCcw className="h-6 w-6" />
+                    🎡 FAIRE TOURNER {spinMode === 'manual' ? '(Manuel)' : ''}
+                  </>
+                )}
+              </button>
+            ) : spinMode === 'manual' ? (
+              <button
+                onClick={stopWheel}
+                className="w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all bg-red-500 text-white hover:bg-red-600 animate-pulse"
+              >
+                <Square className="h-6 w-6" />
+                🛑 STOP !
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gray-600 text-gray-400 cursor-not-allowed"
+              >
+                <Loader2 className="h-6 w-6 animate-spin" />
+                Rotation en cours...
+              </button>
+            )}
 
             {/* Clear result */}
             {result && !isSpinning && (

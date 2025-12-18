@@ -348,6 +348,7 @@ export default function LivePage() {
       enabled: boolean
       filename: string | null
     }
+    spinMode?: 'auto' | 'manual'
   } | null>(null)
 
   // Get wheel segments from broadcast state, or parse from database as fallback
@@ -868,6 +869,7 @@ export default function LivePage() {
         usedSegmentIds={wheelState?.usedSegmentIds ?? []}
         isGameFinished={wheelState?.isGameFinished ?? false}
         audioSettings={wheelAudioSettings}
+        spinMode={wheelState?.spinMode}
       />
     )
   }

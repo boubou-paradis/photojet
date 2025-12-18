@@ -12,6 +12,7 @@ interface WheelGameProps {
   usedSegmentIds?: string[]
   isGameFinished?: boolean
   audioSettings?: WheelAudioSettings
+  spinMode?: 'auto' | 'manual'
 }
 
 const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
@@ -21,15 +22,18 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
 
 const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FFA500']
 
-export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings }: WheelGameProps) {
+export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings, spinMode = 'auto' }: WheelGameProps) {
   const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showFinished, setShowFinished] = useState(false)
+  const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
   const previousSpinning = useRef(false)
+  const previousSpinToIndex = useRef<number | undefined>(undefined)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const infiniteRotationRef = useRef(0)
   const [windowHeight, setWindowHeight] = useState(800)
 
   // Fade out audio smoothly
@@ -91,6 +95,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }
   }, [isGameFinished])
 
+  // Handle spin start
   useEffect(() => {
     if (isSpinning && !previousSpinning.current) {
       setShowResult(false)
@@ -107,13 +112,20 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         audioRef.current.play().catch(() => {})
       }
 
-      const segmentAngle = 360 / availableSegments.length
-      const targetAngle = spinToIndex !== undefined
-        ? 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-        : Math.random() * 360
-      const fullRotations = 5 + Math.floor(Math.random() * 3)
-      setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
+      // If spinToIndex is defined, animate to target (auto mode or manual stop)
+      if (spinToIndex !== undefined) {
+        setIsInfiniteSpinning(false)
+        const segmentAngle = 360 / availableSegments.length
+        const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
+        const fullRotations = 5 + Math.floor(Math.random() * 3)
+        setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
+      } else {
+        // Manual mode without target - spin infinitely
+        setIsInfiniteSpinning(true)
+      }
     } else if (!isSpinning && previousSpinning.current) {
+      // Spin stopped
+      setIsInfiniteSpinning(false)
       // Fade out custom audio when stopping
       if (customAudioRef.current && !customAudioRef.current.paused) {
         fadeOutAudio(customAudioRef.current, 500)
@@ -121,7 +133,20 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 300)
     }
     previousSpinning.current = isSpinning
-  }, [isSpinning, spinToIndex, availableSegments.length, rotation, audioSettings, fadeOutAudio])
+  }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio])
+
+  // Handle spinToIndex change during spinning (manual mode stop)
+  useEffect(() => {
+    if (isSpinning && spinToIndex !== undefined && previousSpinToIndex.current === undefined) {
+      // User clicked stop - animate to target
+      setIsInfiniteSpinning(false)
+      const segmentAngle = 360 / availableSegments.length
+      const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
+      const fullRotations = 2 + Math.floor(Math.random() * 2) // Fewer rotations for deceleration
+      setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
+    }
+    previousSpinToIndex.current = spinToIndex
+  }, [spinToIndex, isSpinning, availableSegments.length, rotation])
 
   const wheelSegments = useMemo(() => {
     const cx = 200, cy = 200, r = 170, count = availableSegments.length
@@ -193,8 +218,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           </motion.div>
 
           {/* LA ROUE SVG */}
-          <motion.div animate={{ rotate: rotation }}
-            transition={{ duration: isSpinning ? 8 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }}
+          <motion.div
+            animate={{ rotate: isInfiniteSpinning ? [rotation, rotation + 360] : rotation }}
+            transition={
+              isInfiniteSpinning
+                ? { duration: 1, repeat: Infinity, ease: 'linear' }
+                : { duration: isSpinning ? 3 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }
+            }
             className="relative">
             <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">
               <defs>
