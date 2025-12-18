@@ -215,8 +215,8 @@ export default function LineupPage() {
 
     // Fonction pour générer un numéro unique
     const generate = (): string => {
-      // Pool de chiffres disponibles (1-9)
-      const allDigits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+      // Pool de chiffres disponibles (1-5 uniquement pour 5 participants)
+      const allDigits = [1, 2, 3, 4, 5]
 
       // Fisher-Yates shuffle sur tous les chiffres
       for (let i = allDigits.length - 1; i > 0; i--) {
