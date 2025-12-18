@@ -135,23 +135,61 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   }, [])
 
 
-  // Auto-play audio when all tiles are revealed
+  // Auto-play audio when game starts (isPlaying becomes true)
   useEffect(() => {
-    if (revealedTiles.length === totalTiles && currentAudioUrl && !hasPlayedAudio && !isMuted) {
-      playAudio()
-      setHasPlayedAudio(true)
+    if (isPlaying && currentAudioUrl && !isMuted && audioRef.current) {
+      // Start playing from beginning when game starts
+      if (!isAudioPlaying) {
+        audioRef.current.currentTime = 0
+        audioRef.current.loop = true // Loop while tiles are being removed
+        audioRef.current.play().catch(() => {})
+        setIsAudioPlaying(true)
+      }
+    } else if (!isPlaying && audioRef.current && isAudioPlaying) {
+      // Pause audio when game is paused
+      audioRef.current.pause()
+      setIsAudioPlaying(false)
     }
-  }, [revealedTiles.length, totalTiles, currentAudioUrl, hasPlayedAudio, isMuted])
+  }, [isPlaying, currentAudioUrl, isMuted, isAudioPlaying])
 
-  // Reset hasPlayedAudio when round changes
+  // Stop audio when all tiles are revealed (game finished)
+  useEffect(() => {
+    if (revealedTiles.length === totalTiles && audioRef.current && isAudioPlaying) {
+      // Fade out audio when game is complete
+      const fadeOutDuration = 1000 // 1 second fade out
+      const fadeInterval = 50
+      const steps = fadeOutDuration / fadeInterval
+      const volumeStep = audioRef.current.volume / steps
+
+      const fadeOut = setInterval(() => {
+        if (audioRef.current && audioRef.current.volume > volumeStep) {
+          audioRef.current.volume -= volumeStep
+        } else {
+          clearInterval(fadeOut)
+          if (audioRef.current) {
+            audioRef.current.pause()
+            audioRef.current.volume = isMuted ? 0 : audioVolume // Reset volume
+            audioRef.current.loop = false
+          }
+          setIsAudioPlaying(false)
+        }
+      }, fadeInterval)
+
+      return () => clearInterval(fadeOut)
+    }
+  }, [revealedTiles.length, totalTiles, isAudioPlaying, audioVolume, isMuted])
+
+  // Reset audio when round changes
   useEffect(() => {
     setHasPlayedAudio(false)
     setIsAudioPlaying(false)
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
+      audioRef.current.loop = false
+      audioRef.current.volume = isMuted ? 0 : audioVolume
     }
-  }, [currentRound])
+  }, [currentRound, audioVolume, isMuted])
 
   // Update audio volume
   useEffect(() => {
