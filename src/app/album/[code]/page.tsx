@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -24,6 +24,37 @@ import { Session, Photo } from '@/types/database'
 // Composant image avec gestion du chargement et des erreurs
 function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  const [retryCount, setRetryCount] = useState(0)
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  const retry = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setStatus('loading')
+    setRetryCount(c => c + 1)
+  }
+
+  // URL avec cache-buster pour le retry
+  const imageUrl = retryCount > 0 ? `${src}${src.includes('?') ? '&' : '?'}retry=${retryCount}` : src
+
+  // Timeout pour les connexions lentes (afficher erreur après 15s)
+  useEffect(() => {
+    if (status !== 'loading') return
+
+    const timeout = setTimeout(() => {
+      if (imgRef.current && !imgRef.current.complete) {
+        setStatus('error')
+      }
+    }, 15000)
+
+    return () => clearTimeout(timeout)
+  }, [status, retryCount])
+
+  // Vérifier si l'image est déjà en cache (loaded avant que onLoad soit attaché)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalHeight > 0) {
+      setStatus('loaded')
+    }
+  }, [imageUrl])
 
   return (
     <>
@@ -35,7 +66,12 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
           ) : (
             <div className="text-center">
               <AlertCircle className="w-8 h-8 mx-auto text-gray-600 mb-2" />
-              <span className="text-xs text-gray-500">Erreur</span>
+              <button
+                onClick={retry}
+                className="text-xs text-[#D4AF37] hover:underline"
+              >
+                Réessayer
+              </button>
             </div>
           )}
         </div>
@@ -43,7 +79,9 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
 
       {/* Image */}
       <img
-        src={src}
+        ref={imgRef}
+        key={retryCount}
+        src={imageUrl}
         alt={alt}
         className={`${className} ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
         loading="lazy"
