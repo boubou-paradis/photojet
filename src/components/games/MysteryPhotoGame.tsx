@@ -170,9 +170,9 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
   }, [isPlaying, revealAudioUrl, isMuted, isRevealAudioPlaying])
 
-  // Stop REVEAL audio and play PER-PHOTO audio when all tiles are revealed
+  // Stop REVEAL audio when all tiles are revealed
   useEffect(() => {
-    if (revealedTiles.length === totalTiles) {
+    if (revealedTiles.length === totalTiles && totalTiles > 0) {
       // Stop reveal audio with fade out
       if (revealAudioRef.current && isRevealAudioPlaying) {
         const fadeOutDuration = 500 // 0.5 second fade out
@@ -194,21 +194,28 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           }
         }, fadeInterval)
       }
-
-      // Play per-photo audio when photo is fully revealed (only once)
-      if (currentAudioUrl && !hasPlayedPhotoAudio && !isMuted && photoAudioRef.current) {
-        setTimeout(() => {
-          if (photoAudioRef.current) {
-            photoAudioRef.current.currentTime = 0
-            photoAudioRef.current.loop = false // Play once
-            photoAudioRef.current.play().catch(() => {})
-            setIsPhotoAudioPlaying(true)
-            setHasPlayedPhotoAudio(true)
-          }
-        }, 600) // Small delay after reveal audio fades
-      }
     }
-  }, [revealedTiles.length, totalTiles, isRevealAudioPlaying, currentAudioUrl, hasPlayedPhotoAudio, isMuted, audioVolume])
+  }, [revealedTiles.length, totalTiles, isRevealAudioPlaying, isMuted, audioVolume])
+
+  // Play PER-PHOTO audio when all tiles are revealed
+  useEffect(() => {
+    if (revealedTiles.length === totalTiles && totalTiles > 0 && currentAudioUrl && !hasPlayedPhotoAudio && !isMuted) {
+      // Wait a bit for reveal audio to fade, then play photo audio
+      const timer = setTimeout(() => {
+        if (photoAudioRef.current) {
+          photoAudioRef.current.currentTime = 0
+          photoAudioRef.current.loop = false
+          photoAudioRef.current.play().catch((err) => {
+            console.log('Photo audio play failed:', err)
+          })
+          setIsPhotoAudioPlaying(true)
+          setHasPlayedPhotoAudio(true)
+        }
+      }, 700)
+
+      return () => clearTimeout(timer)
+    }
+  }, [revealedTiles.length, totalTiles, currentAudioUrl, hasPlayedPhotoAudio, isMuted])
 
   // Reset audio states when round changes
   useEffect(() => {
