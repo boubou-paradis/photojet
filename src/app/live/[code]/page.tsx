@@ -343,6 +343,11 @@ export default function LivePage() {
     spinToIndex?: number
     usedSegmentIds?: string[]
     isGameFinished?: boolean
+    audioSettings?: {
+      url: string | null
+      enabled: boolean
+      filename: string | null
+    }
   } | null>(null)
 
   // Get wheel segments from broadcast state, or parse from database as fallback
@@ -845,6 +850,15 @@ export default function LivePage() {
   const isWheelActive = wheelState?.gameActive === true || (wheelState?.gameActive === undefined && session.wheel_active === true)
 
   if (isWheelActive && wheelSegments.length >= 2) {
+    // Get audio settings from broadcast or database
+    const wheelAudioSettings = wheelState?.audioSettings ?? (session.wheel_audio ? (() => {
+      try {
+        return JSON.parse(session.wheel_audio as string)
+      } catch {
+        return undefined
+      }
+    })() : undefined)
+
     return (
       <WheelGame
         segments={wheelSegments}
@@ -853,6 +867,7 @@ export default function LivePage() {
         spinToIndex={wheelState?.spinToIndex}
         usedSegmentIds={wheelState?.usedSegmentIds ?? []}
         isGameFinished={wheelState?.isGameFinished ?? false}
+        audioSettings={wheelAudioSettings}
       />
     )
   }

@@ -154,6 +154,7 @@ export interface Session {
   wheel_is_spinning: boolean
   wheel_result: string | null // Current result text
   wheel_history: string | null // JSON array of WheelResult
+  wheel_audio: string | null // JSON of WheelAudioSettings
   // Challenges (Défis Photo) settings
   challenges_active: boolean
   challenges_list: string | null // JSON array of PhotoChallenge
@@ -236,6 +237,12 @@ export interface WheelResult {
   segmentId: string
   text: string
   timestamp: string
+}
+
+export interface WheelAudioSettings {
+  url: string | null
+  enabled: boolean
+  filename: string | null
 }
 
 // Challenges (Défis Photo) types

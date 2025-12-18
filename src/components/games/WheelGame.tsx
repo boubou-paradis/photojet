@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { WheelSegment } from '@/types/database'
+import { WheelSegment, WheelAudioSettings } from '@/types/database'
 
 interface WheelGameProps {
   segments: WheelSegment[]
@@ -11,6 +11,7 @@ interface WheelGameProps {
   spinToIndex?: number
   usedSegmentIds?: string[]
   isGameFinished?: boolean
+  audioSettings?: WheelAudioSettings
 }
 
 const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
@@ -20,14 +21,43 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
 
 const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FFA500']
 
-export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false }: WheelGameProps) {
+export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings }: WheelGameProps) {
   const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showFinished, setShowFinished] = useState(false)
   const previousSpinning = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const customAudioRef = useRef<HTMLAudioElement | null>(null)
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [windowHeight, setWindowHeight] = useState(800)
+
+  // Fade out audio smoothly
+  const fadeOutAudio = useCallback((audio: HTMLAudioElement, duration: number = 500) => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current)
+    }
+
+    const initialVolume = audio.volume
+    const steps = 20
+    const stepTime = duration / steps
+    const volumeStep = initialVolume / steps
+
+    fadeIntervalRef.current = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep)
+      } else {
+        audio.volume = 0
+        audio.pause()
+        audio.currentTime = 0
+        audio.volume = initialVolume // Reset for next time
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current)
+          fadeIntervalRef.current = null
+        }
+      }
+    }, stepTime)
+  }, [])
 
   // Filtrer les segments disponibles (non utilisés)
   const availableSegments = useMemo(() =>
@@ -36,6 +66,18 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   )
 
   useEffect(() => { setWindowHeight(window.innerHeight) }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current)
+      }
+      if (customAudioRef.current) {
+        customAudioRef.current.pause()
+      }
+    }
+  }, [])
 
   // Afficher l'écran de fin quand le jeu est terminé (avec délai pour voir le dernier résultat)
   useEffect(() => {
@@ -53,7 +95,18 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     if (isSpinning && !previousSpinning.current) {
       setShowResult(false)
       setShowConfetti(false)
-      if (audioRef.current) { audioRef.current.play().catch(() => {}) }
+
+      // Play custom audio if enabled and available
+      if (audioSettings?.enabled && audioSettings?.url && customAudioRef.current) {
+        customAudioRef.current.currentTime = 0
+        customAudioRef.current.volume = 1
+        customAudioRef.current.loop = true
+        customAudioRef.current.play().catch(() => {})
+      } else if (audioRef.current) {
+        // Fallback to tick sound
+        audioRef.current.play().catch(() => {})
+      }
+
       const segmentAngle = 360 / availableSegments.length
       const targetAngle = spinToIndex !== undefined
         ? 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
@@ -61,10 +114,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       const fullRotations = 5 + Math.floor(Math.random() * 3)
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
     } else if (!isSpinning && previousSpinning.current) {
+      // Fade out custom audio when stopping
+      if (customAudioRef.current && !customAudioRef.current.paused) {
+        fadeOutAudio(customAudioRef.current, 500)
+      }
       setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 300)
     }
     previousSpinning.current = isSpinning
-  }, [isSpinning, spinToIndex, availableSegments.length, rotation])
+  }, [isSpinning, spinToIndex, availableSegments.length, rotation, audioSettings, fadeOutAudio])
 
   const wheelSegments = useMemo(() => {
     const cx = 200, cy = 200, r = 170, count = availableSegments.length
@@ -345,9 +402,15 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         )}
       </AnimatePresence>
 
+      {/* Default tick sound (fallback) */}
       <audio ref={audioRef} preload="auto">
         <source src="/sounds/tick.mp3" type="audio/mpeg" />
       </audio>
+
+      {/* Custom audio for wheel spin */}
+      {audioSettings?.url && (
+        <audio ref={customAudioRef} preload="auto" src={audioSettings.url} />
+      )}
     </div>
   )
 }

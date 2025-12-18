@@ -13,10 +13,16 @@ import {
   RotateCcw,
   History,
   Palette,
+  Music,
+  Volume2,
+  VolumeX,
+  Upload,
+  Play,
+  Pause,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
-import { Session, WheelSegment, WheelResult } from '@/types/database'
+import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 
 // Default segments
@@ -49,6 +55,17 @@ export default function WheelPage() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [history, setHistory] = useState<WheelResult[]>([])
+
+  // Audio state
+  const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
+    url: null,
+    enabled: true,
+    filename: null,
+  })
+  const [audioUploading, setAudioUploading] = useState(false)
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
+  const audioPreviewRef = useRef<HTMLAudioElement | null>(null)
+  const audioInputRef = useRef<HTMLInputElement | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -129,6 +146,7 @@ export default function WheelPage() {
     spinToIndex?: number
     usedSegmentIds?: string[]
     isGameFinished?: boolean
+    audioSettings?: WheelAudioSettings
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -165,6 +183,15 @@ export default function WheelPage() {
           setSegments(JSON.parse(data.wheel_segments))
         } catch {
           setSegments(DEFAULT_SEGMENTS)
+        }
+      }
+
+      // Charger les paramètres audio
+      if (data.wheel_audio) {
+        try {
+          setAudioSettings(JSON.parse(data.wheel_audio))
+        } catch {
+          // Keep default
         }
       }
 
@@ -237,6 +264,144 @@ export default function WheelPage() {
     saveSegmentsToDatabase(updatedSegments)
   }
 
+  // Audio functions
+  async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    // Validate file type
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez MP3, WAV ou OGG.')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fichier trop volumineux (max 10MB)')
+      return
+    }
+
+    setAudioUploading(true)
+    try {
+      // Delete old audio if exists
+      if (audioSettings.url) {
+        const oldPath = audioSettings.url.split('/').pop()
+        if (oldPath) {
+          await supabase.storage
+            .from('wheel-audio')
+            .remove([`${session.id}/${oldPath}`])
+        }
+      }
+
+      // Upload new audio
+      const fileExt = file.name.split('.').pop()
+      const fileName = `wheel-audio-${Date.now()}.${fileExt}`
+      const filePath = `${session.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('wheel-audio')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('wheel-audio')
+        .getPublicUrl(filePath)
+
+      // Update settings
+      const newSettings: WheelAudioSettings = {
+        url: publicUrl,
+        enabled: true,
+        filename: file.name,
+      }
+      setAudioSettings(newSettings)
+
+      // Save to database
+      await supabase
+        .from('sessions')
+        .update({ wheel_audio: JSON.stringify(newSettings) })
+        .eq('id', session.id)
+
+      toast.success('Musique uploadée!')
+    } catch (err) {
+      console.error('Error uploading audio:', err)
+      toast.error('Erreur lors de l\'upload')
+    } finally {
+      setAudioUploading(false)
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function deleteAudio() {
+    if (!session || !audioSettings.url) return
+
+    try {
+      // Extract path from URL
+      const urlParts = audioSettings.url.split('/wheel-audio/')
+      if (urlParts.length > 1) {
+        await supabase.storage
+          .from('wheel-audio')
+          .remove([urlParts[1]])
+      }
+
+      // Update settings
+      const newSettings: WheelAudioSettings = {
+        url: null,
+        enabled: false,
+        filename: null,
+      }
+      setAudioSettings(newSettings)
+
+      // Save to database
+      await supabase
+        .from('sessions')
+        .update({ wheel_audio: JSON.stringify(newSettings) })
+        .eq('id', session.id)
+
+      // Stop preview if playing
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.pause()
+        setIsPreviewPlaying(false)
+      }
+
+      toast.success('Musique supprimée')
+    } catch (err) {
+      console.error('Error deleting audio:', err)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  async function toggleAudioEnabled() {
+    if (!session) return
+
+    const newSettings: WheelAudioSettings = {
+      ...audioSettings,
+      enabled: !audioSettings.enabled,
+    }
+    setAudioSettings(newSettings)
+
+    await supabase
+      .from('sessions')
+      .update({ wheel_audio: JSON.stringify(newSettings) })
+      .eq('id', session.id)
+  }
+
+  function toggleAudioPreview() {
+    if (!audioPreviewRef.current || !audioSettings.url) return
+
+    if (isPreviewPlaying) {
+      audioPreviewRef.current.pause()
+      setIsPreviewPlaying(false)
+    } else {
+      audioPreviewRef.current.play().catch(() => {})
+      setIsPreviewPlaying(true)
+    }
+  }
+
   async function launchGame() {
     if (!session || segments.length < 2) {
       toast.error('Ajoutez au moins 2 segments')
@@ -275,6 +440,7 @@ export default function WheelPage() {
         result: null,
         usedSegmentIds: [],
         isGameFinished: false,
+        audioSettings,
       })
 
       toast.success('Jeu configuré!')
@@ -315,6 +481,7 @@ export default function WheelPage() {
       spinToIndex: randomIndex,
       usedSegmentIds,
       isGameFinished: false,
+      audioSettings,
     })
 
     // Wait for spin animation (5 seconds)
@@ -349,6 +516,7 @@ export default function WheelPage() {
         result: selectedSegment.text,
         usedSegmentIds: newUsedSegmentIds,
         isGameFinished: gameFinished,
+        audioSettings,
       })
 
       toast.success(`Résultat: ${selectedSegment.text}`)
@@ -376,6 +544,7 @@ export default function WheelPage() {
       result: null,
       usedSegmentIds,
       isGameFinished,
+      audioSettings,
     })
   }
 
@@ -569,6 +738,122 @@ export default function WheelPage() {
               <p className="text-gray-500 text-xs mt-3">
                 {segments.length}/12 segments • Cliquez sur la couleur pour la modifier
               </p>
+            </div>
+
+            {/* Audio Section */}
+            <div className="bg-[#242428] rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                  <Music className="h-5 w-5 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Musique de la roue</h3>
+                  <p className="text-gray-400 text-sm">Ajouter un son pendant la rotation</p>
+                </div>
+              </div>
+
+              {/* Upload zone */}
+              {!audioSettings.url ? (
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors bg-[#1A1A1E]">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {audioUploading ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37] mb-2" />
+                    ) : (
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    )}
+                    <p className="text-sm text-gray-400">
+                      {audioUploading ? 'Upload en cours...' : 'Cliquez pour uploader un fichier audio'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">MP3, WAV, OGG (max 10MB)</p>
+                  </div>
+                  <input
+                    ref={audioInputRef}
+                    type="file"
+                    accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
+                    onChange={handleAudioUpload}
+                    className="hidden"
+                    disabled={audioUploading}
+                  />
+                </label>
+              ) : (
+                <div className="space-y-3">
+                  {/* File info */}
+                  <div className="flex items-center gap-3 bg-[#1A1A1E] rounded-lg p-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0">
+                      <Music className="h-5 w-5 text-[#D4AF37]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">
+                        {audioSettings.filename || 'Fichier audio'}
+                      </p>
+                      <p className="text-gray-500 text-xs">Prêt à jouer</p>
+                    </div>
+                    <button
+                      onClick={toggleAudioPreview}
+                      className="p-2 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30 transition-colors"
+                    >
+                      {isPreviewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={deleteAudio}
+                      className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Audio toggle */}
+                  <div className="flex items-center justify-between bg-[#1A1A1E] rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      {audioSettings.enabled ? (
+                        <Volume2 className="h-4 w-4 text-[#D4AF37]" />
+                      ) : (
+                        <VolumeX className="h-4 w-4 text-gray-500" />
+                      )}
+                      <span className="text-white text-sm">Activer le son</span>
+                    </div>
+                    <button
+                      onClick={toggleAudioEnabled}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        audioSettings.enabled ? 'bg-[#D4AF37]' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                          audioSettings.enabled ? 'left-7' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Replace audio */}
+                  <label className="flex items-center justify-center w-full py-2 border border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-[#D4AF37]/50 transition-colors text-gray-400 text-sm hover:text-white">
+                    {audioUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    Remplacer le fichier
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
+                      onChange={handleAudioUpload}
+                      className="hidden"
+                      disabled={audioUploading}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Hidden audio element for preview */}
+              {audioSettings.url && (
+                <audio
+                  ref={audioPreviewRef}
+                  src={audioSettings.url}
+                  onEnded={() => setIsPreviewPlaying(false)}
+                />
+              )}
             </div>
 
             {/* Launch button */}
