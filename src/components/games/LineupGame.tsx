@@ -1,7 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
+interface AudioSettings {
+  url: string | null
+  enabled: boolean
+  filename: string | null
+}
 
 interface LineupGameProps {
   currentNumber: string
@@ -16,6 +22,7 @@ interface LineupGameProps {
   team1Score: number
   team2Score: number
   showWinner: boolean
+  audioSettings?: AudioSettings
 }
 
 // Floating particle component
@@ -146,11 +153,86 @@ export default function LineupGame({
   team1Score,
   team2Score,
   showWinner,
+  audioSettings,
 }: LineupGameProps) {
   const [displayNumber, setDisplayNumber] = useState(currentNumber)
   const [isRolling, setIsRolling] = useState(false)
   const prevNumberRef = useRef(currentNumber)
   const [windowHeight, setWindowHeight] = useState(800)
+
+  // Audio refs
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const wasRunningRef = useRef(false)
+
+  // Fade out audio smoothly
+  const fadeOutAudio = useCallback((audio: HTMLAudioElement, duration: number = 500) => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current)
+    }
+
+    const initialVolume = audio.volume
+    const steps = 20
+    const stepTime = duration / steps
+    const volumeStep = initialVolume / steps
+
+    fadeIntervalRef.current = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep)
+      } else {
+        audio.volume = 0
+        audio.pause()
+        audio.currentTime = 0
+        audio.volume = initialVolume
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current)
+          fadeIntervalRef.current = null
+        }
+      }
+    }, stepTime)
+  }, [])
+
+  // Handle audio playback based on game state
+  useEffect(() => {
+    if (!audioSettings?.url || !audioSettings?.enabled) return
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    // Game started running
+    if (isRunning && !wasRunningRef.current) {
+      audio.currentTime = 0
+      audio.volume = 1
+      audio.loop = true
+      audio.play().catch(() => {})
+    }
+    // Game paused
+    else if (isPaused && wasRunningRef.current) {
+      audio.pause()
+    }
+    // Game resumed from pause
+    else if (isRunning && !isPaused && audio.paused && wasRunningRef.current) {
+      audio.play().catch(() => {})
+    }
+    // Game stopped (game over)
+    else if ((isGameOver || showWinner) && !audio.paused) {
+      fadeOutAudio(audio, 500)
+    }
+
+    wasRunningRef.current = isRunning
+  }, [isRunning, isPaused, isGameOver, showWinner, audioSettings, fadeOutAudio])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current)
+      }
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+    }
+  }, [])
 
   // Get window height on mount (client-side only)
   useEffect(() => {
@@ -673,6 +755,11 @@ export default function LineupGame({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Audio element for game music */}
+      {audioSettings?.url && (
+        <audio ref={audioRef} preload="auto" src={audioSettings.url} />
+      )}
     </div>
   )
 }

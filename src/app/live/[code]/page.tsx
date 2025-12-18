@@ -332,6 +332,11 @@ export default function LivePage() {
     team2Name: string
     showWinner: boolean
     clockDuration: number
+    audioSettings?: {
+      url: string | null
+      enabled: boolean
+      filename: string | null
+    }
   } | null>(null)
 
   // Wheel game state (updated via broadcast from admin)
@@ -842,6 +847,7 @@ export default function LivePage() {
         team1Score={lineupState?.team1Score ?? session.lineup_team1_score ?? 0}
         team2Score={lineupState?.team2Score ?? session.lineup_team2_score ?? 0}
         showWinner={lineupState?.showWinner ?? session.lineup_show_winner ?? false}
+        audioSettings={lineupState?.audioSettings}
       />
     )
   }
