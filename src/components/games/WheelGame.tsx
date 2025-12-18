@@ -209,19 +209,19 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       </div>
 
       {/* CONTENU PRINCIPAL */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center py-8">
+      <div className="relative z-10 h-full flex flex-col items-center justify-start pt-6 pb-8">
         {/* TITRE PREMIUM */}
-        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-6">
+        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-4">
           <h1 className="text-4xl md:text-6xl font-black tracking-wider"
             style={{
               color: '#FFD700',
               textShadow: '0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 40px #FF6B00, 0 4px 0 #8B6914, 0 5px 10px rgba(0,0,0,0.5)'
             }}>
-            ROUE DE LA FORTUNE
+            ROUE DE LA DESTINÉE
           </h1>
           <p className="text-white/80 mt-2 text-base md:text-lg tracking-widest uppercase"
             style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            Tournez et tentez votre chance !
+            Tournez et découvrez votre destin !
           </p>
         </motion.div>
 
@@ -482,7 +482,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 <motion.div initial={{ scale: 0 }} animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: 1 }}
                   transition={{ duration: 0.6, delay: 0.2 }} className="text-7xl md:text-8xl mb-6">🎰</motion.div>
                 <motion.p className="text-white/70 text-sm md:text-base uppercase tracking-[0.3em] mb-3"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>La fortune a choisi</motion.p>
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>Le destin a choisi</motion.p>
                 <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                   className="text-3xl md:text-4xl font-black"
                   style={{ color: '#FFD700', textShadow: '0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(255,215,0,0.4)' }}>{result}</motion.h2>
@@ -544,7 +544,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}>
-                La roue de la fortune est terminée
+                La roue de la destinée est terminée
               </motion.p>
 
               <motion.div className="flex justify-center gap-4 mt-8"
