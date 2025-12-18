@@ -197,6 +197,9 @@ export default function LineupPage() {
     }
   }
 
+  // Historique des numéros récents pour éviter les répétitions
+  const recentNumbersRef = useRef<string[]>([])
+
   // Generate random number with variable length (3-5 digits, weighted toward 5)
   const generateNumber = useCallback(() => {
     // Weighted distribution: 3 chiffres (20%), 4 chiffres (30%), 5 chiffres (50%)
@@ -209,13 +212,37 @@ export default function LineupPage() {
     } else {
       length = 5
     }
-    const digits = Array.from({ length }, (_, i) => i + 1)
-    // Fisher-Yates shuffle
-    for (let i = digits.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[digits[i], digits[j]] = [digits[j], digits[i]]
+
+    // Fonction pour générer un numéro unique
+    const generate = (): string => {
+      // Pool de chiffres disponibles (1-9)
+      const allDigits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+      // Fisher-Yates shuffle sur tous les chiffres
+      for (let i = allDigits.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[allDigits[i], allDigits[j]] = [allDigits[j], allDigits[i]]
+      }
+
+      // Prendre les N premiers chiffres
+      return allDigits.slice(0, length).join('')
     }
-    return digits.join('')
+
+    // Essayer de générer un numéro qui n'est pas dans l'historique récent
+    let newNumber = generate()
+    let attempts = 0
+    while (recentNumbersRef.current.includes(newNumber) && attempts < 10) {
+      newNumber = generate()
+      attempts++
+    }
+
+    // Ajouter à l'historique (garder les 20 derniers)
+    recentNumbersRef.current.push(newNumber)
+    if (recentNumbersRef.current.length > 20) {
+      recentNumbersRef.current.shift()
+    }
+
+    return newNumber
   }, [])
 
   // Audio functions
