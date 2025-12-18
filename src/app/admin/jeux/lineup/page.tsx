@@ -13,10 +13,15 @@ import {
   Monitor,
   SkipForward,
   X,
+  Music,
+  Volume2,
+  VolumeX,
+  Upload,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
-import { Session } from '@/types/database'
+import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 
 export default function LineupPage() {
@@ -40,6 +45,17 @@ export default function LineupPage() {
   const [isGameOver, setIsGameOver] = useState(false)
   const [currentPoints, setCurrentPoints] = useState(10)
   const [showWinner, setShowWinner] = useState(false)
+
+  // Audio state
+  const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
+    url: null,
+    enabled: true,
+    filename: null,
+  })
+  const [audioUploading, setAudioUploading] = useState(false)
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
+  const audioPreviewRef = useRef<HTMLAudioElement | null>(null)
+  const audioInputRef = useRef<HTMLInputElement | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -77,6 +93,7 @@ export default function LineupPage() {
     team2Name: string
     showWinner: boolean
     clockDuration: number
+    audioSettings?: WheelAudioSettings
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -122,6 +139,14 @@ export default function LineupPage() {
         setIsGameOver(data.lineup_is_game_over ?? false)
         setCurrentPoints(data.lineup_current_points ?? 10)
         setShowWinner(data.lineup_show_winner ?? false)
+        // Charger les paramètres audio
+        if (data.lineup_audio) {
+          try {
+            setAudioSettings(JSON.parse(data.lineup_audio))
+          } catch {
+            // Keep default
+          }
+        }
       } else {
         // Game not active - use defaults
         setGameActive(false)
@@ -137,6 +162,14 @@ export default function LineupPage() {
         setIsGameOver(false)
         setCurrentPoints(10)
         setShowWinner(false)
+        // Charger les paramètres audio même si jeu non actif
+        if (data.lineup_audio) {
+          try {
+            setAudioSettings(JSON.parse(data.lineup_audio))
+          } catch {
+            // Keep default
+          }
+        }
       }
     } catch (err) {
       console.error('Error fetching session:', err)
@@ -166,6 +199,144 @@ export default function LineupPage() {
     }
     return digits.join('')
   }, [])
+
+  // Audio functions
+  async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    // Validate file type
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez MP3, WAV ou OGG.')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fichier trop volumineux (max 10MB)')
+      return
+    }
+
+    setAudioUploading(true)
+    try {
+      // Delete old audio if exists
+      if (audioSettings.url) {
+        const oldPath = audioSettings.url.split('/').pop()
+        if (oldPath) {
+          await supabase.storage
+            .from('lineup-audio')
+            .remove([`${session.id}/${oldPath}`])
+        }
+      }
+
+      // Upload new audio
+      const fileExt = file.name.split('.').pop()
+      const fileName = `lineup-audio-${Date.now()}.${fileExt}`
+      const filePath = `${session.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('lineup-audio')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('lineup-audio')
+        .getPublicUrl(filePath)
+
+      // Update settings
+      const newSettings: WheelAudioSettings = {
+        url: publicUrl,
+        enabled: true,
+        filename: file.name,
+      }
+      setAudioSettings(newSettings)
+
+      // Save to database
+      await supabase
+        .from('sessions')
+        .update({ lineup_audio: JSON.stringify(newSettings) })
+        .eq('id', session.id)
+
+      toast.success('Musique uploadée!')
+    } catch (err) {
+      console.error('Error uploading audio:', err)
+      toast.error('Erreur lors de l\'upload')
+    } finally {
+      setAudioUploading(false)
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function deleteAudio() {
+    if (!session || !audioSettings.url) return
+
+    try {
+      // Extract path from URL
+      const urlParts = audioSettings.url.split('/lineup-audio/')
+      if (urlParts.length > 1) {
+        await supabase.storage
+          .from('lineup-audio')
+          .remove([urlParts[1]])
+      }
+
+      // Update settings
+      const newSettings: WheelAudioSettings = {
+        url: null,
+        enabled: false,
+        filename: null,
+      }
+      setAudioSettings(newSettings)
+
+      // Save to database
+      await supabase
+        .from('sessions')
+        .update({ lineup_audio: JSON.stringify(newSettings) })
+        .eq('id', session.id)
+
+      // Stop preview if playing
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.pause()
+        setIsPreviewPlaying(false)
+      }
+
+      toast.success('Musique supprimée')
+    } catch (err) {
+      console.error('Error deleting audio:', err)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  async function toggleAudioEnabled() {
+    if (!session) return
+
+    const newSettings: WheelAudioSettings = {
+      ...audioSettings,
+      enabled: !audioSettings.enabled,
+    }
+    setAudioSettings(newSettings)
+
+    await supabase
+      .from('sessions')
+      .update({ lineup_audio: JSON.stringify(newSettings) })
+      .eq('id', session.id)
+  }
+
+  function toggleAudioPreview() {
+    if (!audioPreviewRef.current || !audioSettings.url) return
+
+    if (isPreviewPlaying) {
+      audioPreviewRef.current.pause()
+      setIsPreviewPlaying(false)
+    } else {
+      audioPreviewRef.current.play().catch(() => {})
+      setIsPreviewPlaying(true)
+    }
+  }
 
   // CHRONO GLOBAL - Timer effect
   useEffect(() => {
@@ -205,6 +376,7 @@ export default function LineupPage() {
           team2Name,
           showWinner: newTime <= 0,
           clockDuration,
+          audioSettings,
         })
 
         // Fin du jeu !
@@ -298,6 +470,7 @@ export default function LineupPage() {
         team2Name,
         showWinner: false,
         clockDuration,
+        audioSettings,
       })
 
       toast.success('Jeu configuré!')
@@ -358,6 +531,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
 
     toast.success('Partie lancée!')
@@ -395,6 +569,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
   }
 
@@ -436,6 +611,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
   }
 
@@ -478,6 +654,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
 
     toast.success(`${team === 1 ? team1Name : team2Name} +${currentPoints} points!`)
@@ -507,6 +684,7 @@ export default function LineupPage() {
           team2Name,
           showWinner: false,
           clockDuration,
+          audioSettings,
         })
       }, 1500)
     }
@@ -539,6 +717,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
   }
 
@@ -568,6 +747,7 @@ export default function LineupPage() {
       team2Name,
       showWinner: false,
       clockDuration,
+      audioSettings,
     })
   }
 
@@ -793,6 +973,96 @@ export default function LineupPage() {
                   className="w-full bg-[#2E2E33] text-white rounded-xl p-3 text-center font-bold border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
+            </div>
+
+            {/* Section Audio */}
+            <div className="bg-[#1A1A1E] rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <Music className="h-4 w-4 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Musique du jeu</h3>
+                  <p className="text-gray-400 text-xs">Son pendant le chrono</p>
+                </div>
+              </div>
+
+              {/* Upload zone */}
+              {!audioSettings.url ? (
+                <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-violet-500/50 transition-colors bg-[#242428]">
+                  {audioUploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                  ) : (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Upload className="h-5 w-5" />
+                      <span className="text-sm">Uploader (MP3, WAV, OGG)</span>
+                    </div>
+                  )}
+                  <input
+                    ref={audioInputRef}
+                    type="file"
+                    accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
+                    onChange={handleAudioUpload}
+                    className="hidden"
+                    disabled={audioUploading}
+                  />
+                </label>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 bg-[#242428] rounded-lg p-2">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                      <Music className="h-4 w-4 text-violet-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs font-medium truncate">
+                        {audioSettings.filename || 'Fichier audio'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={toggleAudioPreview}
+                      className="p-1.5 rounded-lg bg-violet-500/20 text-violet-400 hover:bg-violet-500/30"
+                    >
+                      {isPreviewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={deleteAudio}
+                      className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between bg-[#242428] rounded-lg p-2">
+                    <div className="flex items-center gap-2">
+                      {audioSettings.enabled ? (
+                        <Volume2 className="h-3.5 w-3.5 text-violet-400" />
+                      ) : (
+                        <VolumeX className="h-3.5 w-3.5 text-gray-500" />
+                      )}
+                      <span className="text-white text-xs">Son activé</span>
+                    </div>
+                    <button
+                      onClick={toggleAudioEnabled}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${
+                        audioSettings.enabled ? 'bg-violet-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          audioSettings.enabled ? 'left-5' : 'left-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {audioSettings.url && (
+                <audio
+                  ref={audioPreviewRef}
+                  src={audioSettings.url}
+                  onEnded={() => setIsPreviewPlaying(false)}
+                />
+              )}
             </div>
 
             {/* Bouton lancer */}

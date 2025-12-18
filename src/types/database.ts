@@ -139,6 +139,7 @@ export interface Session {
   lineup_is_game_over: boolean
   lineup_current_points: number
   lineup_show_winner: boolean
+  lineup_audio: string | null // JSON of WheelAudioSettings (reused for lineup)
   // Vote Photo settings
   vote_active: boolean
   vote_photos: string | null // JSON array of VotePhotoCandidate
