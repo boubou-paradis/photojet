@@ -67,12 +67,17 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // QR Code visibility (synced with session)
   const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
 
-  // Audio states
-  const audioRef = useRef<HTMLAudioElement>(null)
+  // Audio states - Per-photo audio (plays when photo is fully revealed)
+  const photoAudioRef = useRef<HTMLAudioElement>(null)
   const [audioVolume, setAudioVolume] = useState(0.8)
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [isPhotoAudioPlaying, setIsPhotoAudioPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
-  const [hasPlayedAudio, setHasPlayedAudio] = useState(false)
+  const [hasPlayedPhotoAudio, setHasPlayedPhotoAudio] = useState(false)
+
+  // Audio states - Global reveal audio (plays during tile removal)
+  const revealAudioRef = useRef<HTMLAudioElement>(null)
+  const [revealAudioUrl, setRevealAudioUrl] = useState<string | null>(null)
+  const [isRevealAudioPlaying, setIsRevealAudioPlaying] = useState(false)
 
   const supabase = createClient()
 
@@ -109,10 +114,15 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     return null
   }, [photos, currentRound, supabase])
 
-  // Check if current photo has audio
-  const hasAudio = useMemo(() => {
+  // Check if current photo has audio (for revelation)
+  const hasPhotoAudio = useMemo(() => {
     return !!currentAudioUrl
   }, [currentAudioUrl])
+
+  // Check if global reveal audio is configured
+  const hasRevealAudio = useMemo(() => {
+    return !!revealAudioUrl
+  }, [revealAudioUrl])
 
   // Fullscreen toggle
   const toggleFullscreen = async () => {
@@ -135,82 +145,114 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   }, [])
 
 
-  // Auto-play audio when game starts (isPlaying becomes true)
+  // Load global reveal audio URL from session
   useEffect(() => {
-    if (isPlaying && currentAudioUrl && !isMuted && audioRef.current) {
+    if (session.mystery_reveal_audio) {
+      const { data } = supabase.storage.from('photos').getPublicUrl(session.mystery_reveal_audio)
+      setRevealAudioUrl(data.publicUrl)
+    }
+  }, [session.mystery_reveal_audio, supabase])
+
+  // GLOBAL REVEAL AUDIO: Play when game starts (isPlaying becomes true)
+  useEffect(() => {
+    if (isPlaying && revealAudioUrl && !isMuted && revealAudioRef.current) {
       // Start playing from beginning when game starts
-      if (!isAudioPlaying) {
-        audioRef.current.currentTime = 0
-        audioRef.current.loop = true // Loop while tiles are being removed
-        audioRef.current.play().catch(() => {})
-        setIsAudioPlaying(true)
+      if (!isRevealAudioPlaying) {
+        revealAudioRef.current.currentTime = 0
+        revealAudioRef.current.loop = true // Loop while tiles are being removed
+        revealAudioRef.current.play().catch(() => {})
+        setIsRevealAudioPlaying(true)
       }
-    } else if (!isPlaying && audioRef.current && isAudioPlaying) {
+    } else if (!isPlaying && revealAudioRef.current && isRevealAudioPlaying) {
       // Pause audio when game is paused
-      audioRef.current.pause()
-      setIsAudioPlaying(false)
+      revealAudioRef.current.pause()
+      setIsRevealAudioPlaying(false)
     }
-  }, [isPlaying, currentAudioUrl, isMuted, isAudioPlaying])
+  }, [isPlaying, revealAudioUrl, isMuted, isRevealAudioPlaying])
 
-  // Stop audio when all tiles are revealed (game finished)
+  // Stop REVEAL audio and play PER-PHOTO audio when all tiles are revealed
   useEffect(() => {
-    if (revealedTiles.length === totalTiles && audioRef.current && isAudioPlaying) {
-      // Fade out audio when game is complete
-      const fadeOutDuration = 1000 // 1 second fade out
-      const fadeInterval = 50
-      const steps = fadeOutDuration / fadeInterval
-      const volumeStep = audioRef.current.volume / steps
+    if (revealedTiles.length === totalTiles) {
+      // Stop reveal audio with fade out
+      if (revealAudioRef.current && isRevealAudioPlaying) {
+        const fadeOutDuration = 500 // 0.5 second fade out
+        const fadeInterval = 50
+        const steps = fadeOutDuration / fadeInterval
+        const volumeStep = revealAudioRef.current.volume / steps
 
-      const fadeOut = setInterval(() => {
-        if (audioRef.current && audioRef.current.volume > volumeStep) {
-          audioRef.current.volume -= volumeStep
-        } else {
-          clearInterval(fadeOut)
-          if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current.volume = isMuted ? 0 : audioVolume // Reset volume
-            audioRef.current.loop = false
+        const fadeOut = setInterval(() => {
+          if (revealAudioRef.current && revealAudioRef.current.volume > volumeStep) {
+            revealAudioRef.current.volume -= volumeStep
+          } else {
+            clearInterval(fadeOut)
+            if (revealAudioRef.current) {
+              revealAudioRef.current.pause()
+              revealAudioRef.current.volume = isMuted ? 0 : audioVolume
+              revealAudioRef.current.loop = false
+            }
+            setIsRevealAudioPlaying(false)
           }
-          setIsAudioPlaying(false)
-        }
-      }, fadeInterval)
+        }, fadeInterval)
+      }
 
-      return () => clearInterval(fadeOut)
+      // Play per-photo audio when photo is fully revealed (only once)
+      if (currentAudioUrl && !hasPlayedPhotoAudio && !isMuted && photoAudioRef.current) {
+        setTimeout(() => {
+          if (photoAudioRef.current) {
+            photoAudioRef.current.currentTime = 0
+            photoAudioRef.current.loop = false // Play once
+            photoAudioRef.current.play().catch(() => {})
+            setIsPhotoAudioPlaying(true)
+            setHasPlayedPhotoAudio(true)
+          }
+        }, 600) // Small delay after reveal audio fades
+      }
     }
-  }, [revealedTiles.length, totalTiles, isAudioPlaying, audioVolume, isMuted])
+  }, [revealedTiles.length, totalTiles, isRevealAudioPlaying, currentAudioUrl, hasPlayedPhotoAudio, isMuted, audioVolume])
 
-  // Reset audio when round changes
+  // Reset audio states when round changes
   useEffect(() => {
-    setHasPlayedAudio(false)
-    setIsAudioPlaying(false)
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      audioRef.current.loop = false
-      audioRef.current.volume = isMuted ? 0 : audioVolume
+    setHasPlayedPhotoAudio(false)
+    setIsPhotoAudioPlaying(false)
+    setIsRevealAudioPlaying(false)
+
+    // Stop both audio elements
+    if (photoAudioRef.current) {
+      photoAudioRef.current.pause()
+      photoAudioRef.current.currentTime = 0
+      photoAudioRef.current.volume = isMuted ? 0 : audioVolume
+    }
+    if (revealAudioRef.current) {
+      revealAudioRef.current.pause()
+      revealAudioRef.current.currentTime = 0
+      revealAudioRef.current.loop = false
+      revealAudioRef.current.volume = isMuted ? 0 : audioVolume
     }
   }, [currentRound, audioVolume, isMuted])
 
-  // Update audio volume
+  // Update audio volume for both audio elements
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : audioVolume
+    if (photoAudioRef.current) {
+      photoAudioRef.current.volume = isMuted ? 0 : audioVolume
+    }
+    if (revealAudioRef.current) {
+      revealAudioRef.current.volume = isMuted ? 0 : audioVolume
     }
   }, [audioVolume, isMuted])
 
-  // Audio control functions
-  const playAudio = () => {
-    if (audioRef.current && currentAudioUrl) {
-      audioRef.current.play()
-      setIsAudioPlaying(true)
+  // Audio control functions (for per-photo audio)
+  const playPhotoAudio = () => {
+    if (photoAudioRef.current && currentAudioUrl) {
+      photoAudioRef.current.play()
+      setIsPhotoAudioPlaying(true)
     }
   }
 
-  const replayAudio = () => {
-    if (audioRef.current && currentAudioUrl) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play()
-      setIsAudioPlaying(true)
+  const replayPhotoAudio = () => {
+    if (photoAudioRef.current && currentAudioUrl) {
+      photoAudioRef.current.currentTime = 0
+      photoAudioRef.current.play()
+      setIsPhotoAudioPlaying(true)
     }
   }
 
@@ -759,11 +801,11 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             </span>
           )}
 
-          {/* Audio controls - only show if current photo has audio */}
-          {hasAudio && (
+          {/* Audio controls - show if any audio is available */}
+          {(hasPhotoAudio || hasRevealAudio) && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/30">
               {/* Audio indicator */}
-              <Volume2 className={`h-4 w-4 ${isAudioPlaying ? 'text-[#D4AF37] animate-pulse' : 'text-[#D4AF37]/70'}`} />
+              <Volume2 className={`h-4 w-4 ${(isPhotoAudioPlaying || isRevealAudioPlaying) ? 'text-[#D4AF37] animate-pulse' : 'text-[#D4AF37]/70'}`} />
 
               {/* Volume slider */}
               <input
@@ -793,14 +835,16 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
                 )}
               </button>
 
-              {/* Replay button */}
-              <button
-                onClick={replayAudio}
-                className="p-1 rounded hover:bg-white/10 transition-colors"
-                title="Rejouer l'audio"
-              >
-                <RotateCcw className="h-4 w-4 text-white/70 hover:text-[#D4AF37]" />
-              </button>
+              {/* Replay photo audio button - only show if photo has audio */}
+              {hasPhotoAudio && (
+                <button
+                  onClick={replayPhotoAudio}
+                  className="p-1 rounded hover:bg-white/10 transition-colors"
+                  title="Rejouer l'audio de la photo"
+                >
+                  <RotateCcw className="h-4 w-4 text-white/70 hover:text-[#D4AF37]" />
+                </button>
+              )}
             </div>
           )}
 
@@ -928,14 +972,25 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         )}
       </AnimatePresence>
 
-      {/* Hidden audio element */}
+      {/* Hidden audio elements */}
+      {/* Per-photo audio (plays when photo is fully revealed) */}
       {currentAudioUrl && (
         <audio
-          ref={audioRef}
+          ref={photoAudioRef}
           src={currentAudioUrl}
-          onEnded={() => setIsAudioPlaying(false)}
-          onPlay={() => setIsAudioPlaying(true)}
-          onPause={() => setIsAudioPlaying(false)}
+          onEnded={() => setIsPhotoAudioPlaying(false)}
+          onPlay={() => setIsPhotoAudioPlaying(true)}
+          onPause={() => setIsPhotoAudioPlaying(false)}
+        />
+      )}
+      {/* Global reveal audio (plays during tile removal) */}
+      {revealAudioUrl && (
+        <audio
+          ref={revealAudioRef}
+          src={revealAudioUrl}
+          onEnded={() => setIsRevealAudioPlaying(false)}
+          onPlay={() => setIsRevealAudioPlaying(true)}
+          onPause={() => setIsRevealAudioPlaying(false)}
         />
       )}
     </div>

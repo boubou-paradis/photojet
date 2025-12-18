@@ -121,6 +121,7 @@ export interface Session {
   mystery_total_rounds: number
   mystery_is_playing: boolean
   mystery_revealed_tiles: number[] | null // Array of revealed tile indices for current round
+  mystery_reveal_audio: string | null // Audio that plays during tile removal (same for all rounds)
   // Album settings
   album_enabled: boolean
   album_password: string | null

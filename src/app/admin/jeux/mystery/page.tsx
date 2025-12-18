@@ -67,6 +67,14 @@ export default function MysteryPage() {
   const audioPreviewRefs = useRef<(HTMLAudioElement | null)[]>([])
   const [uploadingAudio, setUploadingAudio] = useState<number | null>(null)
   const [playingAudio, setPlayingAudio] = useState<number | null>(null)
+
+  // Global reveal audio (plays during tile removal)
+  const [revealAudio, setRevealAudio] = useState<{ url: string; preview: string } | null>(null)
+  const [uploadingRevealAudio, setUploadingRevealAudio] = useState(false)
+  const [playingRevealAudio, setPlayingRevealAudio] = useState(false)
+  const revealAudioInputRef = useRef<HTMLInputElement | null>(null)
+  const revealAudioPreviewRef = useRef<HTMLAudioElement | null>(null)
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -128,6 +136,12 @@ export default function MysteryPage() {
         } catch {
           console.error('Failed to parse mystery_photos')
         }
+      }
+
+      // Load global reveal audio
+      if (data.mystery_reveal_audio) {
+        const { data: audioUrlData } = supabase.storage.from('photos').getPublicUrl(data.mystery_reveal_audio)
+        setRevealAudio({ url: data.mystery_reveal_audio, preview: audioUrlData.publicUrl })
       }
     } catch (err) {
       console.error('Error fetching session:', err)
@@ -350,9 +364,116 @@ export default function MysteryPage() {
       audioPreviewRefs.current.forEach((a, i) => {
         if (a && i !== index) a.pause()
       })
+      // Also pause reveal audio preview
+      if (revealAudioPreviewRef.current) {
+        revealAudioPreviewRef.current.pause()
+        setPlayingRevealAudio(false)
+      }
       audio.currentTime = 0
       audio.play()
       setPlayingAudio(index)
+    }
+  }
+
+  // ---- GLOBAL REVEAL AUDIO FUNCTIONS ----
+  async function handleRevealAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    // Check file type
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format audio non supporté (MP3, WAV, OGG)')
+      return
+    }
+
+    // Check size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fichier audio trop volumineux (max 10MB)')
+      return
+    }
+
+    setUploadingRevealAudio(true)
+    try {
+      const fileName = `mystery_reveal_${session.id}_${Date.now()}.${file.name.split('.').pop()}`
+      const filePath = `mystery-audio/${fileName}`
+
+      // Delete old file if exists
+      if (revealAudio?.url) {
+        await supabase.storage.from('photos').remove([revealAudio.url])
+      }
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('photos')
+        .getPublicUrl(filePath)
+
+      // Update local state
+      setRevealAudio({ url: filePath, preview: urlData.publicUrl })
+
+      // Save to database
+      await supabase
+        .from('sessions')
+        .update({ mystery_reveal_audio: filePath })
+        .eq('id', session.id)
+
+      toast.success('Audio de dévoilement ajouté')
+    } catch (err) {
+      console.error('Error uploading reveal audio:', err)
+      toast.error('Erreur lors de l\'upload')
+    } finally {
+      setUploadingRevealAudio(false)
+      if (revealAudioInputRef.current) {
+        revealAudioInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function removeRevealAudio() {
+    if (!session || !revealAudio) return
+
+    try {
+      // Delete from storage
+      await supabase.storage.from('photos').remove([revealAudio.url])
+
+      // Update database
+      await supabase
+        .from('sessions')
+        .update({ mystery_reveal_audio: null })
+        .eq('id', session.id)
+
+      // Update local state
+      setRevealAudio(null)
+      setPlayingRevealAudio(false)
+
+      toast.success('Audio de dévoilement supprimé')
+    } catch (err) {
+      console.error('Error removing reveal audio:', err)
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  function toggleRevealAudioPreview() {
+    const audio = revealAudioPreviewRef.current
+    if (!audio) return
+
+    if (playingRevealAudio) {
+      audio.pause()
+      setPlayingRevealAudio(false)
+    } else {
+      // Pause any photo audio
+      audioPreviewRefs.current.forEach(a => a?.pause())
+      setPlayingAudio(null)
+      audio.currentTime = 0
+      audio.play()
+      setPlayingRevealAudio(true)
     }
   }
 
@@ -802,6 +923,68 @@ export default function MysteryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#242428] rounded-xl p-4 space-y-4 w-full"
           >
+            {/* Global Reveal Audio Section */}
+            <div className="bg-[#1A1A1E] rounded-xl p-4 border border-cyan-500/30">
+              <div className="flex items-center gap-2 mb-3">
+                <Music className="h-5 w-5 text-cyan-400" />
+                <Label className="text-white text-sm font-semibold">
+                  Musique de dévoilement
+                </Label>
+                <span className="text-xs text-cyan-400/70">(pendant que les cases s'enlèvent)</span>
+              </div>
+
+              {revealAudio ? (
+                <div className="flex items-center gap-3 bg-[#242428] rounded-lg p-3">
+                  <button
+                    onClick={toggleRevealAudioPreview}
+                    className={`p-3 rounded-lg transition-all ${
+                      playingRevealAudio
+                        ? 'bg-cyan-500 text-white'
+                        : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'
+                    }`}
+                  >
+                    {playingRevealAudio ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  </button>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">Audio configuré</p>
+                    <p className="text-cyan-400/70 text-xs">Joue pendant le dévoilement</p>
+                  </div>
+                  <button
+                    onClick={removeRevealAudio}
+                    className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <audio
+                    ref={revealAudioPreviewRef}
+                    src={revealAudio.preview}
+                    onEnded={() => setPlayingRevealAudio(false)}
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => revealAudioInputRef.current?.click()}
+                  disabled={uploadingRevealAudio}
+                  className="w-full py-4 border-2 border-dashed border-cyan-500/30 rounded-lg text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-2"
+                >
+                  {uploadingRevealAudio ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Upload className="h-5 w-5" />
+                  )}
+                  Ajouter une musique de fond
+                </button>
+              )}
+              <input
+                ref={revealAudioInputRef}
+                type="file"
+                accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3,.mp3,.wav,.ogg"
+                onChange={handleRevealAudioUpload}
+                className="hidden"
+              />
+            </div>
+
             {/* Compact photo grid 5x4 */}
             <div>
               <div className="flex items-center justify-between mb-3">
