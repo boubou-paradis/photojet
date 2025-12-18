@@ -15,10 +15,46 @@ import {
   Package,
   Lock,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo } from '@/types/database'
+
+// Composant image avec gestion du chargement et des erreurs
+function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+
+  return (
+    <>
+      {/* Loading/Error state */}
+      {status !== 'loaded' && (
+        <div className="absolute inset-0 bg-[#1A1A1E] flex items-center justify-center z-10">
+          {status === 'loading' ? (
+            <div className="w-8 h-8 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin" />
+          ) : (
+            <div className="text-center">
+              <AlertCircle className="w-8 h-8 mx-auto text-gray-600 mb-2" />
+              <span className="text-xs text-gray-500">Erreur</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Image */}
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('error')}
+        style={{ transition: 'opacity 0.3s ease-in-out' }}
+      />
+    </>
+  )
+}
 
 export default function AlbumPage() {
   const params = useParams()
@@ -423,19 +459,19 @@ export default function AlbumPage() {
                 onClick={() => toggleSelect(photo.id)}
                 onDoubleClick={() => openLightbox(index)}
               >
-                <img
+                {/* Image with loading/error handling */}
+                <GalleryImage
                   src={getPhotoUrl(photo.storage_path)}
                   alt={`Photo ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
 
                 {/* Gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-20" />
 
                 {/* Selection checkbox */}
                 <div
-                  className={`absolute top-3 left-3 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                  className={`absolute top-3 left-3 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 z-30 ${
                     selectedPhotos.includes(photo.id)
                       ? 'bg-[#D4AF37] border-[#D4AF37] scale-110'
                       : 'border-white/70 bg-black/40 group-hover:border-[#D4AF37]'
@@ -447,7 +483,7 @@ export default function AlbumPage() {
                 </div>
 
                 {/* Download button on hover */}
-                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-30">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
