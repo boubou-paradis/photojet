@@ -794,7 +794,7 @@ export default function DashboardPage() {
       </div>
 
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Session Info Card */}
             {selectedSession && (
@@ -877,7 +877,7 @@ export default function DashboardPage() {
 
       <main className="relative z-10 flex-1 overflow-hidden">
         {!selectedSession ? (
-          <div className="h-full flex items-center justify-center p-4">
+          <div className="h-full max-w-7xl mx-auto flex items-center justify-center p-4">
             <div className="card-gold rounded-xl max-w-md">
               <div className="p-8 text-center">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
@@ -898,7 +898,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col lg:flex-row gap-3 p-4 overflow-hidden">
+          <div className="h-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
             {/* Colonne gauche : Stats + Photos */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
               {/* Stats Cards - Premium Gaming Style */}
