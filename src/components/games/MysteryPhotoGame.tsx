@@ -78,6 +78,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const revealAudioRef = useRef<HTMLAudioElement>(null)
   const [revealAudioUrl, setRevealAudioUrl] = useState<string | null>(null)
   const [isRevealAudioPlaying, setIsRevealAudioPlaying] = useState(false)
+  const [hasStartedRevealAudio, setHasStartedRevealAudio] = useState(false) // Track if audio started this round
 
   const supabase = createClient()
 
@@ -153,22 +154,24 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
   }, [session.mystery_reveal_audio, supabase])
 
-  // GLOBAL REVEAL AUDIO: Play when game starts (isPlaying becomes true)
+  // GLOBAL REVEAL AUDIO: Play/pause when game starts/pauses
   useEffect(() => {
     if (isPlaying && revealAudioUrl && !isMuted && revealAudioRef.current) {
-      // Start playing from beginning when game starts
-      if (!isRevealAudioPlaying) {
+      // Only reset to beginning on first start of the round
+      if (!hasStartedRevealAudio) {
         revealAudioRef.current.currentTime = 0
-        revealAudioRef.current.loop = true // Loop while tiles are being removed
-        revealAudioRef.current.play().catch(() => {})
-        setIsRevealAudioPlaying(true)
+        setHasStartedRevealAudio(true)
       }
+      // Resume or start playing
+      revealAudioRef.current.loop = true
+      revealAudioRef.current.play().catch(() => {})
+      setIsRevealAudioPlaying(true)
     } else if (!isPlaying && revealAudioRef.current && isRevealAudioPlaying) {
-      // Pause audio when game is paused
+      // Pause audio when game is paused (keep current position)
       revealAudioRef.current.pause()
       setIsRevealAudioPlaying(false)
     }
-  }, [isPlaying, revealAudioUrl, isMuted, isRevealAudioPlaying])
+  }, [isPlaying, revealAudioUrl, isMuted, hasStartedRevealAudio])
 
   // Stop REVEAL audio when all tiles are revealed
   useEffect(() => {
@@ -222,6 +225,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     setHasPlayedPhotoAudio(false)
     setIsPhotoAudioPlaying(false)
     setIsRevealAudioPlaying(false)
+    setHasStartedRevealAudio(false) // Reset so next round starts from beginning
 
     // Stop both audio elements
     if (photoAudioRef.current) {
