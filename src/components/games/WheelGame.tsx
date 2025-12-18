@@ -160,13 +160,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       }
     } else if (!isSpinning && previousSpinning.current) {
       setIsInfiniteSpinning(false)
-      if (customAudioRef.current && !customAudioRef.current.paused) {
+      // Fadeout audio seulement en mode auto (pas manuel, déjà arrêté)
+      if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
       setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 300)
     }
     previousSpinning.current = isSpinning
-  }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio])
+  }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio, spinMode])
 
   // Handle spinToIndex change during spinning (manual mode stop)
   const [isManualStop, setIsManualStop] = useState(false)
@@ -179,6 +180,12 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       // Mode manuel: seulement 1-2 tours pour un arrêt rapide
       const fullRotations = 1 + Math.floor(Math.random() * 1)
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
+
+      // Mode manuel: arrêter la musique immédiatement
+      if (customAudioRef.current && !customAudioRef.current.paused) {
+        customAudioRef.current.pause()
+        customAudioRef.current.currentTime = 0
+      }
     }
     if (!isSpinning) {
       setIsManualStop(false)
