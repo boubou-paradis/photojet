@@ -211,7 +211,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       {/* CONTENU PRINCIPAL */}
       <div className="relative z-10 h-full flex flex-col items-center justify-start pt-6 pb-8">
         {/* TITRE PREMIUM */}
-        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-4">
+        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-6">
           <h1 className="text-4xl md:text-6xl font-black tracking-wider"
             style={{
               color: '#FFD700',
@@ -226,7 +226,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         </motion.div>
 
         {/* CONTAINER ROUE AVEC SOCLE */}
-        <div className="relative">
+        <div className="relative mt-4">
           {/* SOCLE/PIED ROUGE */}
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-80 h-20">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-16"
