@@ -202,12 +202,12 @@ export default function LineupPage() {
 
   // Generate random number with variable length (3-5 digits, weighted toward 5)
   const generateNumber = useCallback(() => {
-    // Weighted distribution: 3 chiffres (20%), 4 chiffres (30%), 5 chiffres (50%)
+    // Weighted distribution: 3 chiffres (10%), 4 chiffres (20%), 5 chiffres (70%)
     const rand = Math.random()
     let length: number
-    if (rand < 0.2) {
+    if (rand < 0.1) {
       length = 3
-    } else if (rand < 0.5) {
+    } else if (rand < 0.3) {
       length = 4
     } else {
       length = 5
