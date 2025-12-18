@@ -1005,6 +1005,23 @@ export default function LivePage() {
             ) : null}
           </AnimatePresence>
 
+          {/* QR Code toujours visible en plein écran (coin bas droit) */}
+          {session.show_qr_on_screen && !showUI && isFullscreen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="fixed bottom-4 right-4 z-30"
+            >
+              <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10">
+                <div className="bg-white p-1.5 rounded-lg">
+                  <QRCode value={getInviteUrl(code)} size={60} />
+                </div>
+                <p className="text-xs text-center text-white/70 mt-1 font-mono">#{code}</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Bottom overlay bar */}
           <motion.div
             initial={false}
