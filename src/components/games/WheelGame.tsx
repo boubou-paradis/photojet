@@ -169,13 +169,19 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio])
 
   // Handle spinToIndex change during spinning (manual mode stop)
+  const [isManualStop, setIsManualStop] = useState(false)
   useEffect(() => {
     if (isSpinning && spinToIndex !== undefined && previousSpinToIndex.current === undefined) {
       setIsInfiniteSpinning(false)
+      setIsManualStop(true)
       const segmentAngle = 360 / availableSegments.length
       const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-      const fullRotations = 2 + Math.floor(Math.random() * 2)
+      // Mode manuel: seulement 1-2 tours pour un arrêt rapide
+      const fullRotations = 1 + Math.floor(Math.random() * 1)
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
+    }
+    if (!isSpinning) {
+      setIsManualStop(false)
     }
     previousSpinToIndex.current = spinToIndex
   }, [spinToIndex, isSpinning, availableSegments.length, rotation])
@@ -364,7 +370,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               transition={
                 isInfiniteSpinning
                   ? { duration: 0.8, repeat: Infinity, ease: 'linear' }
-                  : { duration: isSpinning ? 8 : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }
+                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }
               }
               className="relative">
               <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">
