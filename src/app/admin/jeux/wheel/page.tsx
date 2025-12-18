@@ -284,9 +284,9 @@ export default function WheelPage() {
       return
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Fichier trop volumineux (max 10MB)')
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Fichier trop volumineux (max 50MB)')
       return
     }
 

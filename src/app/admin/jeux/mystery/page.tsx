@@ -269,9 +269,9 @@ export default function MysteryPage() {
       return
     }
 
-    // Vérifier la taille (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Fichier audio trop volumineux (max 10MB)')
+    // Vérifier la taille (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Fichier audio trop volumineux (max 50MB)')
       return
     }
 
@@ -387,9 +387,9 @@ export default function MysteryPage() {
       return
     }
 
-    // Check size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Fichier audio trop volumineux (max 10MB)')
+    // Check size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Fichier audio trop volumineux (max 50MB)')
       return
     }
 

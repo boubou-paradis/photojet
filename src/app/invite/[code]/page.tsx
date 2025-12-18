@@ -89,8 +89,8 @@ export default function InvitePage() {
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('La taille maximale est de 10MB')
+    if (file.size > 50 * 1024 * 1024) {
+      setError('La taille maximale est de 50MB')
       return
     }
 
