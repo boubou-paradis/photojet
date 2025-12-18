@@ -12,12 +12,6 @@ interface WheelPreviewProps {
 // Couleurs casino alternées: bordeaux, orange, bleu royal, argenté
 const CASINO_COLORS = ['#8B0000', '#FF8C00', '#1E40AF', '#E8E8E8']
 
-// Ampoules autour du cadre
-const BULBS = Array.from({ length: 24 }, (_, i) => ({
-  id: i,
-  angle: (i * 360 / 24 - 90) * (Math.PI / 180),
-}))
-
 export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps) {
   const [bulbPhase, setBulbPhase] = useState(0)
 
@@ -30,7 +24,7 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
   }, [])
 
   const wheelSegments = useMemo(() => {
-    const cx = 200, cy = 200, r = 150, count = segments.length
+    const cx = 200, cy = 200, r = 140, count = segments.length
     if (count === 0) return []
     const anglePerSegment = (2 * Math.PI) / count
     return segments.map((segment, index) => {
@@ -51,6 +45,17 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
     })
   }, [segments])
 
+  // Générer les ampoules (24 autour du cadre)
+  const bulbs = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => {
+      const angle = (i * 360 / 24 - 90) * (Math.PI / 180)
+      const r = 185 // Rayon pour les ampoules sur le cadre rouge
+      const x = 200 + r * Math.cos(angle)
+      const y = 200 + r * Math.sin(angle)
+      return { id: i, x, y, isLit: (i + bulbPhase) % 2 === 0 }
+    })
+  }, [bulbPhase])
+
   if (segments.length < 2) {
     return (
       <div
@@ -69,78 +74,17 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
     )
   }
 
-  const frameSize = size * 1.15
-
   return (
-    <div className="relative" style={{ width: frameSize, height: frameSize }}>
-      {/* Fond violet */}
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: 'linear-gradient(135deg, #4A1F6E 0%, #2D1B4E 100%)',
-          boxShadow: '0 0 30px rgba(139,0,0,0.3)'
-        }}
-      />
-
-      {/* Cadre rouge avec ampoules */}
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: 'linear-gradient(135deg, #B22222 0%, #8B0000 50%, #5C0000 100%)',
-          boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
-        }}
-      >
-        {/* Ampoules */}
-        {BULBS.map((bulb, i) => {
-          const x = 50 + 46 * Math.cos(bulb.angle)
-          const y = 50 + 46 * Math.sin(bulb.angle)
-          const isLit = (i + bulbPhase) % 2 === 0
-          return (
-            <div
-              key={bulb.id}
-              className="absolute w-2 h-2 rounded-full"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: 'translate(-50%, -50%)',
-                background: isLit
-                  ? 'radial-gradient(circle, #FFFF00 0%, #FFD700 50%, #FFA500 100%)'
-                  : 'radial-gradient(circle, #8B7500 0%, #5C4000 100%)',
-                boxShadow: isLit
-                  ? '0 0 8px #FFD700, 0 0 15px #FFA500'
-                  : 'none',
-              }}
-            />
-          )
-        })}
-      </div>
-
-      {/* Flèche dorée */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 translate-y-1 z-20">
-        <div
-          className="w-5 h-6"
-          style={{
-            background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #8B7500 100%)',
-            clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
-          }}
-        />
-      </div>
-
-      {/* Roue SVG */}
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      {/* SVG unique contenant tout */}
       <motion.svg
-        className="absolute"
-        style={{
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: size * 0.82,
-          height: size * 0.82
-        }}
+        width={size}
+        height={size}
         viewBox="0 0 400 400"
         initial={{ rotate: 0 }}
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+        className="drop-shadow-xl"
       >
         <defs>
           <linearGradient id="previewGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -153,18 +97,46 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
             <stop offset="40%" stopColor="#D4AF37" />
             <stop offset="100%" stopColor="#8B7500" />
           </radialGradient>
+          <radialGradient id="previewRedFrame" cx="50%" cy="50%" r="50%">
+            <stop offset="70%" stopColor="#8B0000" />
+            <stop offset="85%" stopColor="#5C0000" />
+            <stop offset="100%" stopColor="#3D0000" />
+          </radialGradient>
           <filter id="previewGlow">
             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
             <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
+          <filter id="bulbGlow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
         </defs>
 
-        {/* Bordure dorée */}
-        <circle cx="200" cy="200" r="195" fill="none" stroke="#1a1a1a" strokeWidth="3" />
-        <circle cx="200" cy="200" r="190" fill="none" stroke="url(#previewGoldGradient)" strokeWidth="8" filter="url(#previewGlow)" />
-        <circle cx="200" cy="200" r="183" fill="none" stroke="#1a1a1a" strokeWidth="3" />
+        {/* Cadre rouge extérieur */}
+        <circle cx="200" cy="200" r="198" fill="url(#previewRedFrame)" />
+        <circle cx="200" cy="200" r="198" fill="none" stroke="#5C0000" strokeWidth="2" />
 
-        {/* Segments */}
+        {/* Ampoules sur le cadre rouge */}
+        {bulbs.map((bulb) => (
+          <circle
+            key={bulb.id}
+            cx={bulb.x}
+            cy={bulb.y}
+            r="6"
+            fill={bulb.isLit ? '#FFD700' : '#5C4000'}
+            filter={bulb.isLit ? 'url(#bulbGlow)' : undefined}
+          />
+        ))}
+
+        {/* Bordure dorée intérieure */}
+        <circle cx="200" cy="200" r="168" fill="none" stroke="#1a1a1a" strokeWidth="3" />
+        <circle cx="200" cy="200" r="163" fill="none" stroke="url(#previewGoldGradient)" strokeWidth="6" filter="url(#previewGlow)" />
+        <circle cx="200" cy="200" r="158" fill="none" stroke="#1a1a1a" strokeWidth="2" />
+
+        {/* Fond de la roue */}
+        <circle cx="200" cy="200" r="155" fill="#1a1a1a" />
+
+        {/* Segments de la roue */}
         {wheelSegments.map((seg) => (
           <g key={seg.id}>
             <path d={seg.pathData} fill={seg.color} stroke="#1A1A1E" strokeWidth="2" />
@@ -172,41 +144,43 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
               x={seg.textX}
               y={seg.textY}
               fill={seg.color === '#E8E8E8' ? '#1A1A1E' : 'white'}
-              fontSize="10"
+              fontSize="9"
               fontWeight="bold"
               textAnchor="middle"
               dominantBaseline="middle"
               transform={`rotate(${seg.textRotation}, ${seg.textX}, ${seg.textY})`}
               style={{
-                textShadow: seg.color === '#E8E8E8' ? 'none' : '1px 1px 2px rgba(0,0,0,0.9)',
                 fontFamily: 'Arial Black, sans-serif'
               }}
             >
-              {seg.text.length > 10 ? seg.text.substring(0, 10) + '...' : seg.text}
+              {seg.text.length > 8 ? seg.text.substring(0, 8) + '..' : seg.text}
             </text>
           </g>
         ))}
 
         {/* Centre doré 3D */}
-        <circle cx="200" cy="200" r="45" fill="#1a1a1a" />
-        <circle cx="200" cy="200" r="40" fill="url(#previewCenterGradient)" filter="url(#previewGlow)" />
-        <ellipse cx="192" cy="188" rx="18" ry="10" fill="rgba(255,255,255,0.3)" />
-        <circle cx="200" cy="200" r="22" fill="#1a1a1a" />
-        <circle cx="200" cy="200" r="17" fill="url(#previewCenterGradient)" />
-        <ellipse cx="195" cy="194" rx="8" ry="5" fill="rgba(255,255,255,0.25)" />
-        <circle cx="200" cy="200" r="6" fill="#1a1a1a" />
-        <circle cx="200" cy="200" r="4" fill="#D4AF37" />
+        <circle cx="200" cy="200" r="35" fill="#1a1a1a" />
+        <circle cx="200" cy="200" r="30" fill="url(#previewCenterGradient)" filter="url(#previewGlow)" />
+        <ellipse cx="193" cy="190" rx="14" ry="8" fill="rgba(255,255,255,0.3)" />
+        <circle cx="200" cy="200" r="16" fill="#1a1a1a" />
+        <circle cx="200" cy="200" r="12" fill="url(#previewCenterGradient)" />
+        <ellipse cx="196" cy="196" rx="6" ry="4" fill="rgba(255,255,255,0.25)" />
+        <circle cx="200" cy="200" r="4" fill="#1a1a1a" />
+        <circle cx="200" cy="200" r="2" fill="#D4AF37" />
       </motion.svg>
 
-      {/* Socle rouge en bas */}
-      <div
-        className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-20 h-6"
-        style={{
-          background: 'linear-gradient(to bottom, #8B0000 0%, #5C0000 50%, #3D0000 100%)',
-          borderRadius: '0 0 8px 8px',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
-        }}
-      />
+      {/* Flèche dorée (fixe, ne tourne pas) */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10" style={{ marginTop: '-4px' }}>
+        <div
+          style={{
+            width: '20px',
+            height: '28px',
+            background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #8B7500 100%)',
+            clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))'
+          }}
+        />
+      </div>
     </div>
   )
 }
