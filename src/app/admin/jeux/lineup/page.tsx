@@ -519,6 +519,12 @@ export default function LineupPage() {
     setCurrentPoints(10)
     setShowWinner(false)
 
+    // Mettre à jour les refs immédiatement pour le timer
+    currentNumberRef.current = newNumber
+    team1ScoreRef.current = 0
+    team2ScoreRef.current = 0
+    currentPointsRef.current = 10
+
     await supabase
       .from('sessions')
       .update({
@@ -600,6 +606,8 @@ export default function LineupPage() {
     if (!currentNumber) {
       numberToShow = generateNumber()
       setCurrentNumber(numberToShow)
+      // Mettre à jour la ref immédiatement pour que le timer utilise la bonne valeur
+      currentNumberRef.current = numberToShow
     }
 
     setIsRunning(true)
@@ -647,6 +655,10 @@ export default function LineupPage() {
     }
 
     setCurrentNumber('')
+    currentNumberRef.current = ''
+    // Mettre à jour les refs des scores pour le timer
+    team1ScoreRef.current = newTeam1Score
+    team2ScoreRef.current = newTeam2Score
 
     await supabase
       .from('sessions')
@@ -682,6 +694,7 @@ export default function LineupPage() {
       setTimeout(async () => {
         const newNumber = generateNumber()
         setCurrentNumber(newNumber)
+        currentNumberRef.current = newNumber
         await supabase
           .from('sessions')
           .update({ lineup_current_number: newNumber })
@@ -714,6 +727,7 @@ export default function LineupPage() {
 
     const newNumber = generateNumber()
     setCurrentNumber(newNumber)
+    currentNumberRef.current = newNumber
 
     await supabase
       .from('sessions')
