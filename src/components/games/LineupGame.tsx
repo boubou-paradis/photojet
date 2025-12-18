@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Maximize, Minimize } from 'lucide-react'
 
 interface AudioSettings {
   url: string | null
@@ -157,8 +158,29 @@ export default function LineupGame({
 }: LineupGameProps) {
   const [displayNumber, setDisplayNumber] = useState(currentNumber)
   const [isRolling, setIsRolling] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const prevNumberRef = useRef(currentNumber)
   const [windowHeight, setWindowHeight] = useState(800)
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }, [])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   // Audio refs
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -290,6 +312,23 @@ export default function LineupGame({
 
   return (
     <div className="fixed inset-0 overflow-hidden">
+      {/* Bouton plein écran */}
+      <motion.button
+        onClick={toggleFullscreen}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        transition={{ duration: 0.3 }}
+        className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
+        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+      >
+        {isFullscreen ? (
+          <Minimize className="h-6 w-6 text-[#D4AF37]" />
+        ) : (
+          <Maximize className="h-6 w-6 text-[#D4AF37]" />
+        )}
+      </motion.button>
+
       {/* FOND ANIMÉ - Gradient dynamique */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a]">
         {/* Particules flottantes dorées */}
