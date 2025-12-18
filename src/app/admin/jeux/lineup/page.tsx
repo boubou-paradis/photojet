@@ -61,6 +61,24 @@ export default function LineupPage() {
   const supabase = createClient()
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
+  // Refs to store the latest values for the timer interval (avoid stale closures)
+  const currentNumberRef = useRef(currentNumber)
+  const team1ScoreRef = useRef(team1Score)
+  const team2ScoreRef = useRef(team2Score)
+  const team1NameRef = useRef(team1Name)
+  const team2NameRef = useRef(team2Name)
+  const audioSettingsRef = useRef(audioSettings)
+  const currentPointsRef = useRef(currentPoints)
+
+  // Keep refs in sync with state
+  useEffect(() => { currentNumberRef.current = currentNumber }, [currentNumber])
+  useEffect(() => { team1ScoreRef.current = team1Score }, [team1Score])
+  useEffect(() => { team2ScoreRef.current = team2Score }, [team2Score])
+  useEffect(() => { team1NameRef.current = team1Name }, [team1Name])
+  useEffect(() => { team2NameRef.current = team2Name }, [team2Name])
+  useEffect(() => { audioSettingsRef.current = audioSettings }, [audioSettings])
+  useEffect(() => { currentPointsRef.current = currentPoints }, [currentPoints])
+
   useEffect(() => {
     fetchSession()
   }, [])
@@ -361,22 +379,22 @@ export default function LineupPage() {
 
         setCurrentPoints(newPoints)
 
-        // Broadcast state update
+        // Broadcast state update (use refs to get latest values, avoid stale closures)
         broadcastGameState({
           gameActive: true,
-          currentNumber,
+          currentNumber: currentNumberRef.current,
           timeLeft: newTime,
           isRunning: true,
           isPaused: false,
           isGameOver: newTime <= 0,
           currentPoints: newPoints,
-          team1Score,
-          team2Score,
-          team1Name,
-          team2Name,
+          team1Score: team1ScoreRef.current,
+          team2Score: team2ScoreRef.current,
+          team1Name: team1NameRef.current,
+          team2Name: team2NameRef.current,
           showWinner: newTime <= 0,
           clockDuration,
-          audioSettings,
+          audioSettings: audioSettingsRef.current,
         })
 
         // Fin du jeu !
@@ -410,7 +428,7 @@ export default function LineupPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isRunning, isPaused, isGameOver, clockDuration, session, supabase, currentNumber, team1Score, team2Score, team1Name, team2Name, broadcastGameState])
+  }, [isRunning, isPaused, isGameOver, clockDuration, session, supabase, broadcastGameState])
 
   // Lancer le jeu (configurer et ouvrir le diaporama)
   async function launchGame() {

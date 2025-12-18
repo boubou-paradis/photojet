@@ -368,9 +368,10 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     <path d={seg.pathData} fill={seg.color} stroke="#1A1A1E" strokeWidth="2" />
                     {/* Effet de brillance sur chaque segment */}
                     <path d={seg.pathData} fill="url(#centerHighlight)" opacity="0.3" />
+                    {/* Numéro du segment au lieu du texte */}
                     <text x={seg.textX} y={seg.textY}
                       fill={seg.color === '#E8E8E8' ? '#1A1A1E' : 'white'}
-                      fontSize="14"
+                      fontSize="28"
                       fontWeight="bold"
                       textAnchor="middle"
                       dominantBaseline="middle"
@@ -379,7 +380,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                         textShadow: seg.color === '#E8E8E8' ? 'none' : '2px 2px 4px rgba(0,0,0,0.9)',
                         fontFamily: 'Arial Black, sans-serif'
                       }}>
-                      {seg.text.length > 12 ? seg.text.substring(0, 12) + '...' : seg.text}
+                      {i + 1}
                     </text>
                   </g>
                 ))}
