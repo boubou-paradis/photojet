@@ -306,7 +306,7 @@ export default function VotePage() {
       })
 
       toast.success('Jeu configuré!')
-      window.open(`/live/${session.code}`, '_blank')
+      window.open(`/live/${session.code}`, 'photojet-live')
     } catch (err) {
       console.error('Error launching game:', err)
       toast.error('Erreur lors du lancement')
@@ -554,7 +554,7 @@ export default function VotePage() {
           {gameActive && (
             <Button
               size="sm"
-              onClick={() => window.open(`/live/${session.code}`, '_blank')}
+              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
               className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
             >
               <Monitor className="h-4 w-4 mr-2" />

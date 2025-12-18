@@ -548,7 +548,7 @@ export default function DashboardPage() {
     const qrContainer = document.querySelector('#qr-invite svg')
     const qrSvg = qrContainer ? qrContainer.outerHTML.replace(/width="130"/, 'width="250"').replace(/height="130"/, 'height="250"') : ''
 
-    const printWindow = window.open('', '_blank')
+    const printWindow = window.open('', 'print-qr')
     if (!printWindow) {
       toast.error('Impossible d\'ouvrir la fenêtre d\'impression')
       return
@@ -863,7 +863,7 @@ export default function DashboardPage() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => window.open(`/live/${selectedSession.code}`, '_blank')}
+                  onClick={() => window.open(`/live/${selectedSession.code}`, 'photojet-live')}
                   className="bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
                 >
                   <Monitor className="h-4 w-4 mr-2" />

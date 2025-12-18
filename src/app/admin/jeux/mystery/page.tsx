@@ -553,7 +553,7 @@ export default function MysteryPage() {
       toast.success('Jeu lancé!')
 
       // Open slideshow in new tab
-      window.open(`/live/${session.code}`, '_blank')
+      window.open(`/live/${session.code}`, 'photojet-live')
     } catch (err) {
       console.error('Error launching game:', err)
       toast.error('Erreur lors du lancement')
@@ -804,7 +804,7 @@ export default function MysteryPage() {
           {gameActive && (
             <Button
               size="sm"
-              onClick={() => window.open(`/live/${session.code}`, '_blank')}
+              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
               className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:opacity-90 transition-opacity"
             >
               <Monitor className="h-4 w-4 mr-2" />
