@@ -546,7 +546,7 @@ export default function DashboardPage() {
 
     // Récupérer le SVG du QR code existant dans la page
     const qrContainer = document.querySelector('#qr-invite svg')
-    const qrSvg = qrContainer ? qrContainer.outerHTML.replace(/width="130"/, 'width="250"').replace(/height="130"/, 'height="250"') : ''
+    const qrSvg = qrContainer ? qrContainer.outerHTML : ''
 
     const printWindow = window.open('', 'print-qr')
     if (!printWindow) {
@@ -561,11 +561,17 @@ export default function DashboardPage() {
           <title>QR Code - ${eventName}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            @page { size: A4 portrait; margin: 15mm; }
-            html, body {
-              width: 210mm;
-              min-height: 297mm;
+
+            @page {
+              size: A4 portrait;
+              margin: 15mm;
             }
+
+            html, body {
+              width: 100%;
+              height: 100%;
+            }
+
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               display: flex;
@@ -573,75 +579,157 @@ export default function DashboardPage() {
               align-items: center;
               min-height: 100vh;
               background: white;
-              padding: 20mm;
+              padding: 15mm;
             }
+
             .card {
               width: 100%;
+              height: 100%;
               max-width: 180mm;
-              padding: 15mm;
+              padding: 12mm 10mm;
               text-align: center;
-              border: 5px solid #D4AF37;
-              border-radius: 20px;
-              background: linear-gradient(135deg, #fefefe 0%, #f8f6f0 100%);
-              box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
+              border: 6px solid #D4AF37;
+              border-radius: 24px;
+              background: linear-gradient(135deg, #fffef9 0%, #f8f5eb 100%);
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              align-items: center;
             }
+
+            .header {
+              width: 100%;
+            }
+
             .logo {
-              width: 280px;
+              width: 320px;
               height: auto;
-              margin-bottom: 20px;
+              margin-bottom: 8mm;
             }
+
             .title {
-              font-size: 36px;
+              font-size: 42px;
               font-weight: 800;
               color: #1A1A1E;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
+              line-height: 1.2;
             }
+
             .subtitle {
-              font-size: 20px;
+              font-size: 22px;
               color: #6B6B70;
-              margin-bottom: 25px;
+              margin-bottom: 8mm;
             }
+
+            .qr-section {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+
             .qr-container {
               display: inline-block;
-              padding: 25px;
+              padding: 20px;
               background: white;
-              border-radius: 20px;
-              box-shadow: 0 8px 40px rgba(212, 175, 55, 0.35);
-              border: 4px solid #D4AF37;
+              border-radius: 24px;
+              box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
+              border: 5px solid #D4AF37;
             }
+
             .qr-container svg {
               display: block;
-              width: 280px;
-              height: 280px;
+              width: 100mm !important;
+              height: 100mm !important;
             }
+
             .code {
-              font-size: 56px;
+              font-size: 72px;
               font-weight: 900;
               color: #D4AF37;
-              margin-top: 25px;
+              margin-top: 8mm;
               font-family: 'Courier New', monospace;
-              letter-spacing: 8px;
-              text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
+              letter-spacing: 10px;
+              text-shadow: 3px 3px 6px rgba(212, 175, 55, 0.3);
             }
-            .instruction {
+
+            .steps-section {
+              width: 100%;
+              margin-top: 8mm;
+              padding-top: 6mm;
+              border-top: 2px dashed #D4AF37;
+            }
+
+            .steps {
+              display: flex;
+              justify-content: center;
+              gap: 8mm;
+              margin-bottom: 4mm;
+            }
+
+            .step {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 4px;
+            }
+
+            .step-icon {
+              width: 48px;
+              height: 48px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%);
+              display: flex;
+              align-items: center;
+              justify-content: center;
               font-size: 24px;
-              color: #1A1A1E;
-              margin-top: 20px;
-              font-weight: 600;
+              color: white;
+              font-weight: bold;
+              box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
             }
+
+            .step-text {
+              font-size: 14px;
+              color: #1A1A1E;
+              font-weight: 600;
+              max-width: 90px;
+              text-align: center;
+            }
+
             .footer {
-              font-size: 16px;
-              color: #6B6B70;
-              margin-top: 25px;
+              font-size: 14px;
+              color: #9B9BA0;
               font-style: italic;
             }
+
+            /* Hide browser print headers/footers */
             @media print {
-              body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                padding: 0;
+              @page {
+                margin: 15mm;
               }
+
+              html {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+
+              body {
+                padding: 0;
+                margin: 0;
+              }
+
               .card {
+                box-shadow: none;
+                border: 6px solid #D4AF37;
+                page-break-inside: avoid;
+                min-height: calc(297mm - 30mm);
+              }
+
+              .qr-container {
+                box-shadow: none;
+                border: 5px solid #D4AF37;
+              }
+
+              .step-icon {
                 box-shadow: none;
               }
             }
@@ -649,15 +737,36 @@ export default function DashboardPage() {
         </head>
         <body>
           <div class="card">
-            <img src="${logoUrl}" alt="Logo" class="logo" />
-            <div class="title">${eventName}</div>
-            <div class="subtitle">Partagez vos plus beaux moments !</div>
-            <div class="qr-container">
-              ${qrSvg}
+            <div class="header">
+              <img src="${logoUrl}" alt="Logo" class="logo" />
+              <div class="title">${eventName}</div>
+              <div class="subtitle">Partagez vos plus beaux moments !</div>
             </div>
-            <div class="code">#${selectedSession.code}</div>
-            <div class="instruction">📱 Scannez pour envoyer vos photos</div>
-            <div class="footer">Propulsé par AnimaJet</div>
+
+            <div class="qr-section">
+              <div class="qr-container">
+                ${qrSvg}
+              </div>
+              <div class="code">#${selectedSession.code}</div>
+            </div>
+
+            <div class="steps-section">
+              <div class="steps">
+                <div class="step">
+                  <div class="step-icon">1</div>
+                  <div class="step-text">Scannez le QR Code</div>
+                </div>
+                <div class="step">
+                  <div class="step-icon">2</div>
+                  <div class="step-text">Prenez vos photos</div>
+                </div>
+                <div class="step">
+                  <div class="step-icon">3</div>
+                  <div class="step-text">Elles s'affichent en direct !</div>
+                </div>
+              </div>
+              <div class="footer">Propulsé par AnimaJet</div>
+            </div>
           </div>
           <script>
             window.onload = function() {
