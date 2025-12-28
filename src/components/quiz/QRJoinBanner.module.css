@@ -1,94 +1,167 @@
+/* ============================================
+   QR JOIN BANNER - Bottom bar during quiz
+   Style: Glassmorphism with neon accents
+   ============================================ */
+
 .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
-  padding: 1rem 2rem;
-  background: linear-gradient(180deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
-  border-top: 2px solid rgba(212, 175, 55, 0.3);
-  backdrop-filter: blur(10px);
+  gap: 2.5rem;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(180deg, rgba(26, 26, 46, 0.95) 0%, rgba(10, 10, 26, 0.98) 100%);
+  border-top: 2px solid rgba(212, 175, 55, 0.4);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
 }
+
+/* ============================================
+   QR CODE SECTION
+   ============================================ */
 
 .qrSection {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .qrWrapper {
   background: white;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    0 4px 15px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 .urlInfo {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
 .urlLabel {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  font-weight: 600;
 }
 
 .url {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #D4AF37;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
 }
+
+/* ============================================
+   CODE SECTION
+   ============================================ */
 
 .codeSection {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
+  padding: 0 1rem;
 }
 
 .codeLabel {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  font-weight: 600;
 }
 
 .codeValue {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.5rem;
+  font-weight: 900;
   color: white;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+  text-shadow:
+    0 0 30px rgba(212, 175, 55, 0.6),
+    0 2px 10px rgba(0, 0, 0, 0.5);
 }
+
+/* ============================================
+   PLAYERS SECTION
+   ============================================ */
 
 .playersSection {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  background: rgba(212, 175, 55, 0.1);
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  gap: 0.35rem;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 208, 63, 0.1));
+  padding: 0.875rem 1.75rem;
+  border-radius: 16px;
+  border: 2px solid rgba(212, 175, 55, 0.35);
+  box-shadow:
+    0 4px 20px rgba(212, 175, 55, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.playersSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .playersCount {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.25rem;
+  font-weight: 900;
   color: #D4AF37;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
 
 .playersLabel {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (min-width: 1400px) {
+  .container {
+    padding: 1.25rem 3rem;
+  }
+
+  .codeValue {
+    font-size: 3rem;
+  }
+
+  .playersCount {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .container {
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+  }
+
+  .codeValue {
+    font-size: 2rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -101,7 +174,45 @@
 
   .qrSection {
     flex: 1;
-    min-width: 200px;
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .qrWrapper {
+    padding: 8px;
+  }
+
+  .urlInfo {
+    display: none;
+  }
+
+  .codeSection {
+    padding: 0;
+  }
+
+  .codeValue {
+    font-size: 1.75rem;
+    letter-spacing: 0.2em;
+  }
+
+  .playersSection {
+    padding: 0.625rem 1.25rem;
+    border-radius: 12px;
+  }
+
+  .playersCount {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .qrSection {
+    min-width: auto;
   }
 
   .codeValue {

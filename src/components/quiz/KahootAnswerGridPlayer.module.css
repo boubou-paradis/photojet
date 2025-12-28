@@ -1,93 +1,259 @@
+/* ============================================
+   KAHOOT ANSWER GRID - PLAYER (Mobile)
+   Style: Kahoot Premium - Fun & Dynamic
+   ============================================ */
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 14px;
   width: 100%;
   padding: 1rem;
-  max-width: 500px;
+  max-width: 100%;
   margin: 0 auto;
+  flex: 1;
+  align-content: stretch;
+  position: relative;
 }
+
+/* Background halos behind answers */
+.grid::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: -10%;
+  width: 50%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(255, 51, 85, 0.12) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: haloFloat1 8s ease-in-out infinite;
+}
+
+.grid::after {
+  content: '';
+  position: absolute;
+  bottom: 10%;
+  right: -10%;
+  width: 50%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(45, 125, 255, 0.12) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: haloFloat2 10s ease-in-out infinite;
+}
+
+/* ============================================
+   ANSWER BUTTONS - Premium Style
+   ============================================ */
 
 .button {
   position: relative;
-  background: var(--answer-color);
+  background: linear-gradient(
+    165deg,
+    var(--answer-color) 0%,
+    color-mix(in srgb, var(--answer-color) 85%, black) 100%
+  );
   border: none;
-  border-radius: 16px;
-  padding: 1.5rem;
-  min-height: 120px;
+  border-radius: 24px;
+  padding: 1.25rem;
+  min-height: 130px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  gap: 0.5rem;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  z-index: 1;
+
+  /* Deep 3D shadow + color glow */
+  box-shadow:
+    0 10px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+    0 15px 35px rgba(0, 0, 0, 0.35),
+    0 0 25px color-mix(in srgb, var(--answer-color) 25%, transparent),
+    inset 0 2px 0 rgba(255, 255, 255, 0.25);
+
+  /* Smooth transitions */
+  transition:
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
+
+  /* Subtle border glow */
+  border: 2px solid rgba(255, 255, 255, 0.15);
 }
 
+/* Break symmetry - A and C rotate left */
+.button:nth-child(1),
+.button:nth-child(3) {
+  transform: rotate(-0.5deg);
+}
+
+/* Break symmetry - B and D rotate right */
+.button:nth-child(2),
+.button:nth-child(4) {
+  transform: rotate(0.5deg);
+}
+
+/* Glossy overlay */
+.button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 50%
+  );
+  pointer-events: none;
+  border-radius: 22px;
+}
+
+/* Background icon - large and decorative */
+.button::after {
+  content: '';
+  position: absolute;
+  font-size: 8rem;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-10%, 10%);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Active press state */
 .button:not(:disabled):active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px) rotate(0deg) !important;
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+    0 4px 15px rgba(0, 0, 0, 0.25),
+    inset 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .button:disabled {
   cursor: not-allowed;
 }
 
+/* ============================================
+   SELECTED STATE - Pressed & Locked
+   ============================================ */
+
 .button.selected {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px) scale(0.97) rotate(0deg) !important;
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+    0 4px 10px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.6),
+    inset 0 4px 12px rgba(0, 0, 0, 0.25);
+  animation: selectedPulse 1.5s ease-in-out infinite;
 }
 
+/* Other cards when one is selected - dimmed */
+.button.dimmed {
+  opacity: 0.35;
+  transform: scale(0.96) rotate(0deg) !important;
+  filter: grayscale(30%);
+  pointer-events: none;
+}
+
+/* Correct answer - green glow celebration */
 .button.correct {
-  box-shadow: 0 0 0 4px #22c55e, 0 6px 0 rgba(0, 0, 0, 0.3);
-  animation: correctBounce 0.5s ease;
+  box-shadow:
+    0 10px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+    0 0 0 6px #22c55e,
+    0 0 50px rgba(34, 197, 94, 0.7),
+    0 15px 35px rgba(0, 0, 0, 0.3);
+  animation: correctCelebrate 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Wrong answer - shake and dim */
 .button.wrong {
-  opacity: 0.6;
-  box-shadow: 0 0 0 4px #ef4444, 0 6px 0 rgba(0, 0, 0, 0.3);
+  opacity: 0.45;
+  box-shadow:
+    0 10px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+    0 0 0 4px #ef4444,
+    0 15px 35px rgba(0, 0, 0, 0.3);
+  filter: grayscale(40%);
+  animation: wrongShake 0.5s ease;
 }
 
+/* ============================================
+   BUTTON CONTENT
+   ============================================ */
+
+/* Large background shape icon */
 .shapeIcon {
-  font-size: 2.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  z-index: 2;
+  font-size: 4rem;
+  color: var(--text-color, white);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transition: transform 0.2s ease;
+}
+
+/* Make icon even bigger as background element */
+.button .backgroundIcon {
+  position: absolute;
+  font-size: 10rem;
+  opacity: 0.12;
+  color: rgba(255, 255, 255, 0.8);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .text {
-  font-size: 1rem;
-  font-weight: 700;
-  color: white;
+  position: relative;
+  z-index: 2;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-color, white);
   text-align: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   word-break: break-word;
   line-height: 1.2;
+  max-height: 2.8em;
+  overflow: hidden;
 }
 
 .label {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: var(--text-color, white);
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
 }
+
+/* ============================================
+   OVERLAYS
+   ============================================ */
 
 .selectedOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
+  border-radius: 22px;
+  backdrop-filter: blur(2px);
+  z-index: 10;
 }
 
 .checkmark {
-  font-size: 3rem;
+  font-size: 5rem;
   color: white;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(255, 255, 255, 0.5);
+  animation: checkmarkPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .correctOverlay,
@@ -97,48 +263,202 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
+  border-radius: 22px;
+  z-index: 10;
 }
 
 .correctOverlay {
-  background: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.4);
+  backdrop-filter: blur(3px);
 }
 
 .wrongOverlay {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.4);
+  backdrop-filter: blur(3px);
 }
 
 .resultIcon {
-  font-size: 3rem;
+  font-size: 5rem;
   font-weight: bold;
   color: white;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  animation: resultPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes correctBounce {
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes haloFloat1 {
   0%, 100% {
-    transform: scale(1);
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
   }
   50% {
-    transform: scale(1.05);
+    transform: translate(10%, 5%) scale(1.1);
+    opacity: 0.8;
   }
 }
 
-/* Mobile optimizations */
-@media (max-width: 480px) {
+@keyframes haloFloat2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-10%, -5%) scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+@keyframes selectedPulse {
+  0%, 100% {
+    box-shadow:
+      0 2px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+      0 4px 10px rgba(0, 0, 0, 0.2),
+      0 0 0 4px rgba(255, 255, 255, 0.6),
+      inset 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 2px 0 color-mix(in srgb, var(--answer-color) 60%, black),
+      0 4px 10px rgba(0, 0, 0, 0.2),
+      0 0 0 6px rgba(255, 255, 255, 0.8),
+      0 0 30px rgba(255, 255, 255, 0.3),
+      inset 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+}
+
+@keyframes correctCelebrate {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) rotate(-1deg);
+  }
+  50% {
+    transform: scale(1.02) rotate(1deg);
+  }
+  75% {
+    transform: scale(1.03) rotate(-0.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes wrongShake {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  20% {
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(8px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-6px) rotate(-1deg);
+  }
+  80% {
+    transform: translateX(6px) rotate(1deg);
+  }
+}
+
+@keyframes checkmarkPop {
+  0% {
+    transform: scale(0) rotate(-30deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes resultPop {
+  0% {
+    transform: scale(0) rotate(-20deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Mobile optimized
+   ============================================ */
+
+/* Standard mobile */
+@media (max-height: 750px) {
   .grid {
-    gap: 8px;
+    gap: 12px;
+    padding: 0.75rem;
+  }
+
+  .button {
+    min-height: 115px;
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .shapeIcon {
+    font-size: 3.25rem;
+  }
+
+  .text {
+    font-size: 1rem;
+  }
+}
+
+/* Small phones */
+@media (max-height: 650px) {
+  .grid {
+    gap: 10px;
     padding: 0.5rem;
   }
 
   .button {
     min-height: 100px;
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 0.875rem;
+    border-radius: 18px;
   }
 
   .shapeIcon {
-    font-size: 2rem;
+    font-size: 2.75rem;
+  }
+
+  .text {
+    font-size: 0.95rem;
+  }
+
+  .checkmark,
+  .resultIcon {
+    font-size: 3.5rem;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .grid {
+    gap: 8px;
+    padding: 0.4rem;
+  }
+
+  .button {
+    min-height: 90px;
+    padding: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .shapeIcon {
+    font-size: 2.5rem;
   }
 
   .text {
@@ -150,14 +470,59 @@
 @media (max-height: 500px) and (orientation: landscape) {
   .grid {
     max-width: 100%;
+    gap: 10px;
+    padding: 0.5rem;
   }
 
   .button {
-    min-height: 80px;
-    padding: 0.75rem;
+    min-height: 75px;
+    padding: 0.625rem;
+    flex-direction: row;
+    gap: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .button:nth-child(1),
+  .button:nth-child(2),
+  .button:nth-child(3),
+  .button:nth-child(4) {
+    transform: rotate(0deg);
   }
 
   .shapeIcon {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
+
+  .text {
+    font-size: 0.95rem;
+    text-align: left;
+    flex: 1;
+  }
+}
+
+/* Large tablets */
+@media (min-width: 768px) and (min-height: 900px) {
+  .grid {
+    max-width: 580px;
+    gap: 18px;
+  }
+
+  .button {
+    min-height: 170px;
+    border-radius: 28px;
+  }
+
+  .shapeIcon {
+    font-size: 5rem;
+  }
+
+  .text {
+    font-size: 1.4rem;
+  }
+}
+
+/* Focus visible for accessibility */
+.button:focus-visible {
+  outline: 4px solid white;
+  outline-offset: 3px;
 }

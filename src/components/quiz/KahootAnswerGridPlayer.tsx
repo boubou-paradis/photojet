@@ -47,14 +47,16 @@ export default function KahootAnswerGridPlayer({
         const isSelected = selected === key
         const isCorrect = correctKey === key
         const isWrong = showResult && isSelected && !isCorrect
+        const isDimmed = selected !== null && !isSelected && !showResult
 
         return (
           <motion.button
             key={key}
-            className={`${styles.button} ${isSelected ? styles.selected : ''} ${isCorrect && showResult ? styles.correct : ''} ${isWrong ? styles.wrong : ''}`}
+            className={`${styles.button} ${isSelected ? styles.selected : ''} ${isDimmed ? styles.dimmed : ''} ${isCorrect && showResult ? styles.correct : ''} ${isWrong ? styles.wrong : ''}`}
             style={{
               '--answer-color': config.color,
               '--answer-hover': config.hoverColor,
+              '--text-color': config.textColor,
             } as React.CSSProperties}
             disabled={disabled || selected !== null}
             onClick={() => handleSelect(key)}

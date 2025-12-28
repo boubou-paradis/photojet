@@ -219,12 +219,23 @@ export default function HostQuizPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex flex-col">
-      {/* Background effects */}
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#0f0a20] flex flex-col overflow-hidden">
+      {/* Stage background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#D4AF37]/5 rounded-full blur-3xl" />
+        {/* Main stage gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(100,50,180,0.15)_0%,_transparent_70%)]" />
+
+        {/* Light halos - DJ show style */}
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+        <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] bg-indigo-600/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+        <div className="absolute bottom-[-10%] right-[10%] w-[35%] h-[35%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '0.5s' }} />
+
+        {/* Center stage spotlight */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,_rgba(212,175,55,0.08)_0%,_transparent_60%)]" />
+
+        {/* Vignette effect */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_40%,_rgba(0,0,0,0.4)_100%)]" />
       </div>
 
       {/* Fullscreen button */}

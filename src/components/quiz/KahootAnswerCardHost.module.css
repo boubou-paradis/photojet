@@ -1,36 +1,71 @@
+/* ============================================
+   KAHOOT ANSWER CARD - HOST (TV Screen)
+   Style: DJ Show / Kahoot vibrant
+   ============================================ */
+
 .card {
   position: relative;
-  background: var(--answer-color);
-  border-radius: 12px;
+  background: linear-gradient(145deg, var(--answer-color) 0%, var(--answer-dark) 100%);
+  border-radius: 22px;
   overflow: hidden;
-  min-height: 100px;
+  min-height: 140px;
   cursor: default;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.2);
+
+  /* Deep shadow + outline glow */
+  box-shadow:
+    0 8px 0 var(--answer-dark),
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  /* Subtle border */
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 12px 30px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 0 var(--answer-dark),
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px color-mix(in srgb, var(--answer-color) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* Correct answer - pulsing glow */
 .card.correct {
-  box-shadow: 0 0 0 4px #22c55e, 0 4px 0 rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.2);
-  animation: correctPulse 0.5s ease-out;
+  animation: correctPulseGlow 1s ease-in-out infinite;
+  border-color: #22c55e;
+  box-shadow:
+    0 8px 0 var(--answer-dark),
+    0 0 0 4px #22c55e,
+    0 0 40px rgba(34, 197, 94, 0.6),
+    0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
+/* Incorrect - dimmed */
 .card.incorrect {
-  opacity: 0.6;
-  filter: grayscale(30%);
+  opacity: 0.55;
+  filter: grayscale(40%) brightness(0.8);
+  transform: scale(0.98);
 }
 
+/* Progress bar for stats */
 .progressBar {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.2);
+  height: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0.6));
   z-index: 0;
+  border-radius: 0 4px 0 0;
 }
 
 .content {
@@ -38,104 +73,195 @@
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
+  gap: 1.25rem;
+  padding: 1.75rem 2rem;
   height: 100%;
 }
 
+/* Shape icon - larger and glowing */
 .shapeIcon {
-  font-size: 2rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 2.5rem;
+  color: var(--text-color);
+  opacity: 0.85;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
+/* Answer label (A, B, C, D) */
 .label {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-color);
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
+  min-width: 2.5rem;
 }
 
+/* Answer text - large and readable */
 .text {
   flex: 1;
-  font-size: clamp(1rem, 2.5vw, 1.5rem);
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-color);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   text-align: center;
+  line-height: 1.3;
 }
 
+/* Result badge with stats */
 .resultBadge {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .count {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-color);
+  line-height: 1;
 }
 
 .percentage {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.9;
 }
 
+/* Correct badge - floating checkmark */
 .correctBadge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 40px;
-  height: 40px;
-  background: #22c55e;
+  top: -12px;
+  right: -12px;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: bold;
-  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.5);
+  box-shadow:
+    0 4px 15px rgba(34, 197, 94, 0.6),
+    0 0 20px rgba(34, 197, 94, 0.4);
+  animation: badgePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 3px solid white;
 }
 
-@keyframes correctPulse {
-  0% {
-    transform: scale(1);
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes correctPulseGlow {
+  0%, 100% {
+    box-shadow:
+      0 8px 0 var(--answer-dark),
+      0 0 0 4px #22c55e,
+      0 0 30px rgba(34, 197, 94, 0.5),
+      0 12px 40px rgba(0, 0, 0, 0.4);
   }
   50% {
-    transform: scale(1.02);
+    box-shadow:
+      0 8px 0 var(--answer-dark),
+      0 0 0 6px #22c55e,
+      0 0 60px rgba(34, 197, 94, 0.8),
+      0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+  }
+  60% {
+    transform: scale(1.2) rotate(10deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* ============================================
+   RESPONSIVE - TV optimized
+   ============================================ */
+
+@media (min-width: 1400px) {
+  .card {
+    min-height: 160px;
+    border-radius: 26px;
+  }
+
+  .content {
+    padding: 2rem 2.5rem;
+    gap: 1.5rem;
+  }
+
+  .shapeIcon {
+    font-size: 3rem;
+  }
+
+  .label {
+    font-size: 2.5rem;
+  }
+
+  .text {
+    font-size: 2.25rem;
   }
 }
 
 @media (max-width: 768px) {
+  .card {
+    min-height: 100px;
+    border-radius: 16px;
+  }
+
   .content {
-    padding: 1rem;
+    padding: 1.25rem;
     gap: 0.75rem;
   }
 
   .shapeIcon {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 
   .label {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+    min-width: 2rem;
+  }
+
+  .text {
+    font-size: 1rem;
   }
 
   .resultBadge {
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .count {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
+
+  .correctBadge {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    top: -8px;
+    right: -8px;
+  }
+}
+
+/* Focus visible for accessibility */
+.card:focus-visible {
+  outline: 3px solid #D4AF37;
+  outline-offset: 4px;
 }

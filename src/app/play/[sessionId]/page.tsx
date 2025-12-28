@@ -234,29 +234,44 @@ export default function PlayQuizPage() {
 
   // Render based on state
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex flex-col">
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#0f0a20] flex flex-col overflow-hidden">
+      {/* Mobile background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[50%] bg-purple-600/15 rounded-full blur-[80px]" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[40%] bg-blue-600/10 rounded-full blur-[60px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.3)_100%)]" />
+      </div>
+
       {/* Header */}
-      <header className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <header className="relative z-10 px-4 py-3 flex items-center justify-between bg-black/20 backdrop-blur-sm border-b border-white/5">
+        <div className="flex items-center gap-2.5">
           {connected ? (
-            <Wifi className="h-5 w-5 text-green-400" />
+            <div className="relative">
+              <Wifi className="h-5 w-5 text-green-400" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            </div>
           ) : (
-            <WifiOff className="h-5 w-5 text-red-400" />
+            <WifiOff className="h-5 w-5 text-red-400 animate-pulse" />
           )}
-          <span className="text-white font-semibold">{decodeURIComponent(playerName)}</span>
+          <span className="text-white font-bold text-lg">{decodeURIComponent(playerName)}</span>
         </div>
         <div className="flex items-center gap-3">
           {latency > 0 && (
-            <span className="text-gray-500 text-sm">{latency}ms</span>
+            <span className="text-gray-500 text-xs font-mono">{latency}ms</span>
           )}
-          <div className="bg-[#D4AF37]/20 text-[#D4AF37] px-3 py-1 rounded-full text-sm font-bold">
+          <motion.div
+            key={myScore}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            className="bg-gradient-to-r from-[#D4AF37]/30 to-[#F4D03F]/20 text-[#D4AF37] px-4 py-1.5 rounded-full text-sm font-black border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10"
+          >
             {myScore} pts
-          </div>
+          </motion.div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-3">
         <AnimatePresence mode="wait">
           {/* CONNECTING */}
           {playerState === 'CONNECTING' && (
@@ -300,41 +315,76 @@ export default function PlayQuizPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full max-w-md"
+              className="w-full max-w-lg flex flex-col flex-1"
             >
               {/* Timer */}
-              <div className="mb-6">
+              <div className="mb-4 px-2">
                 <TimerBar timeLeftMs={timeLeftMs} totalMs={totalTimeMs} />
               </div>
 
-              {/* Question (if not hidden) */}
+              {/* Question (if not hidden) - Hero style */}
               {!currentQuestion.hideQuestion && (
-                <div className="bg-[#1a1a2e]/80 rounded-xl p-4 mb-6 border border-white/10">
-                  <p className="text-white text-lg font-semibold text-center">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative bg-gradient-to-b from-[#1a1a2e]/90 to-[#0f0a20]/90 rounded-2xl p-5 mb-4 mx-2 border-2 border-[#D4AF37]/30 backdrop-blur-sm"
+                  style={{
+                    boxShadow: '0 0 30px rgba(212, 175, 55, 0.15), 0 10px 40px rgba(0, 0, 0, 0.4)'
+                  }}
+                >
+                  <p className="text-white text-xl font-black text-center leading-tight"
+                     style={{
+                       textShadow: '0 0 20px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.5)'
+                     }}>
                     {currentQuestion.question}
                   </p>
-                </div>
+                </motion.div>
+              )}
+
+              {/* Hidden question mode */}
+              {currentQuestion.hideQuestion && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center mb-4 py-3"
+                >
+                  <p className="text-[#D4AF37] text-2xl font-black"
+                     style={{ textShadow: '0 0 20px rgba(212, 175, 55, 0.4)' }}>
+                    À vous de jouer !
+                  </p>
+                </motion.div>
               )}
 
               {/* Answer grid */}
-              <KahootAnswerGridPlayer
-                answers={currentQuestion.answers}
-                disabled={!canAnswer || playerState === 'ANSWERED'}
-                hideText={currentQuestion.hideQuestion}
-                selectedAnswer={selectedAnswer}
-                onSelect={handleAnswer}
-              />
+              <div className="flex-1 flex items-center">
+                <KahootAnswerGridPlayer
+                  answers={currentQuestion.answers}
+                  disabled={!canAnswer || playerState === 'ANSWERED'}
+                  hideText={currentQuestion.hideQuestion}
+                  selectedAnswer={selectedAnswer}
+                  onSelect={handleAnswer}
+                />
+              </div>
 
-              {/* Answered confirmation */}
+              {/* Answered confirmation - Premium style */}
               {playerState === 'ANSWERED' && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 text-center"
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="mt-4 text-center"
                 >
-                  <div className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-4 py-2 rounded-full">
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span className="font-semibold">Réponse envoyée !</span>
+                  <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-500/25 to-emerald-500/20 text-green-400 px-6 py-3 rounded-2xl border-2 border-green-500/40"
+                       style={{ boxShadow: '0 0 25px rgba(34, 197, 94, 0.3), 0 8px 25px rgba(0, 0, 0, 0.3)' }}>
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.1, type: 'spring', stiffness: 500 }}
+                    >
+                      <CheckCircle2 className="h-7 w-7" />
+                    </motion.div>
+                    <span className="font-black text-lg tracking-wide">Réponse envoyée !</span>
                   </div>
                 </motion.div>
               )}
@@ -344,11 +394,11 @@ export default function PlayQuizPage() {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mt-6 text-center"
+                  className="mt-4 text-center"
                 >
-                  <div className="inline-flex items-center gap-2 text-gray-400">
+                  <div className="inline-flex items-center gap-3 text-[#D4AF37]/80 px-5 py-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20">
                     <Clock className="h-5 w-5 animate-pulse" />
-                    <span>Préparez-vous...</span>
+                    <span className="font-bold">Préparez-vous...</span>
                   </div>
                 </motion.div>
               )}

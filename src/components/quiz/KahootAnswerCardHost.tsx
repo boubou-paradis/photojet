@@ -3,31 +3,39 @@
 import { motion } from 'framer-motion'
 import styles from './KahootAnswerCardHost.module.css'
 
-// Kahoot-style colors and shapes
+// Kahoot-style colors and shapes - vibrant show colors
 export const ANSWER_CONFIG = {
   A: {
-    color: '#e21b3c', // Red
-    hoverColor: '#c9182f',
+    color: '#ff3355', // Vibrant Red
+    hoverColor: '#e62e4c',
+    darkColor: '#cc2944',
     shape: 'triangle',
     icon: '▲',
+    textColor: '#ffffff',
   },
   B: {
-    color: '#1368ce', // Blue
-    hoverColor: '#0d5ab8',
+    color: '#2d7dff', // Vibrant Blue
+    hoverColor: '#2970e6',
+    darkColor: '#2463cc',
     shape: 'diamond',
     icon: '◆',
+    textColor: '#ffffff',
   },
   C: {
-    color: '#d89e00', // Yellow/Orange
-    hoverColor: '#c08d00',
+    color: '#ffcc33', // Vibrant Yellow
+    hoverColor: '#e6b82e',
+    darkColor: '#cca329',
     shape: 'circle',
     icon: '●',
+    textColor: '#1a1a2e', // Dark text for contrast
   },
   D: {
-    color: '#26890c', // Green
-    hoverColor: '#1e6f0a',
+    color: '#33cc66', // Vibrant Green
+    hoverColor: '#2eb85c',
+    darkColor: '#29a352',
     shape: 'square',
     icon: '■',
+    textColor: '#ffffff',
   },
 } as const
 
@@ -60,6 +68,8 @@ export default function KahootAnswerCardHost({
       style={{
         '--answer-color': config.color,
         '--answer-hover': config.hoverColor,
+        '--answer-dark': config.darkColor,
+        '--text-color': config.textColor,
       } as React.CSSProperties}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
