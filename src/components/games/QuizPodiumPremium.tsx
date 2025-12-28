@@ -215,21 +215,66 @@ export default function QuizPodiumPremium({
 
         {/* Podium */}
         {hasEnoughPlayers && !showFullRanking && (
-          <div className="flex items-end justify-center gap-4 md:gap-8 mb-12">
-            {/* 2ème place */}
-            {top3[1] && (
-              <PodiumCard winner={top3[1]} rank={2} delay={0.5} />
-            )}
+          <div className="flex flex-col items-center mb-12">
+            {/* Cartes des gagnants */}
+            <div className="flex items-end justify-center gap-4 md:gap-8 mb-0">
+              {/* 2ème place */}
+              {top3[1] && (
+                <PodiumCard winner={top3[1]} rank={2} delay={0.5} />
+              )}
 
-            {/* 1ère place */}
-            {top3[0] && (
-              <PodiumCard winner={top3[0]} rank={1} delay={0.3} />
-            )}
+              {/* 1ère place */}
+              {top3[0] && (
+                <PodiumCard winner={top3[0]} rank={1} delay={0.3} />
+              )}
 
-            {/* 3ème place */}
-            {top3[2] && (
-              <PodiumCard winner={top3[2]} rank={3} delay={0.7} />
-            )}
+              {/* 3ème place */}
+              {top3[2] && (
+                <PodiumCard winner={top3[2]} rank={3} delay={0.7} />
+              )}
+            </div>
+
+            {/* Marches du podium */}
+            <div className="flex items-end justify-center gap-1">
+              {/* Marche 2ème place */}
+              {top3[1] && (
+                <motion.div
+                  initial={{ opacity: 0, scaleY: 0 }}
+                  animate={{ opacity: 1, scaleY: 1 }}
+                  transition={{ delay: 0.6, duration: 0.4, ease: 'easeOut' }}
+                  style={{ transformOrigin: 'bottom' }}
+                  className="w-56 md:w-60 h-20 rounded-t-lg bg-gradient-to-b from-[#C0C0C0] to-[#808080] flex items-center justify-center"
+                >
+                  <span className="text-3xl font-black text-white/90">2</span>
+                </motion.div>
+              )}
+
+              {/* Marche 1ère place */}
+              {top3[0] && (
+                <motion.div
+                  initial={{ opacity: 0, scaleY: 0 }}
+                  animate={{ opacity: 1, scaleY: 1 }}
+                  transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
+                  style={{ transformOrigin: 'bottom' }}
+                  className="w-64 md:w-68 h-32 rounded-t-lg bg-gradient-to-b from-[#D4AF37] to-[#8B7355] flex items-center justify-center"
+                >
+                  <span className="text-4xl font-black text-white/90">1</span>
+                </motion.div>
+              )}
+
+              {/* Marche 3ème place */}
+              {top3[2] && (
+                <motion.div
+                  initial={{ opacity: 0, scaleY: 0 }}
+                  animate={{ opacity: 1, scaleY: 1 }}
+                  transition={{ delay: 0.8, duration: 0.4, ease: 'easeOut' }}
+                  style={{ transformOrigin: 'bottom' }}
+                  className="w-52 md:w-56 h-14 rounded-t-lg bg-gradient-to-b from-[#CD7F32] to-[#8B4513] flex items-center justify-center"
+                >
+                  <span className="text-2xl font-black text-white/90">3</span>
+                </motion.div>
+              )}
+            </div>
           </div>
         )}
 
