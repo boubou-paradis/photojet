@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Maximize, Minimize, Trophy } from 'lucide-react'
+import { Maximize, Minimize, Trophy, Users } from 'lucide-react'
+import QRCode from 'react-qr-code'
 
 // Lib
 import { getLocalClient } from '@/lib/realtime'
@@ -260,37 +261,142 @@ export default function HostQuizPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center"
+              className="w-full max-w-4xl"
             >
-              <motion.div
-                className="text-8xl mb-6"
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                🎯
-              </motion.div>
-              <h1 className="text-5xl font-black text-white mb-4">
-                Quiz <span className="text-[#D4AF37]">Live</span>
-              </h1>
-              <p className="text-xl text-gray-400 mb-8">
-                {playerCount === 0
-                  ? 'En attente des joueurs...'
-                  : `${playerCount} joueur${playerCount > 1 ? 's' : ''} connecté${playerCount > 1 ? 's' : ''}`}
-              </p>
-              <div className="flex justify-center gap-2 mb-4">
-                {[...Array(Math.min(playerCount, 10))].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-4 h-4 rounded-full bg-[#D4AF37]"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                  />
-                ))}
-                {playerCount > 10 && (
-                  <span className="text-[#D4AF37] font-bold">+{playerCount - 10}</span>
-                )}
+              {/* Title */}
+              <div className="text-center mb-8">
+                <motion.div
+                  className="text-6xl mb-4 inline-block"
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  🎯
+                </motion.div>
+                <h1 className="text-5xl font-black text-white">
+                  Quiz <span className="text-[#D4AF37]">Live</span>
+                </h1>
               </div>
+
+              {/* Main content: QR Code + Instructions */}
+              <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
+                {/* QR Code Section */}
+                <motion.div
+                  className="bg-white p-6 rounded-3xl shadow-2xl shadow-[#D4AF37]/20"
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+                >
+                  {joinUrl && (
+                    <QRCode
+                      value={joinUrl}
+                      size={280}
+                      level="M"
+                      bgColor="white"
+                      fgColor="#1a1a2e"
+                    />
+                  )}
+                </motion.div>
+
+                {/* Instructions Section */}
+                <motion.div
+                  className="text-center lg:text-left space-y-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  {/* Step 1 */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#D4AF37] text-[#1a1a2e] flex items-center justify-center font-black text-xl">
+                      1
+                    </div>
+                    <p className="text-white text-xl">Scannez le QR code</p>
+                  </div>
+
+                  {/* Or */}
+                  <div className="flex items-center gap-4 pl-4">
+                    <div className="text-gray-500 text-lg">ou</div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#D4AF37] text-[#1a1a2e] flex items-center justify-center font-black text-xl">
+                      2
+                    </div>
+                    <div>
+                      <p className="text-white text-xl">Allez sur</p>
+                      <p className="text-[#D4AF37] text-lg font-mono">
+                        {joinUrl.replace(/^https?:\/\//, '')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PIN Code */}
+                  <motion.div
+                    className="bg-[#1a1a2e]/80 backdrop-blur-xl rounded-2xl p-6 border-2 border-[#D4AF37]/50 mt-8"
+                    animate={{
+                      borderColor: ['rgba(212, 175, 55, 0.5)', 'rgba(212, 175, 55, 1)', 'rgba(212, 175, 55, 0.5)'],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Code PIN</p>
+                    <p className="text-5xl font-black text-white tracking-[0.3em]">{sessionCode}</p>
+                  </motion.div>
+                </motion.div>
+              </div>
+
+              {/* Player Counter */}
+              <motion.div
+                className="mt-12 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <div className="inline-flex items-center gap-4 bg-[#1a1a2e]/60 backdrop-blur-xl rounded-full px-8 py-4 border border-white/10">
+                  <Users className="h-8 w-8 text-[#D4AF37]" />
+                  <div className="flex items-baseline gap-2">
+                    <motion.span
+                      key={playerCount}
+                      className="text-5xl font-black text-white"
+                      initial={{ scale: 1.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      {playerCount}
+                    </motion.span>
+                    <span className="text-xl text-gray-400">
+                      joueur{playerCount !== 1 ? 's' : ''} connecté{playerCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Player dots animation */}
+                {playerCount > 0 && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    {[...Array(Math.min(playerCount, 20))].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-3 h-3 rounded-full bg-[#D4AF37]"
+                        initial={{ scale: 0, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        transition={{ delay: i * 0.05, type: 'spring', stiffness: 500 }}
+                      />
+                    ))}
+                    {playerCount > 20 && (
+                      <span className="text-[#D4AF37] font-bold ml-2">+{playerCount - 20}</span>
+                    )}
+                  </div>
+                )}
+
+                {playerCount === 0 && (
+                  <motion.p
+                    className="text-gray-500 mt-4"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    En attente des joueurs...
+                  </motion.p>
+                )}
+              </motion.div>
             </motion.div>
           )}
 
@@ -388,8 +494,8 @@ export default function HostQuizPage() {
         </AnimatePresence>
       </main>
 
-      {/* QR Join Banner (bottom) */}
-      {origin && (
+      {/* QR Join Banner (bottom) - hidden in LOBBY since we have a big QR code */}
+      {origin && quizState !== 'LOBBY' && (
         <QRJoinBanner joinUrl={joinUrl} sessionCode={sessionCode} playerCount={playerCount} />
       )}
 
