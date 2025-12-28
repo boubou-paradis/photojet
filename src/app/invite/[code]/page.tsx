@@ -53,11 +53,13 @@ export default function InvitePage() {
         console.log('Invite page: fetching session with code:', code)
 
         // First check if there's a quiz lobby active (don't require is_active)
-        const { data: quizSession } = await supabase
+        const { data: quizSession, error: quizError } = await supabase
           .from('sessions')
           .select('quiz_lobby_visible, quiz_active')
           .eq('code', code)
           .single()
+
+        console.log('DEBUG quiz check:', { quizSession, quizError })
 
         if (quizSession?.quiz_lobby_visible || quizSession?.quiz_active) {
           console.log('Invite page: quiz active, redirecting to /join/' + code)
@@ -79,8 +81,9 @@ export default function InvitePage() {
 
         const now = new Date()
         const expiresAt = new Date(data.expires_at)
+        console.log('DEBUG expires_at:', data.expires_at, 'parsed:', expiresAt, 'now:', now, 'expired:', expiresAt < now)
         if (expiresAt < now) {
-          setError('Cette session a expiré')
+          setError(`Cette session a expiré (expire: ${data.expires_at})`)
           setLoading(false)
           return
         }
