@@ -12,7 +12,8 @@ import { getInviteUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
 import WheelGame from '@/components/games/WheelGame'
-import { WheelSegment } from '@/types/database'
+import QuizGame from '@/components/games/QuizGame'
+import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -356,6 +357,18 @@ export default function LivePage() {
     spinMode?: 'auto' | 'manual'
   } | null>(null)
 
+  // Quiz game state (updated via broadcast from admin)
+  const [quizState, setQuizState] = useState<{
+    gameActive: boolean
+    questions: QuizQuestion[]
+    currentQuestionIndex: number
+    isAnswering: boolean
+    showResults: boolean
+    timeLeft: number | null
+    participants: QuizParticipant[]
+    answerStats: number[]
+  } | null>(null)
+
   // Get wheel segments from broadcast state, or parse from database as fallback
   const wheelSegments: WheelSegment[] = useMemo(() => {
     if (wheelState?.segments && wheelState.segments.length > 0) {
@@ -663,6 +676,24 @@ export default function LivePage() {
     }
   }, [session?.code, supabase])
 
+  // Subscribe to Quiz game broadcast channel for real-time sync
+  useEffect(() => {
+    if (!session?.code) return
+
+    const quizChannel = supabase
+      .channel(`quiz-game-${session.code}`)
+      .on('broadcast', { event: 'quiz_state' }, (payload) => {
+        if (payload.payload) {
+          setQuizState(payload.payload)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(quizChannel)
+    }
+  }, [session?.code, supabase])
+
   // Slideshow timer with variable duration
   // Use ref to get current items without triggering effect re-run
   const slideshowItemsRef = useRef(slideshowItems)
@@ -876,6 +907,41 @@ export default function LivePage() {
         isGameFinished={wheelState?.isGameFinished ?? false}
         audioSettings={wheelAudioSettings}
         spinMode={wheelState?.spinMode}
+      />
+    )
+  }
+
+  // Show Quiz Game if active
+  // Check broadcast state first, then fall back to database state
+  const isQuizActive = quizState?.gameActive === true || (quizState?.gameActive === undefined && session.quiz_active === true)
+
+  if (isQuizActive) {
+    // Get quiz data from broadcast state or parse from database
+    const quizQuestions: QuizQuestion[] = quizState?.questions ?? (session.quiz_questions ? (() => {
+      try {
+        return JSON.parse(session.quiz_questions as string)
+      } catch {
+        return []
+      }
+    })() : [])
+
+    const quizParticipants: QuizParticipant[] = quizState?.participants ?? (session.quiz_participants ? (() => {
+      try {
+        return JSON.parse(session.quiz_participants as string)
+      } catch {
+        return []
+      }
+    })() : [])
+
+    return (
+      <QuizGame
+        questions={quizQuestions}
+        currentQuestionIndex={quizState?.currentQuestionIndex ?? session.quiz_current_question ?? 0}
+        isAnswering={quizState?.isAnswering ?? session.quiz_is_answering ?? false}
+        showResults={quizState?.showResults ?? session.quiz_show_results ?? false}
+        timeLeft={quizState?.timeLeft ?? session.quiz_time_left ?? null}
+        participants={quizParticipants}
+        answerStats={quizState?.answerStats ?? [0, 0, 0, 0]}
       />
     )
   }
