@@ -8,7 +8,7 @@ import QRCode from 'react-qr-code'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
-import { getInviteUrl } from '@/lib/utils'
+import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
 import WheelGame from '@/components/games/WheelGame'
@@ -1043,7 +1043,7 @@ export default function LivePage() {
                 transform: 'scale(1.1)',
               }}
             />
-            {/* QR Container with breathing */}
+            {/* QR Container with breathing - Quiz join URL */}
             <motion.div
               className="relative bg-white p-8 rounded-3xl"
               style={{
@@ -1053,7 +1053,7 @@ export default function LivePage() {
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
               <QRCode
-                value={getInviteUrl(code)}
+                value={getQuizJoinUrl(code)}
                 size={300}
                 level="M"
                 bgColor="white"

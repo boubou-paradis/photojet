@@ -30,6 +30,13 @@ export function getInviteUrl(code: string): string {
 }
 
 /**
+ * Generate quiz join URL
+ */
+export function getQuizJoinUrl(code: string): string {
+  return `${getAppBaseUrl()}/join/${code}`
+}
+
+/**
  * Generate live slideshow URL for a session code
  */
 export function getLiveUrl(code: string): string {
