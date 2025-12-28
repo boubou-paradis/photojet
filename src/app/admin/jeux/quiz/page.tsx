@@ -78,6 +78,7 @@ export default function QuizPage() {
 
   // Audio
   const [quizAudio, setQuizAudio] = useState<string | null>(null)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const router = useRouter()
@@ -437,10 +438,7 @@ export default function QuizPage() {
     setAnswerStats([0, 0, 0, 0])
 
     // Play audio if available
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(() => {})
-    }
+    playAudio()
 
     await supabase
       .from('sessions')
@@ -472,9 +470,7 @@ export default function QuizPage() {
     setShowResults(true)
 
     // Pause audio
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
+    pauseAudio()
 
     await supabase
       .from('sessions')
@@ -633,6 +629,16 @@ export default function QuizPage() {
     if (file) {
       const url = URL.createObjectURL(file)
       setQuizAudio(url)
+
+      // Create audio element
+      const audio = new Audio(url)
+      audio.loop = true
+      audio.preload = 'auto'
+      audio.onplay = () => setIsAudioPlaying(true)
+      audio.onpause = () => setIsAudioPlaying(false)
+      audio.onended = () => setIsAudioPlaying(false)
+      audioRef.current = audio
+
       toast.success('Musique chargée!')
     }
   }
@@ -641,10 +647,34 @@ export default function QuizPage() {
   function toggleAudio() {
     if (!audioRef.current) return
     if (audioRef.current.paused) {
-      audioRef.current.play()
+      audioRef.current.play().then(() => {
+        setIsAudioPlaying(true)
+      }).catch(err => {
+        console.error('Audio play failed:', err)
+        toast.error('Cliquez à nouveau pour lancer la musique')
+      })
     } else {
       audioRef.current.pause()
+      setIsAudioPlaying(false)
     }
+  }
+
+  // Play audio (for question start)
+  function playAudio() {
+    if (!audioRef.current) return
+    audioRef.current.currentTime = 0
+    audioRef.current.play().then(() => {
+      setIsAudioPlaying(true)
+    }).catch(err => {
+      console.error('Audio play failed:', err)
+    })
+  }
+
+  // Pause audio
+  function pauseAudio() {
+    if (!audioRef.current) return
+    audioRef.current.pause()
+    setIsAudioPlaying(false)
   }
 
   const currentQuestion = questions[currentQuestionIndex]
@@ -884,13 +914,18 @@ export default function QuizPage() {
                   <>
                     <button
                       onClick={toggleAudio}
-                      className="p-2 bg-[#D4AF37] text-black rounded-lg hover:bg-[#F4D03F] transition-colors"
+                      className={`p-2 rounded-lg transition-colors ${
+                        isAudioPlaying
+                          ? 'bg-green-500 text-white hover:bg-green-600'
+                          : 'bg-[#D4AF37] text-black hover:bg-[#F4D03F]'
+                      }`}
                     >
-                      {audioRef.current?.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                      {isAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => {
-                        if (audioRef.current) audioRef.current.pause()
+                        pauseAudio()
+                        audioRef.current = null
                         setQuizAudio(null)
                       }}
                       className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
@@ -902,14 +937,10 @@ export default function QuizPage() {
               </div>
 
               {quizAudio && (
-                <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
-                  <Volume2 className="h-3 w-3" /> Musique prête
+                <p className={`text-xs mt-2 flex items-center gap-1 ${isAudioPlaying ? 'text-green-400' : 'text-gray-400'}`}>
+                  <Volume2 className="h-3 w-3" />
+                  {isAudioPlaying ? 'Musique en cours...' : 'Musique prête - Cliquez ▶ pour tester'}
                 </p>
-              )}
-
-              {/* Hidden audio element */}
-              {quizAudio && (
-                <audio ref={audioRef} src={quizAudio} loop />
               )}
             </div>
 
