@@ -304,7 +304,8 @@ export default function QuizPage() {
 
     setLaunching(true)
     try {
-      const { error } = await supabase
+      console.log('showLobby: updating session', session.id, 'code:', session.code)
+      const { error, data } = await supabase
         .from('sessions')
         .update({
           quiz_active: false, // Quiz pas encore actif
@@ -318,6 +319,9 @@ export default function QuizPage() {
           quiz_participants: JSON.stringify([]),
         })
         .eq('id', session.id)
+        .select()
+
+      console.log('showLobby: Supabase response:', { error, data })
 
       if (error) throw error
 
@@ -335,7 +339,8 @@ export default function QuizPage() {
         answerStats: [0, 0, 0, 0],
       })
 
-      toast.success('Lobby affiché!')
+      toast.success(`Lobby affiché! Code: ${session.code}`)
+      console.log('showLobby: opening /live/' + session.code)
       window.open(`/live/${session.code}`, 'photojet-live')
     } catch (err) {
       console.error('Error showing lobby:', err)
