@@ -74,7 +74,7 @@ export default function QuizGame({
 
   const currentQuestion = questions[currentQuestionIndex]
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
-  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 5)
+  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {

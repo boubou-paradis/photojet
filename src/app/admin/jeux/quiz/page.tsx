@@ -585,7 +585,7 @@ export default function QuizPage() {
   }
 
   const currentQuestion = questions[currentQuestionIndex]
-  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 5)
+  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
 
   if (loading) {
