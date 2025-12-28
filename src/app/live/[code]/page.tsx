@@ -926,37 +926,42 @@ export default function LivePage() {
     })() : [])
 
     return (
-      <div className="fixed inset-0 flex overflow-hidden" style={{ backgroundColor: '#0B0F1A' }}>
-        {/* Subtle glow effects */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#08080f] via-[#0d0d1a] to-[#080810] flex flex-col overflow-hidden">
+        {/* Ambient background - slow moving halos */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div
-            className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px] opacity-20"
-            style={{ background: '#F5C97A' }}
+          {/* Central golden glow */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 60%)',
+            }}
+            animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.8, 0.6] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <div
-            className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full blur-[150px] opacity-10"
-            style={{ background: '#6D5DF6' }}
+          {/* Top left accent */}
+          <motion.div
+            className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full blur-[150px]"
+            style={{ background: 'rgba(212,175,55,0.12)' }}
+            animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
           />
+          {/* Bottom right accent */}
+          <motion.div
+            className="absolute bottom-[-15%] right-[-10%] w-[400px] h-[400px] rounded-full blur-[120px]"
+            style={{ background: 'rgba(180,160,100,0.08)' }}
+            animate={{ x: [0, -20, 0], y: [0, -30, 0] }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {/* Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_rgba(0,0,0,0.6)_100%)]" />
         </div>
 
-        {/* LIVE indicator - top left */}
-        <motion.div
-          className="fixed top-6 left-6 z-50 flex items-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span className="text-white font-bold text-sm tracking-wider">LIVE</span>
-        </motion.div>
-
-        {/* Fullscreen button - top right */}
+        {/* Fullscreen button */}
         <motion.button
           onClick={toggleFullscreen}
-          className="fixed top-6 right-6 z-50 p-3 border border-white/20 rounded-lg transition-colors hover:bg-white/10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          className="fixed top-6 right-6 z-50 p-3 bg-black/40 hover:bg-black/60 border border-white/10 rounded-full transition-all backdrop-blur-sm"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           {isFullscreen ? (
             <Minimize className="h-5 w-5 text-white/80" />
@@ -965,125 +970,174 @@ export default function LivePage() {
           )}
         </motion.button>
 
-        {/* Main content - Two columns */}
-        <main className="flex-1 flex items-center justify-center px-12 py-8 relative z-10">
-          <div className="flex items-center gap-16 max-w-6xl w-full">
-
-            {/* LEFT: QR Code (very large) */}
-            <motion.div
-              className="flex-shrink-0"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div
-                className="bg-white p-6 rounded-2xl"
-                style={{ boxShadow: '0 0 60px rgba(245, 201, 122, 0.15)' }}
-              >
-                <QRCode
-                  value={getInviteUrl(code)}
-                  size={280}
-                  level="M"
-                  bgColor="white"
-                  fgColor="#0B0F1A"
-                />
-              </div>
-            </motion.div>
-
-            {/* RIGHT: Title + PIN */}
-            <motion.div
-              className="flex-1"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              {/* Title */}
-              <h1
-                className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-3"
-                style={{ color: '#FFFFFF' }}
-              >
-                QUIZ LIVE
-              </h1>
-              <p
-                className="text-xl mb-10"
-                style={{ color: '#B5B8C5' }}
-              >
-                Scannez pour rejoindre la partie
-              </p>
-
-              {/* PIN Code box */}
-              <div
-                className="inline-block rounded-xl px-10 py-6 border"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  borderColor: 'rgba(245, 201, 122, 0.3)',
-                  boxShadow: '0 0 30px rgba(245, 201, 122, 0.1)'
-                }}
-              >
-                <p
-                  className="text-sm uppercase tracking-widest mb-3 font-medium"
-                  style={{ color: '#B5B8C5' }}
-                >
-                  CODE PIN
-                </p>
-                <div className="flex items-center gap-4">
-                  {code.split('').map((digit, i) => (
-                    <motion.span
-                      key={i}
-                      className="text-5xl md:text-6xl font-black"
-                      style={{
-                        color: '#FFFFFF',
-                        letterSpacing: '0.1em'
-                      }}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + i * 0.1, duration: 0.4 }}
-                    >
-                      {digit}
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </main>
-
-        {/* Bottom center: Player count + waiting */}
+        {/* Players counter - floating badge top left */}
         <motion.div
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          className="fixed top-6 left-6 z-50"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.8 }}
         >
-          <div
-            className="flex flex-col items-center gap-2 px-10 py-5 rounded-xl border"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              borderColor: 'rgba(255,255,255,0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5" style={{ color: '#F5C97A' }} />
-              <span className="text-white font-bold text-lg">
-                {quizParticipants.length} joueur{quizParticipants.length !== 1 ? 's' : ''} connecté{quizParticipants.length !== 1 ? 's' : ''}
+          <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full pl-4 pr-6 py-3 border border-white/10">
+            <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+              <Users className="h-5 w-5 text-[#D4AF37]" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <motion.span
+                key={quizParticipants.length}
+                className="text-3xl font-black text-white"
+                initial={{ scale: 1.3, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
+                {quizParticipants.length}
+              </motion.span>
+              <span className="text-sm text-gray-400 font-medium">
+                joueur{quizParticipants.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <p style={{ color: '#B5B8C5' }} className="text-sm">
-              En attente du lancement...
-            </p>
           </div>
         </motion.div>
 
-        {/* Bottom tip */}
-        <motion.p
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 text-sm z-50"
-          style={{ color: '#B5B8C5', opacity: 0.6 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          Le quiz démarre bientôt, restez attentifs
-        </motion.p>
+        {/* Main content */}
+        <main className="flex-1 flex flex-col items-center justify-center px-8 py-12 relative z-10">
+          {/* Title */}
+          <motion.div
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1
+              className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tight"
+              style={{
+                background: 'linear-gradient(135deg, #FFFFFF 0%, #D4AF37 50%, #FFFFFF 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 0 60px rgba(212,175,55,0.3)',
+              }}
+            >
+              QUIZ LIVE
+            </h1>
+            <motion.p
+              className="text-xl md:text-2xl text-gray-400 mt-4 font-light tracking-wide"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Scannez pour rejoindre la partie
+            </motion.p>
+          </motion.div>
+
+          {/* QR Code - Main element with breathing animation */}
+          <motion.div
+            className="relative mb-10"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 150 }}
+          >
+            {/* Outer glow */}
+            <div
+              className="absolute inset-0 rounded-3xl blur-2xl opacity-40"
+              style={{
+                background: 'linear-gradient(135deg, #D4AF37 0%, #8B7355 100%)',
+                transform: 'scale(1.1)',
+              }}
+            />
+            {/* QR Container with breathing */}
+            <motion.div
+              className="relative bg-white p-8 rounded-3xl"
+              style={{
+                boxShadow: '0 0 80px rgba(212,175,55,0.25), 0 20px 60px rgba(0,0,0,0.4)',
+              }}
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <QRCode
+                value={getInviteUrl(code)}
+                size={300}
+                level="M"
+                bgColor="white"
+                fgColor="#0a0a0f"
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* Separator */}
+          <motion.div
+            className="flex items-center gap-6 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+            <span className="text-gray-500 text-sm uppercase tracking-widest font-medium">ou entrez le code</span>
+            <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+          </motion.div>
+
+          {/* PIN Code - XXL with pulse */}
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            {/* Glow behind */}
+            <motion.div
+              className="absolute inset-0 rounded-2xl blur-xl"
+              style={{ background: 'rgba(212,175,55,0.15)' }}
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {/* PIN Card */}
+            <motion.div
+              className="relative bg-black/40 backdrop-blur-md rounded-2xl px-12 py-6 border border-[#D4AF37]/30"
+              animate={{
+                borderColor: ['rgba(212,175,55,0.3)', 'rgba(212,175,55,0.6)', 'rgba(212,175,55,0.3)'],
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <div className="flex items-center justify-center gap-4">
+                {code.split('').map((digit, i) => (
+                  <motion.span
+                    key={i}
+                    className="text-6xl md:text-7xl font-black text-white"
+                    style={{
+                      textShadow: '0 0 30px rgba(212,175,55,0.4)',
+                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                  >
+                    {digit}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Waiting message */}
+          {quizParticipants.length === 0 && (
+            <motion.p
+              className="text-gray-500 mt-10 text-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.4, 0.7, 0.4] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              En attente des joueurs...
+            </motion.p>
+          )}
+
+          {quizParticipants.length > 0 && (
+            <motion.p
+              className="text-[#D4AF37]/80 mt-10 text-lg font-medium"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              La partie va bientôt commencer
+            </motion.p>
+          )}
+        </main>
       </div>
     )
   }
