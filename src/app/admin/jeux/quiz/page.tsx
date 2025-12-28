@@ -17,6 +17,11 @@ import {
   Check,
   Timer,
   BarChart3,
+  Music,
+  Volume2,
+  VolumeX,
+  Award,
+  Pause,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -69,6 +74,11 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [participants, setParticipants] = useState<QuizParticipant[]>([])
   const [answerStats, setAnswerStats] = useState<number[]>([0, 0, 0, 0])
+  const [showPodium, setShowPodium] = useState(false)
+
+  // Audio
+  const [quizAudio, setQuizAudio] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -101,6 +111,7 @@ export default function QuizPage() {
     timeLeft: number | null
     participants: QuizParticipant[]
     answerStats: number[]
+    isFinished?: boolean
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -425,6 +436,12 @@ export default function QuizPage() {
     setTimeLeft(currentQ.timeLimit)
     setAnswerStats([0, 0, 0, 0])
 
+    // Play audio if available
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {})
+    }
+
     await supabase
       .from('sessions')
       .update({
@@ -453,6 +470,11 @@ export default function QuizPage() {
 
     setIsAnswering(false)
     setShowResults(true)
+
+    // Pause audio
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
 
     await supabase
       .from('sessions')
@@ -582,6 +604,47 @@ export default function QuizPage() {
     setEditingQuestion(null)
 
     toast.success('Toutes les données ont été supprimées')
+  }
+
+  // Afficher le podium final
+  function displayPodium() {
+    setShowPodium(true)
+    // Play victory music if available
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+    broadcastGameState({
+      gameActive: true,
+      questions,
+      currentQuestionIndex,
+      isAnswering: false,
+      showResults: true,
+      timeLeft: null,
+      participants,
+      answerStats,
+      isFinished: true,
+    })
+    toast.success('Podium affiché!')
+  }
+
+  // Handle audio file upload
+  function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setQuizAudio(url)
+      toast.success('Musique chargée!')
+    }
+  }
+
+  // Play/pause audio
+  function toggleAudio() {
+    if (!audioRef.current) return
+    if (audioRef.current.paused) {
+      audioRef.current.play()
+    } else {
+      audioRef.current.pause()
+    }
   }
 
   const currentQuestion = questions[currentQuestionIndex]
@@ -796,6 +859,60 @@ export default function QuizPage() {
               </motion.div>
             )}
 
+            {/* Audio Controls */}
+            <div className="bg-[#242428] rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Music className="h-5 w-5 text-[#D4AF37]" />
+                <h3 className="text-white font-bold">Musique du Quiz</h3>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioUpload}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-2 px-4 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg cursor-pointer transition-colors">
+                    <Music className="h-4 w-4" />
+                    <span className="text-sm">{quizAudio ? 'Changer' : 'Ajouter une musique'}</span>
+                  </div>
+                </label>
+
+                {quizAudio && (
+                  <>
+                    <button
+                      onClick={toggleAudio}
+                      className="p-2 bg-[#D4AF37] text-black rounded-lg hover:bg-[#F4D03F] transition-colors"
+                    >
+                      {audioRef.current?.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (audioRef.current) audioRef.current.pause()
+                        setQuizAudio(null)
+                      }}
+                      className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                    >
+                      <VolumeX className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {quizAudio && (
+                <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
+                  <Volume2 className="h-3 w-3" /> Musique prête
+                </p>
+              )}
+
+              {/* Hidden audio element */}
+              {quizAudio && (
+                <audio ref={audioRef} src={quizAudio} loop />
+              )}
+            </div>
+
             {/* Action buttons */}
             {!lobbyVisible ? (
               /* Step 1: Show Lobby button */
@@ -970,9 +1087,19 @@ export default function QuizPage() {
                   </button>
                 )}
 
-                {showResults && currentQuestionIndex >= questions.length - 1 && (
+                {showResults && currentQuestionIndex >= questions.length - 1 && !showPodium && (
+                  <button
+                    onClick={displayPodium}
+                    className="w-full py-3 bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFC107] hover:to-[#FF8C00] text-black rounded-lg font-bold flex items-center justify-center gap-2"
+                  >
+                    <Award className="h-5 w-5" />
+                    Afficher le Podium 🏆
+                  </button>
+                )}
+
+                {showPodium && (
                   <div className="text-center py-4 text-[#D4AF37] font-bold text-xl">
-                    🎉 Quiz terminé!
+                    🏆 Podium affiché!
                   </div>
                 )}
               </div>

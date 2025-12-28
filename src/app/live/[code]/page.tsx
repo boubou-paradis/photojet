@@ -367,6 +367,7 @@ export default function LivePage() {
     timeLeft: number | null
     participants: QuizParticipant[]
     answerStats: number[]
+    isFinished?: boolean
   } | null>(null)
 
   // Get wheel segments from broadcast state, or parse from database as fallback
@@ -1123,6 +1124,7 @@ export default function LivePage() {
         timeLeft={quizState?.timeLeft ?? session.quiz_time_left ?? null}
         participants={quizParticipants}
         answerStats={quizState?.answerStats ?? [0, 0, 0, 0]}
+        isFinished={quizState?.isFinished ?? false}
       />
     )
   }
