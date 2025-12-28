@@ -250,91 +250,112 @@ export default function QuizGame({
           </div>
         </motion.div>
 
-        {/* RÉPONSES */}
-        <div className="flex-1 grid grid-cols-2 gap-4 mb-6">
-          {currentQuestion.answers.map((answer, index) => {
-            const color = ANSWER_COLORS[index]
-            const isCorrect = index === currentQuestion.correctAnswer
-            const percentage = totalAnswers > 0 ? (answerStats[index] / totalAnswers * 100) : 0
+        {/* RÉPONSES - Affichées seulement quand la question est lancée */}
+        {(isAnswering || showResults) ? (
+          <div className="flex-1 grid grid-cols-2 gap-4 mb-6">
+            {currentQuestion.answers.map((answer, index) => {
+              const color = ANSWER_COLORS[index]
+              const isCorrect = index === currentQuestion.correctAnswer
+              const percentage = totalAnswers > 0 ? (answerStats[index] / totalAnswers * 100) : 0
 
-            return (
-              <motion.div
-                key={index}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-                className="relative"
-              >
-                <div
-                  className={`relative h-full min-h-[120px] rounded-2xl overflow-hidden transition-all duration-300 ${
-                    showResults
-                      ? isCorrect
-                        ? 'ring-4 ring-green-400 ring-offset-4 ring-offset-[#0a0a1a]'
-                        : 'opacity-60'
-                      : ''
-                  }`}
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="relative"
                 >
-                  {/* Fond avec gradient */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${color.bg}`} />
+                  <div
+                    className={`relative h-full min-h-[120px] rounded-2xl overflow-hidden transition-all duration-300 ${
+                      showResults
+                        ? isCorrect
+                          ? 'ring-4 ring-green-400 ring-offset-4 ring-offset-[#0a0a1a]'
+                          : 'opacity-60'
+                        : ''
+                    }`}
+                  >
+                    {/* Fond avec gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${color.bg}`} />
 
-                  {/* Barre de progression (quand résultats affichés) */}
-                  {showResults && (
-                    <motion.div
-                      className="absolute inset-0 bg-black/40"
-                      initial={{ width: '100%' }}
-                      animate={{ width: `${100 - percentage}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      style={{ right: 0, left: 'auto' }}
-                    />
-                  )}
+                    {/* Barre de progression (quand résultats affichés) */}
+                    {showResults && (
+                      <motion.div
+                        className="absolute inset-0 bg-black/40"
+                        initial={{ width: '100%' }}
+                        animate={{ width: `${100 - percentage}%` }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        style={{ right: 0, left: 'auto' }}
+                      />
+                    )}
 
-                  {/* Contenu */}
-                  <div className="relative h-full flex items-center justify-between p-6">
-                    {/* Icône de forme */}
-                    <span className={`text-4xl ${color.text} opacity-50`}>
-                      {color.icon}
-                    </span>
-
-                    {/* Texte de la réponse */}
-                    <span className={`flex-1 text-xl md:text-2xl lg:text-3xl font-bold ${color.text} text-center px-4`}>
-                      {answer}
-                    </span>
-
-                    {/* Indicateur correct/incorrect ou stats */}
-                    {showResults ? (
-                      <div className="flex items-center gap-2">
-                        <span className={`text-2xl font-bold ${color.text}`}>
-                          {answerStats[index]}
-                        </span>
-                        {isCorrect ? (
-                          <CheckCircle2 className="h-8 w-8 text-green-300" />
-                        ) : answerStats[index] > 0 ? (
-                          <XCircle className="h-8 w-8 text-red-300 opacity-70" />
-                        ) : null}
-                      </div>
-                    ) : (
+                    {/* Contenu */}
+                    <div className="relative h-full flex items-center justify-between p-6">
+                      {/* Icône de forme */}
                       <span className={`text-4xl ${color.text} opacity-50`}>
                         {color.icon}
                       </span>
+
+                      {/* Texte de la réponse */}
+                      <span className={`flex-1 text-xl md:text-2xl lg:text-3xl font-bold ${color.text} text-center px-4`}>
+                        {answer}
+                      </span>
+
+                      {/* Indicateur correct/incorrect ou stats */}
+                      {showResults ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`text-2xl font-bold ${color.text}`}>
+                            {answerStats[index]}
+                          </span>
+                          {isCorrect ? (
+                            <CheckCircle2 className="h-8 w-8 text-green-300" />
+                          ) : answerStats[index] > 0 ? (
+                            <XCircle className="h-8 w-8 text-red-300 opacity-70" />
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className={`text-4xl ${color.text} opacity-50`}>
+                          {color.icon}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Badge "Bonne réponse" */}
+                    {showResults && isCorrect && (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 1, type: 'spring', stiffness: 200 }}
+                        className="absolute -top-2 -right-2 bg-green-500 text-white font-bold px-3 py-1 rounded-full text-sm shadow-lg"
+                      >
+                        ✓ Bonne réponse
+                      </motion.div>
                     )}
                   </div>
-
-                  {/* Badge "Bonne réponse" */}
-                  {showResults && isCorrect && (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -10 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: 1, type: 'spring', stiffness: 200 }}
-                      className="absolute -top-2 -right-2 bg-green-500 text-white font-bold px-3 py-1 rounded-full text-sm shadow-lg"
-                    >
-                      ✓ Bonne réponse
-                    </motion.div>
-                  )}
-                </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        ) : (
+          /* Écran d'attente avant lancement de la question */
+          <div className="flex-1 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <motion.div
+                className="text-8xl mb-6"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                🎯
               </motion.div>
-            )
-          })}
-        </div>
+              <p className="text-3xl text-[#D4AF37] font-bold">Préparez-vous !</p>
+              <p className="text-xl text-gray-400 mt-2">La question va bientôt commencer...</p>
+            </motion.div>
+          </div>
+        )}
 
         {/* POINTS */}
         <motion.div
