@@ -37,24 +37,31 @@ export default function JoinQuizPage() {
 
     // Check Supabase for the session
     async function fetchSession() {
+      let foundSession = false
+
       try {
+        console.log('Fetching session with code:', sessionCode)
         const { data, error: fetchError } = await supabase
           .from('sessions')
-          .select('id, quiz_lobby_visible, quiz_active')
+          .select('id, quiz_lobby_visible, quiz_active, code')
           .eq('code', sessionCode)
           .eq('is_active', true)
           .single()
 
+        console.log('Supabase response:', { data, error: fetchError })
+
         if (fetchError) throw fetchError
 
         if (data) {
+          foundSession = true
           setSessionId(data.id)
-          // If quiz lobby is not visible and quiz is not active, session not found
+          // If quiz lobby is not visible and quiz is not active, no quiz running
           if (!data.quiz_lobby_visible && !data.quiz_active) {
-            setError('Aucun quiz en cours')
+            setError('Aucun quiz en cours pour cette session')
           }
         }
-      } catch {
+      } catch (err) {
+        console.log('Supabase error, trying localStorage:', err)
         // Fallback to localStorage for demo mode
         const keys = Object.keys(localStorage)
         for (const key of keys) {
@@ -62,6 +69,7 @@ export default function JoinQuizPage() {
             try {
               const localData = JSON.parse(localStorage.getItem(key) || '{}')
               if (localData.sessionCode === sessionCode) {
+                foundSession = true
                 setSessionId(localData.sessionId)
                 break
               }
@@ -70,12 +78,13 @@ export default function JoinQuizPage() {
             }
           }
         }
-        if (!sessionId) {
-          setError('Session introuvable')
-        }
-      } finally {
-        setLoading(false)
       }
+
+      if (!foundSession) {
+        setError('Session introuvable. Vérifiez le code PIN.')
+      }
+
+      setLoading(false)
     }
 
     fetchSession()

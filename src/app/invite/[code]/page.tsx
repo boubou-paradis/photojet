@@ -50,12 +50,15 @@ export default function InvitePage() {
   useEffect(() => {
     async function fetchSession() {
       try {
+        console.log('Invite page: fetching session with code:', code)
         const { data, error } = await supabase
           .from('sessions')
           .select('*')
           .eq('code', code)
           .eq('is_active', true)
           .single()
+
+        console.log('Invite page: Supabase response:', { data, error })
 
         if (error) throw error
 
@@ -68,13 +71,16 @@ export default function InvitePage() {
         }
 
         // Check if quiz lobby is visible - redirect to quiz join page
+        console.log('Invite page: quiz_lobby_visible =', data.quiz_lobby_visible)
         if (data.quiz_lobby_visible) {
+          console.log('Invite page: redirecting to /join/' + code)
           router.push(`/join/${code}`)
           return
         }
 
         setSession(data)
-      } catch {
+      } catch (err) {
+        console.error('Invite page: error fetching session:', err)
         setError('Session introuvable')
       } finally {
         setLoading(false)
