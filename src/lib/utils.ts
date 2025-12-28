@@ -23,17 +23,10 @@ export function getAppBaseUrl(): string {
 }
 
 /**
- * Generate invite URL for a session code (photos)
+ * Generate invite URL for a session code
  */
 export function getInviteUrl(code: string): string {
   return `${getAppBaseUrl()}/invite/${code}`
-}
-
-/**
- * Generate quiz join URL for a session code
- */
-export function getQuizJoinUrl(code: string): string {
-  return `${getAppBaseUrl()}/join/${code}`
 }
 
 /**

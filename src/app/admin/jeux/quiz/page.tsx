@@ -547,7 +547,6 @@ export default function QuizPage() {
       .from('sessions')
       .update({
         quiz_active: false,
-        quiz_lobby_visible: false, // Important: remettre à false pour que le diaporama reprenne
         // On garde quiz_questions intact !
         quiz_current_question: 0,
         quiz_is_answering: false,
@@ -558,11 +557,8 @@ export default function QuizPage() {
       })
       .eq('id', session.id)
 
-    setLobbyVisible(false)
-
     broadcastGameState({
       gameActive: false,
-      isFinished: false, // Reset isFinished
       questions: [],
       currentQuestionIndex: 0,
       isAnswering: false,
@@ -588,7 +584,6 @@ export default function QuizPage() {
       .from('sessions')
       .update({
         quiz_active: false,
-        quiz_lobby_visible: false,
         quiz_questions: null,
         quiz_current_question: 0,
         quiz_is_answering: false,
@@ -600,7 +595,6 @@ export default function QuizPage() {
       .eq('id', session.id)
 
     setGameActive(false)
-    setLobbyVisible(false)
     setQuestions(DEFAULT_QUESTIONS)
     setParticipants([])
     setEditingQuestion(null)

@@ -8,7 +8,7 @@ import QRCode from 'react-qr-code'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
-import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
+import { getInviteUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
 import WheelGame from '@/components/games/WheelGame'
@@ -913,8 +913,7 @@ export default function LivePage() {
   }
 
   // Show Quiz Lobby if visible (before quiz starts)
-  // Ne pas afficher le lobby si le quiz est terminé (isFinished)
-  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true && !quizState?.isFinished
+  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true
 
   if (isQuizLobbyVisible) {
     // Get participants from broadcast state or database
@@ -1054,7 +1053,7 @@ export default function LivePage() {
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
               <QRCode
-                value={getQuizJoinUrl(code)}
+                value={getInviteUrl(code)}
                 size={300}
                 level="M"
                 bgColor="white"
