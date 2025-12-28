@@ -297,7 +297,7 @@ export default function HostQuizPage() {
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
                 >
-                  {joinUrl && (
+                  {joinUrl ? (
                     <QRCode
                       value={joinUrl}
                       size={280}
@@ -305,6 +305,10 @@ export default function HostQuizPage() {
                       bgColor="white"
                       fgColor="#1a1a2e"
                     />
+                  ) : (
+                    <div className="w-[280px] h-[280px] flex items-center justify-center">
+                      <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+                    </div>
                   )}
                 </motion.div>
 
@@ -336,7 +340,7 @@ export default function HostQuizPage() {
                     <div>
                       <p className="text-white text-xl">Allez sur</p>
                       <p className="text-[#D4AF37] text-lg font-mono">
-                        {joinUrl.replace(/^https?:\/\//, '')}
+                        {joinUrl ? joinUrl.replace(/^https?:\/\//, '') : 'Chargement...'}
                       </p>
                     </div>
                   </div>
@@ -406,6 +410,41 @@ export default function HostQuizPage() {
                   >
                     En attente des joueurs...
                   </motion.p>
+                )}
+              </motion.div>
+
+              {/* Start Quiz Button */}
+              <motion.div
+                className="mt-10 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <motion.button
+                  onClick={handleStart}
+                  disabled={playerCount === 0}
+                  className={`px-12 py-5 text-2xl font-black rounded-2xl transition-all ${
+                    playerCount > 0
+                      ? 'bg-gradient-to-r from-[#D4AF37] to-[#F4CF47] text-[#1a1a2e] shadow-lg shadow-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/50'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                  whileHover={playerCount > 0 ? { scale: 1.05 } : {}}
+                  whileTap={playerCount > 0 ? { scale: 0.95 } : {}}
+                  animate={playerCount > 0 ? {
+                    boxShadow: [
+                      '0 10px 30px rgba(212, 175, 55, 0.4)',
+                      '0 15px 40px rgba(212, 175, 55, 0.6)',
+                      '0 10px 30px rgba(212, 175, 55, 0.4)',
+                    ],
+                  } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  🎮 Démarrer le Quiz
+                </motion.button>
+                {playerCount === 0 && (
+                  <p className="text-gray-500 text-sm mt-3">
+                    Au moins 1 joueur requis pour démarrer
+                  </p>
                 )}
               </motion.div>
             </motion.div>
@@ -510,22 +549,24 @@ export default function HostQuizPage() {
         <QRJoinBanner joinUrl={joinUrl} sessionCode={sessionCode} playerCount={playerCount} />
       )}
 
-      {/* Host controls */}
-      <HostFooterBar
-        quizState={quizState}
-        questionIndex={questionIndex}
-        totalQuestions={totalQuestions}
-        playerCount={playerCount}
-        onStart={handleStart}
-        onNext={handleNext}
-        onShowLeaderboard={handleShowLeaderboard}
-        onFinish={handleFinish}
-        onReset={handleReset}
-        isAntiCheatEnabled={isAntiCheatEnabled}
-        onToggleAntiCheat={setIsAntiCheatEnabled}
-        isHideQuestionEnabled={isHideQuestionEnabled}
-        onToggleHideQuestion={setIsHideQuestionEnabled}
-      />
+      {/* Host controls - hidden in LOBBY for clean presentation */}
+      {quizState !== 'LOBBY' && (
+        <HostFooterBar
+          quizState={quizState}
+          questionIndex={questionIndex}
+          totalQuestions={totalQuestions}
+          playerCount={playerCount}
+          onStart={handleStart}
+          onNext={handleNext}
+          onShowLeaderboard={handleShowLeaderboard}
+          onFinish={handleFinish}
+          onReset={handleReset}
+          isAntiCheatEnabled={isAntiCheatEnabled}
+          onToggleAntiCheat={setIsAntiCheatEnabled}
+          isHideQuestionEnabled={isHideQuestionEnabled}
+          onToggleHideQuestion={setIsHideQuestionEnabled}
+        />
+      )}
     </div>
   )
 }
