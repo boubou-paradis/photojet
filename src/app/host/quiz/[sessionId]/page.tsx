@@ -252,15 +252,17 @@ export default function HostQuizPage() {
         )}
       </motion.button>
 
-      {/* Anti-cheat panel */}
-      <div className="fixed top-4 left-4 z-50">
-        <AntiCheatPanel
-          enabled={isAntiCheatEnabled}
-          suspectCount={suspectCount}
-          suspects={suspects}
-          debug={isDemo}
-        />
-      </div>
+      {/* Anti-cheat panel - hidden in LOBBY */}
+      {quizState !== 'LOBBY' && (
+        <div className="fixed top-4 left-4 z-50">
+          <AntiCheatPanel
+            enabled={isAntiCheatEnabled}
+            suspectCount={suspectCount}
+            suspects={suspects}
+            debug={isDemo}
+          />
+        </div>
+      )}
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
@@ -413,40 +415,6 @@ export default function HostQuizPage() {
                 )}
               </motion.div>
 
-              {/* Start Quiz Button */}
-              <motion.div
-                className="mt-10 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <motion.button
-                  onClick={handleStart}
-                  disabled={playerCount === 0}
-                  className={`px-12 py-5 text-2xl font-black rounded-2xl transition-all ${
-                    playerCount > 0
-                      ? 'bg-gradient-to-r from-[#D4AF37] to-[#F4CF47] text-[#1a1a2e] shadow-lg shadow-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/50'
-                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  }`}
-                  whileHover={playerCount > 0 ? { scale: 1.05 } : {}}
-                  whileTap={playerCount > 0 ? { scale: 0.95 } : {}}
-                  animate={playerCount > 0 ? {
-                    boxShadow: [
-                      '0 10px 30px rgba(212, 175, 55, 0.4)',
-                      '0 15px 40px rgba(212, 175, 55, 0.6)',
-                      '0 10px 30px rgba(212, 175, 55, 0.4)',
-                    ],
-                  } : {}}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  🎮 Démarrer le Quiz
-                </motion.button>
-                {playerCount === 0 && (
-                  <p className="text-gray-500 text-sm mt-3">
-                    Au moins 1 joueur requis pour démarrer
-                  </p>
-                )}
-              </motion.div>
             </motion.div>
           )}
 
