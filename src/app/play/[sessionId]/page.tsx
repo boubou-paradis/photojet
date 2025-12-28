@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, Wifi, WifiOff, CheckCircle2, XCircle, Trophy, Clock } from 'lucide-react'
+import { Loader2, Wifi, WifiOff, CheckCircle2, XCircle, Trophy, Clock, Sparkles, Crown, Target } from 'lucide-react'
 
 // Lib
 import { createClient } from '@/lib/supabase'
@@ -432,37 +432,53 @@ export default function PlayQuizPage() {
 
   // Render based on state
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#0f0a20] flex flex-col overflow-hidden">
-      {/* Mobile background effects */}
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-[#0a0a1a] via-[#12121f] to-[#0a0a1a] flex flex-col overflow-hidden">
+      {/* Premium ambient halos */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[50%] bg-purple-600/15 rounded-full blur-[80px]" />
-        <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[40%] bg-blue-600/10 rounded-full blur-[60px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(0,0,0,0.3)_100%)]" />
+        <motion.div
+          className="absolute top-[-20%] left-[-30%] w-[60%] h-[40%] rounded-full blur-[100px]"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)' }}
+          animate={{ x: [0, 20, 0], y: [0, 15, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute bottom-[-15%] right-[-20%] w-[50%] h-[35%] rounded-full blur-[80px]"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)' }}
+          animate={{ x: [0, -15, 0], y: [0, -10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_40%,_rgba(0,0,0,0.5)_100%)]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 px-4 py-3 flex items-center justify-between bg-black/20 backdrop-blur-sm border-b border-white/5">
-        <div className="flex items-center gap-2.5">
+      {/* Header premium */}
+      <header className="relative z-10 px-4 py-3 flex items-center justify-between bg-gradient-to-r from-black/40 via-black/30 to-black/40 backdrop-blur-md border-b border-[#D4AF37]/20">
+        <div className="flex items-center gap-3">
           {connected ? (
-            <div className="relative">
-              <Wifi className="h-5 w-5 text-green-400" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40">
+              <Wifi className="h-4 w-4 text-green-400" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
             </div>
           ) : (
-            <WifiOff className="h-5 w-5 text-red-400 animate-pulse" />
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 border border-red-500/40">
+              <WifiOff className="h-4 w-4 text-red-400 animate-pulse" />
+            </div>
           )}
-          <span className="text-white font-bold text-lg">{decodeURIComponent(playerName)}</span>
+          <span className="text-white font-bold text-lg tracking-wide">{decodeURIComponent(playerName)}</span>
         </div>
         <div className="flex items-center gap-3">
           {latency > 0 && (
-            <span className="text-gray-500 text-xs font-mono">{latency}ms</span>
+            <span className="text-gray-600 text-xs font-mono">{latency}ms</span>
           )}
           <motion.div
             key={myScore}
-            initial={{ scale: 1.2 }}
+            initial={{ scale: 1.3 }}
             animate={{ scale: 1 }}
-            className="bg-gradient-to-r from-[#D4AF37]/30 to-[#F4D03F]/20 text-[#D4AF37] px-4 py-1.5 rounded-full text-sm font-black border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10"
+            transition={{ type: 'spring', stiffness: 400 }}
+            className="flex items-center gap-2 bg-gradient-to-r from-[#D4AF37]/25 to-[#B8860B]/20 text-[#D4AF37] px-4 py-2 rounded-xl text-sm font-black border border-[#D4AF37]/40"
+            style={{ boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)' }}
           >
+            <Trophy className="w-4 h-4" />
             {myScore} pts
           </motion.div>
         </div>
@@ -480,8 +496,16 @@ export default function PlayQuizPage() {
               exit={{ opacity: 0 }}
               className="text-center"
             >
-              <Loader2 className="h-12 w-12 text-[#D4AF37] animate-spin mx-auto mb-4" />
-              <p className="text-white text-lg">Connexion...</p>
+              <motion.div
+                className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-[#D4AF37]/30 flex items-center justify-center"
+                style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.2)' }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              >
+                <Loader2 className="h-10 w-10 text-[#D4AF37]" />
+              </motion.div>
+              <p className="text-white text-xl font-bold tracking-wide">Connexion...</p>
+              <p className="text-gray-500 text-sm mt-2">Veuillez patienter</p>
             </motion.div>
           )}
 
@@ -495,14 +519,29 @@ export default function PlayQuizPage() {
               className="text-center"
             >
               <motion.div
-                className="text-6xl mb-4"
-                animate={{ scale: [1, 1.1, 1] }}
+                className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-b from-[#D4AF37]/20 to-transparent border-2 border-[#D4AF37]/40 flex items-center justify-center"
+                style={{ boxShadow: '0 0 50px rgba(212, 175, 55, 0.25)' }}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Target className="w-12 h-12 text-[#D4AF37]" />
+              </motion.div>
+              <h2 className="text-3xl font-black text-white mb-3 tracking-wide">Prêt !</h2>
+              <p className="text-gray-400 text-lg">En attente de la prochaine question...</p>
+              <motion.div
+                className="mt-6 flex justify-center gap-1"
+                animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                ✋
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-[#D4AF37]"
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                  />
+                ))}
               </motion.div>
-              <h2 className="text-2xl font-bold text-white mb-2">Prêt !</h2>
-              <p className="text-gray-400">En attente de la prochaine question...</p>
             </motion.div>
           )}
 
@@ -614,26 +653,57 @@ export default function PlayQuizPage() {
             >
               {/* Result */}
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200 }}
+                initial={{ scale: 0, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 className="text-center mb-6"
               >
                 {lastAnswerCorrect === true ? (
                   <div className="inline-flex flex-col items-center">
-                    <div className="text-6xl mb-2">🎉</div>
-                    <div className="text-2xl font-bold text-green-400">Correct !</div>
-                    <div className="text-[#D4AF37]">+{currentQuestion.points} pts</div>
+                    <motion.div
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-green-500/30 to-green-600/10 border-2 border-green-500/50 flex items-center justify-center mb-4"
+                      style={{ boxShadow: '0 0 40px rgba(34, 197, 94, 0.4)' }}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
+                    >
+                      <CheckCircle2 className="w-10 h-10 text-green-400" />
+                    </motion.div>
+                    <div className="text-2xl font-black text-green-400 tracking-wide">Correct !</div>
+                    <motion.div
+                      className="text-[#D4AF37] text-xl font-bold mt-2"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      +{currentQuestion.points} pts
+                    </motion.div>
                   </div>
                 ) : lastAnswerCorrect === false ? (
                   <div className="inline-flex flex-col items-center">
-                    <div className="text-6xl mb-2">😢</div>
-                    <div className="text-2xl font-bold text-red-400">Raté !</div>
+                    <motion.div
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-red-500/30 to-red-600/10 border-2 border-red-500/50 flex items-center justify-center mb-4"
+                      style={{ boxShadow: '0 0 40px rgba(239, 68, 68, 0.3)' }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
+                    >
+                      <XCircle className="w-10 h-10 text-red-400" />
+                    </motion.div>
+                    <div className="text-2xl font-black text-red-400 tracking-wide">Raté !</div>
                   </div>
                 ) : (
                   <div className="inline-flex flex-col items-center">
-                    <div className="text-6xl mb-2">⏰</div>
-                    <div className="text-2xl font-bold text-gray-400">Temps écoulé</div>
+                    <motion.div
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-gray-500/30 to-gray-600/10 border-2 border-gray-500/50 flex items-center justify-center mb-4"
+                      style={{ boxShadow: '0 0 30px rgba(156, 163, 175, 0.2)' }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400 }}
+                    >
+                      <Clock className="w-10 h-10 text-gray-400" />
+                    </motion.div>
+                    <div className="text-2xl font-black text-gray-400 tracking-wide">Temps écoulé</div>
                   </div>
                 )}
               </motion.div>
@@ -658,19 +728,46 @@ export default function PlayQuizPage() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-sm text-center"
             >
-              <Trophy className="h-12 w-12 text-[#D4AF37] mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Classement</h2>
+              <motion.div
+                className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-b from-[#D4AF37]/25 to-transparent border-2 border-[#D4AF37]/40 flex items-center justify-center"
+                style={{ boxShadow: '0 0 50px rgba(212, 175, 55, 0.3)' }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
+                <Trophy className="h-10 w-10 text-[#D4AF37]" />
+              </motion.div>
+              <h2 className="text-2xl font-black text-white mb-4 tracking-wide">Classement</h2>
 
               {myRank && (
-                <div className="bg-[#D4AF37]/20 rounded-xl p-4 mb-4 border border-[#D4AF37]/50">
-                  <p className="text-[#D4AF37] text-lg">
-                    Vous êtes <span className="font-bold text-2xl">#{myRank}</span>
-                  </p>
-                  <p className="text-white text-2xl font-bold">{myScore} pts</p>
-                </div>
+                <motion.div
+                  className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] rounded-2xl p-6 mb-5 border-2 border-[#D4AF37]/40"
+                  style={{ boxShadow: '0 0 30px rgba(212, 175, 55, 0.15)' }}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <p className="text-gray-400 text-sm mb-2">Votre position</p>
+                  <p className="text-[#D4AF37] text-4xl font-black mb-2">#{myRank}</p>
+                  <p className="text-white text-xl font-bold">{myScore} pts</p>
+                </motion.div>
               )}
 
-              <p className="text-gray-400">En attente de la prochaine question...</p>
+              <p className="text-gray-500">En attente de la prochaine question...</p>
+              <motion.div
+                className="mt-4 flex justify-center gap-1"
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-[#D4AF37]"
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                  />
+                ))}
+              </motion.div>
             </motion.div>
           )}
 
@@ -684,30 +781,56 @@ export default function PlayQuizPage() {
               className="w-full max-w-sm text-center"
             >
               <motion.div
-                className="text-6xl mb-4"
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 0.5, repeat: 3 }}
+                className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-b from-[#D4AF37]/30 to-[#B8860B]/10 border-2 border-[#D4AF37]/50 flex items-center justify-center"
+                style={{ boxShadow: '0 0 60px rgba(212, 175, 55, 0.4)' }}
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200 }}
               >
-                🏆
+                {myRank === 1 ? (
+                  <Crown className="w-12 h-12 text-[#D4AF37]" />
+                ) : (
+                  <Trophy className="w-12 h-12 text-[#D4AF37]" />
+                )}
               </motion.div>
-              <h2 className="text-3xl font-bold text-white mb-4">Quiz terminé !</h2>
+              <h2 className="text-3xl font-black text-white mb-6 tracking-wide">Quiz terminé !</h2>
 
               {myRank && (
-                <div className="bg-gradient-to-r from-[#D4AF37]/20 to-[#F4D03F]/20 rounded-xl p-6 border border-[#D4AF37]/50">
-                  <p className="text-gray-400 mb-2">Votre classement final</p>
-                  <p className="text-[#D4AF37] text-4xl font-black mb-2">#{myRank}</p>
+                <motion.div
+                  className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] rounded-2xl p-8 border-2 border-[#D4AF37]/50"
+                  style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.2)' }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <p className="text-gray-400 mb-3 text-sm tracking-wide uppercase">Classement final</p>
+                  <motion.p
+                    className="text-5xl font-black mb-3"
+                    style={{
+                      background: 'linear-gradient(135deg, #D4AF37 0%, #F4D03F 50%, #D4AF37 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                    animate={myRank <= 3 ? { scale: [1, 1.05, 1] } : {}}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    #{myRank}
+                  </motion.p>
                   <p className="text-white text-2xl font-bold">{myScore} points</p>
-                </div>
+                </motion.div>
               )}
 
               {myRank === 1 && (
-                <motion.p
-                  className="text-2xl mt-4"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5, repeat: Infinity }}
+                <motion.div
+                  className="mt-6 flex items-center justify-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
                 >
-                  🥇 Champion ! 🥇
-                </motion.p>
+                  <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                  <span className="text-[#D4AF37] font-black text-xl tracking-wide">Champion !</span>
+                  <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                </motion.div>
               )}
             </motion.div>
           )}
