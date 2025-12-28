@@ -51,6 +51,21 @@ export default function InvitePage() {
     async function fetchSession() {
       try {
         console.log('Invite page: fetching session with code:', code)
+
+        // First check if there's a quiz lobby active (don't require is_active)
+        const { data: quizSession } = await supabase
+          .from('sessions')
+          .select('quiz_lobby_visible, quiz_active')
+          .eq('code', code)
+          .single()
+
+        if (quizSession?.quiz_lobby_visible || quizSession?.quiz_active) {
+          console.log('Invite page: quiz active, redirecting to /join/' + code)
+          router.push(`/join/${code}`)
+          return
+        }
+
+        // For regular photo sharing, require is_active
         const { data, error } = await supabase
           .from('sessions')
           .select('*')
@@ -67,14 +82,6 @@ export default function InvitePage() {
         if (expiresAt < now) {
           setError('Cette session a expiré')
           setLoading(false)
-          return
-        }
-
-        // Check if quiz lobby is visible - redirect to quiz join page
-        console.log('Invite page: quiz_lobby_visible =', data.quiz_lobby_visible)
-        if (data.quiz_lobby_visible) {
-          console.log('Invite page: redirecting to /join/' + code)
-          router.push(`/join/${code}`)
           return
         }
 

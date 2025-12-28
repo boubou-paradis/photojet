@@ -41,11 +41,11 @@ export default function JoinQuizPage() {
 
       try {
         console.log('Fetching session with code:', sessionCode)
+        // Don't require is_active for quiz - quiz can run on "inactive" sessions
         const { data, error: fetchError } = await supabase
           .from('sessions')
           .select('id, quiz_lobby_visible, quiz_active, code')
           .eq('code', sessionCode)
-          .eq('is_active', true)
           .single()
 
         console.log('Supabase response:', { data, error: fetchError })
@@ -53,10 +53,11 @@ export default function JoinQuizPage() {
         if (fetchError) throw fetchError
 
         if (data) {
-          foundSession = true
-          setSessionId(data.id)
-          // If quiz lobby is not visible and quiz is not active, no quiz running
-          if (!data.quiz_lobby_visible && !data.quiz_active) {
+          // Check if quiz is running
+          if (data.quiz_lobby_visible || data.quiz_active) {
+            foundSession = true
+            setSessionId(data.id)
+          } else {
             setError('Aucun quiz en cours pour cette session')
           }
         }
