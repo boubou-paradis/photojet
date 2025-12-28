@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Crown, Medal, RotateCcw, ListOrdered } from 'lucide-react'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { Trophy, RotateCcw, ListOrdered } from 'lucide-react'
 
 interface Winner {
   name: string
@@ -17,59 +17,60 @@ interface QuizPodiumPremiumProps {
   onNewGame?: () => void
 }
 
-// Confetti léger - une seule fois au reveal
-function LightConfetti() {
-  const [show, setShow] = useState(true)
+// LED Bar component - DJ style
+function LEDBar({
+  rank,
+  maxScore,
+  score,
+  delay,
+}: {
+  rank: 1 | 2 | 3
+  maxScore: number
+  score: number
+  delay: number
+}) {
+  const colors = {
+    1: '#F5C97A', // Gold
+    2: '#C0C0C0', // Silver
+    3: '#CD7F32', // Bronze
+  }
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 3000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const pieces = useMemo(() => {
-    return Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      delay: Math.random() * 0.5,
-      duration: 2 + Math.random() * 1,
-      color: ['#D4AF37', '#C0C0C0', '#CD7F32', '#FFFFFF'][Math.floor(Math.random() * 4)],
-      size: 4 + Math.random() * 4,
-    }))
-  }, [])
-
-  if (!show) return null
+  const widths = {
+    1: '100%',
+    2: '75%',
+    3: '55%',
+  }
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
-      {pieces.map((piece) => (
+    <motion.div
+      className="flex items-center gap-4"
+      initial={{ opacity: 0, x: -30 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay }}
+    >
+      <span
+        className="text-sm font-bold w-20 text-right"
+        style={{ color: colors[rank] }}
+      >
+        {rank === 1 ? 'OR' : rank === 2 ? 'ARGENT' : 'BRONZE'}
+      </span>
+      <div className="flex-1 h-6 rounded-sm overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
         <motion.div
-          key={piece.id}
-          className="absolute rounded-sm"
+          className="h-full rounded-sm"
           style={{
-            left: `${piece.x}%`,
-            top: -10,
-            width: piece.size,
-            height: piece.size * 0.6,
-            backgroundColor: piece.color,
+            backgroundColor: colors[rank],
+            boxShadow: `0 0 20px ${colors[rank]}40`,
           }}
-          initial={{ y: -20, opacity: 1, rotate: 0 }}
-          animate={{
-            y: '100vh',
-            opacity: [1, 1, 0],
-            rotate: 360,
-          }}
-          transition={{
-            duration: piece.duration,
-            delay: piece.delay,
-            ease: 'easeOut',
-          }}
+          initial={{ width: 0 }}
+          animate={{ width: widths[rank] }}
+          transition={{ duration: 0.8, delay: delay + 0.2, ease: 'easeOut' }}
         />
-      ))}
-    </div>
+      </div>
+    </motion.div>
   )
 }
 
-// Carte podium premium
+// Podium card
 function PodiumCard({
   winner,
   rank,
@@ -81,90 +82,97 @@ function PodiumCard({
 }) {
   const config = {
     1: {
-      gradient: 'from-[#D4AF37] via-[#F4D03F] to-[#B8860B]',
-      glow: 'shadow-[0_0_60px_rgba(212,175,55,0.4)]',
-      border: 'border-[#D4AF37]',
-      size: 'h-72 w-64',
-      iconSize: 'w-16 h-16',
-      nameSize: 'text-2xl',
-      scoreSize: 'text-4xl',
-      label: '1ER',
-      icon: Crown,
-    },
-    2: {
-      gradient: 'from-[#C0C0C0] via-[#E8E8E8] to-[#A0A0A0]',
-      glow: 'shadow-[0_0_40px_rgba(192,192,192,0.3)]',
-      border: 'border-[#C0C0C0]',
-      size: 'h-60 w-56',
-      iconSize: 'w-12 h-12',
+      size: 'w-48 py-8',
+      medal: '1er',
+      medalColor: '#F5C97A',
       nameSize: 'text-xl',
       scoreSize: 'text-3xl',
-      label: '2ÈME',
-      icon: Medal,
     },
-    3: {
-      gradient: 'from-[#CD7F32] via-[#E6A55A] to-[#8B4513]',
-      glow: 'shadow-[0_0_40px_rgba(205,127,50,0.3)]',
-      border: 'border-[#CD7F32]',
-      size: 'h-52 w-52',
-      iconSize: 'w-10 h-10',
+    2: {
+      size: 'w-40 py-6',
+      medal: '2e',
+      medalColor: '#C0C0C0',
       nameSize: 'text-lg',
       scoreSize: 'text-2xl',
-      label: '3ÈME',
-      icon: Medal,
+    },
+    3: {
+      size: 'w-40 py-6',
+      medal: '3e',
+      medalColor: '#CD7F32',
+      nameSize: 'text-lg',
+      scoreSize: 'text-2xl',
     },
   }
 
   const c = config[rank]
-  const Icon = c.icon
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.9 }}
+      className={`${c.size} flex flex-col items-center justify-center rounded-xl border`}
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderColor: `${c.medalColor}40`,
+        boxShadow: `0 0 30px ${c.medalColor}15`,
+      }}
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.6, ease: 'easeOut' }}
-      className={`relative flex flex-col items-center justify-center ${c.size} rounded-2xl bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border-2 ${c.border} ${c.glow}`}
+      transition={{ duration: 0.5, delay }}
     >
-      {/* Badge rang */}
-      <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r ${c.gradient}`}>
-        <span className="text-black font-black text-sm tracking-wider">{c.label}</span>
-      </div>
+      {/* Medal indicator */}
+      <span
+        className="text-sm font-black tracking-wider mb-2"
+        style={{ color: c.medalColor }}
+      >
+        {c.medal}
+      </span>
 
-      {/* Icône */}
-      <div className={`mb-4 ${c.iconSize}`}>
-        <Icon className={`w-full h-full ${rank === 1 ? 'text-[#D4AF37]' : rank === 2 ? 'text-[#C0C0C0]' : 'text-[#CD7F32]'}`} />
-      </div>
-
-      {/* Nom du joueur */}
-      <h3 className={`${c.nameSize} font-bold text-white text-center px-4 mb-2 truncate max-w-full`}>
+      {/* Name */}
+      <h3
+        className={`${c.nameSize} font-bold text-center px-4 mb-1 truncate max-w-full`}
+        style={{ color: '#FFFFFF' }}
+      >
         {winner.name}
       </h3>
 
       {/* Score */}
-      <div className={`${c.scoreSize} font-black bg-gradient-to-r ${c.gradient} bg-clip-text text-transparent`}>
+      <span
+        className={`${c.scoreSize} font-black`}
+        style={{ color: c.medalColor }}
+      >
         {winner.score}
-      </div>
-      <span className="text-gray-400 text-sm font-medium">points</span>
+      </span>
     </motion.div>
   )
 }
 
-// Ligne classement complet
+// Ranking row for full list
 function RankingRow({ winner, index }: { winner: Winner; index: number }) {
+  const colors = ['#F5C97A', '#C0C0C0', '#CD7F32']
+  const color = index < 3 ? colors[index] : '#B5B8C5'
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.1 * index }}
-      className="flex items-center gap-4 py-3 px-4 bg-white/5 rounded-lg border border-white/10"
+      transition={{ delay: 0.05 * index, duration: 0.3 }}
+      className="flex items-center gap-4 py-3 px-4 rounded-lg border"
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(255,255,255,0.1)',
+      }}
     >
-      <span className={`w-8 text-center font-bold ${
-        index === 0 ? 'text-[#D4AF37]' : index === 1 ? 'text-[#C0C0C0]' : index === 2 ? 'text-[#CD7F32]' : 'text-gray-500'
-      }`}>
+      <span
+        className="w-8 text-center font-bold"
+        style={{ color }}
+      >
         {index + 1}
       </span>
-      <span className="flex-1 text-white font-medium truncate">{winner.name}</span>
-      <span className="text-[#D4AF37] font-bold">{winner.score} pts</span>
+      <span className="flex-1 font-medium truncate" style={{ color: '#FFFFFF' }}>
+        {winner.name}
+      </span>
+      <span className="font-bold" style={{ color: '#F5C97A' }}>
+        {winner.score} pts
+      </span>
     </motion.div>
   )
 }
@@ -177,114 +185,140 @@ export default function QuizPodiumPremium({
 }: QuizPodiumPremiumProps) {
   const [showFullRanking, setShowFullRanking] = useState(false)
 
-  // S'assurer qu'on a 3 gagnants max
   const top3 = winners.slice(0, 3)
   const hasEnoughPlayers = top3.length >= 1
+  const maxScore = top3[0]?.score || 1
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-[#0a0a1a] via-[#12121f] to-[#0a0a1a] overflow-hidden"
+      transition={{ duration: 0.5 }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+      style={{ backgroundColor: '#0B0F1A' }}
     >
-      {/* Confetti léger au reveal */}
-      <LightConfetti />
+      {/* Subtle glow effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px] opacity-15"
+          style={{ background: '#F5C97A' }}
+        />
+        <div
+          className="absolute bottom-1/4 right-1/3 w-[300px] h-[300px] rounded-full blur-[150px] opacity-10"
+          style={{ background: '#6D5DF6' }}
+        />
+      </div>
 
-      {/* Glow ambiant */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20 blur-3xl bg-[#D4AF37]" />
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center max-w-4xl w-full px-8">
 
-      {/* Contenu principal */}
-      <div className="relative z-10 flex flex-col items-center max-w-5xl w-full px-4">
-        {/* Titre */}
+        {/* Title */}
         <motion.div
-          initial={{ opacity: 0, y: -30 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.5 }}
+          className="flex items-center gap-4 mb-12"
         >
-          <div className="flex items-center justify-center gap-4 mb-2">
-            <Trophy className="w-10 h-10 text-[#D4AF37]" />
-            <h1 className="text-4xl md:text-5xl font-black text-white">
-              Classement final
-            </h1>
-            <Trophy className="w-10 h-10 text-[#D4AF37]" />
-          </div>
-          <p className="text-gray-400 text-lg">Félicitations aux gagnants !</p>
+          <Trophy className="w-10 h-10" style={{ color: '#F5C97A' }} />
+          <h1
+            className="text-4xl md:text-5xl font-black tracking-tight"
+            style={{ color: '#FFFFFF' }}
+          >
+            CLASSEMENT FINAL
+          </h1>
         </motion.div>
 
-        {/* Podium */}
+        {/* Podium cards */}
         {hasEnoughPlayers && !showFullRanking && (
-          <div className="flex items-end justify-center gap-4 md:gap-8 mb-12">
-            {/* 2ème place */}
+          <div className="flex items-end justify-center gap-6 mb-12">
+            {/* 2nd place - left */}
             {top3[1] && (
-              <PodiumCard winner={top3[1]} rank={2} delay={0.5} />
+              <PodiumCard winner={top3[1]} rank={2} delay={0.3} />
             )}
 
-            {/* 1ère place */}
+            {/* 1st place - center (larger) */}
             {top3[0] && (
-              <PodiumCard winner={top3[0]} rank={1} delay={0.3} />
+              <PodiumCard winner={top3[0]} rank={1} delay={0.1} />
             )}
 
-            {/* 3ème place */}
+            {/* 3rd place - right */}
             {top3[2] && (
-              <PodiumCard winner={top3[2]} rank={3} delay={0.7} />
+              <PodiumCard winner={top3[2]} rank={3} delay={0.5} />
             )}
           </div>
         )}
 
-        {/* Classement complet */}
-        <AnimatePresence>
-          {showFullRanking && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="w-full max-w-md mb-8 max-h-[400px] overflow-y-auto"
-            >
-              <div className="space-y-2">
-                {allParticipants.map((p, i) => (
-                  <RankingRow key={i} winner={p} index={i} />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* LED Bars - DJ style */}
+        {hasEnoughPlayers && !showFullRanking && (
+          <div className="w-full max-w-lg space-y-3 mb-12">
+            {top3[0] && <LEDBar rank={1} maxScore={maxScore} score={top3[0].score} delay={0.6} />}
+            {top3[1] && <LEDBar rank={2} maxScore={maxScore} score={top3[1].score} delay={0.7} />}
+            {top3[2] && <LEDBar rank={3} maxScore={maxScore} score={top3[2].score} delay={0.8} />}
+          </div>
+        )}
 
-        {/* Boutons */}
+        {/* Full ranking list */}
+        {showFullRanking && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full max-w-md mb-8 max-h-[400px] overflow-y-auto"
+          >
+            <div className="space-y-2">
+              {allParticipants.map((p, i) => (
+                <RankingRow key={i} winner={p} index={i} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className="flex flex-col sm:flex-row items-center gap-4"
+          transition={{ duration: 0.5, delay: 1 }}
+          className="flex items-center gap-4"
         >
-          {/* Afficher classement complet */}
+          {/* Full ranking toggle */}
           {allParticipants.length > 3 && (
             <button
               onClick={() => setShowFullRanking(!showFullRanking)}
-              className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl border transition-colors hover:bg-white/10"
+              style={{
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: '#FFFFFF',
+              }}
             >
               <ListOrdered className="w-5 h-5" />
               {showFullRanking ? 'Voir le podium' : 'Classement complet'}
             </button>
           )}
 
-          {/* Relancer le jeu */}
+          {/* Restart button */}
           {onRestart && (
             <button
               onClick={onRestart}
-              className="flex items-center gap-2 px-6 py-3 bg-[#D4AF37] hover:bg-[#F4D03F] text-black font-bold rounded-xl transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors"
+              style={{
+                backgroundColor: '#F5C97A',
+                color: '#0B0F1A',
+              }}
             >
               <RotateCcw className="w-5 h-5" />
               Relancer le jeu
             </button>
           )}
 
-          {/* Nouvelle partie */}
+          {/* New game button */}
           {onNewGame && (
             <button
               onClick={onNewGame}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold rounded-xl transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors"
+              style={{
+                backgroundColor: '#6D5DF6',
+                color: '#FFFFFF',
+              }}
             >
               Nouvelle partie
             </button>
