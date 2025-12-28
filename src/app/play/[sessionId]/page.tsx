@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, Wifi, WifiOff, CheckCircle2, XCircle, Trophy, Clock } from 'lucide-react'
 
 // Lib
+import { createClient } from '@/lib/supabase'
 import { getLocalClient } from '@/lib/realtime'
 import {
   HostEventType,
@@ -21,6 +22,30 @@ import TimerBar from '@/components/quiz/TimerBar'
 
 type PlayerState = 'CONNECTING' | 'WAITING' | 'ANSWERING' | 'ANSWERED' | 'REVEAL' | 'LEADERBOARD' | 'FINISHED'
 
+// Quiz state from Supabase broadcast
+interface QuizBroadcastState {
+  gameActive: boolean
+  questions: Array<{
+    id: string
+    question: string
+    answers: string[]
+    correctAnswer: number
+    timeLimit: number
+    points: number
+  }>
+  currentQuestionIndex: number
+  isAnswering: boolean
+  showResults: boolean
+  timeLeft: number | null
+  participants: Array<{
+    odientId: string
+    odientName: string
+    totalScore: number
+    correctAnswers: number
+  }>
+  answerStats: number[]
+}
+
 export default function PlayQuizPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -28,10 +53,15 @@ export default function PlayQuizPage() {
   const sessionCode = searchParams.get('code') || ''
   const playerId = searchParams.get('playerId') || ''
   const playerName = searchParams.get('name') || 'Joueur'
+  const supabase = createClient()
 
   // Connection state
   const [connected, setConnected] = useState(false)
   const [playerState, setPlayerState] = useState<PlayerState>('CONNECTING')
+  const [useSupabase, setUseSupabase] = useState(false)
+
+  // Supabase quiz state
+  const [quizState, setQuizState] = useState<QuizBroadcastState | null>(null)
 
   // Time sync
   const [offsetMs, setOffsetMs] = useState(0)
@@ -67,35 +97,147 @@ export default function PlayQuizPage() {
   const clientRef = useRef(getLocalClient())
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Connect and setup listeners
+  // Subscribe to Supabase quiz channel
   useEffect(() => {
-    const client = clientRef.current
+    if (!sessionCode) return
 
-    client.connect(sessionId, 'player').then(() => {
-      setConnected(true)
-      setPlayerState('WAITING')
+    console.log('Subscribing to Supabase quiz channel:', `quiz-game-${sessionCode}`)
 
-      // Send join request
-      client.send({
-        type: 'join_request',
-        playerId,
-        playerName: decodeURIComponent(playerName),
-        sessionCode,
-        timestamp: Date.now(),
+    const channel = supabase
+      .channel(`quiz-game-${sessionCode}`)
+      .on('broadcast', { event: 'quiz_state' }, (payload) => {
+        console.log('Received quiz state from Supabase:', payload)
+        if (payload.payload) {
+          setQuizState(payload.payload as QuizBroadcastState)
+          setUseSupabase(true)
+          setConnected(true)
+        }
       })
-    })
+      .subscribe((status) => {
+        console.log('Supabase channel status:', status)
+        if (status === 'SUBSCRIBED') {
+          setConnected(true)
+          setPlayerState('WAITING')
+        }
+      })
 
-    // Listen for host events
-    const unsubscribe = client.onHostEvent((event: HostEventType) => {
-      handleHostEvent(event)
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [sessionCode, supabase])
+
+  // Handle quiz state changes from Supabase
+  useEffect(() => {
+    if (!quizState || !useSupabase) return
+
+    const q = quizState.questions[quizState.currentQuestionIndex]
+    if (!q) return
+
+    if (quizState.gameActive && quizState.isAnswering) {
+      // Question is active
+      setCurrentQuestion({
+        index: quizState.currentQuestionIndex,
+        question: q.question,
+        answers: {
+          A: q.answers[0] || '',
+          B: q.answers[1] || '',
+          C: q.answers[2] || '',
+          D: q.answers[3] || '',
+        },
+        opensAt: Date.now(),
+        closesAt: Date.now() + (quizState.timeLeft || 20) * 1000,
+        nonce: q.id,
+        hideQuestion: false,
+        points: q.points,
+      })
+      setPlayerState('ANSWERING')
+      setCanAnswer(true)
+      setTotalTimeMs((quizState.timeLeft || 20) * 1000)
+      setTimeLeftMs((quizState.timeLeft || 20) * 1000)
+      setCorrectKey(null)
+    } else if (quizState.gameActive && quizState.showResults) {
+      // Results are shown
+      const correctIndex = q.correctAnswer
+      const keys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D']
+      setCorrectKey(keys[correctIndex])
+      setPlayerState('REVEAL')
+      setCanAnswer(false)
+
+      // Check if answer was correct
+      if (selectedAnswer !== null) {
+        const selectedIndex = keys.indexOf(selectedAnswer)
+        setLastAnswerCorrect(selectedIndex === correctIndex)
+      }
+    } else if (quizState.gameActive && !quizState.isAnswering && !quizState.showResults) {
+      // Waiting between questions
+      setPlayerState('WAITING')
+      setSelectedAnswer(null)
+      setCorrectKey(null)
+    } else if (!quizState.gameActive) {
+      // Quiz not active
+      setPlayerState('WAITING')
+    }
+
+    // Update score
+    const myEntry = quizState.participants.find(p => p.odientId === playerId)
+    if (myEntry) {
+      setMyScore(myEntry.totalScore)
+    }
+  }, [quizState, useSupabase, playerId, selectedAnswer])
+
+  // Timer for countdown
+  useEffect(() => {
+    if (playerState !== 'ANSWERING' || !quizState?.timeLeft) return
+
+    const timer = setInterval(() => {
+      setTimeLeftMs(prev => {
+        const newTime = prev - 100
+        return Math.max(0, newTime)
+      })
+    }, 100)
+
+    return () => clearInterval(timer)
+  }, [playerState, quizState?.timeLeft])
+
+  // Connect to local client for demo mode (fallback)
+  useEffect(() => {
+    // Only use local client if Supabase doesn't work after 2 seconds
+    const timeout = setTimeout(() => {
+      if (!useSupabase) {
+        const client = clientRef.current
+
+        client.connect(sessionId, 'player').then(() => {
+          if (!useSupabase) {
+            setConnected(true)
+            setPlayerState('WAITING')
+
+            // Send join request
+            client.send({
+              type: 'join_request',
+              playerId,
+              playerName: decodeURIComponent(playerName),
+              sessionCode,
+              timestamp: Date.now(),
+            })
+          }
+        })
+      }
+    }, 2000)
+
+    // Listen for host events (demo mode)
+    const unsubscribe = clientRef.current.onHostEvent((event: HostEventType) => {
+      if (!useSupabase) {
+        handleHostEvent(event)
+      }
     })
 
     return () => {
+      clearTimeout(timeout)
       unsubscribe()
-      client.disconnect()
+      clientRef.current.disconnect()
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [sessionId, playerId, playerName, sessionCode])
+  }, [sessionId, playerId, playerName, sessionCode, useSupabase])
 
   // Handle host events
   const handleHostEvent = useCallback(
