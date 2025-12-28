@@ -164,7 +164,7 @@ export interface Session {
   challenges_current: string | null // Current challenge ID being displayed
   // Quiz settings
   quiz_active: boolean
-  quiz_lobby_visible: boolean // Lobby screen visible (before quiz starts)
+  quiz_lobby_visible?: boolean // Lobby screen visible (before quiz starts)
   quiz_questions: string | null // JSON array of QuizQuestion
   quiz_current_question: number
   quiz_is_answering: boolean
