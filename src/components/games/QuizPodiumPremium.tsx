@@ -234,46 +234,40 @@ export default function QuizPodiumPremium({
               )}
             </div>
 
-            {/* Marches du podium */}
+            {/* Marches du podium - ordre 2 | 1 | 3 (1er au centre) */}
             <div className="flex items-end justify-center gap-1">
-              {/* Marche 2ème place */}
-              {top3[1] && (
-                <motion.div
-                  initial={{ opacity: 0, scaleY: 0 }}
-                  animate={{ opacity: 1, scaleY: 1 }}
-                  transition={{ delay: 0.6, duration: 0.4, ease: 'easeOut' }}
-                  style={{ transformOrigin: 'bottom' }}
-                  className="w-56 md:w-60 h-20 rounded-t-lg bg-gradient-to-b from-[#C0C0C0] to-[#808080] flex items-center justify-center"
-                >
-                  <span className="text-3xl font-black text-white/90">2</span>
-                </motion.div>
-              )}
+              {/* Marche 2ème place - gauche */}
+              <motion.div
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ opacity: top3[1] ? 1 : 0, scaleY: top3[1] ? 1 : 0 }}
+                transition={{ delay: 0.6, duration: 0.4, ease: 'easeOut' }}
+                style={{ transformOrigin: 'bottom' }}
+                className="w-56 md:w-60 h-20 rounded-t-lg bg-gradient-to-b from-[#C0C0C0] to-[#808080] flex items-center justify-center"
+              >
+                <span className="text-3xl font-black text-white/90">2</span>
+              </motion.div>
 
-              {/* Marche 1ère place */}
-              {top3[0] && (
-                <motion.div
-                  initial={{ opacity: 0, scaleY: 0 }}
-                  animate={{ opacity: 1, scaleY: 1 }}
-                  transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
-                  style={{ transformOrigin: 'bottom' }}
-                  className="w-64 md:w-68 h-32 rounded-t-lg bg-gradient-to-b from-[#D4AF37] to-[#8B7355] flex items-center justify-center"
-                >
-                  <span className="text-4xl font-black text-white/90">1</span>
-                </motion.div>
-              )}
+              {/* Marche 1ère place - centre */}
+              <motion.div
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ opacity: top3[0] ? 1 : 0, scaleY: top3[0] ? 1 : 0 }}
+                transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
+                style={{ transformOrigin: 'bottom' }}
+                className="w-64 md:w-68 h-32 rounded-t-lg bg-gradient-to-b from-[#D4AF37] to-[#8B7355] flex items-center justify-center"
+              >
+                <span className="text-4xl font-black text-white/90">1</span>
+              </motion.div>
 
-              {/* Marche 3ème place */}
-              {top3[2] && (
-                <motion.div
-                  initial={{ opacity: 0, scaleY: 0 }}
-                  animate={{ opacity: 1, scaleY: 1 }}
-                  transition={{ delay: 0.8, duration: 0.4, ease: 'easeOut' }}
-                  style={{ transformOrigin: 'bottom' }}
-                  className="w-52 md:w-56 h-14 rounded-t-lg bg-gradient-to-b from-[#CD7F32] to-[#8B4513] flex items-center justify-center"
-                >
-                  <span className="text-2xl font-black text-white/90">3</span>
-                </motion.div>
-              )}
+              {/* Marche 3ème place - droite */}
+              <motion.div
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ opacity: top3[2] ? 1 : 0, scaleY: top3[2] ? 1 : 0 }}
+                transition={{ delay: 0.8, duration: 0.4, ease: 'easeOut' }}
+                style={{ transformOrigin: 'bottom' }}
+                className="w-52 md:w-56 h-14 rounded-t-lg bg-gradient-to-b from-[#CD7F32] to-[#8B4513] flex items-center justify-center"
+              >
+                <span className="text-2xl font-black text-white/90">3</span>
+              </motion.div>
             </div>
           </div>
         )}
