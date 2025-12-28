@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Loader2, User, ArrowRight } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
 
 // Generate unique player ID
 function generatePlayerId(): string {
@@ -14,10 +15,13 @@ export default function JoinQuizPage() {
   const params = useParams()
   const router = useRouter()
   const sessionCode = params.sessionCode as string
+  const supabase = createClient()
 
   const [playerName, setPlayerName] = useState('')
   const [playerId, setPlayerId] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -30,7 +34,52 @@ export default function JoinQuizPage() {
     if (savedName) {
       setPlayerName(savedName)
     }
-  }, [])
+
+    // Check Supabase for the session
+    async function fetchSession() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('sessions')
+          .select('id, quiz_lobby_visible, quiz_active')
+          .eq('code', sessionCode)
+          .eq('is_active', true)
+          .single()
+
+        if (fetchError) throw fetchError
+
+        if (data) {
+          setSessionId(data.id)
+          // If quiz lobby is not visible and quiz is not active, session not found
+          if (!data.quiz_lobby_visible && !data.quiz_active) {
+            setError('Aucun quiz en cours')
+          }
+        }
+      } catch {
+        // Fallback to localStorage for demo mode
+        const keys = Object.keys(localStorage)
+        for (const key of keys) {
+          if (key.startsWith('quiz-session-')) {
+            try {
+              const localData = JSON.parse(localStorage.getItem(key) || '{}')
+              if (localData.sessionCode === sessionCode) {
+                setSessionId(localData.sessionId)
+                break
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        }
+        if (!sessionId) {
+          setError('Session introuvable')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSession()
+  }, [sessionCode, supabase])
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,31 +99,14 @@ export default function JoinQuizPage() {
       return
     }
 
-    setLoading(true)
+    setJoining(true)
     setError('')
 
     // Save name for next time
     localStorage.setItem('quiz-player-name', playerName.trim())
 
-    // Find session ID from localStorage (demo mode) or use sessionCode
-    // In demo mode, we stored the mapping in localStorage
-    let sessionId = sessionCode
-
-    // Check localStorage for demo session
-    const keys = Object.keys(localStorage)
-    for (const key of keys) {
-      if (key.startsWith('quiz-session-')) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key) || '{}')
-          if (data.sessionCode === sessionCode) {
-            sessionId = data.sessionId
-            break
-          }
-        } catch {
-          // Ignore
-        }
-      }
-    }
+    // Use session ID from Supabase or fallback to code
+    const targetSessionId = sessionId || sessionCode
 
     // Store player info
     localStorage.setItem(
@@ -87,8 +119,76 @@ export default function JoinQuizPage() {
       })
     )
 
+    // Register player in Supabase if we have a valid session
+    if (sessionId) {
+      try {
+        // Get current participants
+        const { data: session } = await supabase
+          .from('sessions')
+          .select('quiz_participants')
+          .eq('id', sessionId)
+          .single()
+
+        const participants = session?.quiz_participants
+          ? JSON.parse(session.quiz_participants)
+          : []
+
+        // Add new participant if not already exists
+        if (!participants.find((p: { odientId: string }) => p.odientId === playerId)) {
+          participants.push({
+            odientId: playerId,
+            odientName: playerName.trim(),
+            totalScore: 0,
+            correctAnswers: 0,
+          })
+
+          await supabase
+            .from('sessions')
+            .update({ quiz_participants: JSON.stringify(participants) })
+            .eq('id', sessionId)
+        }
+      } catch (err) {
+        console.error('Error registering player:', err)
+      }
+    }
+
     // Navigate to play page
-    router.push(`/play/${sessionId}?code=${sessionCode}&playerId=${playerId}&name=${encodeURIComponent(playerName.trim())}`)
+    router.push(`/play/${targetSessionId}?code=${sessionCode}&playerId=${playerId}&name=${encodeURIComponent(playerName.trim())}`)
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37] mx-auto mb-4" />
+          <p className="text-gray-400">Connexion au quiz...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state (no session found)
+  if (error && !sessionId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex items-center justify-center p-4">
+        <motion.div
+          className="text-center max-w-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="text-6xl mb-4">❌</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Oups !</h1>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 bg-[#D4AF37] text-[#1a1a2e] font-bold rounded-xl"
+          >
+            Retour à l'accueil
+          </button>
+        </motion.div>
+      </div>
+    )
   }
 
   return (
@@ -155,12 +255,12 @@ export default function JoinQuizPage() {
 
           <motion.button
             type="submit"
-            disabled={loading || !playerName.trim()}
+            disabled={joining || !playerName.trim()}
             className="w-full py-4 px-6 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#1a1a2e] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            {loading ? (
+            {joining ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Connexion...

@@ -67,6 +67,12 @@ export default function InvitePage() {
           return
         }
 
+        // Check if quiz lobby is visible - redirect to quiz join page
+        if (data.quiz_lobby_visible) {
+          router.push(`/join/${code}`)
+          return
+        }
+
         setSession(data)
       } catch {
         setError('Session introuvable')
@@ -78,7 +84,7 @@ export default function InvitePage() {
     if (code) {
       fetchSession()
     }
-  }, [code, supabase])
+  }, [code, router, supabase])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
