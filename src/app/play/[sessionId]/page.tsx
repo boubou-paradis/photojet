@@ -185,9 +185,9 @@ export default function PlayQuizPage() {
     }
   }, [quizState, useSupabase, playerId, selectedAnswer])
 
-  // Timer for countdown
+  // Timer for smooth countdown (syncs with broadcasts from admin)
   useEffect(() => {
-    if (playerState !== 'ANSWERING' || !quizState?.timeLeft) return
+    if (playerState !== 'ANSWERING') return
 
     const timer = setInterval(() => {
       setTimeLeftMs(prev => {
@@ -197,7 +197,7 @@ export default function PlayQuizPage() {
     }, 100)
 
     return () => clearInterval(timer)
-  }, [playerState, quizState?.timeLeft])
+  }, [playerState])
 
   // Connect to local client for demo mode (fallback)
   useEffect(() => {

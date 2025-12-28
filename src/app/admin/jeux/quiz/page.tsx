@@ -200,6 +200,18 @@ export default function QuizPage() {
             .from('sessions')
             .update({ quiz_time_left: newTime })
             .eq('id', session.id)
+
+          // Broadcast time update every second for phone sync
+          broadcastGameState({
+            gameActive: true,
+            questions,
+            currentQuestionIndex,
+            isAnswering: true,
+            showResults: false,
+            timeLeft: newTime,
+            participants,
+            answerStats,
+          })
         }
 
         return newTime
