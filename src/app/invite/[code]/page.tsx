@@ -52,30 +52,30 @@ export default function InvitePage() {
       try {
         console.log('Invite page: fetching session with code:', code)
 
-        // Fetch session without requiring is_active first
-        const { data, error } = await supabase
+        // First check if there's a quiz lobby active (don't require is_active)
+        const { data: quizSession } = await supabase
           .from('sessions')
-          .select('*')
+          .select('quiz_lobby_visible, quiz_active')
           .eq('code', code)
           .single()
 
-        console.log('Invite page: Supabase response:', { data, error })
-
-        if (error) throw error
-
-        // Check if quiz is active - redirect to quiz join page
-        if (data.quiz_lobby_visible || data.quiz_active) {
+        if (quizSession?.quiz_lobby_visible || quizSession?.quiz_active) {
           console.log('Invite page: quiz active, redirecting to /join/' + code)
           router.push(`/join/${code}`)
           return
         }
 
-        // Check if session is active for photo sharing
-        if (!data.is_active) {
-          setError('Cette session n\'est pas active')
-          setLoading(false)
-          return
-        }
+        // For regular photo sharing, require is_active
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('code', code)
+          .eq('is_active', true)
+          .single()
+
+        console.log('Invite page: Supabase response:', { data, error })
+
+        if (error) throw error
 
         const now = new Date()
         const expiresAt = new Date(data.expires_at)
