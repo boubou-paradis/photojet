@@ -350,7 +350,7 @@ export default function PlayQuizPage() {
 
   // Handle answer selection
   const handleAnswer = useCallback(
-    (key: 'A' | 'B' | 'C' | 'D') => {
+    async (key: 'A' | 'B' | 'C' | 'D') => {
       if (!canAnswer || selectedAnswer !== null || !currentQuestion) return
 
       const clientSentAt = Date.now()
@@ -359,7 +359,63 @@ export default function PlayQuizPage() {
       setSelectedAnswer(key)
       setPlayerState('ANSWERED')
 
-      // Send answer
+      // Convert key to index (A=0, B=1, C=2, D=3)
+      const answerIndex = ['A', 'B', 'C', 'D'].indexOf(key)
+
+      // Check if answer is correct and calculate points
+      const currentQ = quizState?.questions[currentQuestion.index]
+      const isCorrect = currentQ && answerIndex === currentQ.correctAnswer
+      const pointsEarned = isCorrect ? (currentQ?.points || 10) : 0
+
+      // Save answer to Supabase if using production mode
+      if (useSupabase && sessionId) {
+        try {
+          // Get current answers and participants
+          const { data: session } = await supabase
+            .from('sessions')
+            .select('quiz_answers, quiz_participants')
+            .eq('id', sessionId)
+            .single()
+
+          // Update answers
+          const answers = session?.quiz_answers ? JSON.parse(session.quiz_answers) : []
+          answers.push({
+            odientId: playerId,
+            questionId: currentQuestion.nonce,
+            answerIndex,
+            timestamp: clientSentAt,
+          })
+
+          // Update participant score
+          const participants = session?.quiz_participants ? JSON.parse(session.quiz_participants) : []
+          const participantIndex = participants.findIndex((p: { odientId: string }) => p.odientId === playerId)
+
+          if (participantIndex >= 0) {
+            participants[participantIndex].totalScore += pointsEarned
+            if (isCorrect) {
+              participants[participantIndex].correctAnswers += 1
+            }
+          }
+
+          // Save to database
+          await supabase
+            .from('sessions')
+            .update({
+              quiz_answers: JSON.stringify(answers),
+              quiz_participants: JSON.stringify(participants),
+            })
+            .eq('id', sessionId)
+
+          // Update local score
+          if (isCorrect) {
+            setMyScore(prev => prev + pointsEarned)
+          }
+        } catch (err) {
+          console.error('Error saving answer:', err)
+        }
+      }
+
+      // Also send via BroadcastChannel for demo mode
       clientRef.current.send({
         type: 'answer_submitted',
         playerId,
@@ -371,7 +427,7 @@ export default function PlayQuizPage() {
         nonce: currentQuestion.nonce,
       })
     },
-    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs]
+    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, useSupabase, sessionId, supabase, quizState]
   )
 
   // Render based on state

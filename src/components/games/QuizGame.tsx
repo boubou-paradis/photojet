@@ -228,30 +228,32 @@ export default function QuizGame({
           )}
         </div>
 
-        {/* QUESTION */}
-        <motion.div
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="flex-shrink-0 mb-8"
-        >
-          <div
-            className="bg-gradient-to-b from-[#242428] to-[#1a1a1e] rounded-3xl p-8 border-2 border-[#D4AF37]/30"
-            style={{
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 175, 55, 0.1)',
-            }}
-          >
-            <h2
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white text-center leading-tight"
-              style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
-            >
-              {currentQuestion.question}
-            </h2>
-          </div>
-        </motion.div>
-
-        {/* RÉPONSES - Affichées seulement quand la question est lancée */}
+        {/* QUESTION ET RÉPONSES - Affichées seulement quand la question est lancée */}
         {(isAnswering || showResults) ? (
+          <>
+            {/* QUESTION */}
+            <motion.div
+              initial={{ y: -30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex-shrink-0 mb-8"
+            >
+              <div
+                className="bg-gradient-to-b from-[#242428] to-[#1a1a1e] rounded-3xl p-8 border-2 border-[#D4AF37]/30"
+                style={{
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 175, 55, 0.1)',
+                }}
+              >
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-bold text-white text-center leading-tight"
+                  style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                >
+                  {currentQuestion.question}
+                </h2>
+              </div>
+            </motion.div>
+
+            {/* RÉPONSES */}
           <div className="flex-1 grid grid-cols-2 gap-4 mb-6">
             {currentQuestion.answers.map((answer, index) => {
               const color = ANSWER_COLORS[index]
@@ -336,6 +338,7 @@ export default function QuizGame({
               )
             })}
           </div>
+          </>
         ) : (
           /* Écran d'attente avant lancement de la question */
           <div className="flex-1 flex items-center justify-center">
@@ -357,18 +360,20 @@ export default function QuizGame({
           </div>
         )}
 
-        {/* POINTS */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex justify-center"
-        >
-          <div className="bg-[#D4AF37]/20 border border-[#D4AF37] rounded-full px-6 py-2">
-            <span className="text-[#D4AF37] font-bold text-lg">
-              {currentQuestion.points} points
-            </span>
-          </div>
-        </motion.div>
+        {/* POINTS - Affichés seulement quand la question est lancée */}
+        {(isAnswering || showResults) && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex justify-center"
+          >
+            <div className="bg-[#D4AF37]/20 border border-[#D4AF37] rounded-full px-6 py-2">
+              <span className="text-[#D4AF37] font-bold text-lg">
+                {currentQuestion.points} points
+              </span>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* LEADERBOARD OVERLAY */}
