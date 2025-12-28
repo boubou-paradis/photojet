@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { QuizQuestion, QuizParticipant } from '@/types/database'
-import QuizPodium from './QuizPodium'
+import QuizPodiumPremium from './QuizPodiumPremium'
 
 interface QuizGameProps {
   questions: QuizQuestion[]
@@ -15,7 +15,8 @@ interface QuizGameProps {
   participants: QuizParticipant[]
   answerStats: number[]
   isFinished?: boolean
-  onClosePodium?: () => void
+  onRestart?: () => void
+  onNewGame?: () => void
 }
 
 // Couleurs pour les réponses (style Kahoot)
@@ -71,7 +72,8 @@ export default function QuizGame({
   participants,
   answerStats,
   isFinished = false,
-  onClosePodium,
+  onRestart,
+  onNewGame,
 }: QuizGameProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [windowHeight, setWindowHeight] = useState(800)
@@ -468,7 +470,16 @@ export default function QuizGame({
       {/* PODIUM - Affiché à la fin du quiz */}
       <AnimatePresence>
         {isFinished && podiumWinners.length > 0 && (
-          <QuizPodium winners={podiumWinners} onClose={onClosePodium} />
+          <QuizPodiumPremium
+            winners={podiumWinners}
+            allParticipants={sortedParticipants.map((p, i) => ({
+              name: p.odientName,
+              score: p.totalScore,
+              rank: i + 1,
+            }))}
+            onRestart={onRestart}
+            onNewGame={onNewGame}
+          />
         )}
       </AnimatePresence>
     </div>
