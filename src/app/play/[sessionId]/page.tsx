@@ -771,8 +771,73 @@ export default function PlayQuizPage() {
             </motion.div>
           )}
 
-          {/* FINISHED */}
-          {playerState === 'FINISHED' && (
+          {/* FINISHED - Écran spécial pour le gagnant */}
+          {playerState === 'FINISHED' && myRank === 1 && (
+            <motion.div
+              key="finished-winner"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full max-w-sm text-center"
+            >
+              {/* Grande couronne animée */}
+              <motion.div
+                className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-b from-[#D4AF37]/40 to-[#B8860B]/20 border-4 border-[#D4AF37] flex items-center justify-center"
+                style={{ boxShadow: '0 0 80px rgba(212, 175, 55, 0.5)' }}
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <Crown className="w-16 h-16 text-[#D4AF37]" />
+                </motion.div>
+              </motion.div>
+
+              {/* TU AS GAGNÉ ! */}
+              <motion.h2
+                className="text-4xl font-black mb-2 tracking-wide"
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #F4D03F 50%, #D4AF37 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                TU AS GAGNÉ !
+              </motion.h2>
+
+              <motion.div
+                className="flex items-center justify-center gap-2 mb-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                <span className="text-[#D4AF37] font-bold text-lg">1ère place</span>
+                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+              </motion.div>
+
+              {/* Score */}
+              <motion.div
+                className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] rounded-2xl p-6 border-2 border-[#D4AF37]"
+                style={{ boxShadow: '0 0 50px rgba(212, 175, 55, 0.3)' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <p className="text-white text-3xl font-black">{myScore} points</p>
+                <p className="text-[#D4AF37] text-sm mt-2">Champion du Quiz !</p>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* FINISHED - Écran normal pour les autres */}
+          {playerState === 'FINISHED' && myRank !== 1 && (
             <motion.div
               key="finished"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -787,11 +852,7 @@ export default function PlayQuizPage() {
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: 'spring', stiffness: 200 }}
               >
-                {myRank === 1 ? (
-                  <Crown className="w-12 h-12 text-[#D4AF37]" />
-                ) : (
-                  <Trophy className="w-12 h-12 text-[#D4AF37]" />
-                )}
+                <Trophy className="w-12 h-12 text-[#D4AF37]" />
               </motion.div>
               <h2 className="text-3xl font-black text-white mb-6 tracking-wide">Quiz terminé !</h2>
 
@@ -820,17 +881,26 @@ export default function PlayQuizPage() {
                 </motion.div>
               )}
 
-              {myRank === 1 && (
-                <motion.div
-                  className="mt-6 flex items-center justify-center gap-2"
+              {myRank === 2 && (
+                <motion.p
+                  className="mt-4 text-[#C0C0C0] font-bold"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-                  <span className="text-[#D4AF37] font-black text-xl tracking-wide">Champion !</span>
-                  <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-                </motion.div>
+                  Excellente 2ème place !
+                </motion.p>
+              )}
+
+              {myRank === 3 && (
+                <motion.p
+                  className="mt-4 text-[#CD7F32] font-bold"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Bravo, sur le podium !
+                </motion.p>
               )}
             </motion.div>
           )}
