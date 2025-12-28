@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
-import { Maximize, Minimize, ImagePlus, MessageCircle, Quote } from 'lucide-react'
+import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message } from '@/types/database'
 import { getInviteUrl } from '@/lib/utils'
@@ -908,6 +908,187 @@ export default function LivePage() {
         audioSettings={wheelAudioSettings}
         spinMode={wheelState?.spinMode}
       />
+    )
+  }
+
+  // Show Quiz Lobby if visible (before quiz starts)
+  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true
+
+  if (isQuizLobbyVisible) {
+    // Get participants from broadcast state or database
+    const quizParticipants: QuizParticipant[] = quizState?.participants ?? (session.quiz_participants ? (() => {
+      try {
+        return JSON.parse(session.quiz_participants as string)
+      } catch {
+        return []
+      }
+    })() : [])
+
+    return (
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#0f0a20] flex flex-col overflow-hidden">
+        {/* Stage background effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(100,50,180,0.15)_0%,_transparent_70%)]" />
+          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+          <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] bg-indigo-600/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,_rgba(212,175,55,0.08)_0%,_transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_40%,_rgba(0,0,0,0.4)_100%)]" />
+        </div>
+
+        {/* Fullscreen button */}
+        <motion.button
+          onClick={toggleFullscreen}
+          className="fixed top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-white/10 rounded-full transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          {isFullscreen ? (
+            <Minimize className="h-6 w-6 text-white" />
+          ) : (
+            <Maximize className="h-6 w-6 text-white" />
+          )}
+        </motion.button>
+
+        {/* Main content */}
+        <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-4xl"
+          >
+            {/* Title */}
+            <div className="text-center mb-8">
+              <motion.div
+                className="text-6xl mb-4 inline-block"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                🎯
+              </motion.div>
+              <h1 className="text-5xl font-black text-white">
+                Quiz <span className="text-[#D4AF37]">Live</span>
+              </h1>
+            </div>
+
+            {/* Main content: QR Code + Instructions */}
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
+              {/* QR Code Section */}
+              <motion.div
+                className="bg-white p-6 rounded-3xl shadow-2xl shadow-[#D4AF37]/20"
+                initial={{ scale: 0, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+              >
+                <QRCode
+                  value={getInviteUrl(code)}
+                  size={280}
+                  level="M"
+                  bgColor="white"
+                  fgColor="#1a1a2e"
+                />
+              </motion.div>
+
+              {/* Instructions Section */}
+              <motion.div
+                className="text-center lg:text-left space-y-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-[#D4AF37] text-[#1a1a2e] flex items-center justify-center font-black text-xl">
+                    1
+                  </div>
+                  <p className="text-white text-xl">Scannez le QR code</p>
+                </div>
+
+                <div className="flex items-center gap-4 pl-4">
+                  <div className="text-gray-500 text-lg">ou</div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-[#D4AF37] text-[#1a1a2e] flex items-center justify-center font-black text-xl">
+                    2
+                  </div>
+                  <div>
+                    <p className="text-white text-xl">Allez sur</p>
+                    <p className="text-[#D4AF37] text-lg font-mono">
+                      {getInviteUrl(code).replace(/^https?:\/\//, '')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* PIN Code */}
+                <motion.div
+                  className="bg-[#1a1a2e]/80 backdrop-blur-xl rounded-2xl p-6 border-2 border-[#D4AF37]/50 mt-8"
+                  animate={{
+                    borderColor: ['rgba(212, 175, 55, 0.5)', 'rgba(212, 175, 55, 1)', 'rgba(212, 175, 55, 0.5)'],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <p className="text-gray-400 text-sm uppercase tracking-wider mb-2">Code PIN</p>
+                  <p className="text-5xl font-black text-white tracking-[0.3em]">{code}</p>
+                </motion.div>
+              </motion.div>
+            </div>
+
+            {/* Player Counter */}
+            <motion.div
+              className="mt-12 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-4 bg-[#1a1a2e]/60 backdrop-blur-xl rounded-full px-8 py-4 border border-white/10">
+                <Users className="h-8 w-8 text-[#D4AF37]" />
+                <div className="flex items-baseline gap-2">
+                  <motion.span
+                    key={quizParticipants.length}
+                    className="text-5xl font-black text-white"
+                    initial={{ scale: 1.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    {quizParticipants.length}
+                  </motion.span>
+                  <span className="text-xl text-gray-400">
+                    joueur{quizParticipants.length !== 1 ? 's' : ''} connecté{quizParticipants.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Player dots animation */}
+              {quizParticipants.length > 0 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  {[...Array(Math.min(quizParticipants.length, 20))].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-3 h-3 rounded-full bg-[#D4AF37]"
+                      initial={{ scale: 0, y: 20 }}
+                      animate={{ scale: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, type: 'spring', stiffness: 500 }}
+                    />
+                  ))}
+                  {quizParticipants.length > 20 && (
+                    <span className="text-[#D4AF37] font-bold ml-2">+{quizParticipants.length - 20}</span>
+                  )}
+                </div>
+              )}
+
+              {quizParticipants.length === 0 && (
+                <motion.p
+                  className="text-gray-500 mt-4"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  En attente des joueurs...
+                </motion.p>
+              )}
+            </motion.div>
+          </motion.div>
+        </main>
+      </div>
     )
   }
 

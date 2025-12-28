@@ -61,6 +61,7 @@ export default function QuizPage() {
   const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null)
 
   // Game state
+  const [lobbyVisible, setLobbyVisible] = useState(false) // Lobby affiché mais quiz pas encore lancé
   const [gameActive, setGameActive] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isAnswering, setIsAnswering] = useState(false)
@@ -208,9 +209,9 @@ export default function QuizPage() {
     return () => clearInterval(timer)
   }, [isAnswering, timeLeft, session, questions, currentQuestionIndex, participants, answerStats, broadcastGameState, supabase])
 
-  // Subscribe to realtime answers
+  // Subscribe to realtime answers (also works in lobby mode)
   useEffect(() => {
-    if (!session || !gameActive) return
+    if (!session || (!gameActive && !lobbyVisible)) return
 
     const channel = supabase
       .channel(`quiz-realtime-${session.id}`)
@@ -255,7 +256,7 @@ export default function QuizPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [session, gameActive, questions, currentQuestionIndex, supabase])
+  }, [session, gameActive, lobbyVisible, questions, currentQuestionIndex, supabase])
 
   // Sauvegarder les questions dans la DB
   async function saveQuestionsToDatabase(updatedQuestions: QuizQuestion[]) {
@@ -294,7 +295,8 @@ export default function QuizPage() {
     if (editingQuestion?.id === id) setEditingQuestion(null)
   }
 
-  async function launchGame() {
+  // Afficher le lobby (sans lancer le quiz)
+  async function showLobby() {
     if (!session || questions.length === 0) {
       toast.error('Ajoutez au moins une question')
       return
@@ -305,7 +307,8 @@ export default function QuizPage() {
       const { error } = await supabase
         .from('sessions')
         .update({
-          quiz_active: true,
+          quiz_active: false, // Quiz pas encore actif
+          quiz_lobby_visible: true, // Lobby visible
           quiz_questions: JSON.stringify(questions),
           quiz_current_question: 0,
           quiz_is_answering: false,
@@ -318,16 +321,11 @@ export default function QuizPage() {
 
       if (error) throw error
 
-      setGameActive(true)
-      setCurrentQuestionIndex(0)
-      setIsAnswering(false)
-      setShowResults(false)
-      setTimeLeft(null)
+      setLobbyVisible(true)
       setParticipants([])
-      setAnswerStats([0, 0, 0, 0])
 
       broadcastGameState({
-        gameActive: true,
+        gameActive: false,
         questions,
         currentQuestionIndex: 0,
         isAnswering: false,
@@ -337,8 +335,60 @@ export default function QuizPage() {
         answerStats: [0, 0, 0, 0],
       })
 
-      toast.success('Jeu configuré!')
+      toast.success('Lobby affiché!')
       window.open(`/live/${session.code}`, 'photojet-live')
+    } catch (err) {
+      console.error('Error showing lobby:', err)
+      toast.error('Erreur lors de l\'affichage du lobby')
+    } finally {
+      setLaunching(false)
+    }
+  }
+
+  // Lancer le quiz (après le lobby)
+  async function launchGame() {
+    if (!session || questions.length === 0) {
+      toast.error('Ajoutez au moins une question')
+      return
+    }
+
+    setLaunching(true)
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          quiz_active: true,
+          quiz_lobby_visible: false,
+          quiz_questions: JSON.stringify(questions),
+          quiz_current_question: 0,
+          quiz_is_answering: false,
+          quiz_show_results: false,
+          quiz_time_left: null,
+        })
+        .eq('id', session.id)
+
+      if (error) throw error
+
+      setLobbyVisible(false)
+      setGameActive(true)
+      setCurrentQuestionIndex(0)
+      setIsAnswering(false)
+      setShowResults(false)
+      setTimeLeft(null)
+      setAnswerStats([0, 0, 0, 0])
+
+      broadcastGameState({
+        gameActive: true,
+        questions,
+        currentQuestionIndex: 0,
+        isAnswering: false,
+        showResults: false,
+        timeLeft: null,
+        participants,
+        answerStats: [0, 0, 0, 0],
+      })
+
+      toast.success('Quiz lancé!')
     } catch (err) {
       console.error('Error launching game:', err)
       toast.error('Erreur lors du lancement')
@@ -729,21 +779,79 @@ export default function QuizPage() {
               </motion.div>
             )}
 
-            {/* Launch button */}
-            <button
-              onClick={launchGame}
-              disabled={launching || questions.length === 0}
-              className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {launching ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>🚀 Lancer le quiz ({questions.length} questions)</>
-              )}
-            </button>
+            {/* Action buttons */}
+            {!lobbyVisible ? (
+              /* Step 1: Show Lobby button */
+              <button
+                onClick={showLobby}
+                disabled={launching || questions.length === 0}
+                className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {launching ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <Monitor className="h-5 w-5" />
+                    Afficher le Lobby ({questions.length} questions)
+                  </>
+                )}
+              </button>
+            ) : (
+              /* Step 2: Lobby is visible, show player count and Launch button */
+              <div className="space-y-4">
+                {/* Player count */}
+                <div className="bg-[#1A1A1E] rounded-xl p-4 border border-[#D4AF37]/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                        <span className="text-xl">👥</span>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Joueurs connectés</p>
+                        <p className="text-white text-2xl font-bold">{participants.length}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.open(`/live/${session?.code}`, 'photojet-live')}
+                      className="px-3 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-sm flex items-center gap-2"
+                    >
+                      <Monitor className="h-4 w-4" />
+                      Voir l'écran
+                    </button>
+                  </div>
+                </div>
 
-            {/* Clear data button */}
-            {questions.length > 0 && questions !== DEFAULT_QUESTIONS && (
+                {/* Launch Quiz button */}
+                <button
+                  onClick={launchGame}
+                  disabled={launching}
+                  className="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {launching ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5" />
+                      Lancer le Quiz
+                    </>
+                  )}
+                </button>
+
+                {/* Cancel button */}
+                <button
+                  onClick={() => {
+                    setLobbyVisible(false)
+                    setParticipants([])
+                  }}
+                  className="w-full py-2 border border-gray-600 text-gray-400 rounded-xl hover:bg-gray-800 transition-colors text-sm"
+                >
+                  Annuler et revenir à la configuration
+                </button>
+              </div>
+            )}
+
+            {/* Clear data button - hidden when lobby is visible */}
+            {!lobbyVisible && questions.length > 0 && questions !== DEFAULT_QUESTIONS && (
               <button
                 onClick={clearAllData}
                 className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
