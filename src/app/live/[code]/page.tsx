@@ -546,22 +546,6 @@ export default function LivePage() {
     fetchSession()
   }, [fetchSession])
 
-  // Auto-reset quiz_lobby_visible si le quiz n'est pas actif
-  // Cela permet au diaporama de reprendre après un quiz terminé
-  useEffect(() => {
-    if (session && session.quiz_lobby_visible === true && session.quiz_active !== true) {
-      console.log('Auto-reset quiz_lobby_visible car quiz non actif')
-      supabase
-        .from('sessions')
-        .update({ quiz_lobby_visible: false })
-        .eq('id', session.id)
-        .then(() => {
-          // Re-fetch session pour mettre à jour l'état local
-          fetchSession()
-        })
-    }
-  }, [session?.id, session?.quiz_lobby_visible, session?.quiz_active, supabase, fetchSession])
-
   useEffect(() => {
     if (session) {
       fetchPhotos()
