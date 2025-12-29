@@ -913,7 +913,8 @@ export default function LivePage() {
   }
 
   // Show Quiz Lobby if visible (before quiz starts)
-  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true
+  // Ne pas afficher le lobby si le quiz est terminé (isFinished) - le diaporama doit reprendre
+  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true && !quizState?.isFinished
 
   if (isQuizLobbyVisible) {
     // Get participants from broadcast state or database

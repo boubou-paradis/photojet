@@ -166,6 +166,16 @@ export default function QuizPage() {
             setParticipants([])
           }
         }
+      } else {
+        // Si le quiz n'est pas actif mais quiz_lobby_visible est true, on reset
+        // Cela permet au diaporama de reprendre normalement
+        if (data.quiz_lobby_visible === true) {
+          console.log('Reset quiz_lobby_visible car quiz non actif')
+          await supabase
+            .from('sessions')
+            .update({ quiz_lobby_visible: false })
+            .eq('id', data.id)
+        }
       }
     } catch (err) {
       console.error('Error fetching session:', err)
@@ -547,6 +557,7 @@ export default function QuizPage() {
       .from('sessions')
       .update({
         quiz_active: false,
+        quiz_lobby_visible: false, // IMPORTANT: reset pour que le diaporama reprenne
         // On garde quiz_questions intact !
         quiz_current_question: 0,
         quiz_is_answering: false,
@@ -1004,9 +1015,17 @@ export default function QuizPage() {
 
                 {/* Cancel button */}
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setLobbyVisible(false)
                     setParticipants([])
+                    // IMPORTANT: reset en DB pour que le diaporama reprenne
+                    await supabase
+                      .from('sessions')
+                      .update({
+                        quiz_lobby_visible: false,
+                        quiz_participants: JSON.stringify([]),
+                      })
+                      .eq('id', session.id)
                   }}
                   className="w-full py-2 border border-gray-600 text-gray-400 rounded-xl hover:bg-gray-800 transition-colors text-sm"
                 >
