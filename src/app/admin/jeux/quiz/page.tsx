@@ -105,6 +105,7 @@ export default function QuizPage() {
   // Broadcast game state
   const broadcastGameState = useCallback((state: {
     gameActive: boolean
+    lobbyVisible?: boolean
     questions: QuizQuestion[]
     currentQuestionIndex: number
     isAnswering: boolean
@@ -364,6 +365,7 @@ export default function QuizPage() {
 
       broadcastGameState({
         gameActive: false,
+        lobbyVisible: true,
         questions,
         currentQuestionIndex: 0,
         isAnswering: false,
@@ -732,6 +734,18 @@ export default function QuizPage() {
               onClick={async () => {
                 // Reset lobby si visible avant de quitter
                 if (lobbyVisible && !gameActive && session?.id) {
+                  // Broadcast pour fermer le lobby immédiatement
+                  broadcastGameState({
+                    gameActive: false,
+                    lobbyVisible: false,
+                    questions: [],
+                    currentQuestionIndex: 0,
+                    isAnswering: false,
+                    showResults: false,
+                    timeLeft: null,
+                    participants: [],
+                    answerStats: [0, 0, 0, 0],
+                  })
                   await supabase
                     .from('sessions')
                     .update({ quiz_lobby_visible: false })
@@ -1027,6 +1041,18 @@ export default function QuizPage() {
                   onClick={async () => {
                     setLobbyVisible(false)
                     setParticipants([])
+                    // Broadcast pour fermer le lobby immédiatement
+                    broadcastGameState({
+                      gameActive: false,
+                      lobbyVisible: false,
+                      questions: [],
+                      currentQuestionIndex: 0,
+                      isAnswering: false,
+                      showResults: false,
+                      timeLeft: null,
+                      participants: [],
+                      answerStats: [0, 0, 0, 0],
+                    })
                     // IMPORTANT: reset en DB pour que le diaporama reprenne
                     await supabase
                       .from('sessions')

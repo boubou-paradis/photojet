@@ -360,6 +360,7 @@ export default function LivePage() {
   // Quiz game state (updated via broadcast from admin)
   const [quizState, setQuizState] = useState<{
     gameActive: boolean
+    lobbyVisible?: boolean
     questions: QuizQuestion[]
     currentQuestionIndex: number
     isAnswering: boolean
@@ -913,8 +914,13 @@ export default function LivePage() {
   }
 
   // Show Quiz Lobby if visible (before quiz starts)
-  // Ne pas afficher le lobby si le quiz est terminé (isFinished) - le diaporama doit reprendre
-  const isQuizLobbyVisible = session.quiz_lobby_visible === true && session.quiz_active !== true && !quizState?.isFinished
+  // Priorité au broadcast (quizState.lobbyVisible) si défini, sinon fallback sur la DB
+  // Ne pas afficher le lobby si le quiz est terminé (isFinished)
+  const isQuizLobbyVisible = (
+    quizState?.lobbyVisible !== undefined
+      ? quizState.lobbyVisible
+      : session.quiz_lobby_visible === true
+  ) && session.quiz_active !== true && !quizState?.isFinished
 
   if (isQuizLobbyVisible) {
     // Get participants from broadcast state or database
