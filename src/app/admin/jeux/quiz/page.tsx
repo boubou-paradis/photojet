@@ -89,6 +89,19 @@ export default function QuizPage() {
     fetchSession()
   }, [])
 
+  // Cleanup: reset quiz_lobby_visible quand on quitte la page
+  useEffect(() => {
+    return () => {
+      // Si le lobby est visible mais le quiz pas lancé, on reset à la sortie
+      if (lobbyVisible && !gameActive && session?.id) {
+        supabase
+          .from('sessions')
+          .update({ quiz_lobby_visible: false })
+          .eq('id', session.id)
+      }
+    }
+  }, [lobbyVisible, gameActive, session?.id, supabase])
+
   // Setup broadcast channel
   useEffect(() => {
     if (!session) return
