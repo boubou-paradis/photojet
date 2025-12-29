@@ -89,28 +89,6 @@ export default function QuizPage() {
     fetchSession()
   }, [])
 
-  // Refs pour le cleanup (évite les closures stale)
-  const lobbyVisibleRef = useRef(lobbyVisible)
-  const gameActiveRef = useRef(gameActive)
-  const sessionIdRef = useRef(session?.id)
-
-  useEffect(() => { lobbyVisibleRef.current = lobbyVisible }, [lobbyVisible])
-  useEffect(() => { gameActiveRef.current = gameActive }, [gameActive])
-  useEffect(() => { sessionIdRef.current = session?.id }, [session?.id])
-
-  // Cleanup: reset quiz_lobby_visible quand on quitte la page
-  useEffect(() => {
-    return () => {
-      // Si le lobby est visible mais le quiz pas lancé, on reset à la sortie
-      if (lobbyVisibleRef.current && !gameActiveRef.current && sessionIdRef.current) {
-        supabase
-          .from('sessions')
-          .update({ quiz_lobby_visible: false })
-          .eq('id', sessionIdRef.current)
-      }
-    }
-  }, [supabase])
-
   // Setup broadcast channel
   useEffect(() => {
     if (!session) return
@@ -751,7 +729,16 @@ export default function QuizPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/admin/jeux')}
+              onClick={async () => {
+                // Reset lobby si visible avant de quitter
+                if (lobbyVisible && !gameActive && session?.id) {
+                  await supabase
+                    .from('sessions')
+                    .update({ quiz_lobby_visible: false })
+                    .eq('id', session.id)
+                }
+                router.push('/admin/jeux')
+              }}
               className="text-white hover:text-[#D4AF37]"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
