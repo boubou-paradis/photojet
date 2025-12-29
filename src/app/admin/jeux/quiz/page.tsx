@@ -89,18 +89,27 @@ export default function QuizPage() {
     fetchSession()
   }, [])
 
+  // Refs pour le cleanup (évite les closures stale)
+  const lobbyVisibleRef = useRef(lobbyVisible)
+  const gameActiveRef = useRef(gameActive)
+  const sessionIdRef = useRef(session?.id)
+
+  useEffect(() => { lobbyVisibleRef.current = lobbyVisible }, [lobbyVisible])
+  useEffect(() => { gameActiveRef.current = gameActive }, [gameActive])
+  useEffect(() => { sessionIdRef.current = session?.id }, [session?.id])
+
   // Cleanup: reset quiz_lobby_visible quand on quitte la page
   useEffect(() => {
     return () => {
       // Si le lobby est visible mais le quiz pas lancé, on reset à la sortie
-      if (lobbyVisible && !gameActive && session?.id) {
+      if (lobbyVisibleRef.current && !gameActiveRef.current && sessionIdRef.current) {
         supabase
           .from('sessions')
           .update({ quiz_lobby_visible: false })
-          .eq('id', session.id)
+          .eq('id', sessionIdRef.current)
       }
     }
-  }, [lobbyVisible, gameActive, session?.id, supabase])
+  }, [supabase])
 
   // Setup broadcast channel
   useEffect(() => {
