@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
 import { sendWelcomeEmail, sendExpiredEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
+import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
 
 // Convert Stripe timestamp to ISO string with fallback
 function safeTimestampToISO(
@@ -243,8 +244,39 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw sessionError
   }
 
-  // Send welcome email
-  await sendWelcomeEmail({ to: email, password, sessionCode })
+  // Generate invoice
+  let invoiceData: { pdfBuffer: Uint8Array; invoiceNumber: string } | undefined
+  try {
+    const invoiceNumber = await generateInvoiceNumber()
+    const customerName = session.customer_details?.name || ''
+
+    const pdfBuffer = await generateInvoicePDF({
+      invoiceNumber,
+      date: new Date(),
+      customerName,
+      customerEmail: email,
+      amount: PRICE,
+      stripePaymentId: session.payment_intent as string || undefined,
+    })
+
+    // Save invoice to database and storage
+    await saveInvoice({
+      userId,
+      invoiceNumber,
+      amount: PRICE,
+      stripePaymentId: session.payment_intent as string || undefined,
+      pdfBuffer,
+    })
+
+    invoiceData = { pdfBuffer, invoiceNumber }
+    console.log(`[Webhook] Invoice ${invoiceNumber} generated for ${email}`)
+  } catch (invoiceError) {
+    console.error('[Webhook] Invoice generation failed:', invoiceError)
+    // Continue without invoice - don't block the welcome email
+  }
+
+  // Send welcome email with invoice attached
+  await sendWelcomeEmail({ to: email, password, sessionCode, invoice: invoiceData })
 }
 
 async function updateExistingUser(
@@ -307,9 +339,40 @@ async function updateExistingUser(
     userSessionCode = existingSession.code
   }
 
-  // Send email
+  // Generate invoice for existing user
+  let invoiceData: { pdfBuffer: Uint8Array; invoiceNumber: string } | undefined
   if (email) {
-    await sendWelcomeEmail({ to: email, password: newPassword, sessionCode: userSessionCode })
+    try {
+      const invoiceNumber = await generateInvoiceNumber()
+      const customerName = checkoutSession.customer_details?.name || ''
+
+      const pdfBuffer = await generateInvoicePDF({
+        invoiceNumber,
+        date: new Date(),
+        customerName,
+        customerEmail: email,
+        amount: PRICE,
+        stripePaymentId: checkoutSession.payment_intent as string || undefined,
+      })
+
+      // Save invoice to database and storage
+      await saveInvoice({
+        userId,
+        invoiceNumber,
+        amount: PRICE,
+        stripePaymentId: checkoutSession.payment_intent as string || undefined,
+        pdfBuffer,
+      })
+
+      invoiceData = { pdfBuffer, invoiceNumber }
+      console.log(`[Webhook] Invoice ${invoiceNumber} generated for returning user ${email}`)
+    } catch (invoiceError) {
+      console.error('[Webhook] Invoice generation failed for existing user:', invoiceError)
+      // Continue without invoice - don't block the welcome email
+    }
+
+    // Send email with invoice attached
+    await sendWelcomeEmail({ to: email, password: newPassword, sessionCode: userSessionCode, invoice: invoiceData })
   }
 }
 

@@ -10,18 +10,31 @@ export async function sendWelcomeEmail(params: {
   to: string
   password: string
   sessionCode: string
+  invoice?: {
+    pdfBuffer: Uint8Array
+    invoiceNumber: string
+  }
 }) {
   if (!resend) {
     return { success: false, error: 'Resend not configured' }
   }
 
-  const { to, password, sessionCode } = params
+  const { to, password, sessionCode, invoice } = params
+
+  // Prepare attachments
+  const attachments = invoice ? [
+    {
+      filename: `Facture_${invoice.invoiceNumber}.pdf`,
+      content: Buffer.from(invoice.pdfBuffer).toString('base64'),
+    }
+  ] : undefined
 
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: 'Bienvenue sur AnimaJet ! Vos identifiants de connexion',
+      attachments,
       html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -187,6 +200,22 @@ export async function sendWelcomeEmail(params: {
                   </td>
                 </tr>
               </table>
+
+              <!-- Invoice Notice -->
+              ${invoice ? `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 35px; background: linear-gradient(145deg, #242428 0%, #1E1E22 100%); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; color: #D4AF37; font-size: 14px; font-weight: 600;">
+                      &#128196; Votre facture est jointe a cet email
+                    </p>
+                    <p style="margin: 8px 0 0 0; color: #9A9AA0; font-size: 13px;">
+                      Facture N° ${invoice.invoiceNumber}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
 
               <!-- Info Text -->
               <p style="margin: 35px 0 0 0; color: #6B6B70; font-size: 14px; text-align: center; line-height: 1.7;">
