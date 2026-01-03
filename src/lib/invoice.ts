@@ -70,247 +70,353 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<Uint8Array>
   const page = pdfDoc.addPage([595, 842]) // A4 size
   const { width, height } = page.getSize()
 
+  // Fonts
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
 
+  // Colors
   const gold = rgb(212 / 255, 175 / 255, 55 / 255)
-  const black = rgb(0, 0, 0)
+  const black = rgb(0.1, 0.1, 0.1)
+  const darkGray = rgb(0.2, 0.2, 0.2)
   const gray = rgb(0.4, 0.4, 0.4)
-  const lightGray = rgb(0.9, 0.9, 0.9)
+  const lightGray = rgb(0.96, 0.96, 0.96) // #F5F5F5
+  const white = rgb(1, 1, 1)
 
-  let y = height - 50
+  // Margins
+  const margin = 40
+  const contentWidth = width - margin * 2
 
-  // Header - Title "FACTURE"
-  page.drawText('FACTURE', {
-    x: width / 2 - 50,
-    y,
+  let y = height - margin
+
+  // =====================
+  // 1. HEADER
+  // =====================
+
+  // Logo AnimaJet (text version since we can't embed external images easily)
+  page.drawText('AnimaJet', {
+    x: margin,
+    y: y - 5,
+    size: 32,
+    font: fontBold,
+    color: gold,
+  })
+
+  // Subtitle under logo
+  page.drawText('Animation d\'evenements', {
+    x: margin,
+    y: y - 25,
+    size: 10,
+    font: fontRegular,
+    color: gray,
+  })
+
+  // "FACTURE" title - right aligned
+  const factureText = 'FACTURE'
+  const factureWidth = fontBold.widthOfTextAtSize(factureText, 28)
+  page.drawText(factureText, {
+    x: width - margin - factureWidth,
+    y: y - 5,
     size: 28,
     font: fontBold,
     color: gold,
   })
 
-  y -= 40
+  y -= 50
 
-  // Invoice number and date
-  page.drawText(`Facture N° ${data.invoiceNumber}`, {
-    x: 50,
-    y,
+  // Golden separator line
+  page.drawLine({
+    start: { x: margin, y },
+    end: { x: width - margin, y },
+    thickness: 2,
+    color: gold,
+  })
+
+  y -= 30
+
+  // =====================
+  // 2. INVOICE INFO BOX (right aligned)
+  // =====================
+
+  const infoBoxWidth = 180
+  const infoBoxHeight = 50
+  const infoBoxX = width - margin - infoBoxWidth
+
+  // Info box background
+  page.drawRectangle({
+    x: infoBoxX,
+    y: y - infoBoxHeight + 15,
+    width: infoBoxWidth,
+    height: infoBoxHeight,
+    color: lightGray,
+    borderColor: rgb(0.9, 0.9, 0.9),
+    borderWidth: 1,
+  })
+
+  // Invoice number
+  page.drawText('Facture N°', {
+    x: infoBoxX + 10,
+    y: y,
+    size: 9,
+    font: fontRegular,
+    color: gray,
+  })
+  page.drawText(data.invoiceNumber, {
+    x: infoBoxX + 10,
+    y: y - 14,
     size: 12,
     font: fontBold,
     color: black,
   })
 
-  page.drawText(`Date : ${formatDate(data.date)}`, {
-    x: width - 150,
-    y,
-    size: 11,
+  // Date
+  page.drawText('Date :', {
+    x: infoBoxX + 100,
+    y: y,
+    size: 9,
     font: fontRegular,
     color: gray,
   })
-
-  y -= 50
-
-  // Separator line
-  page.drawLine({
-    start: { x: 50, y: y + 10 },
-    end: { x: width - 50, y: y + 10 },
-    thickness: 1,
-    color: gold,
+  page.drawText(formatDate(data.date), {
+    x: infoBoxX + 100,
+    y: y - 14,
+    size: 11,
+    font: fontRegular,
+    color: black,
   })
 
-  y -= 20
+  y -= 70
 
-  // Emitter (left)
+  // =====================
+  // 3. EMITTER / CLIENT BLOCKS
+  // =====================
+
+  const blockWidth = (contentWidth - 30) / 2
+  const blockHeight = 130
+  const blockPadding = 15
+
+  // EMITTER block
+  const emitterX = margin
+  page.drawRectangle({
+    x: emitterX,
+    y: y - blockHeight,
+    width: blockWidth,
+    height: blockHeight,
+    color: lightGray,
+  })
+
+  // EMITTER title
   page.drawText('EMETTEUR', {
-    x: 50,
-    y,
-    size: 10,
+    x: emitterX + blockPadding,
+    y: y - 20,
+    size: 9,
     font: fontBold,
     color: gold,
   })
-
-  // Client (right)
-  page.drawText('CLIENT', {
-    x: width - 200,
-    y,
-    size: 10,
-    font: fontBold,
-    color: gold,
-  })
-
-  y -= 20
 
   // Emitter details
   const emitterLines = [
-    COMPANY_INFO.name,
-    COMPANY_INFO.owner,
-    COMPANY_INFO.address,
-    COMPANY_INFO.city,
-    '',
-    `SIRET : ${COMPANY_INFO.siret}`,
-    `Email : ${COMPANY_INFO.email}`,
-    `Tel : ${COMPANY_INFO.phone}`,
+    { text: COMPANY_INFO.name, bold: true },
+    { text: COMPANY_INFO.owner, bold: false },
+    { text: COMPANY_INFO.address, bold: false },
+    { text: COMPANY_INFO.city, bold: false },
+    { text: '', bold: false },
+    { text: `SIRET : ${COMPANY_INFO.siret}`, bold: false },
+    { text: COMPANY_INFO.email, bold: false },
+    { text: COMPANY_INFO.phone, bold: false },
   ]
 
-  let emitterY = y
+  let emitterY = y - 38
   for (const line of emitterLines) {
-    if (line) {
-      page.drawText(line, {
-        x: 50,
+    if (line.text) {
+      page.drawText(line.text, {
+        x: emitterX + blockPadding,
         y: emitterY,
-        size: 10,
-        font: fontRegular,
+        size: 9,
+        font: line.bold ? fontBold : fontRegular,
         color: black,
       })
     }
-    emitterY -= 15
+    emitterY -= 12
   }
+
+  // CLIENT block
+  const clientX = margin + blockWidth + 30
+  page.drawRectangle({
+    x: clientX,
+    y: y - blockHeight,
+    width: blockWidth,
+    height: blockHeight,
+    color: lightGray,
+  })
+
+  // CLIENT title
+  page.drawText('CLIENT', {
+    x: clientX + blockPadding,
+    y: y - 20,
+    size: 9,
+    font: fontBold,
+    color: gold,
+  })
 
   // Client details
-  const clientLines = [
-    data.customerName || 'Client',
-    data.customerEmail,
-  ]
+  page.drawText(data.customerName || 'Client', {
+    x: clientX + blockPadding,
+    y: y - 38,
+    size: 10,
+    font: fontBold,
+    color: black,
+  })
 
-  let clientY = y
-  for (const line of clientLines) {
-    if (line) {
-      page.drawText(line, {
-        x: width - 200,
-        y: clientY,
-        size: 10,
-        font: fontRegular,
-        color: black,
-      })
-    }
-    clientY -= 15
-  }
+  page.drawText(data.customerEmail, {
+    x: clientX + blockPadding,
+    y: y - 52,
+    size: 9,
+    font: fontRegular,
+    color: black,
+  })
 
-  y -= 140
+  y -= blockHeight + 30
+
+  // =====================
+  // 4. DETAIL TABLE
+  // =====================
+
+  const tableLeft = margin
+  const tableRight = width - margin
+  const tableWidth = tableRight - tableLeft
+  const colPriceWidth = 80
+  const colDescWidth = tableWidth - colPriceWidth
+  const rowHeight = 35
 
   // Table header
-  const tableTop = y
-  const tableLeft = 50
-  const tableRight = width - 50
-  const colDescX = 55
-  const colPriceX = width - 100
-
-  // Table header background
   page.drawRectangle({
     x: tableLeft,
-    y: tableTop - 5,
-    width: tableRight - tableLeft,
-    height: 25,
+    y: y - rowHeight,
+    width: tableWidth,
+    height: rowHeight,
     color: gold,
   })
 
   page.drawText('Description', {
-    x: colDescX,
-    y: tableTop,
+    x: tableLeft + 15,
+    y: y - 22,
     size: 11,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   })
 
   page.drawText('Prix', {
-    x: colPriceX,
-    y: tableTop,
+    x: tableLeft + colDescWidth + 15,
+    y: y - 22,
     size: 11,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   })
 
-  y = tableTop - 35
+  y -= rowHeight
 
-  // Table row - Product
+  // Product row (white background)
   page.drawRectangle({
     x: tableLeft,
-    y: y - 5,
-    width: tableRight - tableLeft,
-    height: 25,
-    color: lightGray,
+    y: y - rowHeight,
+    width: tableWidth,
+    height: rowHeight,
+    color: white,
+    borderColor: rgb(0.9, 0.9, 0.9),
+    borderWidth: 0.5,
   })
 
   page.drawText(PRODUCT_DESCRIPTION, {
-    x: colDescX,
-    y,
+    x: tableLeft + 15,
+    y: y - 22,
     size: 10,
     font: fontRegular,
     color: black,
   })
 
   page.drawText(formatPrice(data.amount), {
-    x: colPriceX,
-    y,
+    x: tableLeft + colDescWidth + 15,
+    y: y - 22,
     size: 10,
     font: fontRegular,
     color: black,
   })
 
-  y -= 35
+  y -= rowHeight
 
-  // Total row
+  // Total row (dark background)
+  const totalRowHeight = 40
   page.drawRectangle({
     x: tableLeft,
-    y: y - 5,
-    width: tableRight - tableLeft,
-    height: 30,
-    color: gold,
+    y: y - totalRowHeight,
+    width: tableWidth,
+    height: totalRowHeight,
+    color: darkGray,
   })
 
   page.drawText('TOTAL', {
-    x: colDescX,
-    y: y + 2,
-    size: 12,
+    x: tableLeft + 15,
+    y: y - 26,
+    size: 13,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   })
 
   page.drawText(formatPrice(data.amount), {
-    x: colPriceX,
-    y: y + 2,
-    size: 12,
+    x: tableLeft + colDescWidth + 15,
+    y: y - 26,
+    size: 13,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   })
 
-  y -= 60
+  y -= totalRowHeight + 30
 
-  // TVA notice
+  // =====================
+  // 5. FOOTER
+  // =====================
+
+  // TVA notice (italic, gray)
   page.drawText('TVA non applicable, article 293 B du CGI', {
-    x: 50,
+    x: margin,
     y,
-    size: 10,
-    font: fontRegular,
+    size: 9,
+    font: fontOblique,
     color: gray,
   })
 
   y -= 40
 
-  // Footer - Thank you message
-  page.drawLine({
-    start: { x: 50, y: y + 10 },
-    end: { x: width - 50, y: y + 10 },
-    thickness: 1,
-    color: lightGray,
-  })
-
-  y -= 20
-
-  page.drawText('Merci pour votre confiance !', {
-    x: width / 2 - 70,
+  // Thank you message (centered, gold)
+  const thankYouText = 'Merci pour votre confiance !'
+  const thankYouWidth = fontBold.widthOfTextAtSize(thankYouText, 14)
+  page.drawText(thankYouText, {
+    x: (width - thankYouWidth) / 2,
     y,
-    size: 12,
+    size: 14,
     font: fontBold,
     color: gold,
   })
 
-  // Bottom footer
-  const footerY = 40
-  page.drawText('AnimaJet - MG Events Animation', {
-    x: width / 2 - 80,
-    y: footerY,
-    size: 9,
+  y -= 25
+
+  // Golden line
+  page.drawLine({
+    start: { x: margin + 100, y },
+    end: { x: width - margin - 100, y },
+    thickness: 1,
+    color: gold,
+  })
+
+  // Bottom copyright
+  const currentYear = new Date().getFullYear()
+  const copyrightText = `© ${currentYear} AnimaJet - MG Events Animation`
+  const copyrightWidth = fontRegular.widthOfTextAtSize(copyrightText, 8)
+  page.drawText(copyrightText, {
+    x: (width - copyrightWidth) / 2,
+    y: 30,
+    size: 8,
     font: fontRegular,
     color: gray,
   })
