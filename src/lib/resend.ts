@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 import { Resend } from 'resend'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY

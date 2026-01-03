@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";

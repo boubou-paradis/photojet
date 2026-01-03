@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 'use client'
 
 import Link from 'next/link'

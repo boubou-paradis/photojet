@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'

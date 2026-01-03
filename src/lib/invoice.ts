@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { createClient } from '@supabase/supabase-js'
 

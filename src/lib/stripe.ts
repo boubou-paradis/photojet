@@ -1,3 +1,6 @@
+// © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
+// Code propriétaire - Reproduction interdite.
+
 import Stripe from 'stripe'
 
 // Lazy initialization to avoid build-time errors
