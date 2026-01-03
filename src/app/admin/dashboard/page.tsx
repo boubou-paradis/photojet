@@ -30,6 +30,7 @@ import {
   CalendarClock,
   AlertTriangle,
   Printer,
+  Facebook,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -932,6 +933,15 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="https://www.facebook.com/profile.php?id=61585844578617"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1877F2] hover:bg-[#166FE5] text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Facebook className="h-4 w-4" />
+              <span className="hidden sm:inline">Facebook</span>
+            </a>
             <Button
               variant="outline"
               size="sm"

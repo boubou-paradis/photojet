@@ -12,7 +12,8 @@ import {
   Tv,
   QrCode,
   Gamepad2,
-  Sparkles
+  Sparkles,
+  Facebook
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -161,6 +162,20 @@ export default function Home() {
       </div>
 
       <div className="relative z-10">
+        {/* Facebook Button - Fixed top right */}
+        <motion.a
+          href="https://www.facebook.com/profile.php?id=61585844578617"
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+        >
+          <Facebook className="h-5 w-5" />
+          <span className="text-sm font-medium hidden sm:inline">Suivez-nous</span>
+        </motion.a>
+
         {/* Hero Section */}
         <section className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
           <motion.div

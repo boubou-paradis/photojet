@@ -1,11 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { Facebook } from 'lucide-react'
 
 interface FooterProps {
   fixed?: boolean
   className?: string
 }
+
+const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61585844578617'
 
 export default function Footer({ fixed = false, className = '' }: FooterProps) {
   return (
@@ -18,6 +21,19 @@ export default function Footer({ fixed = false, className = '' }: FooterProps) {
         ${className}
       `}
     >
+      {/* Social Links */}
+      <div className="flex items-center justify-center gap-3 mb-2">
+        <a
+          href={FACEBOOK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-[#1877F2] rounded-full transition-colors"
+        >
+          <Facebook className="h-4 w-4" />
+          <span className="text-xs font-medium">Facebook</span>
+        </a>
+      </div>
+
       <p className="flex items-center justify-center gap-1.5 flex-wrap">
         <span>© 2025 AnimaJet</span>
         <span className="text-[#D4AF37]/40">•</span>
