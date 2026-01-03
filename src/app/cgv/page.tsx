@@ -39,7 +39,7 @@ export default function CGVPage() {
               <p>10 Lan Lande des Couëdies</p>
               <p>35600 Bains-sur-Oust</p>
               <p>SIRET : 499 112 308 00030</p>
-              <p>Email : <a href="mailto:contact@animajet.fr" className="text-[#D4AF37] hover:underline">contact@animajet.fr</a></p>
+              <p>Email : <a href="mailto:mg.events35@gmail.com" className="text-[#D4AF37] hover:underline">mg.events35@gmail.com</a></p>
               <p className="mt-3 italic text-gray-400">Ci-après dénommé &quot;AnimaJet&quot;</p>
             </div>
 
@@ -112,7 +112,7 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-white mb-2">5.2 Résiliation par le Client</h3>
             <p className="mb-4">
-              Le Client peut résilier son abonnement à tout moment depuis son espace client ou en contactant <a href="mailto:contact@animajet.fr" className="text-[#D4AF37] hover:underline">contact@animajet.fr</a>.
+              Le Client peut résilier son abonnement à tout moment depuis son espace client ou en contactant <a href="mailto:mg.events35@gmail.com" className="text-[#D4AF37] hover:underline">mg.events35@gmail.com</a>.
             </p>
             <p className="mb-4">
               La résiliation prend effet à la fin de la période en cours. Aucun remboursement prorata temporis n&apos;est effectué.
@@ -138,7 +138,7 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-white mb-2">6.2 Exercice du droit de rétractation</h3>
             <p className="mb-4">
-              Pour exercer ce droit, le Client doit envoyer une demande claire à : <a href="mailto:contact@animajet.fr" className="text-[#D4AF37] hover:underline">contact@animajet.fr</a>
+              Pour exercer ce droit, le Client doit envoyer une demande claire à : <a href="mailto:mg.events35@gmail.com" className="text-[#D4AF37] hover:underline">mg.events35@gmail.com</a>
             </p>
 
             <h3 className="text-lg font-semibold text-white mb-2">6.3 Remboursement</h3>
@@ -240,7 +240,7 @@ export default function CGVPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">Article 13 - Support Client</h2>
             <p className="mb-4">
-              Le support client est accessible par email à : <a href="mailto:contact@animajet.fr" className="text-[#D4AF37] hover:underline">contact@animajet.fr</a>
+              Le support client est accessible par email à : <a href="mailto:mg.events35@gmail.com" className="text-[#D4AF37] hover:underline">mg.events35@gmail.com</a>
             </p>
             <p>AnimaJet s&apos;engage à répondre dans un délai raisonnable.</p>
           </section>
@@ -288,7 +288,7 @@ export default function CGVPage() {
             <p>Guillaume Morel</p>
             <p>10 Lan Lande des Couëdies</p>
             <p>35600 Bains-sur-Oust</p>
-            <p className="mt-2">Email : <a href="mailto:contact@animajet.fr" className="text-[#D4AF37] hover:underline">contact@animajet.fr</a></p>
+            <p className="mt-2">Email : <a href="mailto:mg.events35@gmail.com" className="text-[#D4AF37] hover:underline">mg.events35@gmail.com</a></p>
             <p>Téléphone : 06 48 10 61 66</p>
             <p>Site : <a href="https://animajet.fr" className="text-[#D4AF37] hover:underline">animajet.fr</a></p>
           </section>
