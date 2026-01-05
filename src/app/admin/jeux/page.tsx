@@ -43,7 +43,7 @@ const games = [
     emoji: '🗳️',
     description: 'Votez pour élire la meilleure photo',
     path: '/admin/jeux/vote',
-    available: true,
+    available: false,
     gradient: 'from-rose-500/20 via-pink-500/20 to-orange-400/20',
     glowColor: 'rgba(244, 63, 94, 0.5)',
     borderHover: 'hover:border-rose-400',
@@ -95,7 +95,7 @@ const games = [
     emoji: '🎵',
     description: 'Devinez les musiques le plus vite possible',
     path: '/admin/jeux/blindtest',
-    available: true,
+    available: false,
     gradient: 'from-indigo-500/20 via-purple-500/20 to-blue-400/20',
     glowColor: 'rgba(99, 102, 241, 0.5)',
     borderHover: 'hover:border-indigo-400',
@@ -371,7 +371,7 @@ export default function JeuxPage() {
         >
           <div className="inline-flex items-center gap-3 text-gray-600 text-sm">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-700" />
-            <span>7 jeux disponibles</span>
+            <span>5 jeux disponibles</span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-700" />
           </div>
         </motion.div>
