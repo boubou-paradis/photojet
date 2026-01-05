@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Évite les redirections 307 sur les webhooks
+  skipTrailingSlashRedirect: true,
 };
 
 export default nextConfig;
