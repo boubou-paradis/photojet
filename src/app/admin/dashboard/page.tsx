@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   Printer,
   Facebook,
+  CreditCard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,8 +47,26 @@ import { getInviteUrl } from '@/lib/utils'
 
 // Subscription Status Card Component
 function SubscriptionStatusCard({ subscription }: { subscription: Subscription }) {
+  const [portalLoading, setPortalLoading] = useState(false)
   const now = new Date()
   const end = new Date(subscription.current_period_end!)
+
+  async function openCustomerPortal() {
+    setPortalLoading(true)
+    try {
+      const response = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'ouverture du portail')
+        setPortalLoading(false)
+      }
+    } catch {
+      toast.error('Erreur de connexion')
+      setPortalLoading(false)
+    }
+  }
   const diff = end.getTime() - now.getTime()
 
   // Calculate days and hours remaining
@@ -138,6 +157,20 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
             {isCritical ? '⚠️ Expire bientôt !' : '⏰ Renouveler bientôt'}
           </p>
         )}
+
+        {/* Manage subscription button */}
+        <button
+          onClick={openCustomerPortal}
+          disabled={portalLoading}
+          className="w-full mt-1 flex items-center justify-center gap-1.5 px-2 py-1 text-[10px] font-medium text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all disabled:opacity-50"
+        >
+          {portalLoading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <CreditCard className="h-3 w-3" />
+          )}
+          Gérer mon abonnement
+        </button>
       </div>
     </div>
   )
