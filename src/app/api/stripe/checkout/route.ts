@@ -12,8 +12,8 @@ const getSupabaseAdmin = () => {
 }
 
 export async function POST(request: NextRequest) {
-  // TEMPORAIRE: Paiements désactivés pendant la migration Stripe
-  const PAYMENTS_ENABLED = false
+  // Migration Stripe terminée - Paiements actifs
+  const PAYMENTS_ENABLED = true
   if (!PAYMENTS_ENABLED) {
     return NextResponse.json(
       { error: 'Les inscriptions ouvrent bientôt ! Revenez dans quelques heures.' },
