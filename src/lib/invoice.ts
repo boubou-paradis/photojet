@@ -10,7 +10,7 @@ const COMPANY_INFO = {
   address: '10 Lan Lande des Couedies',
   city: '35600 Bains-sur-Oust',
   siret: '499 112 308 00030',
-  email: 'mg.events35@gmail.com',
+  email: 'animajet3@gmail.com',
   phone: '06 48 10 61 66',
 }
 

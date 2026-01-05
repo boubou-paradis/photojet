@@ -234,7 +234,7 @@ export async function sendWelcomeEmail(params: {
 
               <!-- Support Link -->
               <p style="margin: 0 0 20px 0; color: #9A9AA0; font-size: 14px; text-align: center;">
-                Des questions ? <a href="mailto:support@animajet.fr" style="color: #D4AF37; text-decoration: none; font-weight: 600;">support@animajet.fr</a>
+                Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
               </p>
 
               <!-- Separator -->
