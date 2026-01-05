@@ -346,7 +346,9 @@ export default function JeuxPage() {
                       </motion.span>
                     </div>
                   ) : (
-                    <span className="text-gray-500 text-sm">Bientôt disponible</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40">
+                      <span className="text-amber-400 text-sm font-semibold">Bientôt disponible</span>
+                    </div>
                   )}
                 </div>
 
