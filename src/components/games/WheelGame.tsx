@@ -164,7 +164,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
-      setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 300)
+      setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
     }
     previousSpinning.current = isSpinning
   }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio, spinMode])
