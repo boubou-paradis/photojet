@@ -44,6 +44,37 @@ export default function Footer({ fixed = false, className = '' }: FooterProps) {
         <span className="text-[#D4AF37]/40">•</span>
         <span>Tous droits réservés</span>
       </p>
+      {/* SEO Pages Links */}
+      <p className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+        <Link
+          href="/animation-evenementielle-interactive"
+          className="hover:text-[#D4AF37] transition-colors"
+        >
+          Animation Événementielle
+        </Link>
+        <span className="text-[#D4AF37]/40">|</span>
+        <Link
+          href="/animation-mariage-interactive"
+          className="hover:text-[#D4AF37] transition-colors"
+        >
+          Animation Mariage
+        </Link>
+        <span className="text-[#D4AF37]/40">|</span>
+        <Link
+          href="/animation-entreprise-interactive"
+          className="hover:text-[#D4AF37] transition-colors"
+        >
+          Animation Entreprise
+        </Link>
+        <span className="text-[#D4AF37]/40">|</span>
+        <Link
+          href="/animation-dj-interactive"
+          className="hover:text-[#D4AF37] transition-colors"
+        >
+          Animation DJ
+        </Link>
+      </p>
+
       <p className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
         <Link
           href="/mentions-legales"
