@@ -452,53 +452,6 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* Video/Demo Section */}
-        <section className="py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-8"
-            >
-              <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
-                Voir AnimaJet en action
-              </h2>
-              <p className="text-gray-400 text-lg">
-                Découvrez comment animer vos événements en quelques clics
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative aspect-video bg-[#1A1A1E] rounded-2xl overflow-hidden border border-[#D4AF37]/20"
-            >
-              {/* Placeholder pour vidéo YouTube - remplacer VIDEO_ID par l'ID de ta vidéo */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#242428] to-[#1A1A1E]">
-                <div className="w-20 h-20 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-4 border-2 border-[#D4AF37]/30">
-                  <Play className="h-10 w-10 text-[#D4AF37] ml-1" />
-                </div>
-                <p className="text-gray-400 text-sm">Vidéo de démonstration à venir</p>
-                <p className="text-gray-500 text-xs mt-2">
-                  En attendant, testez gratuitement !
-                </p>
-              </div>
-
-              {/* Décommente et remplace VIDEO_ID pour intégrer une vraie vidéo YouTube :
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/VIDEO_ID?rel=0"
-                title="AnimaJet Demo"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-              */}
-            </motion.div>
-          </div>
-        </section>
-
         {/* How it works Section */}
         <section id="how-it-works" className="py-20 px-4">
           <div className="max-w-5xl mx-auto">
