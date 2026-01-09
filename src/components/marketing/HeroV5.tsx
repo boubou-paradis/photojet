@@ -37,9 +37,9 @@ export default function HeroV5({
   error,
   setError,
   onTrialRequest,
-  headline = 'Vos clients participent,',
-  highlightedText = 'vos prestations décollent',
-  subtitle = 'QR code instantané, écran géant, participation en direct.',
+  headline = 'En 2 minutes, vos invités participent.',
+  highlightedText = 'Vous animez. Ils s\'en souviennent.',
+  subtitle = 'QR code instantané, écran géant, jeux interactifs.',
   targets = defaultTargets,
 }: HeroV5Props) {
   return (
