@@ -49,15 +49,15 @@ const jsonLd = {
 export default function AnimationMariage() {
   return (
     <SEOLandingPage
-      headline="Votre mariage mérite"
-      highlightedText="une animation inoubliable"
-      subtitle="Photos des invités en direct sur écran géant, quiz musical, jeux interactifs. Vos invités participent, votre soirée décolle."
+      headline="L'outil indispensable"
+      highlightedText="pour vos prestations mariage"
+      subtitle="Photos en direct, quiz musical, jeux interactifs. Démarquez-vous et fidélisez vos clients mariés."
       targets={[
-        'Mariages',
-        'Fiançailles',
-        'Anniversaires de mariage',
-        'PACS',
-        'Renouvellement de vœux',
+        'DJ mariage',
+        'Animateurs mariage',
+        'Photographes',
+        'Wedding planners',
+        'Agences événementielles',
       ]}
       jsonLd={jsonLd}
     />

@@ -49,15 +49,15 @@ const jsonLd = {
 export default function AnimationEntreprise() {
   return (
     <SEOLandingPage
-      headline="Dynamisez vos événements"
-      highlightedText="d'entreprise"
-      subtitle="Team building, séminaires, soirées corporate. Renforcez la cohésion avec des quiz personnalisés et des jeux d'équipe."
+      headline="Animez les événements"
+      highlightedText="corporate comme un pro"
+      subtitle="Séminaires, team building, soirées d'entreprise. L'outil qui fait la différence dans vos prestations B2B."
       targets={[
-        'Séminaires',
-        'Team building',
-        'Soirées corporate',
-        'Lancements produit',
-        'Événements CE',
+        'Animateurs corporate',
+        'Agences événementielles',
+        'DJ entreprise',
+        'Organisateurs séminaires',
+        'Prestataires événementiels',
       ]}
       jsonLd={jsonLd}
     />

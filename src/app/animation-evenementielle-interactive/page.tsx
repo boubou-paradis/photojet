@@ -49,15 +49,15 @@ const jsonLd = {
 export default function AnimationEvenementielle() {
   return (
     <SEOLandingPage
-      headline="Animation événementielle"
-      highlightedText="interactive et moderne"
-      subtitle="Transformez vos événements avec des photos en direct, des jeux interactifs et des QR codes personnalisés."
+      headline="Professionnalisez"
+      highlightedText="vos animations événementielles"
+      subtitle="Photos en direct, jeux interactifs, QR codes personnalisés. L'outil qui booste vos prestations."
       targets={[
-        'Soirées privées',
-        'Événements publics',
-        'Festivals',
-        'Salons',
-        'Inaugurations',
+        'DJ & Animateurs',
+        'Agences événementielles',
+        'Organisateurs de festivals',
+        'Prestataires techniques',
+        'Loueurs de matériel',
       ]}
       jsonLd={jsonLd}
     />
