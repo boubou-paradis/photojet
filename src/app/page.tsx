@@ -289,23 +289,21 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-4xl mx-auto"
           >
-            {/* Logo avec effet glow */}
+            {/* Logo sans cadre - fond transparent */}
             <motion.div
               className="flex flex-col items-center justify-center mb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <div className="logo-glow mb-4 flex items-center justify-center">
-                <Image
-                  src="/logo.png"
-                  alt="AnimaJet"
-                  width={375}
-                  height={375}
-                  className="w-[200px] md:w-[280px] lg:w-[340px] h-auto"
-                  priority
-                />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="AnimaJet"
+                width={375}
+                height={375}
+                className="w-[200px] md:w-[280px] lg:w-[340px] h-auto drop-shadow-[0_0_30px_rgba(212,175,55,0.3)]"
+                priority
+              />
             </motion.div>
 
             {/* Tagline */}
@@ -353,9 +351,9 @@ export default function Home() {
                     <p className="text-sm text-gray-400 mt-1">Vérifiez votre boîte de réception</p>
                   </div>
                 ) : (
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                       <Input
                         type="email"
                         placeholder="votre@email.com"
@@ -364,18 +362,21 @@ export default function Home() {
                           setTrialEmail(e.target.value)
                           setError(null)
                         }}
-                        className="pl-10 h-12 bg-[#0D0D0F] border-[#3a3a3a] focus:border-emerald-500 focus:ring-emerald-500/20 text-white placeholder:text-gray-500"
+                        className="pl-12 h-14 text-lg bg-[#0D0D0F] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-500 rounded-xl"
                       />
                     </div>
                     <Button
                       onClick={() => handleTrialRequest(trialEmail)}
                       disabled={trialLoading || !trialEmail}
-                      className="h-12 px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                      className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] hover:opacity-90 text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25 transition-all hover:shadow-[#D4AF37]/40"
                     >
                       {trialLoading ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <ArrowRight className="h-5 w-5" />
+                        <>
+                          Recevoir mon accès
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </>
                       )}
                     </Button>
                   </div>
@@ -447,6 +448,53 @@ export default function Home() {
               <ArrowRight className="h-6 w-6 text-[#D4AF37] rotate-90 mx-auto" />
             </motion.div>
           </motion.div>
+        </section>
+
+        {/* Video/Demo Section */}
+        <section className="py-16 px-4">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-8"
+            >
+              <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
+                Voir AnimaJet en action
+              </h2>
+              <p className="text-gray-400 text-lg">
+                Découvrez comment animer vos événements en quelques clics
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative aspect-video bg-[#1A1A1E] rounded-2xl overflow-hidden border border-[#D4AF37]/20"
+            >
+              {/* Placeholder pour vidéo YouTube - remplacer VIDEO_ID par l'ID de ta vidéo */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#242428] to-[#1A1A1E]">
+                <div className="w-20 h-20 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-4 border-2 border-[#D4AF37]/30">
+                  <Play className="h-10 w-10 text-[#D4AF37] ml-1" />
+                </div>
+                <p className="text-gray-400 text-sm">Vidéo de démonstration à venir</p>
+                <p className="text-gray-500 text-xs mt-2">
+                  En attendant, testez gratuitement !
+                </p>
+              </div>
+
+              {/* Décommente et remplace VIDEO_ID pour intégrer une vraie vidéo YouTube :
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/VIDEO_ID?rel=0"
+                title="AnimaJet Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+              */}
+            </motion.div>
+          </div>
         </section>
 
         {/* How it works Section */}
@@ -558,31 +606,36 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-8 items-start">
-              {/* Trial Card */}
+            <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
+              {/* Trial Card - Mis en avant */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden border border-emerald-500/30"
+                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border-2 border-emerald-500/50 shadow-2xl md:scale-105"
+                style={{ boxShadow: '0 0 40px rgba(16, 185, 129, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
               >
-                <div className="absolute top-0 right-0 bg-emerald-500 text-white px-4 py-1 rounded-bl-xl font-bold text-sm">
-                  GRATUIT
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500" />
+                <div className="absolute top-0 right-0 bg-emerald-500 text-white px-4 py-1.5 rounded-bl-xl font-bold text-sm">
+                  RECOMMANDÉ
                 </div>
 
                 <div className="mb-6 pt-4">
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/30">
-                    <Gift className="h-7 w-7 text-emerald-500" />
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border-2 border-emerald-500/30">
+                    <Gift className="h-8 w-8 text-emerald-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Essai 24h</h3>
-                  <p className="text-4xl font-bold text-white">0€</p>
+                  <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 24h</h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-emerald-500">0€</span>
+                    <span className="text-gray-500">pour tester</span>
+                  </div>
                 </div>
 
                 <ul className="space-y-3 mb-6">
                   {trialFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3 text-gray-400 text-sm">
-                      <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <li key={i} className="flex items-center gap-3 text-gray-300 text-sm">
+                      <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -591,7 +644,7 @@ export default function Home() {
                 {/* Trial Form */}
                 <div className="space-y-3">
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                     <Input
                       type="email"
                       placeholder="votre@email.com"
@@ -600,14 +653,14 @@ export default function Home() {
                         setTrialEmail(e.target.value)
                         setError(null)
                       }}
-                      className="pl-10 h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-emerald-500 focus:ring-emerald-500/20 text-white placeholder:text-gray-500"
+                      className="pl-11 h-12 bg-[#1A1A1E] border-[#3a3a3a] focus:border-emerald-500 focus:ring-emerald-500/20 text-white placeholder:text-gray-500"
                     />
                   </div>
 
                   <Button
                     onClick={() => handleTrialRequest(trialEmail)}
                     disabled={trialLoading || !trialEmail || trialSuccess}
-                    className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                    className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-lg shadow-emerald-500/25"
                   >
                     {trialLoading ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -618,24 +671,28 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                        Recevoir mon accès
+                        Recevoir mon accès gratuit
                         <ArrowRight className="h-5 w-5 ml-2" />
                       </>
                     )}
                   </Button>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    Sans carte bancaire • Accès immédiat par email
+                  </p>
                 </div>
               </motion.div>
 
               {/* Subscription Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden border border-[#D4AF37]/30 shadow-2xl shadow-black/50 md:scale-105"
-                style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border border-[#D4AF37]/30"
               >
-                <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1 rounded-bl-xl font-bold text-sm">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37]" />
+                <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1.5 rounded-bl-xl font-bold text-sm">
                   TOUT INCLUS
                 </div>
 
@@ -709,64 +766,22 @@ export default function Home() {
                       </p>
                     </>
                   ) : (
-                    <Button
-                      onClick={() => setShowSubscriptionForm(true)}
-                      className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
-                    >
-                      <Sparkles className="h-5 w-5 mr-2" />
-                      S&apos;abonner maintenant
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => setShowSubscriptionForm(true)}
+                        className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
+                      >
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        S&apos;abonner maintenant
+                      </Button>
+                      <p className="text-xs text-gray-500 text-center">
+                        Utilisable 7j/7 y compris le week-end
+                      </p>
+                    </>
                   )}
                 </div>
-              </motion.div>
 
-              {/* Join Session Card */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-6 border border-[#D4AF37]/20"
-              >
-                <div className="text-center mb-6">
-                  <div className="w-14 h-14 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4 border border-[#D4AF37]/30">
-                    <QrCode className="h-7 w-7 text-[#D4AF37]" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Vous êtes invité ?</h3>
-                  <p className="text-gray-400 text-sm">
-                    Entrez le code de l&apos;événement pour partager vos photos
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <Input
-                    type="text"
-                    maxLength={4}
-                    placeholder="CODE"
-                    value={code}
-                    onChange={(e) => {
-                      setCode(e.target.value.toUpperCase())
-                      setError(null)
-                    }}
-                    className="text-center text-3xl font-mono tracking-[0.3em] h-14 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white uppercase placeholder:text-gray-500 input-gold"
-                  />
-
-                  <Button
-                    type="submit"
-                    disabled={loading || code.length !== 4}
-                    className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <>
-                        Rejoindre l&apos;événement
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-
+                {/* Lien connexion */}
                 <div className="mt-6 pt-6 border-t border-[#D4AF37]/10">
                   <p className="text-center text-sm text-gray-500">
                     Déjà abonné ?{' '}
@@ -776,6 +791,42 @@ export default function Home() {
                   </p>
                 </div>
               </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section Invité dans le footer */}
+        <section className="py-8 px-4 border-t border-white/5">
+          <div className="max-w-md mx-auto">
+            <div className="bg-[#1A1A1E]/50 backdrop-blur rounded-xl p-4 border border-[#D4AF37]/10">
+              <div className="flex items-center gap-3 mb-3">
+                <QrCode className="h-5 w-5 text-[#D4AF37]" />
+                <span className="text-sm font-medium text-white">Vous êtes invité à un événement ?</span>
+              </div>
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  type="text"
+                  maxLength={4}
+                  placeholder="CODE"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value.toUpperCase())
+                    setError(null)
+                  }}
+                  className="flex-1 text-center text-lg font-mono tracking-[0.2em] h-10 bg-[#0D0D0F] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-600"
+                />
+                <Button
+                  type="submit"
+                  disabled={loading || code.length !== 4}
+                  className="h-10 px-4 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#0D0D0F] font-semibold"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
             </div>
           </div>
         </section>
