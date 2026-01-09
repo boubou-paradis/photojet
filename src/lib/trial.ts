@@ -287,9 +287,15 @@ export function getTrialEmailTemplate(token: string, appUrl: string): { subject:
           <!-- CTA Button -->
           <tr>
             <td align="center" style="padding: 0 40px 30px;">
-              <a href="${verifyUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #0D0D0F; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">
-                👉 ACCÉDER À ANIMAJET
-              </a>
+              <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#D4AF37" style="background-color: #D4AF37; border-radius: 12px; mso-padding-alt: 20px 50px;">
+                    <a href="${verifyUrl}" target="_blank" style="display: inline-block; padding: 20px 50px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 18px; font-weight: bold; color: #1A1A0F; text-decoration: none; border-radius: 12px; border: 2px solid #B8962E;">
+                      🚀 ACCÉDER À ANIMAJET
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
