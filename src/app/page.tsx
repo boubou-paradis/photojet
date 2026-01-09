@@ -104,6 +104,7 @@ export default function Home() {
   const [trialEmail, setTrialEmail] = useState('')
   const [promoCode, setPromoCode] = useState('')
   const [showPromo, setShowPromo] = useState(false)
+  const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -657,49 +658,65 @@ export default function Home() {
 
                 {/* Checkout Form */}
                 <div className="space-y-3">
-                  <Input
-                    type="email"
-                    placeholder="votre@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-500 input-gold"
-                  />
+                  {showSubscriptionForm ? (
+                    <>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Input
+                          type="email"
+                          placeholder="votre@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          autoFocus
+                          className="pl-10 h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-500 input-gold"
+                        />
+                      </div>
 
-                  {showPromo ? (
-                    <Input
-                      type="text"
-                      placeholder="Code promo (optionnel)"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                      className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-500 input-gold"
-                    />
+                      {showPromo ? (
+                        <Input
+                          type="text"
+                          placeholder="Code promo (optionnel)"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-500 input-gold"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => setShowPromo(true)}
+                          className="text-sm text-[#D4AF37] hover:text-[#F4E4BC] transition-colors"
+                        >
+                          J&apos;ai un code promo
+                        </button>
+                      )}
+
+                      <Button
+                        onClick={handleCheckout}
+                        disabled={checkoutLoading || !email}
+                        className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
+                      >
+                        {checkoutLoading ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Sparkles className="h-5 w-5 mr-2" />
+                            Payer {PRICE.toFixed(2).replace('.', ',')}€
+                          </>
+                        )}
+                      </Button>
+
+                      <p className="text-xs text-gray-600 text-center">
+                        Paiement sécurisé par Stripe. Annulable à tout moment.
+                      </p>
+                    </>
                   ) : (
-                    <button
-                      onClick={() => setShowPromo(true)}
-                      className="text-sm text-[#D4AF37] hover:text-[#F4E4BC] transition-colors"
+                    <Button
+                      onClick={() => setShowSubscriptionForm(true)}
+                      className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
                     >
-                      J&apos;ai un code promo
-                    </button>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      S&apos;abonner maintenant
+                    </Button>
                   )}
-
-                  <Button
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading || !email}
-                    className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
-                  >
-                    {checkoutLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        S&apos;abonner maintenant
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-xs text-gray-600 text-center">
-                    Paiement sécurisé par Stripe. Annulable à tout moment.
-                  </p>
                 </div>
               </motion.div>
 
