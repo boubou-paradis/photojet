@@ -96,15 +96,13 @@ export default function HeroV5({
           {/* Right Column - Form */}
           <div className="hero-fade-in" style={{ animationDelay: '100ms' }}>
             {/* Already subscribed - Login link */}
-            <div className="max-w-[420px] lg:ml-auto mb-3 text-right">
-              <a
-                href="/login"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-full transition-all border border-[#D4AF37]/20"
-              >
-                Déjà abonné ? Se connecter
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
+            <a
+              href="/login"
+              className="flex items-center justify-center gap-2 max-w-[420px] lg:ml-auto mb-3 px-6 py-3 text-sm font-medium text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl transition-all border border-[#D4AF37]/30"
+            >
+              Déjà abonné ? Se connecter
+              <ArrowRight className="h-4 w-4" />
+            </a>
 
             {/* Trial Form - Conversion focus */}
             <div className="card-float rounded-2xl p-6 border-[#2A2A2E] max-w-[420px] lg:ml-auto">
