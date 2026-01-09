@@ -19,8 +19,6 @@ import {
   Facebook,
   Gift,
   Play,
-  MessageSquareQuote,
-  Star,
   Mail,
   CheckCircle,
   Palette,
@@ -599,51 +597,6 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Social Proof Section */}
-        <section className="py-16 px-4 bg-[#1A1A1E]/50">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              {/* Testimonial */}
-              <div className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 border border-[#D4AF37]/20 mb-8">
-                <MessageSquareQuote className="h-10 w-10 text-[#D4AF37] mx-auto mb-4" />
-                <blockquote className="text-xl md:text-2xl text-white font-medium mb-4 italic">
-                  &ldquo;Mes invités ont adoré partager leurs photos en direct !&rdquo;
-                </blockquote>
-                <div className="flex items-center justify-center gap-2 text-gray-400">
-                  <span className="font-semibold text-[#D4AF37]">— Guillaume</span>
-                  <span>• DJ mariage Bretagne</span>
-                </div>
-                <div className="flex justify-center mt-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-[#D4AF37] fill-[#D4AF37]" />
-                  ))}
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex flex-wrap justify-center gap-8 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-[#D4AF37]">50+</div>
-                  <div className="text-gray-400 text-sm">événements animés</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-[#D4AF37]">2000+</div>
-                  <div className="text-gray-400 text-sm">photos partagées</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-[#D4AF37]">100%</div>
-                  <div className="text-gray-400 text-sm">clients satisfaits</div>
-                </div>
-              </div>
-            </motion.div>
           </div>
         </section>
 
