@@ -4,21 +4,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import {
   ArrowRight,
   Loader2,
   Check,
-  Camera,
-  Tv,
-  QrCode,
-  Gamepad2,
   Sparkles,
   Facebook,
   Gift,
-  Play,
   Mail,
   CheckCircle,
   Palette,
@@ -27,20 +21,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createClient } from '@/lib/supabase'
-import { ShutterIcon } from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
 import HeroV5 from '@/components/marketing/HeroV5'
 import { toast } from 'sonner'
 
 const PRICE = 29.90
-
-const features = [
-  { icon: Camera, text: 'Photos illimitées' },
-  { icon: Tv, text: 'Diaporama en direct' },
-  { icon: QrCode, text: 'QR codes personnalisés' },
-  { icon: Gamepad2, text: '7 jeux interactifs' },
-]
 
 const howItWorks = [
   {
@@ -84,21 +69,7 @@ const trialFeatures = [
   'Sans carte bancaire',
 ]
 
-// Floating particles configuration
-const particles = [
-  { id: 1, size: 4, left: '10%', top: '20%', className: 'particle-1' },
-  { id: 2, size: 6, left: '85%', top: '15%', className: 'particle-2' },
-  { id: 3, size: 3, left: '70%', top: '60%', className: 'particle-3' },
-  { id: 4, size: 5, left: '15%', top: '70%', className: 'particle-4' },
-  { id: 5, size: 4, left: '90%', top: '80%', className: 'particle-5' },
-  { id: 6, size: 3, left: '5%', top: '50%', className: 'particle-2' },
-  { id: 7, size: 5, left: '50%', top: '85%', className: 'particle-1' },
-  { id: 8, size: 4, left: '30%', top: '10%', className: 'particle-3' },
-]
-
 export default function Home() {
-  const [code, setCode] = useState('')
-  const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [trialLoading, setTrialLoading] = useState(false)
   const [trialSuccess, setTrialSuccess] = useState(false)
@@ -108,9 +79,7 @@ export default function Home() {
   const [promoCode, setPromoCode] = useState('')
   const [showPromo, setShowPromo] = useState(false)
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   // Show toast if redirected with access=expired
   useEffect(() => {
@@ -118,44 +87,6 @@ export default function Home() {
       toast.error('Votre essai gratuit a expiré. Abonnez-vous pour continuer !')
     }
   }, [searchParams])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!code || code.length !== 4) {
-      setError('Entrez un code à 4 caractères')
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('id, expires_at, is_active')
-        .eq('code', code.toUpperCase())
-        .eq('is_active', true)
-        .single()
-
-      if (error || !data) {
-        setError('Code invalide ou session expirée')
-        return
-      }
-
-      const now = new Date()
-      const expiresAt = new Date(data.expires_at)
-      if (expiresAt < now) {
-        setError('Cette session a expiré')
-        return
-      }
-
-      router.push(`/invite/${code.toUpperCase()}`)
-    } catch {
-      setError('Une erreur est survenue')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCheckout = async () => {
     if (!email) {
@@ -229,12 +160,8 @@ export default function Home() {
     }
   }
 
-  const scrollToHow = () => {
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0D0D0F]">
+    <div className="min-h-screen relative overflow-hidden landing-bg">
       {/* Facebook Button - Fixed top right */}
       <motion.a
         href="https://www.facebook.com/profile.php?id=61585844578617"
@@ -261,9 +188,9 @@ export default function Home() {
       />
 
       {/* Rest of the page */}
-      <div className="relative z-10 bg-[#0D0D0F]">
+      <div className="relative z-10 content-layer">
         {/* How it works Section */}
-        <section id="how-it-works" className="py-20 px-4">
+        <section id="how-it-works" className="py-20 px-4 section-glow">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -294,7 +221,7 @@ export default function Home() {
                     <div className="hidden lg:block absolute top-12 left-[calc(50%+40px)] w-[calc(100%-40px)] h-0.5 bg-gradient-to-r from-[#D4AF37]/50 to-[#D4AF37]/20" />
                   )}
 
-                  <div className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-6 border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 transition-all h-full">
+                  <div className="card-float rounded-2xl p-6 border-[#D4AF37]/20 hover:border-[#D4AF37]/40 h-full">
                     {/* Step number */}
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4D03F] flex items-center justify-center mb-4 shadow-lg shadow-[#D4AF37]/30">
                       <span className="text-2xl font-bold text-[#0D0D0F]">{item.step}</span>
@@ -310,7 +237,7 @@ export default function Home() {
         </section>
 
         {/* Customization Section */}
-        <section className="py-20 px-4 bg-gradient-to-b from-transparent via-[#D4AF37]/5 to-transparent">
+        <section className="py-20 px-4 section-glow">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -350,7 +277,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-[#242428]/60 backdrop-blur-xl rounded-2xl p-6 border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 transition-all text-center"
+                  className="card-float rounded-2xl p-6 border-[#D4AF37]/20 hover:border-[#D4AF37]/40 text-center"
                 >
                   <div className="w-16 h-16 mx-auto rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-4 border border-[#D4AF37]/30">
                     <feature.icon className="h-8 w-8 text-[#D4AF37]" />
@@ -364,7 +291,7 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 px-4">
+        <section id="pricing" className="py-20 px-4 section-glow">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -387,7 +314,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border-2 border-emerald-500/50 shadow-2xl md:scale-105"
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-2 border-emerald-500/50 md:scale-105"
                 style={{ boxShadow: '0 0 40px rgba(16, 185, 129, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500" />
@@ -463,7 +390,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="bg-[#242428]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden border border-[#D4AF37]/30"
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-[#D4AF37]/30"
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37]" />
                 <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1.5 rounded-bl-xl font-bold text-sm">
@@ -565,42 +492,6 @@ export default function Home() {
                   </p>
                 </div>
               </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section Invité dans le footer */}
-        <section className="py-8 px-4 border-t border-white/5">
-          <div className="max-w-md mx-auto">
-            <div className="bg-[#1A1A1E]/50 backdrop-blur rounded-xl p-4 border border-[#D4AF37]/10">
-              <div className="flex items-center gap-3 mb-3">
-                <QrCode className="h-5 w-5 text-[#D4AF37]" />
-                <span className="text-sm font-medium text-white">Vous êtes invité à un événement ?</span>
-              </div>
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  type="text"
-                  maxLength={4}
-                  placeholder="CODE"
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value.toUpperCase())
-                    setError(null)
-                  }}
-                  className="flex-1 text-center text-lg font-mono tracking-[0.2em] h-10 bg-[#0D0D0F] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-600"
-                />
-                <Button
-                  type="submit"
-                  disabled={loading || code.length !== 4}
-                  className="h-10 px-4 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#0D0D0F] font-semibold"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                </Button>
-              </form>
             </div>
           </div>
         </section>

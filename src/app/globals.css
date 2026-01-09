@@ -352,6 +352,31 @@
     }
   }
 
+  /* Hero rocket fly animation */
+  .rocket-hero-fly {
+    animation: rocket-hero-fly ease-in-out infinite;
+  }
+
+  @keyframes rocket-hero-fly {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+      opacity: 0;
+    }
+    5% {
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(-400px) translateX(var(--curve, 0px)) rotate(var(--rotation, 0deg));
+    }
+    95% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-800px) translateX(calc(var(--curve, 0px) * 0.5)) rotate(0deg);
+      opacity: 0;
+    }
+  }
+
   /* Shutter open animation */
   .shutter-animate {
     animation: shutter-open 1.5s ease-in-out infinite;
@@ -647,4 +672,134 @@
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
     outline: none;
   }
+}
+
+/* ===========================================
+   GLOBAL PREMIUM BACKGROUND SYSTEM
+   Animated ambient background for landing page
+   =========================================== */
+
+/* Main page background with multi-layer gradient */
+.landing-bg {
+  background:
+    /* Layer 1: Base dark gradient */
+    linear-gradient(180deg, #0D0D0F 0%, #111113 30%, #151517 60%, #0D0D0F 100%);
+  position: relative;
+}
+
+/* Animated ambient layer */
+.landing-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    /* Gold orb 1 - top left, moves slowly */
+    radial-gradient(ellipse 600px 400px at 20% 20%, rgba(212, 175, 55, 0.04) 0%, transparent 70%),
+    /* Gold orb 2 - center right, counter movement */
+    radial-gradient(ellipse 500px 500px at 80% 40%, rgba(212, 175, 55, 0.03) 0%, transparent 70%),
+    /* Gold orb 3 - bottom center */
+    radial-gradient(ellipse 700px 350px at 50% 80%, rgba(212, 175, 55, 0.025) 0%, transparent 70%);
+  animation: ambient-drift 25s ease-in-out infinite;
+}
+
+/* Secondary ambient layer for depth */
+.landing-bg::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    /* Subtle lighter areas for depth */
+    radial-gradient(ellipse 800px 600px at 30% 50%, rgba(255, 255, 255, 0.008) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 70% 70%, rgba(255, 255, 255, 0.006) 0%, transparent 70%);
+  animation: ambient-drift-reverse 30s ease-in-out infinite;
+}
+
+/* Ultra slow ambient drift animation */
+@keyframes ambient-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(30px, -20px) scale(1.02);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-20px, 15px) scale(0.98);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(15px, 25px) scale(1.01);
+    opacity: 0.95;
+  }
+}
+
+@keyframes ambient-drift-reverse {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  33% {
+    transform: translate(-25px, 20px);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(20px, -15px);
+    opacity: 0.9;
+  }
+}
+
+/* Premium floating card effect */
+.card-float {
+  background: rgba(36, 36, 40, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-float:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(212, 175, 55, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Section with slight brightness increase */
+.section-glow {
+  position: relative;
+}
+
+.section-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 1000px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+}
+
+/* Content z-index helper */
+.content-layer {
+  position: relative;
+  z-index: 1;
 }
