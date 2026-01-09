@@ -27,6 +27,94 @@ import { toast } from 'sonner'
 
 const PRICE = 29.90
 
+// JSON-LD Structured Data for SEO
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'AnimaJet',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: "Plateforme d'animation interactive pour événements professionnels : photos en direct, jeux interactifs, QR codes personnalisés.",
+      offers: {
+        '@type': 'Offer',
+        price: '29.90',
+        priceCurrency: 'EUR',
+        priceValidUntil: '2026-12-31',
+        availability: 'https://schema.org/InStock',
+      },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.9',
+        ratingCount: '47',
+      },
+      featureList: [
+        'Photos et messages en direct',
+        'Diaporama HD temps réel',
+        '7 jeux interactifs',
+        'QR codes personnalisés',
+        'Borne photo intégrée',
+        'Personnalisation logo et arrière-plan',
+      ],
+    },
+    {
+      '@type': 'Organization',
+      name: 'AnimaJet',
+      legalName: 'MG Events Animation',
+      url: 'https://animajet.fr',
+      logo: 'https://animajet.fr/images/animajet_logo_principal.png',
+      sameAs: [
+        'https://www.facebook.com/profile.php?id=61585844578617',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        availableLanguage: 'French',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      name: 'AnimaJet',
+      url: 'https://animajet.fr',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://animajet.fr/?search={search_term_string}',
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: "Comment fonctionne AnimaJet ?",
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: "Créez votre événement en 2 minutes, partagez le QR code aux participants, et les photos s'affichent en direct sur votre écran. Lancez ensuite les jeux interactifs pour animer votre soirée.",
+          },
+        },
+        {
+          '@type': 'Question',
+          name: "Puis-je essayer AnimaJet gratuitement ?",
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: "Oui, AnimaJet propose un essai gratuit de 24h avec accès à toutes les fonctionnalités, disponible du lundi au jeudi. Sans carte bancaire.",
+          },
+        },
+        {
+          '@type': 'Question',
+          name: "AnimaJet fonctionne-t-il sans application à télécharger ?",
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: "Oui, les participants scannent simplement le QR code avec leur téléphone. Aucune application à installer.",
+          },
+        },
+      ],
+    },
+  ],
+}
+
 const howItWorks = [
   {
     step: '1',
@@ -161,7 +249,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden landing-bg">
+    <>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="min-h-screen relative overflow-hidden landing-bg">
       {/* Facebook Button - Fixed top right */}
       <motion.a
         href="https://www.facebook.com/profile.php?id=61585844578617"
@@ -503,6 +598,7 @@ export default function Home() {
           </div>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

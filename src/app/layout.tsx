@@ -30,10 +30,42 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'),
-  title: "AnimaJet - L'animation de vos événements, simplifiée",
-  description: "Plateforme tout-en-un pour DJ et animateurs : photos en direct, 7 jeux interactifs, QR codes personnalisés. 29,90€/mois tout inclus.",
-  keywords: ["animation événement", "DJ", "mariage", "photo booth", "jeux interactifs", "diaporama", "borne photo", "photobooth"],
-  authors: [{ name: "AnimaJet" }],
+  title: {
+    default: "AnimaJet - Animation interactive pour événements professionnels",
+    template: "%s | AnimaJet",
+  },
+  description: "Plateforme d'animation interactive pour professionnels : DJ, entreprises, bars, restaurants, campings, mariages. Photos en direct, 7 jeux interactifs, QR codes. Essai gratuit 24h, 29,90€/mois.",
+  keywords: [
+    "animation événement",
+    "animation entreprise",
+    "animation bar restaurant",
+    "animation camping",
+    "animation mariage",
+    "DJ animateur",
+    "photo booth",
+    "borne photo",
+    "photobooth",
+    "jeux interactifs",
+    "diaporama en direct",
+    "quiz interactif",
+    "animation soirée",
+    "QR code événement",
+    "animation professionnelle",
+  ],
+  authors: [{ name: "AnimaJet", url: "https://animajet.fr" }],
+  creator: "MG Events Animation",
+  publisher: "AnimaJet",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -44,18 +76,27 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "AnimaJet - L'animation de vos événements, simplifiée",
-    description: "Plateforme tout-en-un pour DJ et animateurs : photos en direct, 7 jeux interactifs, QR codes personnalisés.",
-    images: ["/images/animajet_logo_principal.png"],
+    title: "AnimaJet - Animation interactive pour événements professionnels",
+    description: "Plateforme d'animation interactive : photos en direct, 7 jeux interactifs, QR codes personnalisés. Pour DJ, entreprises, bars, restaurants, campings, mariages. Essai gratuit 24h.",
+    images: [
+      {
+        url: "/images/animajet_logo_principal.png",
+        width: 1200,
+        height: 630,
+        alt: "AnimaJet - Animation interactive pour événements",
+      },
+    ],
     url: "https://animajet.fr",
     siteName: "AnimaJet",
     type: "website",
+    locale: "fr_FR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AnimaJet",
-    description: "L'animation de vos événements, simplifiée",
+    title: "AnimaJet - Animation interactive pour événements",
+    description: "Photos en direct, 7 jeux interactifs, QR codes. Essai gratuit 24h, 29,90€/mois.",
     images: ["/images/animajet_logo_principal.png"],
+    creator: "@animajet",
   },
   icons: {
     icon: [
@@ -64,6 +105,10 @@ export const metadata: Metadata = {
     ],
     apple: "/images/animajet_logo_vector.png",
   },
+  alternates: {
+    canonical: "https://animajet.fr",
+  },
+  category: "technology",
   other: {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
