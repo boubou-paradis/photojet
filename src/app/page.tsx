@@ -398,7 +398,7 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Testez gratuitement, abonnez-vous pour le week-end
+                Essai gratuit 24h, puis abonnement mensuel sans engagement
               </p>
             </motion.div>
 
