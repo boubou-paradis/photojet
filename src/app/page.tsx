@@ -297,7 +297,7 @@ export default function Home() {
                 Comment ça marche ?
               </h2>
               <p className="text-gray-400 text-lg">
-                En 4 étapes simples, animez vos événements comme un pro
+                En 4 étapes simples, boostez vos prestations
               </p>
             </motion.div>
 
