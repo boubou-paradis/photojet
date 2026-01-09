@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
 import { ShutterIcon } from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
+import HeroV5 from '@/components/marketing/HeroV5'
 import { toast } from 'sonner'
 
 const PRICE = 29.90
@@ -233,225 +234,34 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background - Premium dark with animated effects */}
-      <div className="fixed inset-0 bg-[#0D0D0F]">
-        {/* Animated blur orbs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/5 to-transparent rounded-full" />
-        {/* Top glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-[#D4AF37]/8 blur-[150px] rounded-full" />
-      </div>
+    <div className="min-h-screen relative overflow-hidden bg-[#0D0D0F]">
+      {/* Facebook Button - Fixed top right */}
+      <motion.a
+        href="https://www.facebook.com/profile.php?id=61585844578617"
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.5 }}
+        className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+      >
+        <Facebook className="h-5 w-5" />
+        <span className="text-sm font-medium hidden sm:inline">Suivez-nous</span>
+      </motion.a>
 
-      {/* Floating Particles */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {particles.map((particle) => (
-          <div
-            key={particle.id}
-            className={`particle ${particle.className}`}
-            style={{
-              width: particle.size,
-              height: particle.size,
-              left: particle.left,
-              top: particle.top,
-              opacity: 0.3,
-            }}
-          />
-        ))}
-      </div>
+      {/* Hero V5 */}
+      <HeroV5
+        trialEmail={trialEmail}
+        setTrialEmail={setTrialEmail}
+        trialLoading={trialLoading}
+        trialSuccess={trialSuccess}
+        error={error}
+        setError={setError}
+        onTrialRequest={handleTrialRequest}
+      />
 
-      {/* Decorative elements */}
-      <div className="fixed top-16 left-8 opacity-[0.03] spin-very-slow hidden md:block">
-        <ShutterIcon size={180} />
-      </div>
-      <div className="fixed bottom-16 right-8 opacity-[0.04] spin-very-slow hidden md:block" style={{ animationDirection: 'reverse' }}>
-        <ShutterIcon size={160} />
-      </div>
-
-      <div className="relative z-10">
-        {/* Facebook Button - Fixed top right */}
-        <motion.a
-          href="https://www.facebook.com/profile.php?id=61585844578617"
-          target="_blank"
-          rel="noopener noreferrer"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.5 }}
-          className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
-        >
-          <Facebook className="h-5 w-5" />
-          <span className="text-sm font-medium hidden sm:inline">Suivez-nous</span>
-        </motion.a>
-
-        {/* Hero Section */}
-        <section className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            {/* Logo sans cadre - fond transparent */}
-            <motion.div
-              className="flex flex-col items-center justify-center mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            >
-              <Image
-                src="/logo.png"
-                alt="AnimaJet"
-                width={375}
-                height={375}
-                className="w-[200px] md:w-[280px] lg:w-[340px] h-auto drop-shadow-[0_0_30px_rgba(212,175,55,0.3)]"
-                priority
-              />
-            </motion.div>
-
-            {/* Tagline */}
-            <motion.h1
-              className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              Vos invités participent,{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
-                votre soirée décolle
-              </span>
-            </motion.h1>
-
-            <motion.p
-              className="text-lg md:text-xl text-gray-400 mb-2 max-w-2xl mx-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-            >
-              Photos en direct sur grand écran • Quiz musicaux • 7 jeux interactifs
-            </motion.p>
-
-            {/* Trial Form in Hero */}
-            <motion.div
-              className="mt-8 max-w-md mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="bg-[#1A1A1E]/80 backdrop-blur-xl rounded-2xl p-6 border border-emerald-500/30">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Gift className="h-5 w-5 text-emerald-500" />
-                  <h3 className="text-lg font-bold text-white">Essayez gratuitement 24h</h3>
-                </div>
-                <p className="text-sm text-gray-400 mb-4">
-                  Recevez votre accès par email (valide du lundi au jeudi)
-                </p>
-
-                {trialSuccess ? (
-                  <div className="text-center py-4">
-                    <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
-                    <p className="text-emerald-400 font-medium">Email envoyé !</p>
-                    <p className="text-sm text-gray-400 mt-1">Vérifiez votre boîte de réception</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                      <Input
-                        type="email"
-                        placeholder="votre@email.com"
-                        value={trialEmail}
-                        onChange={(e) => {
-                          setTrialEmail(e.target.value)
-                          setError(null)
-                        }}
-                        className="pl-12 h-14 text-lg bg-[#0D0D0F] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-500 rounded-xl"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => handleTrialRequest(trialEmail)}
-                      disabled={trialLoading || !trialEmail}
-                      className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] hover:opacity-90 text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25 transition-all hover:shadow-[#D4AF37]/40"
-                    >
-                      {trialLoading ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          Recevoir mon accès
-                          <ArrowRight className="h-5 w-5 ml-2" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-
-                {error && (
-                  <p className="text-sm text-red-500 text-center mt-3">{error}</p>
-                )}
-
-                <div className="flex flex-wrap justify-center gap-3 mt-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    Sans carte bancaire
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    Accès immédiat
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    Toutes les fonctionnalités
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* See how it works button */}
-            <motion.div
-              className="mt-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <Button
-                onClick={scrollToHow}
-                variant="ghost"
-                className="text-gray-400 hover:text-white"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Voir comment ça marche
-              </Button>
-            </motion.div>
-
-            {/* Features mini grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 max-w-2xl mx-auto">
-              {features.map((feature, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 + i * 0.1 }}
-                  className="flex flex-col items-center gap-2 p-4"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/20">
-                    <feature.icon className="h-6 w-6 text-[#D4AF37]" />
-                  </div>
-                  <span className="text-sm text-gray-400">{feature.text}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Scroll indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="animate-bounce mt-12"
-            >
-              <ArrowRight className="h-6 w-6 text-[#D4AF37] rotate-90 mx-auto" />
-            </motion.div>
-          </motion.div>
-        </section>
-
+      {/* Rest of the page */}
+      <div className="relative z-10 bg-[#0D0D0F]">
         {/* How it works Section */}
         <section id="how-it-works" className="py-20 px-4">
           <div className="max-w-5xl mx-auto">
