@@ -30,6 +30,9 @@ export interface Subscription {
   promo_code_id: string | null
   created_at: string
   updated_at: string
+  // Essai gratuit 24h
+  trial_started_at: string | null
+  trial_used: boolean
 }
 
 export interface PromoCode {

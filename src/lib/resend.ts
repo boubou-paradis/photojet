@@ -83,7 +83,7 @@ export async function sendWelcomeEmail(params: {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding: 15px; background: radial-gradient(circle at center, rgba(212, 175, 55, 0.15) 0%, transparent 70%); border-radius: 50%;">
-                    <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="180" height="180" style="display: block; width: 180px; height: 180px; border: 0; border-radius: 20px;" />
+                    <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="180" height="180" style="display: block; width: 180px; height: 180px; border: 0; border-radius: 20px;" />
                   </td>
                 </tr>
               </table>
@@ -318,7 +318,7 @@ export async function sendExpiringEmail(params: {
           <!-- Header -->
           <tr>
             <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px; border-radius: 20px 20px 0 0;">
-              <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="120" height="120" style="display: block; width: 120px; height: 120px; border: 0; border-radius: 15px;" />
+              <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="120" height="120" style="display: block; width: 120px; height: 120px; border: 0; border-radius: 15px;" />
               <h1 style="margin: 25px 0 0 0; color: #E53935; font-size: 26px; font-weight: 700;">
                 Votre abonnement expire bientot
               </h1>
@@ -372,6 +372,144 @@ export async function sendExpiringEmail(params: {
   }
 }
 
+export async function sendTrialEmail(params: { to: string; token: string }) {
+  if (!resend) {
+    return { success: false, error: 'Resend not configured' }
+  }
+
+  const { to, token } = params
+  const verifyUrl = `${APP_URL}/api/trial/verify?token=${token}`
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: '🎁 Votre accès AnimaJet 24h est prêt !',
+      html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre accès AnimaJet</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
+
+          <!-- Header gold line -->
+          <tr>
+            <td height="4" style="background: linear-gradient(90deg, transparent, #D4AF37, transparent); border-radius: 20px 20px 0 0;"></td>
+          </tr>
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px 40px 20px;">
+              <img src="${APP_URL}/logo.png" alt="AnimaJet" width="180" style="display: block; border-radius: 15px;">
+            </td>
+          </tr>
+
+          <!-- Title -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #242428 0%, #1A1A1E 100%); padding: 0 40px 20px;">
+              <h1 style="margin: 0; font-size: 28px; color: #D4AF37; font-weight: bold;">
+                Votre essai gratuit est activé !
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 30px;">
+              <p style="margin: 0; font-size: 16px; color: #B0B0B5; line-height: 1.6; text-align: center;">
+                Bonjour !<br><br>
+                Vous avez demandé un accès gratuit à AnimaJet pour découvrir toutes nos fonctionnalités.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="background-color: #1A1A1E; padding: 0 40px 30px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); border-radius: 12px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">
+                    <a href="${verifyUrl}" target="_blank" style="display: inline-block; padding: 18px 45px; color: #0D0D0F; font-size: 18px; font-weight: bold; text-decoration: none;">
+                      👉 ACCÉDER À ANIMAJET
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Info box -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 10px; font-size: 14px; color: #D4AF37; font-weight: bold;">
+                      ⏰ Ce lien est valide 24h
+                    </p>
+                    <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
+                      L'essai gratuit est disponible du lundi au jeudi uniquement.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Subscription CTA -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #2E2E33; border-radius: 12px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 10px; font-size: 14px; color: #ffffff; font-weight: bold;">
+                      Pour utiliser AnimaJet le week-end sur vos événements :
+                    </p>
+                    <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
+                      Abonnement <strong style="color: #D4AF37;">29,90€/mois</strong> sans engagement
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
+              <p style="margin: 0; color: #6B6B70; font-size: 12px; text-align: center;">
+                À très vite !<br>
+                L'équipe AnimaJet
+              </p>
+              <p style="margin: 20px 0 0 0; color: #4A4A4F; font-size: 11px; text-align: center;">
+                &copy; 2025 AnimaJet - MG Events Animation
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
+    })
+
+    return { success: true, data: result }
+  } catch (error: unknown) {
+    console.error('[Trial Email] Error:', error instanceof Error ? error.message : error)
+    return { success: false, error }
+  }
+}
+
 export async function sendExpiredEmail(params: { to: string }) {
   if (!resend) {
     return { success: false, error: 'Resend not configured' }
@@ -406,7 +544,7 @@ export async function sendExpiredEmail(params: { to: string }) {
           <!-- Header -->
           <tr>
             <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px; border-radius: 20px 20px 0 0;">
-              <img src="https://animajet.fr/images/animajet_logo_principal.png" alt="AnimaJet" width="100" height="100" style="display: block; width: 100px; height: 100px; border: 0; border-radius: 15px; opacity: 0.7;" />
+              <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="100" height="100" style="display: block; width: 100px; height: 100px; border: 0; border-radius: 15px; opacity: 0.7;" />
               <h1 style="margin: 25px 0 0 0; color: #E53935; font-size: 26px; font-weight: 700;">
                 Abonnement expire
               </h1>

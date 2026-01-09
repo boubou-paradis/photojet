@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { checkAccess } from '@/lib/trial'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -48,8 +49,10 @@ export default function LoginPage() {
         // Check subscription status
         const { data: subscription } = await supabase
           .from('subscriptions')
-          .select('status, current_period_end')
+          .select('*')
           .eq('user_id', data.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .single()
 
         // Check if user is owner (unlimited access)
@@ -59,23 +62,31 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
-        if (profile?.role === 'owner') {
-          toast.success('Bienvenue !')
-          router.push('/admin/dashboard')
-          return
-        }
+        // Use the trial access logic
+        const accessResult = checkAccess(subscription, profile?.role)
 
-        if (!subscription || subscription.status === 'expired') {
-          setError('Votre abonnement a expire. Reabonnez-vous pour continuer.')
+        if (!accessResult.canAccess) {
+          if (accessResult.status === 'weekend_blocked') {
+            // Let them through, the admin layout will show the weekend block modal
+            toast.info('Essai en cours - disponible en semaine uniquement')
+            router.push('/admin/dashboard')
+            return
+          }
+
+          setError(accessResult.message)
           await supabase.auth.signOut()
           return
         }
 
-        if (subscription.status === 'past_due') {
+        if (subscription?.status === 'past_due') {
           toast.warning('Votre paiement est en retard. Mettez a jour vos informations de paiement.')
         }
 
-        toast.success('Bienvenue !')
+        if (accessResult.status === 'valid_trial') {
+          toast.success(`Bienvenue ! ${accessResult.message}`)
+        } else {
+          toast.success('Bienvenue !')
+        }
         router.push('/admin/dashboard')
       }
     } catch {
