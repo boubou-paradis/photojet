@@ -398,7 +398,7 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Essai gratuit 24h, puis abonnement mensuel sans engagement
+                Essai gratuit 24h disponible • Abonnement mensuel résiliable
               </p>
             </motion.div>
 
