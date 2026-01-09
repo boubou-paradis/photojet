@@ -23,6 +23,9 @@ import {
   Star,
   Mail,
   CheckCircle,
+  Palette,
+  ImageIcon,
+  Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,6 +72,7 @@ const pricingFeatures = [
   'Borne photo intégrée',
   '7 jeux interactifs',
   'QR codes personnalisés',
+  'Personnalisation logo + arrière-plan',
   'Modération des contenus',
   'Téléchargement album ZIP',
   'Support prioritaire',
@@ -538,6 +542,60 @@ export default function Home() {
                     <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
                     <p className="text-gray-400 text-sm">{item.description}</p>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Customization Section */}
+        <section className="py-20 px-4 bg-gradient-to-b from-transparent via-[#D4AF37]/5 to-transparent">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
+                100% personnalisable à votre image
+              </h2>
+              <p className="text-gray-400 text-lg">
+                Votre logo, vos couleurs, votre identité
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                {
+                  icon: Palette,
+                  title: 'Votre logo',
+                  description: 'Affichez votre logo sur tous les écrans et QR codes',
+                },
+                {
+                  icon: ImageIcon,
+                  title: 'Arrière-plan personnalisé',
+                  description: 'Importez votre propre image pour le diaporama',
+                },
+                {
+                  icon: Target,
+                  title: 'Votre marque partout',
+                  description: 'Les invités voient VOTRE identité, pas la nôtre',
+                },
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-[#242428]/60 backdrop-blur-xl rounded-2xl p-6 border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 transition-all text-center"
+                >
+                  <div className="w-16 h-16 mx-auto rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-4 border border-[#D4AF37]/30">
+                    <feature.icon className="h-8 w-8 text-[#D4AF37]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-400 text-sm">{feature.description}</p>
                 </motion.div>
               ))}
             </div>
