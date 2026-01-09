@@ -13,7 +13,21 @@ interface HeroV5Props {
   error: string | null
   setError: (error: string | null) => void
   onTrialRequest: (email: string) => void
+  // Optional SEO customization
+  headline?: string
+  highlightedText?: string
+  subtitle?: string
+  targets?: string[]
 }
+
+// Default values for the main landing page
+const defaultTargets = [
+  'DJ & animateurs',
+  'Entreprises',
+  'Bars & restaurants',
+  'Campings',
+  'Mariages & soirées',
+]
 
 export default function HeroV5({
   trialEmail,
@@ -23,6 +37,10 @@ export default function HeroV5({
   error,
   setError,
   onTrialRequest,
+  headline = 'Vos clients participent,',
+  highlightedText = 'votre soirée décolle',
+  subtitle = 'QR code instantané, écran géant, participation en direct.',
+  targets = defaultTargets,
 }: HeroV5Props) {
   return (
     <section className="relative min-h-[65vh] flex items-center overflow-hidden content-layer">
@@ -52,40 +70,26 @@ export default function HeroV5({
             {/* Headline - Primary visual focus */}
             <div className="space-y-4">
               <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight">
-                Vos clients participent,
+                {headline}
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
-                  votre soirée décolle
+                  {highlightedText}
                 </span>
               </h1>
               <p className="text-base lg:text-lg text-[#9A9A9F] leading-relaxed max-w-[480px]">
-                QR code instantané, écran géant, participation en direct.
+                {subtitle}
                 <span className="text-white font-medium"> Sans appli.</span>
               </p>
             </div>
 
             {/* Value props for PROs */}
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[#7A7A7F]">
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                DJ & animateurs
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                Entreprises
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                Bars & restaurants
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                Campings
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                Mariages & soirées
-              </span>
+              {targets.map((target, index) => (
+                <span key={index} className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  {target}
+                </span>
+              ))}
             </div>
           </div>
 
