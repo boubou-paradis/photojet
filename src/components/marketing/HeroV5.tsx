@@ -23,10 +23,10 @@ interface HeroV5Props {
 // Default values for the main landing page
 const defaultTargets = [
   'DJ & animateurs',
-  'Entreprises',
+  'Événements privés',
   'Bars & restaurants',
   'Campings',
-  'Mariages & soirées',
+  'Entreprises',
 ]
 
 export default function HeroV5({
@@ -38,7 +38,7 @@ export default function HeroV5({
   setError,
   onTrialRequest,
   headline = 'Vos clients participent,',
-  highlightedText = 'votre soirée décolle',
+  highlightedText = 'vos prestations décollent',
   subtitle = 'QR code instantané, écran géant, participation en direct.',
   targets = defaultTargets,
 }: HeroV5Props) {
