@@ -128,12 +128,45 @@ export default function AdminLayout({
       }
 
       // Check subscription status
-      if (!sub || sub.status !== 'active') {
+      if (!sub) {
         router.push('/?access=expired')
         return
       }
 
-      setAccessChecked(true)
+      // Active subscription = full access
+      if (sub.status === 'active') {
+        setAccessChecked(true)
+        return
+      }
+
+      // Trialing subscription = check expiration and weekend
+      if (sub.status === 'trialing') {
+        const trialEnd = sub.trial_end ? new Date(sub.trial_end) : null
+        const now = new Date()
+
+        // Check if trial expired
+        if (trialEnd && now > trialEnd) {
+          router.push('/?access=expired')
+          return
+        }
+
+        // Check weekend
+        if (isWeekend()) {
+          setShowWeekendBlock(true)
+        }
+
+        // Set trial info for banner
+        setIsTrialUser(true)
+        if (trialEnd) {
+          setTrialExpiresAt(trialEnd.toISOString())
+        }
+
+        setAccessChecked(true)
+        return
+      }
+
+      // Other statuses (canceled, expired, past_due) = no access
+      router.push('/?access=expired')
     }
 
     checkUserAccess()
