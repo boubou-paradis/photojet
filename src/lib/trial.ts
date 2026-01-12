@@ -188,7 +188,49 @@ export function checkAccess(
     }
   }
 
-  // Vérifier l'essai via token
+  // Abonnement en essai (trialing) = vérifier expiration et weekend
+  if (subscription?.status === 'trialing') {
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end) : null
+    const now = new Date()
+
+    // Vérifier si l'essai est expiré
+    if (trialEnd && now > trialEnd) {
+      return {
+        canAccess: false,
+        status: 'trial_expired',
+        message: 'Votre essai gratuit de 24h a expiré. Abonnez-vous pour continuer !',
+        isTrialUser: true
+      }
+    }
+
+    // Vérifier si c'est le weekend
+    if (isWeekend()) {
+      const timeRemaining = trialEnd ? trialEnd.getTime() - now.getTime() : 0
+      return {
+        canAccess: false,
+        status: 'weekend_blocked',
+        message: "L'essai gratuit n'est pas disponible le week-end. Abonnez-vous pour animer vos événements !",
+        trialTimeRemaining: Math.max(0, timeRemaining),
+        isTrialUser: true
+      }
+    }
+
+    // Essai valide
+    const timeRemaining = trialEnd ? trialEnd.getTime() - now.getTime() : 0
+    const hours = Math.floor(timeRemaining / (1000 * 60 * 60))
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60))
+    const timeMessage = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`
+
+    return {
+      canAccess: true,
+      status: 'valid_trial',
+      message: `Essai gratuit - ${timeMessage} restant`,
+      trialTimeRemaining: Math.max(0, timeRemaining),
+      isTrialUser: true
+    }
+  }
+
+  // Vérifier l'essai via token (ancien système, garde pour compatibilité)
   if (trialToken) {
     const trialResult = checkTrialAccess(trialToken)
 
