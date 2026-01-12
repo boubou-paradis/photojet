@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { Loader2, LogIn, ArrowLeft, Sparkles, Lock, Mail } from 'lucide-react'
+import { Loader2, LogIn, ArrowLeft, Sparkles, Lock, Mail, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
@@ -16,8 +16,33 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Handle URL messages (trial activation, etc.)
+  useEffect(() => {
+    const message = searchParams.get('message')
+    const emailParam = searchParams.get('email')
+
+    if (emailParam) {
+      setEmail(decodeURIComponent(emailParam))
+    }
+
+    switch (message) {
+      case 'trial_activated':
+        setSuccessMessage('Votre compte essai 24h a ete cree ! Vos identifiants vous ont ete envoyes par email. Connectez-vous pour commencer.')
+        toast.success('Compte cree avec succes !')
+        break
+      case 'trial_already_activated':
+        setSuccessMessage('Votre compte essai existe deja. Connectez-vous avec vos identifiants.')
+        break
+      case 'account_exists':
+        setSuccessMessage('Un compte existe deja avec cet email. Connectez-vous avec vos identifiants.')
+        break
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -203,6 +228,17 @@ export default function LoginPage() {
                     className="h-12 bg-[#0D0D0F] border-white/10 focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-600 rounded-xl"
                   />
                 </motion.div>
+
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-sm text-green-400 text-center bg-green-500/10 py-3 px-4 rounded-lg border border-green-500/20 flex items-start gap-2"
+                  >
+                    <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                    <span>{successMessage}</span>
+                  </motion.div>
+                )}
 
                 {error && (
                   <motion.p
