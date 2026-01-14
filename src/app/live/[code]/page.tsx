@@ -391,28 +391,37 @@ export default function LivePage() {
   const slideshowItems = useMemo((): SlideshowItem[] => {
     const messagesEnabled = session?.messages_enabled ?? true
     const frequency = session?.messages_frequency || 4
+    const slideshowMode = session?.slideshow_mode || 'all'
     const approvedMessages = messages.filter(m => m.status === 'approved')
 
+    // Filter photos based on slideshow mode
+    let filteredPhotos = [...photos]
+    if (slideshowMode === 'last30' && photos.length > 30) {
+      filteredPhotos = photos.slice(-30)
+    } else if (slideshowMode === 'last15' && photos.length > 15) {
+      filteredPhotos = photos.slice(-15)
+    }
+
     // If no photos and no messages, return empty
-    if (photos.length === 0 && approvedMessages.length === 0) {
+    if (filteredPhotos.length === 0 && approvedMessages.length === 0) {
       return []
     }
 
     // If only messages (no photos), show all messages
-    if (photos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
+    if (filteredPhotos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
       return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
     }
 
     // If messages disabled or no messages, show only photos
     if (!messagesEnabled || approvedMessages.length === 0) {
-      return photos.map(photo => ({ type: 'photo' as const, data: photo }))
+      return filteredPhotos.map(photo => ({ type: 'photo' as const, data: photo }))
     }
 
     // Interleave photos and messages
     const items: SlideshowItem[] = []
     let msgIdx = 0
 
-    photos.forEach((photo, idx) => {
+    filteredPhotos.forEach((photo, idx) => {
       items.push({ type: 'photo', data: photo })
 
       // Insert a message after every 'frequency' photos
@@ -428,7 +437,7 @@ export default function LivePage() {
     }
 
     return items
-  }, [photos, messages, session?.messages_enabled, session?.messages_frequency])
+  }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode])
 
   // Get current item duration
   const getCurrentDuration = useCallback(() => {

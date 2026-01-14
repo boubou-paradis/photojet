@@ -63,6 +63,7 @@ export interface PromoCodeUse {
 // ===========================================
 
 export type TransitionType = 'fade' | 'slide' | 'zoom'
+export type SlideshowMode = 'all' | 'last30' | 'last15'
 export type PhotoStatus = 'pending' | 'approved' | 'rejected'
 export type MessageStatus = 'pending' | 'approved' | 'rejected'
 export type PhotoSource = 'invite' | 'borne'
@@ -85,6 +86,7 @@ export interface Session {
   show_qr_on_screen: boolean
   transition_type: TransitionType
   transition_duration: number
+  slideshow_mode: SlideshowMode
   album_qr_code: string | null
   is_active: boolean
   user_id: string | null

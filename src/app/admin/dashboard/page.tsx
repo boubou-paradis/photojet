@@ -529,6 +529,7 @@ export default function DashboardPage() {
           show_qr_on_screen: true,
           transition_type: 'fade',
           transition_duration: 5,
+          slideshow_mode: 'all',
           is_active: true,
           user_id: user.id,
           album_qr_code: null,
@@ -992,6 +993,33 @@ export default function DashboardPage() {
     }
   }
 
+  async function changeSlideshowMode(mode: 'all' | 'last30' | 'last15') {
+    if (!selectedSession) return
+
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ slideshow_mode: mode })
+        .eq('id', selectedSession.id)
+
+      if (error) throw error
+
+      // Update local state
+      setSelectedSession({ ...selectedSession, slideshow_mode: mode })
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === selectedSession.id ? { ...s, slideshow_mode: mode } : s
+        )
+      )
+
+      const modeLabels = { all: 'Toutes les photos', last30: '30 dernières', last15: '15 dernières' }
+      toast.success(`Mode diaporama : ${modeLabels[mode]}`)
+    } catch (err) {
+      toast.error('Erreur lors de la modification')
+      console.error(err)
+    }
+  }
+
   function getPhotoUrl(storagePath: string) {
     const { data } = supabase.storage.from('photos').getPublicUrl(storagePath)
     return data.publicUrl
@@ -1323,7 +1351,7 @@ export default function DashboardPage() {
               {/* Content Section with Tabs - fills remaining space */}
               <div className="card-gold rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photos' | 'messages')} className="flex flex-col flex-1 min-h-0">
-                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0">
+                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0 flex items-center justify-between gap-4">
                     <TabsList className="bg-[#2E2E33] border border-[rgba(255,255,255,0.1)]">
                       <TabsTrigger value="photos" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#1A1A1E]">
                         <ImageIcon className="h-4 w-4 mr-2" />
@@ -1339,6 +1367,43 @@ export default function DashboardPage() {
                         )}
                       </TabsTrigger>
                     </TabsList>
+
+                    {/* Slideshow Mode Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 hidden sm:inline">Diaporama :</span>
+                      <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                        <button
+                          onClick={() => changeSlideshowMode('all')}
+                          className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                            selectedSession?.slideshow_mode === 'all'
+                              ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                              : 'bg-[#2E2E33] text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          Toutes
+                        </button>
+                        <button
+                          onClick={() => changeSlideshowMode('last30')}
+                          className={`px-2.5 py-1 text-xs font-medium transition-colors border-l border-white/10 ${
+                            selectedSession?.slideshow_mode === 'last30'
+                              ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                              : 'bg-[#2E2E33] text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          30 dernières
+                        </button>
+                        <button
+                          onClick={() => changeSlideshowMode('last15')}
+                          className={`px-2.5 py-1 text-xs font-medium transition-colors border-l border-white/10 ${
+                            selectedSession?.slideshow_mode === 'last15'
+                              ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                              : 'bg-[#2E2E33] text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          15 dernières
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <TabsContent value="photos" className="flex-1 overflow-auto m-0 p-3">
