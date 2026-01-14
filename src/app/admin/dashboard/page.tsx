@@ -196,6 +196,8 @@ export default function DashboardPage() {
   const [togglingModeration, setTogglingModeration] = useState(false)
   const [activeTab, setActiveTab] = useState<'photos' | 'messages'>('photos')
   const [downloading, setDownloading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PHOTOS_PER_PAGE = 30
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -209,6 +211,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (selectedSession) {
+      setCurrentPage(1) // Reset to page 1 when session changes
       fetchPhotos(selectedSession.id)
       fetchMessages(selectedSession.id)
       subscribeToPhotos(selectedSession.id)
@@ -1000,6 +1003,12 @@ export default function DashboardPage() {
   const invitePhotosCount = photos.filter((p) => p.source === 'invite').length
   const moderationEnabled = selectedSession?.moderation_enabled ?? false
 
+  // Pagination
+  const totalPages = Math.ceil(photos.length / PHOTOS_PER_PAGE)
+  const startIndex = (currentPage - 1) * PHOTOS_PER_PAGE
+  const endIndex = startIndex + PHOTOS_PER_PAGE
+  const paginatedPhotos = photos.slice(startIndex, endIndex)
+
   const totalMessagesCount = messages.length
   const approvedMessagesCount = messages.filter((m) => m.status === 'approved').length
   const pendingMessagesCount = messages.filter((m) => m.status === 'pending').length
@@ -1334,8 +1343,9 @@ export default function DashboardPage() {
 
                   <TabsContent value="photos" className="flex-1 overflow-auto m-0 p-3">
                     {photos.length > 0 ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                        {photos.map((photo) => (
+                      <div className="flex flex-col h-full">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 flex-1">
+                          {paginatedPhotos.map((photo) => (
                           <motion.div
                             key={photo.id}
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -1396,6 +1406,52 @@ export default function DashboardPage() {
                             </div>
                           </motion.div>
                         ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-center gap-2 pt-4 mt-auto border-t border-white/5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(1)}
+                              disabled={currentPage === 1}
+                              className="h-8 px-2 border-white/10 text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                              ««
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                              className="h-8 px-3 border-white/10 text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                              Précédent
+                            </Button>
+                            <span className="px-4 text-sm text-gray-400">
+                              Page <span className="text-[#D4AF37] font-semibold">{currentPage}</span> sur <span className="text-white">{totalPages}</span>
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                              className="h-8 px-3 border-white/10 text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                              Suivant
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                              className="h-8 px-2 border-white/10 text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                              »»
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-12 text-[#6B6B70]">
