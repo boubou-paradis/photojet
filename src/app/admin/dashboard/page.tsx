@@ -487,7 +487,7 @@ export default function DashboardPage() {
         .from('sessions')
         .select('id')
         .eq('code', code)
-        .single()
+        .maybeSingle()
       if (!existing) return code
     }
     // Fallback: use timestamp-based code
