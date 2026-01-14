@@ -130,6 +130,8 @@ export default function HeroV5({
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                     <Input
                       type="email"
+                      name="hero-trial-email"
+                      autoComplete="off"
                       placeholder="votre@email.com"
                       value={trialEmail}
                       onChange={(e) => {

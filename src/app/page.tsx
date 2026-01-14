@@ -443,6 +443,8 @@ export default function Home() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                     <Input
                       type="email"
+                      name="trial-email"
+                      autoComplete="off"
                       placeholder="votre@email.com"
                       value={trialEmail}
                       onChange={(e) => {
@@ -517,6 +519,8 @@ export default function Home() {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                         <Input
                           type="email"
+                          name="subscription-email"
+                          autoComplete="off"
                           placeholder="votre@email.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
