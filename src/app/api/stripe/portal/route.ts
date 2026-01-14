@@ -9,9 +9,16 @@ export async function POST() {
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (authError) {
+      console.error('[Stripe Portal] Auth error:', authError)
+      return NextResponse.json({ error: `Erreur auth: ${authError.message}` }, { status: 401 })
     }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Utilisateur non connecté' }, { status: 401 })
+    }
+
+    console.log('[Stripe Portal] User ID:', user.id)
 
     // Get user's subscription to find Stripe customer ID
     const { data: subscription, error: subError } = await supabase
@@ -20,21 +27,33 @@ export async function POST() {
       .eq('user_id', user.id)
       .single()
 
-    if (subError || !subscription?.stripe_customer_id) {
-      return NextResponse.json({ error: 'Aucun abonnement trouvé' }, { status: 404 })
+    if (subError) {
+      console.error('[Stripe Portal] Subscription error:', subError)
+      return NextResponse.json({ error: `Erreur abonnement: ${subError.message}` }, { status: 404 })
     }
 
+    if (!subscription?.stripe_customer_id) {
+      console.error('[Stripe Portal] No customer ID found')
+      return NextResponse.json({ error: 'Aucun ID client Stripe trouvé' }, { status: 404 })
+    }
+
+    console.log('[Stripe Portal] Customer ID:', subscription.stripe_customer_id)
+
     // Create Stripe Customer Portal session
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/dashboard`
+    console.log('[Stripe Portal] Return URL:', returnUrl)
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/admin/dashboard`,
+      return_url: returnUrl,
     })
 
     return NextResponse.json({ url: portalSession.url })
   } catch (error) {
     console.error('[Stripe Portal] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
     return NextResponse.json(
-      { error: 'Erreur lors de la création du portail' },
+      { error: `Erreur Stripe: ${errorMessage}` },
       { status: 500 }
     )
   }
