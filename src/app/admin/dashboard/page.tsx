@@ -42,6 +42,14 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message, BorneConnection, Subscription } from '@/types/database'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import SpeedMeter from '@/components/SpeedMeter'
 import { toast } from 'sonner'
 import { getInviteUrl } from '@/lib/utils'
@@ -190,6 +198,10 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'photos' | 'messages'>('photos')
   const [downloading, setDownloading] = useState(false)
   const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -484,6 +496,8 @@ export default function DashboardPage() {
     return Date.now().toString().slice(-6)
   }
 
+  const MAX_SESSIONS = 3
+
   async function createNewSession() {
     try {
       // Get current user
@@ -491,6 +505,12 @@ export default function DashboardPage() {
       if (!user) {
         toast.error('Vous devez être connecté')
         router.push('/login')
+        return
+      }
+
+      // Check session limit
+      if (sessions.length >= MAX_SESSIONS) {
+        toast.error(`Limite atteinte : ${MAX_SESSIONS} sessions maximum. Supprimez une session pour en créer une nouvelle.`)
         return
       }
 
@@ -567,6 +587,76 @@ export default function DashboardPage() {
       toast.error('Erreur lors de la création')
       console.error(err)
     }
+  }
+
+  async function deleteSession() {
+    if (!sessionToDelete || deleteConfirmText !== 'SUPPRIMER') return
+
+    setDeleting(true)
+    try {
+      // Delete all photos from storage first
+      const { data: photosToDelete } = await supabase
+        .from('photos')
+        .select('storage_path')
+        .eq('session_id', sessionToDelete.id)
+
+      if (photosToDelete && photosToDelete.length > 0) {
+        const paths = photosToDelete.map(p => p.storage_path)
+        await supabase.storage.from('photos').remove(paths)
+      }
+
+      // Delete photos records
+      await supabase
+        .from('photos')
+        .delete()
+        .eq('session_id', sessionToDelete.id)
+
+      // Delete messages
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('session_id', sessionToDelete.id)
+
+      // Delete borne connections
+      await supabase
+        .from('borne_connections')
+        .delete()
+        .eq('session_id', sessionToDelete.id)
+
+      // Delete the session
+      const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionToDelete.id)
+
+      if (error) throw error
+
+      // Update local state
+      const updatedSessions = sessions.filter(s => s.id !== sessionToDelete.id)
+      setSessions(updatedSessions)
+
+      // If we deleted the selected session, select another one
+      if (selectedSession?.id === sessionToDelete.id) {
+        setSelectedSession(updatedSessions.length > 0 ? updatedSessions[0] : null)
+      }
+
+      toast.success('Session supprimée définitivement')
+      setDeleteModalOpen(false)
+      setSessionToDelete(null)
+      setDeleteConfirmText('')
+    } catch (err) {
+      toast.error('Erreur lors de la suppression')
+      console.error(err)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  function openDeleteModal(session: Session) {
+    setSessionToDelete(session)
+    setDeleteConfirmText('')
+    setDeleteModalOpen(true)
+    setSessionDropdownOpen(false)
   }
 
   function copyInviteLink() {
@@ -992,37 +1082,52 @@ export default function DashboardPage() {
                       </div>
                       <div className="max-h-64 overflow-y-auto">
                         {sessions.map((session) => (
-                          <button
+                          <div
                             key={session.id}
-                            onClick={() => {
-                              setSelectedSession(session)
-                              setSessionDropdownOpen(false)
-                            }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#D4AF37]/10 transition-colors ${
                               session.id === selectedSession.id ? 'bg-[#D4AF37]/5' : ''
                             }`}
                           >
-                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                              session.id === selectedSession.id ? 'bg-[#D4AF37]/20' : 'bg-white/5'
-                            }`}>
-                              <Aperture className={`h-3 w-3 ${
-                                session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-gray-500'
-                              }`} />
-                            </div>
-                            <div className="flex-1 text-left">
-                              <p className={`text-sm font-medium ${
-                                session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-white'
+                            <button
+                              onClick={() => {
+                                setSelectedSession(session)
+                                setSessionDropdownOpen(false)
+                              }}
+                              className="flex-1 flex items-center gap-3"
+                            >
+                              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                                session.id === selectedSession.id ? 'bg-[#D4AF37]/20' : 'bg-white/5'
                               }`}>
-                                {session.name || 'Événement'}
-                              </p>
-                              <p className="text-[10px] text-gray-500">
-                                #{session.code} • {new Date(session.created_at).toLocaleDateString('fr-FR')}
-                              </p>
-                            </div>
-                            {session.id === selectedSession.id && (
-                              <CheckCircle className="h-4 w-4 text-[#D4AF37]" />
-                            )}
-                          </button>
+                                <Aperture className={`h-3 w-3 ${
+                                  session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-gray-500'
+                                }`} />
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className={`text-sm font-medium ${
+                                  session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-white'
+                                }`}>
+                                  {session.name || 'Événement'}
+                                </p>
+                                <p className="text-[10px] text-gray-500">
+                                  #{session.code} • {new Date(session.created_at).toLocaleDateString('fr-FR')}
+                                </p>
+                              </div>
+                              {session.id === selectedSession.id && (
+                                <CheckCircle className="h-4 w-4 text-[#D4AF37]" />
+                              )}
+                            </button>
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openDeleteModal(session)
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors"
+                              title="Supprimer cette session"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1647,6 +1752,82 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Session Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="bg-[#1A1A1E] border-red-500/30 max-w-md">
+          <DialogHeader>
+            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-red-500/20 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+            </div>
+            <DialogTitle className="text-center text-red-500 text-xl">
+              Supprimer la session
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              {sessionToDelete && (
+                <>
+                  Vous êtes sur le point de supprimer la session{' '}
+                  <span className="font-semibold text-white">{sessionToDelete.name}</span>{' '}
+                  (#{sessionToDelete.code}).
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 my-2">
+            <p className="text-red-400 text-sm font-medium mb-2">
+              Cette action est irréversible !
+            </p>
+            <ul className="text-red-300/80 text-xs space-y-1">
+              <li>• Toutes les photos seront supprimées</li>
+              <li>• Tous les messages seront supprimés</li>
+              <li>• Les paramètres de la session seront perdus</li>
+              <li>• Les QR codes ne fonctionneront plus</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">
+              Pour confirmer, tapez <span className="font-mono font-bold text-red-500">SUPPRIMER</span> ci-dessous :
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+              placeholder="SUPPRIMER"
+              className="w-full px-4 py-2 bg-[#0D0D0F] border border-red-500/30 rounded-lg text-white placeholder:text-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500/30 font-mono"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteModalOpen(false)
+                setSessionToDelete(null)
+                setDeleteConfirmText('')
+              }}
+              className="flex-1 border-gray-600 text-gray-400 hover:bg-gray-800"
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={deleteSession}
+              disabled={deleteConfirmText !== 'SUPPRIMER' || deleting}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer définitivement
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
