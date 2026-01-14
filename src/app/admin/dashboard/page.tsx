@@ -35,7 +35,6 @@ import {
   Printer,
   Facebook,
   CreditCard,
-  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -197,7 +196,6 @@ export default function DashboardPage() {
   const [togglingModeration, setTogglingModeration] = useState(false)
   const [activeTab, setActiveTab] = useState<'photos' | 'messages'>('photos')
   const [downloading, setDownloading] = useState(false)
-  const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -1033,108 +1031,62 @@ export default function DashboardPage() {
 
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
         <div className="w-full px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Session Selector Dropdown */}
-            {selectedSession && (
-              <div className="relative">
-                <button
-                  onClick={() => setSessionDropdownOpen(!sessionDropdownOpen)}
-                  className="flex items-center gap-3 px-4 py-2 bg-[#1A1A1E] rounded-xl border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 transition-colors cursor-pointer"
-                >
-                  {/* Event Icon */}
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Aperture className="h-4 w-4 text-[#D4AF37]" />
-                  </div>
+          <div className="flex items-center gap-2">
+            {/* Session Cards - Horizontal */}
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                onClick={() => setSelectedSession(session)}
+                className={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
+                  selectedSession?.id === session.id
+                    ? 'bg-[#1A1A1E] border-[#D4AF37]/50 shadow-lg shadow-[#D4AF37]/10'
+                    : 'bg-[#1A1A1E]/50 border-white/10 hover:border-white/20 opacity-60 hover:opacity-100'
+                }`}
+              >
+                {/* Event Icon */}
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                  selectedSession?.id === session.id ? 'bg-[#D4AF37]/20' : 'bg-white/5'
+                }`}>
+                  <Aperture className={`h-3.5 w-3.5 ${
+                    selectedSession?.id === session.id ? 'text-[#D4AF37]' : 'text-gray-500'
+                  }`} />
+                </div>
 
-                  {/* Event Name & Code */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-semibold text-base leading-tight">
-                      {selectedSession.name || 'Événement'}
+                {/* Event Name & Code */}
+                <div className="flex flex-col min-w-0">
+                  <span className={`font-semibold text-sm leading-tight truncate max-w-[120px] ${
+                    selectedSession?.id === session.id ? 'text-white' : 'text-gray-400'
+                  }`}>
+                    {session.name || 'Événement'}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`font-mono text-[10px] ${
+                      selectedSession?.id === session.id ? 'text-[#D4AF37]' : 'text-gray-500'
+                    }`}>
+                      #{session.code}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <Badge className="font-mono text-xs px-1.5 py-0 h-5 bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30 hover:bg-[#D4AF37]/25">
-                        #{selectedSession.code}
-                      </Badge>
-                      <div className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] text-emerald-400 font-medium">Active</span>
+                    {selectedSession?.id === session.id && (
+                      <div className="flex items-center gap-0.5">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[8px] text-emerald-400">Active</span>
                       </div>
-                    </div>
+                    )}
                   </div>
+                </div>
 
-                  {/* Dropdown Arrow */}
-                  {sessions.length > 1 && (
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${sessionDropdownOpen ? 'rotate-180' : ''}`} />
-                  )}
+                {/* Delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openDeleteModal(session)
+                  }}
+                  className="ml-1 p-1 rounded-lg hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors"
+                  title="Supprimer cette session"
+                >
+                  <Trash2 className="h-3 w-3" />
                 </button>
-
-                {/* Dropdown Menu */}
-                {sessionDropdownOpen && sessions.length > 1 && (
-                  <>
-                    {/* Backdrop to close dropdown */}
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setSessionDropdownOpen(false)}
-                    />
-                    <div className="absolute top-full left-0 mt-2 w-72 bg-[#1A1A1E] rounded-xl border border-[#D4AF37]/20 shadow-xl shadow-black/50 z-20 overflow-hidden">
-                      <div className="p-2 border-b border-white/5">
-                        <span className="text-xs text-gray-500 px-2">Mes sessions ({sessions.length})</span>
-                      </div>
-                      <div className="max-h-64 overflow-y-auto">
-                        {sessions.map((session) => (
-                          <div
-                            key={session.id}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#D4AF37]/10 transition-colors ${
-                              session.id === selectedSession.id ? 'bg-[#D4AF37]/5' : ''
-                            }`}
-                          >
-                            <button
-                              onClick={() => {
-                                setSelectedSession(session)
-                                setSessionDropdownOpen(false)
-                              }}
-                              className="flex-1 flex items-center gap-3"
-                            >
-                              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                                session.id === selectedSession.id ? 'bg-[#D4AF37]/20' : 'bg-white/5'
-                              }`}>
-                                <Aperture className={`h-3 w-3 ${
-                                  session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-gray-500'
-                                }`} />
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className={`text-sm font-medium ${
-                                  session.id === selectedSession.id ? 'text-[#D4AF37]' : 'text-white'
-                                }`}>
-                                  {session.name || 'Événement'}
-                                </p>
-                                <p className="text-[10px] text-gray-500">
-                                  #{session.code} • {new Date(session.created_at).toLocaleDateString('fr-FR')}
-                                </p>
-                              </div>
-                              {session.id === selectedSession.id && (
-                                <CheckCircle className="h-4 w-4 text-[#D4AF37]" />
-                              )}
-                            </button>
-                            {/* Delete button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openDeleteModal(session)
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors"
-                              title="Supprimer cette session"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
-            )}
+            ))}
           </div>
           <div className="flex items-center gap-2">
             <a
