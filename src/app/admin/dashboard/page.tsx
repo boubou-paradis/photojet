@@ -654,7 +654,6 @@ export default function DashboardPage() {
     setSessionToDelete(session)
     setDeleteConfirmText('')
     setDeleteModalOpen(true)
-    setSessionDropdownOpen(false)
   }
 
   function copyInviteLink() {
