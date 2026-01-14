@@ -1028,7 +1028,7 @@ export default function DashboardPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
+      <header className="relative z-[60] bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
         <div className="w-full px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Session Cards - Horizontal */}
