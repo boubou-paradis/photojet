@@ -86,11 +86,11 @@ function RollingDigit({ digit, isRolling, delay }: { digit: string; isRolling: b
 
   return (
     <motion.div
-      className="relative w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36 bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-xl overflow-hidden"
+      className="relative w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] rounded-xl overflow-hidden"
       style={{
         boxShadow:
-          'inset 0 -5px 15px rgba(0,0,0,0.5), inset 0 5px 15px rgba(255,255,255,0.05), 0 5px 15px rgba(0,0,0,0.3)',
-        border: '1px solid #3a3a3a',
+          'inset 0 -5px 15px rgba(0,0,0,0.8), inset 0 5px 15px rgba(255,255,255,0.03), 0 5px 15px rgba(0,0,0,0.5)',
+        border: '1px solid #2a2a2a',
         transformStyle: 'preserve-3d',
       }}
       animate={isRolling && !isEmpty ? {
@@ -98,19 +98,19 @@ function RollingDigit({ digit, isRolling, delay }: { digit: string; isRolling: b
       } : {}}
       transition={{ duration: 0.1, repeat: isRolling && !isEmpty ? Infinity : 0 }}
     >
-      {/* Reflet en haut */}
-      <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
+      {/* Reflet en haut - très subtil */}
+      <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/5 to-transparent" />
 
       {/* Ligne de séparation (style flip) */}
       <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-black shadow-lg z-10" />
 
       {/* Le chiffre */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center bg-transparent">
         <motion.span
           key={displayDigit}
           initial={!isEmpty ? { y: -20, opacity: 0 } : {}}
           animate={{ y: 0, opacity: 1 }}
-          className={`text-6xl sm:text-7xl md:text-8xl font-black ${isEmpty ? 'text-gray-600' : 'text-white'}`}
+          className={`text-6xl sm:text-7xl md:text-8xl font-black ${isEmpty ? 'text-gray-700' : 'text-white'}`}
           style={{
             textShadow: isEmpty ? 'none' : '0 0 30px rgba(255,255,255,0.5), 0 4px 0 #000',
             fontFamily: 'Arial Black, sans-serif',
