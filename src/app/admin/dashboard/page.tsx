@@ -3,7 +3,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -227,6 +227,64 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchSubscription()
   }, [])
+
+  // Polling fallback: filet de sécurité discret (60s)
+  // Vérifie uniquement le compteur de photos et rafraîchit si changement
+  const lastPhotoCountRef = useRef<number | null>(null)
+  const lastMessageCountRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!selectedSession) return
+
+    // Initialiser les compteurs
+    lastPhotoCountRef.current = photos.length
+    lastMessageCountRef.current = messages.length
+
+    const pollInterval = setInterval(async () => {
+      if (!selectedSession) return
+
+      try {
+        // Vérifier le compteur de photos (requête légère avec count)
+        const { count: photoCount } = await supabase
+          .from('photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', selectedSession.id)
+
+        // Vérifier le compteur de messages
+        const { count: messageCount } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', selectedSession.id)
+
+        // Rafraîchir seulement si les compteurs ont changé
+        if (photoCount !== null && photoCount !== lastPhotoCountRef.current) {
+          console.log(`[Fallback] Photos: ${lastPhotoCountRef.current} → ${photoCount}`)
+          lastPhotoCountRef.current = photoCount
+          fetchPhotos(selectedSession.id)
+        }
+
+        if (messageCount !== null && messageCount !== lastMessageCountRef.current) {
+          console.log(`[Fallback] Messages: ${lastMessageCountRef.current} → ${messageCount}`)
+          lastMessageCountRef.current = messageCount
+          fetchMessages(selectedSession.id)
+        }
+      } catch (err) {
+        // Silencieux en cas d'erreur réseau
+        console.debug('[Fallback] Erreur polling:', err)
+      }
+    }, 60000) // 60 secondes
+
+    return () => clearInterval(pollInterval)
+  }, [selectedSession?.id])
+
+  // Synchroniser les refs avec l'état local (évite refetch inutiles après actions locales)
+  useEffect(() => {
+    lastPhotoCountRef.current = photos.length
+  }, [photos.length])
+
+  useEffect(() => {
+    lastMessageCountRef.current = messages.length
+  }, [messages.length])
 
   async function fetchSessions() {
     try {
