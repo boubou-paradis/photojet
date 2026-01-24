@@ -752,7 +752,7 @@ export default function DashboardPage() {
 
             @page {
               size: A4 portrait;
-              margin: 15mm;
+              margin: 10mm;
             }
 
             html, body {
@@ -767,17 +767,17 @@ export default function DashboardPage() {
               align-items: center;
               min-height: 100vh;
               background: white;
-              padding: 15mm;
+              padding: 10mm;
             }
 
             .card {
               width: 100%;
-              height: 100%;
               max-width: 180mm;
-              padding: 12mm 10mm;
+              max-height: 277mm;
+              padding: 8mm;
               text-align: center;
-              border: 6px solid #D4AF37;
-              border-radius: 24px;
+              border: 4px solid #D4AF37;
+              border-radius: 20px;
               background: linear-gradient(135deg, #fffef9 0%, #f8f5eb 100%);
               display: flex;
               flex-direction: column;
@@ -790,23 +790,23 @@ export default function DashboardPage() {
             }
 
             .logo {
-              width: 320px;
+              width: 200px;
               height: auto;
-              margin-bottom: 8mm;
+              margin-bottom: 4mm;
             }
 
             .title {
-              font-size: 42px;
+              font-size: 28px;
               font-weight: 800;
               color: #1A1A1E;
-              margin-bottom: 4px;
+              margin-bottom: 2px;
               line-height: 1.2;
             }
 
             .subtitle {
-              font-size: 22px;
+              font-size: 16px;
               color: #6B6B70;
-              margin-bottom: 8mm;
+              margin-bottom: 4mm;
             }
 
             .qr-section {
@@ -817,74 +817,74 @@ export default function DashboardPage() {
 
             .qr-container {
               display: inline-block;
-              padding: 20px;
+              padding: 12px;
               background: white;
-              border-radius: 24px;
-              box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
-              border: 5px solid #D4AF37;
+              border-radius: 16px;
+              box-shadow: 0 6px 30px rgba(212, 175, 55, 0.4);
+              border: 4px solid #D4AF37;
             }
 
             .qr-container svg {
               display: block;
-              width: 100mm !important;
-              height: 100mm !important;
+              width: 70mm !important;
+              height: 70mm !important;
             }
 
             .code {
-              font-size: 72px;
+              font-size: 48px;
               font-weight: 900;
               color: #D4AF37;
-              margin-top: 8mm;
+              margin-top: 4mm;
               font-family: 'Courier New', monospace;
-              letter-spacing: 10px;
-              text-shadow: 3px 3px 6px rgba(212, 175, 55, 0.3);
+              letter-spacing: 8px;
+              text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
             }
 
             .steps-section {
               width: 100%;
-              margin-top: 8mm;
-              padding-top: 6mm;
+              margin-top: 4mm;
+              padding-top: 4mm;
               border-top: 2px dashed #D4AF37;
             }
 
             .steps {
               display: flex;
               justify-content: center;
-              gap: 8mm;
-              margin-bottom: 4mm;
+              gap: 6mm;
+              margin-bottom: 3mm;
             }
 
             .step {
               display: flex;
               flex-direction: column;
               align-items: center;
-              gap: 4px;
+              gap: 2px;
             }
 
             .step-icon {
-              width: 48px;
-              height: 48px;
+              width: 36px;
+              height: 36px;
               border-radius: 50%;
               background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%);
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 24px;
+              font-size: 18px;
               color: white;
               font-weight: bold;
-              box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+              box-shadow: 0 3px 8px rgba(212, 175, 55, 0.4);
             }
 
             .step-text {
-              font-size: 14px;
+              font-size: 11px;
               color: #1A1A1E;
               font-weight: 600;
-              max-width: 90px;
+              max-width: 80px;
               text-align: center;
             }
 
             .footer {
-              font-size: 14px;
+              font-size: 12px;
               color: #9B9BA0;
               font-style: italic;
             }
@@ -892,7 +892,7 @@ export default function DashboardPage() {
             /* Hide browser print headers/footers */
             @media print {
               @page {
-                margin: 15mm;
+                margin: 10mm;
               }
 
               html {
@@ -907,14 +907,13 @@ export default function DashboardPage() {
 
               .card {
                 box-shadow: none;
-                border: 6px solid #D4AF37;
+                border: 4px solid #D4AF37;
                 page-break-inside: avoid;
-                min-height: calc(297mm - 30mm);
               }
 
               .qr-container {
                 box-shadow: none;
-                border: 5px solid #D4AF37;
+                border: 4px solid #D4AF37;
               }
 
               .step-icon {
