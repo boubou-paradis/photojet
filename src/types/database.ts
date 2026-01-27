@@ -280,6 +280,7 @@ export interface QuizQuestion {
   correctAnswer: number // Index of correct answer
   timeLimit: number // Seconds
   points: number
+  audioUrl?: string | null // Audio played on correct answer reveal
 }
 
 export interface QuizAnswer {

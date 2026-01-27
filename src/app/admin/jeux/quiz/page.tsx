@@ -22,6 +22,8 @@ import {
   VolumeX,
   Award,
   Pause,
+  Upload,
+  Square,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -76,10 +78,19 @@ export default function QuizPage() {
   const [answerStats, setAnswerStats] = useState<number[]>([0, 0, 0, 0])
   const [showPodium, setShowPodium] = useState(false)
 
-  // Audio
+  // Audio global (musique de fond)
   const [quizAudio, setQuizAudio] = useState<string | null>(null)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Audio par question (preview)
+  const [previewAudioPlaying, setPreviewAudioPlaying] = useState(false)
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const questionAudioInputRef = useRef<HTMLInputElement>(null)
+
+  // Audio de la bonne réponse (lecture en jeu)
+  const [isAnswerAudioPlaying, setIsAnswerAudioPlaying] = useState(false)
+  const answerAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -199,6 +210,8 @@ export default function QuizPage() {
           // Time's up - reveal answer
           setIsAnswering(false)
           setShowResults(true)
+          pauseAudio()
+          playAnswerAudio()
           supabase
             .from('sessions')
             .update({
@@ -328,6 +341,79 @@ export default function QuizPage() {
     setQuestions(updatedQuestions)
     saveQuestionsToDatabase(updatedQuestions)
     if (editingQuestion?.id === id) setEditingQuestion(null)
+  }
+
+  // Upload audio pour une question spécifique
+  async function handleQuestionAudioUpload(e: React.ChangeEvent<HTMLInputElement>, questionId: string) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Seuls les fichiers audio sont acceptés')
+      return
+    }
+
+    try {
+      const fileName = `quiz-audio/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, file, { contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName)
+      const audioUrl = urlData.publicUrl
+
+      const updated = { ...editingQuestion!, audioUrl }
+      setEditingQuestion(updated)
+      updateQuestion(updated)
+      toast.success('Audio ajouté')
+    } catch (err) {
+      console.error('Error uploading audio:', err)
+      toast.error('Erreur lors de l\'upload audio')
+    }
+
+    // Reset input
+    if (questionAudioInputRef.current) questionAudioInputRef.current.value = ''
+  }
+
+  async function removeQuestionAudio(questionId: string) {
+    if (!editingQuestion) return
+
+    // Supprimer le fichier du storage si possible
+    if (editingQuestion.audioUrl) {
+      const path = editingQuestion.audioUrl.match(/photos\/(.+)/)
+      if (path?.[1]) {
+        await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
+      }
+    }
+
+    const updated = { ...editingQuestion, audioUrl: null }
+    setEditingQuestion(updated)
+    updateQuestion(updated)
+    stopPreviewAudio()
+    toast.success('Audio supprimé')
+  }
+
+  function togglePreviewAudio(url: string) {
+    if (previewAudioRef.current && previewAudioPlaying) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current = null
+      setPreviewAudioPlaying(false)
+      return
+    }
+    const audio = new Audio(url)
+    audio.onended = () => setPreviewAudioPlaying(false)
+    audio.play().then(() => setPreviewAudioPlaying(true)).catch(() => toast.error('Impossible de lire l\'audio'))
+    previewAudioRef.current = audio
+  }
+
+  function stopPreviewAudio() {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current = null
+      setPreviewAudioPlaying(false)
+    }
   }
 
   // Afficher le lobby (sans lancer le quiz)
@@ -481,8 +567,9 @@ export default function QuizPage() {
     setIsAnswering(false)
     setShowResults(true)
 
-    // Pause audio
+    // Pause background audio & play answer audio
     pauseAudio()
+    playAnswerAudio()
 
     await supabase
       .from('sessions')
@@ -507,6 +594,9 @@ export default function QuizPage() {
 
   async function nextQuestion() {
     if (!session) return
+
+    // Stopper l'audio de la réponse précédente
+    stopAnswerAudio()
 
     const nextIndex = currentQuestionIndex + 1
     if (nextIndex >= questions.length) {
@@ -544,6 +634,10 @@ export default function QuizPage() {
 
   async function exitGame() {
     if (!session) return
+
+    // Stopper tout audio
+    stopAnswerAudio()
+    pauseAudio()
 
     // On garde les questions dans la DB, on reset juste l'état du jeu
     setGameActive(false)
@@ -618,7 +712,8 @@ export default function QuizPage() {
   // Afficher le podium final
   function displayPodium() {
     setShowPodium(true)
-    // Play victory music if available
+    // Stopper audio de réponse + musique de fond
+    stopAnswerAudio()
     if (audioRef.current) {
       audioRef.current.pause()
     }
@@ -688,6 +783,53 @@ export default function QuizPage() {
     if (!audioRef.current) return
     audioRef.current.pause()
     setIsAudioPlaying(false)
+  }
+
+  // Jouer l'audio de la bonne réponse
+  function playAnswerAudio() {
+    const currentQ = questions[currentQuestionIndex]
+    if (!currentQ?.audioUrl) return
+
+    // Arrêter un éventuel audio précédent
+    if (answerAudioRef.current) {
+      answerAudioRef.current.pause()
+      answerAudioRef.current = null
+    }
+
+    const audio = new Audio(currentQ.audioUrl)
+    audio.onplay = () => setIsAnswerAudioPlaying(true)
+    audio.onpause = () => setIsAnswerAudioPlaying(false)
+    audio.onended = () => {
+      setIsAnswerAudioPlaying(false)
+      answerAudioRef.current = null
+    }
+    audio.play().then(() => {
+      setIsAnswerAudioPlaying(true)
+    }).catch(err => {
+      console.error('Answer audio play failed:', err)
+    })
+    answerAudioRef.current = audio
+  }
+
+  // Arrêter l'audio de la bonne réponse
+  function stopAnswerAudio() {
+    if (answerAudioRef.current) {
+      answerAudioRef.current.pause()
+      answerAudioRef.current.currentTime = 0
+      answerAudioRef.current = null
+      setIsAnswerAudioPlaying(false)
+    }
+  }
+
+  // Toggle play/pause de l'audio de la bonne réponse
+  function toggleAnswerAudio() {
+    if (!answerAudioRef.current) return
+    if (answerAudioRef.current.paused) {
+      answerAudioRef.current.play().then(() => setIsAnswerAudioPlaying(true))
+    } else {
+      answerAudioRef.current.pause()
+      setIsAnswerAudioPlaying(false)
+    }
   }
 
   const currentQuestion = questions[currentQuestionIndex]
@@ -820,6 +962,9 @@ export default function QuizPage() {
                   >
                     <span className="text-gray-500 font-mono text-sm w-6">{index + 1}.</span>
                     <span className="flex-1 text-white truncate">{q.question}</span>
+                    {q.audioUrl && (
+                      <Music className="h-3.5 w-3.5 text-[#E91E63] flex-shrink-0" />
+                    )}
                     <span className="px-2 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded text-xs">
                       {q.timeLimit}s
                     </span>
@@ -918,6 +1063,67 @@ export default function QuizPage() {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  {/* Audio de la bonne réponse */}
+                  <div className="mt-2 p-3 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Music className="h-4 w-4 text-[#E91E63]" />
+                      <label className="text-gray-400 text-xs font-medium">Piste audio (bonne réponse)</label>
+                    </div>
+                    <input
+                      ref={questionAudioInputRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleQuestionAudioUpload(e, editingQuestion.id)}
+                      className="hidden"
+                    />
+                    {editingQuestion.audioUrl ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => togglePreviewAudio(editingQuestion.audioUrl!)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            previewAudioPlaying
+                              ? 'bg-green-500 text-white'
+                              : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
+                          }`}
+                        >
+                          {previewAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        </button>
+                        {previewAudioPlaying && (
+                          <button
+                            onClick={stopPreviewAudio}
+                            className="p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50"
+                          >
+                            <Square className="h-4 w-4" />
+                          </button>
+                        )}
+                        <span className="text-green-400 text-xs flex-1">Audio chargé</span>
+                        <button
+                          onClick={() => questionAudioInputRef.current?.click()}
+                          className="px-2 py-1 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
+                        >
+                          Changer
+                        </button>
+                        <button
+                          onClick={() => removeQuestionAudio(editingQuestion.id)}
+                          className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => questionAudioInputRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-gray-300 rounded-lg text-sm transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Ajouter un fichier audio
+                      </button>
+                    )}
+                    <p className="text-gray-600 text-[10px] mt-1.5">
+                      Se joue automatiquement quand la bonne réponse est révélée
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -1137,6 +1343,32 @@ export default function QuizPage() {
                       )
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Mini-player audio bonne réponse */}
+              {showResults && currentQuestion?.audioUrl && (
+                <div className="flex items-center gap-2 p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4">
+                  <Music className="h-4 w-4 text-[#E91E63] flex-shrink-0" />
+                  <span className="text-[#E91E63] text-sm font-medium flex-1">
+                    {isAnswerAudioPlaying ? 'Audio en cours...' : 'Audio terminé'}
+                  </span>
+                  <button
+                    onClick={toggleAnswerAudio}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isAnswerAudioPlaying
+                        ? 'bg-[#E91E63] text-white'
+                        : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
+                    }`}
+                  >
+                    {isAnswerAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={stopAnswerAudio}
+                    className="p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 transition-colors"
+                  >
+                    <Square className="h-4 w-4" />
+                  </button>
                 </div>
               )}
 
