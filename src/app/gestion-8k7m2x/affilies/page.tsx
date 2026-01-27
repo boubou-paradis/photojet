@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 // ---------- Types ----------
 interface Affiliate {
@@ -41,15 +39,12 @@ interface Payment {
 
 // ---------- Component ----------
 export default function AffiliatesAdminPage() {
-  const router = useRouter()
-  const supabase = createClient()
-
-  // Auth state
+  // Auth state — plus de vérification client, le PIN + l'API suffisent
   const [pinVerified, setPinVerified] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
   const [storedPin, setStoredPin] = useState('')
-  const [authChecking, setAuthChecking] = useState(true)
+  const [pinChecking, setPinChecking] = useState(false)
 
   // Data state
   const [commissions, setCommissions] = useState<Commission[]>([])
@@ -72,40 +67,6 @@ export default function AffiliatesAdminPage() {
 
   // Pay state
   const [payLoading, setPayLoading] = useState<string | null>(null)
-
-  // 1. Vérifier que l'utilisateur est connecté et dans la whitelist
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-        if (authError) {
-          console.error('[Affiliates] Auth error:', authError.message)
-          router.replace('/admin/dashboard')
-          return
-        }
-
-        if (!user) {
-          console.warn('[Affiliates] No user session found')
-          router.replace('/admin/dashboard')
-          return
-        }
-
-        const userEmail = (user.email || '').toLowerCase().trim()
-        if (userEmail !== 'mg.events35@gmail.com') {
-          console.warn('[Affiliates] Unauthorized email:', userEmail)
-          router.replace('/admin/dashboard')
-          return
-        }
-
-        setAuthChecking(false)
-      } catch (err) {
-        console.error('[Affiliates] Auth check failed:', err)
-        router.replace('/admin/dashboard')
-      }
-    }
-    checkAuth()
-  }, [supabase, router])
 
   // Helper pour les appels API avec le PIN
   const apiFetch = useCallback(async (url: string, options: RequestInit = {}) => {
@@ -145,23 +106,36 @@ export default function AffiliatesAdminPage() {
     }
   }, [pinVerified, loadCommissions])
 
-  // 3. Vérifier le PIN
+  // 3. Vérifier le PIN via l'API (qui vérifie aussi auth + whitelist côté serveur)
   async function handlePinSubmit(e: React.FormEvent) {
     e.preventDefault()
     setPinError('')
+    setPinChecking(true)
 
-    // Tester le PIN en appelant l'API
-    const res = await fetch('/api/affiliates', {
-      headers: {
-        'x-admin-pin': pinInput,
-      },
-    })
+    try {
+      const res = await fetch('/api/affiliates', {
+        headers: {
+          'x-admin-pin': pinInput,
+        },
+      })
 
-    if (res.ok) {
-      setStoredPin(pinInput)
-      setPinVerified(true)
-    } else {
-      setPinError('Code PIN incorrect')
+      if (res.ok) {
+        setStoredPin(pinInput)
+        setPinVerified(true)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        if (data.error === 'Non connecté') {
+          setPinError('Vous devez être connecté. Allez sur /login d\'abord.')
+        } else if (data.error === 'Non autorisé') {
+          setPinError('Compte non autorisé.')
+        } else {
+          setPinError('Code PIN incorrect')
+        }
+      }
+    } catch {
+      setPinError('Erreur de connexion au serveur')
+    } finally {
+      setPinChecking(false)
     }
   }
 
@@ -258,15 +232,7 @@ export default function AffiliatesAdminPage() {
 
   // ---------- Render ----------
 
-  if (authChecking) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-gray-400">Vérification...</div>
-      </div>
-    )
-  }
-
-  // Écran PIN
+  // Écran PIN (la sécurité auth + whitelist est vérifiée côté API)
   if (!pinVerified) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -283,9 +249,10 @@ export default function AffiliatesAdminPage() {
           {pinError && <p className="text-red-400 text-sm mb-3">{pinError}</p>}
           <button
             type="submit"
-            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            disabled={pinChecking}
+            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
           >
-            Valider
+            {pinChecking ? 'Vérification...' : 'Valider'}
           </button>
         </form>
       </div>
