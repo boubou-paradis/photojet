@@ -186,15 +186,6 @@ export interface Session {
   print_mode: PrintMode
   print_limit: number | null
   print_count: number
-  // Blind Test settings
-  blindtest_active: boolean
-  blindtest_songs: string | null // JSON array of BlindTestSong
-  blindtest_current_song: number
-  blindtest_is_playing: boolean
-  blindtest_show_answer: boolean
-  blindtest_time_left: number | null
-  blindtest_answers: string | null // JSON array of BlindTestAnswer
-  blindtest_participants: string | null // JSON array of BlindTestParticipant
 }
 
 // Mystery Photo types
@@ -308,34 +299,6 @@ export interface QuizParticipant {
   correctAnswers: number
 }
 
-// Blind Test types
-export interface BlindTestSong {
-  id: string
-  title: string
-  artist: string
-  audioUrl?: string // URL to audio file or YouTube/Spotify link
-  coverUrl?: string
-  startTime?: number // Start position in seconds
-  duration?: number // Clip duration in seconds
-  points: number
-}
-
-export interface BlindTestAnswer {
-  odientId: string
-  odientName: string
-  songId: string
-  answer: string
-  correct: boolean
-  timeToAnswer: number
-  pointsEarned: number
-}
-
-export interface BlindTestParticipant {
-  odientId: string
-  odientName: string
-  totalScore: number
-  correctAnswers: number
-}
 
 export interface PrintRequest {
   id: string

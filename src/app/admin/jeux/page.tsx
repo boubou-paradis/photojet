@@ -89,19 +89,6 @@ const games = [
     iconBg: 'bg-gradient-to-br from-red-500/30 to-orange-400/30',
     accentColor: 'text-red-400',
   },
-  {
-    id: 'blindtest',
-    name: 'Blind Test',
-    emoji: '🎵',
-    description: 'Devinez les musiques le plus vite possible',
-    path: '/admin/jeux/blindtest',
-    available: false,
-    gradient: 'from-indigo-500/20 via-purple-500/20 to-blue-400/20',
-    glowColor: 'rgba(99, 102, 241, 0.5)',
-    borderHover: 'hover:border-indigo-400',
-    iconBg: 'bg-gradient-to-br from-indigo-500/30 to-purple-400/30',
-    accentColor: 'text-indigo-400',
-  },
 ]
 
 export default function JeuxPage() {

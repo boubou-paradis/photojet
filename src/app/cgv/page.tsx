@@ -54,7 +54,7 @@ export default function CGVPage() {
             </p>
             <p className="mb-2">Le service comprend :</p>
             <ul className="list-disc ml-6 space-y-1">
-              <li>L&apos;accès à 7 jeux interactifs (Roue de la Destinée, Photo Mystère, Blind Test, Quiz, Vote Photo, Défis Photo, Le Bon Ordre)</li>
+              <li>L&apos;accès à 6 jeux interactifs (Roue de la Destinée, Photo Mystère, Quiz, Vote Photo, Défis Photo, Le Bon Ordre)</li>
               <li>La fonction Borne Photo avec partage en direct</li>
               <li>Un tableau de bord de gestion</li>
               <li>Les mises à jour de la plateforme</li>
