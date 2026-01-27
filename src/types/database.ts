@@ -66,6 +66,8 @@ export type TransitionType = 'fade' | 'slide' | 'zoom'
 export type SlideshowMode = 'all' | 'last30' | 'last15'
 export type PhotoStatus = 'pending' | 'approved' | 'rejected'
 export type MessageStatus = 'pending' | 'approved' | 'rejected'
+export type PrintRequestStatus = 'pending' | 'printed' | 'rejected'
+export type PrintMode = 'manual' | 'auto'
 export type PhotoSource = 'invite' | 'borne'
 export type MessageSource = 'invite' | 'borne'
 export type CameraType = 'front' | 'back'
@@ -177,6 +179,11 @@ export interface Session {
   quiz_time_left: number | null
   quiz_answers: string | null // JSON array of QuizAnswer
   quiz_participants: string | null // JSON array of QuizParticipant
+  // Print settings
+  print_enabled: boolean
+  print_mode: PrintMode
+  print_limit: number | null
+  print_count: number
   // Blind Test settings
   blindtest_active: boolean
   blindtest_songs: string | null // JSON array of BlindTestSong
@@ -328,6 +335,16 @@ export interface BlindTestParticipant {
   correctAnswers: number
 }
 
+export interface PrintRequest {
+  id: string
+  session_id: string
+  photo_id: string
+  guest_name: string | null
+  status: PrintRequestStatus
+  created_at: string
+  printed_at: string | null
+}
+
 export interface Photo {
   id: string
   session_id: string
@@ -367,6 +384,8 @@ export type MessageInsert = Omit<Message, 'id' | 'created_at'>
 export type MessageUpdate = Partial<Omit<Message, 'id' | 'created_at'>>
 export type BorneConnectionInsert = Omit<BorneConnection, 'id'>
 export type BorneConnectionUpdate = Partial<Omit<BorneConnection, 'id'>>
+export type PrintRequestInsert = Omit<PrintRequest, 'id' | 'created_at'>
+export type PrintRequestUpdate = Partial<Omit<PrintRequest, 'id' | 'created_at'>>
 
 export interface Database {
   public: {
@@ -390,6 +409,11 @@ export interface Database {
         Row: BorneConnection
         Insert: BorneConnectionInsert
         Update: BorneConnectionUpdate
+      }
+      print_requests: {
+        Row: PrintRequest
+        Insert: PrintRequestInsert
+        Update: PrintRequestUpdate
       }
     }
   }

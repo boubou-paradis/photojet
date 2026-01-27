@@ -16,6 +16,7 @@ import {
   Palette,
   X,
   MessageCircle,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,7 +39,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
-import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition } from '@/types/database'
+import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode } from '@/types/database'
 import { generateSessionCode } from '@/lib/image-utils'
 import { toast } from 'sonner'
 
@@ -82,6 +83,10 @@ export default function SettingsPage() {
     messages_enabled: true,
     messages_frequency: 4,
     messages_duration: 8,
+    // Print settings
+    print_enabled: false,
+    print_mode: 'manual' as PrintMode,
+    print_limit: null as number | null,
   })
 
   useEffect(() => {
@@ -117,6 +122,10 @@ export default function SettingsPage() {
         messages_enabled: selectedSession.messages_enabled ?? true,
         messages_frequency: selectedSession.messages_frequency ?? 4,
         messages_duration: selectedSession.messages_duration ?? 8,
+        // Print settings
+        print_enabled: selectedSession.print_enabled ?? false,
+        print_mode: selectedSession.print_mode ?? 'manual',
+        print_limit: selectedSession.print_limit ?? null,
       })
     }
   }, [selectedSession])
@@ -182,6 +191,10 @@ export default function SettingsPage() {
           messages_enabled: formData.messages_enabled,
           messages_frequency: formData.messages_frequency,
           messages_duration: formData.messages_duration,
+          // Print settings
+          print_enabled: formData.print_enabled,
+          print_mode: formData.print_mode,
+          print_limit: formData.print_limit,
         })
         .eq('id', selectedSession.id)
 
@@ -895,6 +908,98 @@ export default function SettingsPage() {
                       />
                       <p className="text-xs text-[#6B6B70]">
                         Temps d&apos;affichage de chaque message
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Impression - pleine largeur */}
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#E91E63]/50 hover:shadow-[0_0_20px_rgba(233,30,99,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#E91E63]/10 flex items-center justify-center">
+                  <Printer className="h-4 w-4 text-[#E91E63]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Impression</h3>
+                  <p className="text-xs text-[#6B6B70]">Permettre aux invités de demander une impression</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-white text-sm">Activer l&apos;impression</Label>
+                    <p className="text-xs text-[#6B6B70]">
+                      Les invités pourront demander une impression
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.print_enabled}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, print_enabled: checked }))
+                    }
+                  />
+                </div>
+
+                {formData.print_enabled && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[#B0B0B5] text-sm">Mode d&apos;impression</Label>
+                      <Select
+                        value={formData.print_mode}
+                        onValueChange={(value: PrintMode) =>
+                          setFormData((prev) => ({ ...prev, print_mode: value }))
+                        }
+                      >
+                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                          <SelectItem value="manual">Manuel (validation requise)</SelectItem>
+                          <SelectItem value="auto">Automatique</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-[#6B6B70]">
+                        {formData.print_mode === 'manual'
+                          ? 'Vous validez chaque demande avant impression'
+                          : 'Les photos s\'impriment automatiquement'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[#B0B0B5] text-sm">Limite d&apos;impressions</Label>
+                      <Select
+                        value={formData.print_limit === null ? 'unlimited' : String(formData.print_limit)}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            print_limit: value === 'unlimited' ? null : parseInt(value),
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                          <SelectItem value="50">50 impressions</SelectItem>
+                          <SelectItem value="100">100 impressions</SelectItem>
+                          <SelectItem value="150">150 impressions</SelectItem>
+                          <SelectItem value="unlimited">Illimité</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-[#6B6B70]">
+                        {selectedSession?.print_count ?? 0}
+                        {formData.print_limit !== null
+                          ? ` / ${formData.print_limit} photos imprimées`
+                          : ' photos imprimées'}
                       </p>
                     </div>
                   </>

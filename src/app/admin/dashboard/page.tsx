@@ -39,7 +39,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase'
-import { Session, Photo, Message, BorneConnection, Subscription } from '@/types/database'
+import { Session, Photo, Message, BorneConnection, Subscription, PrintRequest } from '@/types/database'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -194,7 +194,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [togglingModeration, setTogglingModeration] = useState(false)
-  const [activeTab, setActiveTab] = useState<'photos' | 'messages'>('photos')
+  const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'impressions'>('photos')
+  const [printRequests, setPrintRequests] = useState<(PrintRequest & { photo?: Photo })[]>([])
   const [downloading, setDownloading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const PHOTOS_PER_PAGE = 30
@@ -214,8 +215,10 @@ export default function DashboardPage() {
       setCurrentPage(1) // Reset to page 1 when session changes
       fetchPhotos(selectedSession.id)
       fetchMessages(selectedSession.id)
+      fetchPrintRequests(selectedSession.id)
       subscribeToPhotos(selectedSession.id)
       subscribeToMessages(selectedSession.id)
+      subscribeToPrintRequests(selectedSession.id)
       if (selectedSession.borne_enabled) {
         fetchBorneConnection(selectedSession.id)
         subscribeToBorneConnection(selectedSession.id)
@@ -452,6 +455,147 @@ export default function DashboardPage() {
     }
   }
 
+  async function fetchPrintRequests(sessionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('print_requests')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Enrich with photo data
+      const enriched = (data || []).map((pr) => {
+        const photo = photos.find((p) => p.id === pr.photo_id)
+        return { ...pr, photo }
+      })
+      setPrintRequests(enriched)
+    } catch (err) {
+      console.error('Error fetching print requests:', err)
+    }
+  }
+
+  function subscribeToPrintRequests(sessionId: string) {
+    const channel = supabase
+      .channel(`dashboard-print-requests-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'print_requests',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          fetchPrintRequests(sessionId)
+          // Mode auto : déclencher l'impression automatiquement
+          if (payload.eventType === 'INSERT' && selectedSession?.print_mode === 'auto') {
+            const newRequest = payload.new as PrintRequest
+            handleAutoPrint(newRequest)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  async function handleAutoPrint(request: PrintRequest) {
+    // Trouver la photo correspondante
+    const photo = photos.find((p) => p.id === request.photo_id)
+    if (!photo) return
+    await executePrint(getPhotoUrl(photo.storage_path), request.id)
+  }
+
+  async function executePrint(imageUrl: string, requestId: string) {
+    // Ouvrir fenêtre d'impression (même pattern que la borne)
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>AnimaJet - Impression</title>
+            <style>
+              @page { margin: 0; }
+              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: black; }
+              img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+            </style>
+          </head>
+          <body>
+            <img src="${imageUrl}" onload="window.print(); setTimeout(() => window.close(), 1000);" />
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+    }
+
+    // Marquer comme imprimé
+    try {
+      await supabase
+        .from('print_requests')
+        .update({ status: 'printed', printed_at: new Date().toISOString() })
+        .eq('id', requestId)
+
+      // Incrémenter le compteur
+      if (selectedSession) {
+        const newCount = (selectedSession.print_count ?? 0) + 1
+        await supabase
+          .from('sessions')
+          .update({ print_count: newCount })
+          .eq('id', selectedSession.id)
+
+        setSelectedSession({ ...selectedSession, print_count: newCount })
+        setSessions((prev) =>
+          prev.map((s) => s.id === selectedSession.id ? { ...s, print_count: newCount } : s)
+        )
+      }
+
+      // Mise à jour locale
+      setPrintRequests((prev) =>
+        prev.map((pr) =>
+          pr.id === requestId ? { ...pr, status: 'printed', printed_at: new Date().toISOString() } : pr
+        )
+      )
+      toast.success('Photo imprimée')
+    } catch (err) {
+      toast.error('Erreur lors de la mise à jour')
+      console.error(err)
+    }
+  }
+
+  async function handleRejectPrint(requestId: string) {
+    setActionLoading(requestId)
+    try {
+      await supabase
+        .from('print_requests')
+        .update({ status: 'rejected' })
+        .eq('id', requestId)
+
+      setPrintRequests((prev) =>
+        prev.map((pr) =>
+          pr.id === requestId ? { ...pr, status: 'rejected' } : pr
+        )
+      )
+      toast.success('Demande refusée')
+    } catch (err) {
+      toast.error('Erreur lors du refus')
+      console.error(err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handlePrintRequest(request: PrintRequest & { photo?: Photo }) {
+    if (!request.photo) return
+    setActionLoading(request.id)
+    await executePrint(getPhotoUrl(request.photo.storage_path), request.id)
+    setActionLoading(null)
+  }
+
   async function handleDelete(photo: Photo) {
     setActionLoading(photo.id)
     try {
@@ -605,6 +749,11 @@ export default function DashboardPage() {
           messages_enabled: true,
           messages_frequency: 4,
           messages_duration: 8,
+          // Print defaults
+          print_enabled: false,
+          print_mode: 'manual',
+          print_limit: null,
+          print_count: 0,
           // Mystery Photo Game defaults
           mystery_photo_enabled: false,
           mystery_photo_url: null,
@@ -1082,6 +1231,20 @@ export default function DashboardPage() {
     return data.publicUrl
   }
 
+  // Re-enrich print requests when photos change
+  useEffect(() => {
+    if (printRequests.length > 0 && photos.length > 0) {
+      setPrintRequests((prev) =>
+        prev.map((pr) => ({
+          ...pr,
+          photo: photos.find((p) => p.id === pr.photo_id) || pr.photo,
+        }))
+      )
+    }
+  }, [photos])
+
+  const pendingPrintCount = printRequests.filter((pr) => pr.status === 'pending').length
+
   const approvedCount = photos.filter((p) => p.status === 'approved').length
   const pendingCount = photos.filter((p) => p.status === 'pending').length
   const bornePhotosCount = photos.filter((p) => p.source === 'borne').length
@@ -1270,7 +1433,7 @@ export default function DashboardPage() {
             {/* Colonne gauche : Stats + Photos */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
               {/* Stats Cards - Premium Gaming Style */}
-              <div className="grid grid-cols-5 gap-4 flex-shrink-0">
+              <div className="grid grid-cols-6 gap-4 flex-shrink-0">
                 {/* Photos Total */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
@@ -1403,11 +1566,44 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </motion.div>
+
+                {/* Impressions */}
+                {selectedSession?.print_enabled && (
+                  <motion.div
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    className="relative group"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500/30 to-rose-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-pink-500/20 group-hover:border-pink-500/50 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-600/10 flex items-center justify-center">
+                          <Printer className="h-5 w-5 text-pink-500" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Impressions</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-black text-pink-500">
+                              {selectedSession?.print_count ?? 0}
+                            </span>
+                            {selectedSession?.print_limit && (
+                              <span className="text-xs text-gray-500">/ {selectedSession.print_limit}</span>
+                            )}
+                            {pendingPrintCount > 0 && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
+                                {pendingPrintCount}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Content Section with Tabs - fills remaining space */}
               <div className="card-gold rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photos' | 'messages')} className="flex flex-col flex-1 min-h-0">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photos' | 'messages' | 'impressions')} className="flex flex-col flex-1 min-h-0">
                   <div className="p-3 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0 flex items-center justify-between gap-4">
                     <TabsList className="bg-[#2E2E33] border border-[rgba(255,255,255,0.1)]">
                       <TabsTrigger value="photos" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#1A1A1E]">
@@ -1423,6 +1619,17 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </TabsTrigger>
+                      {selectedSession?.print_enabled && (
+                        <TabsTrigger value="impressions" className="data-[state=active]:bg-[#E91E63] data-[state=active]:text-white">
+                          <Printer className="h-4 w-4 mr-2" />
+                          Impressions
+                          {pendingPrintCount > 0 && (
+                            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
+                              {pendingPrintCount}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                      )}
                     </TabsList>
 
                     {/* Slideshow Mode Selector */}
@@ -1667,6 +1874,146 @@ export default function DashboardPage() {
                       <div className="text-center py-8 text-[#6B6B70]">
                         <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
                         Aucun message pour le moment
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Impressions Tab */}
+                  <TabsContent value="impressions" className="flex-1 overflow-auto m-0 p-4">
+                    {printRequests.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* Demandes en attente */}
+                        {printRequests.filter((pr) => pr.status === 'pending').length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-orange-500" />
+                              En attente ({printRequests.filter((pr) => pr.status === 'pending').length})
+                            </h4>
+                            <div className="space-y-2">
+                              {printRequests
+                                .filter((pr) => pr.status === 'pending')
+                                .map((pr) => (
+                                  <motion.div
+                                    key={pr.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-center gap-3 p-3 rounded-lg bg-[#FF9800]/5 border border-[#FF9800]/30"
+                                  >
+                                    {/* Miniature */}
+                                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-[#2E2E33] flex-shrink-0">
+                                      {pr.photo && (
+                                        <img
+                                          src={getPhotoUrl(pr.photo.storage_path)}
+                                          alt="Photo"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      )}
+                                    </div>
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-white text-sm font-medium truncate">
+                                        {pr.guest_name || 'Invité anonyme'}
+                                      </p>
+                                      <p className="text-[#6B6B70] text-xs">
+                                        {new Date(pr.created_at).toLocaleString('fr-FR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </p>
+                                    </div>
+                                    {/* Actions */}
+                                    <div className="flex gap-1.5 flex-shrink-0">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handlePrintRequest(pr)}
+                                        disabled={actionLoading === pr.id}
+                                        className="bg-[#4CAF50] hover:bg-[#43A047] text-white h-9 px-3"
+                                      >
+                                        {actionLoading === pr.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Printer className="h-4 w-4 mr-1" />
+                                            Imprimer
+                                          </>
+                                        )}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleRejectPrint(pr.id)}
+                                        disabled={actionLoading === pr.id}
+                                        className="h-9 px-3 text-[#E53935] hover:bg-[#E53935]/10"
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Refuser
+                                      </Button>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Historique */}
+                        {printRequests.filter((pr) => pr.status !== 'pending').length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-400 mb-2 mt-4">
+                              Historique
+                            </h4>
+                            <div className="space-y-1.5">
+                              {printRequests
+                                .filter((pr) => pr.status !== 'pending')
+                                .map((pr) => (
+                                  <div
+                                    key={pr.id}
+                                    className={`flex items-center gap-3 p-2.5 rounded-lg border ${
+                                      pr.status === 'printed'
+                                        ? 'bg-[#4CAF50]/5 border-[#4CAF50]/20'
+                                        : 'bg-[#E53935]/5 border-[#E53935]/20'
+                                    }`}
+                                  >
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#2E2E33] flex-shrink-0">
+                                      {pr.photo && (
+                                        <img
+                                          src={getPhotoUrl(pr.photo.storage_path)}
+                                          alt="Photo"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-white text-xs truncate">
+                                        {pr.guest_name || 'Invité anonyme'}
+                                      </p>
+                                      <p className="text-[#6B6B70] text-[10px]">
+                                        {new Date(pr.created_at).toLocaleString('fr-FR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </p>
+                                    </div>
+                                    <Badge className={`text-[10px] px-1.5 py-0.5 ${
+                                      pr.status === 'printed'
+                                        ? 'bg-[#4CAF50]/20 text-[#4CAF50] border-[#4CAF50]/30'
+                                        : 'bg-[#E53935]/20 text-[#E53935] border-[#E53935]/30'
+                                    }`}>
+                                      {pr.status === 'printed' ? 'Imprimé' : 'Refusé'}
+                                    </Badge>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-[#6B6B70]">
+                        <Printer className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        Aucune demande d&apos;impression
                       </div>
                     )}
                   </TabsContent>

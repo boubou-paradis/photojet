@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock, MessageCircle, Rocket, Sparkles } from 'lucide-react'
+import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock, MessageCircle, Rocket, Sparkles, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,6 +38,10 @@ export default function InvitePage() {
   const [messageAuthor, setMessageAuthor] = useState('')
   const [sendingMessage, setSendingMessage] = useState(false)
   const [messageUploadStatus, setMessageUploadStatus] = useState<UploadStatus>('idle')
+
+  // Print states
+  const [printRequesting, setPrintRequesting] = useState(false)
+  const [printRequested, setPrintRequested] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
 
@@ -235,12 +239,114 @@ export default function InvitePage() {
     setPhotoUploadStatus('idle')
     setPreview(null)
     setUploaderName('')
+    setPrintRequested(false)
   }
 
   const handleNewMessage = () => {
     setMessageUploadStatus('idle')
     setMessageAuthor('')
   }
+
+  const handlePrintRequest = async () => {
+    if (!selectedFile || !session) return
+
+    setPrintRequesting(true)
+    setError(null)
+
+    try {
+      // Vérifier la limite
+      const { data: freshSession } = await supabase
+        .from('sessions')
+        .select('print_enabled, print_mode, print_limit, print_count')
+        .eq('id', session.id)
+        .single()
+
+      if (!freshSession?.print_enabled) {
+        setError('L\'impression n\'est pas activée')
+        return
+      }
+
+      if (freshSession.print_limit !== null && freshSession.print_count >= freshSession.print_limit) {
+        setError('Limite d\'impressions atteinte')
+        return
+      }
+
+      // Upload la photo d'abord (même logique que handlePhotoUpload)
+      const { data: modSession } = await supabase
+        .from('sessions')
+        .select('moderation_enabled')
+        .eq('id', session.id)
+        .single()
+
+      const moderationEnabled = modSession?.moderation_enabled ?? false
+      const isApproved = !moderationEnabled
+
+      const compressedFile = await compressImage(selectedFile, (progress) => {
+        if (progress.progress !== undefined) {
+          setCompressionProgress(Math.round(progress.progress * 100))
+        }
+      })
+
+      const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, compressedFile, {
+          contentType: 'image/jpeg',
+        })
+
+      if (uploadError) throw uploadError
+
+      // Insérer la photo
+      const { data: photoData, error: dbError } = await supabase
+        .from('photos')
+        .insert({
+          session_id: session.id,
+          storage_path: fileName,
+          status: isApproved ? 'approved' : 'pending',
+          uploader_name: uploaderName || null,
+          approved_at: isApproved ? new Date().toISOString() : null,
+          source: 'invite',
+        })
+        .select()
+        .single()
+
+      if (dbError) throw dbError
+
+      // Insérer la demande d'impression
+      await supabase
+        .from('print_requests')
+        .insert({
+          session_id: session.id,
+          photo_id: photoData.id,
+          guest_name: uploaderName || null,
+          status: 'pending',
+          printed_at: null,
+        })
+
+      // Incrémenter le compteur
+      await supabase
+        .from('sessions')
+        .update({ print_count: (freshSession.print_count ?? 0) + 1 })
+        .eq('id', session.id)
+
+      setPrintRequested(true)
+      setPhotoUploadStatus(isApproved ? 'success' : 'pending')
+      setSelectedFile(null)
+
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la demande d\'impression')
+    } finally {
+      setPrintRequesting(false)
+    }
+  }
+
+  const printEnabled = session?.print_enabled ?? false
+  const printLimitReached = printEnabled && session?.print_limit !== null && session?.print_limit !== undefined
+    && (session?.print_count ?? 0) >= session.print_limit
 
   const messagesEnabled = session?.messages_enabled ?? true
 
@@ -390,7 +496,16 @@ export default function InvitePage() {
                             <CheckCircle className="h-12 w-12 text-emerald-500" />
                           </motion.div>
                           <h2 className="text-2xl font-bold text-white mb-2">Photo envoyée !</h2>
-                          <p className="text-gray-400 mb-6">Votre photo est en ligne !</p>
+                          <p className="text-gray-400 mb-2">Votre photo est en ligne !</p>
+                          {printRequested && (
+                            <p className="text-[#E91E63] text-sm mb-4 flex items-center justify-center gap-1">
+                              <Printer className="h-4 w-4" />
+                              {session?.print_mode === 'auto'
+                                ? 'Impression en cours !'
+                                : 'Demande d\'impression envoyée !'}
+                            </p>
+                          )}
+                          {!printRequested && <div className="mb-4" />}
                         </>
                       ) : (
                         <>
@@ -402,7 +517,16 @@ export default function InvitePage() {
                             <Clock className="h-12 w-12 text-[#D4AF37]" />
                           </motion.div>
                           <h2 className="text-2xl font-bold text-white mb-2">Photo envoyée !</h2>
-                          <p className="text-gray-400 mb-6">En attente de validation</p>
+                          <p className="text-gray-400 mb-2">En attente de validation</p>
+                          {printRequested && (
+                            <p className="text-[#E91E63] text-sm mb-4 flex items-center justify-center gap-1">
+                              <Printer className="h-4 w-4" />
+                              {session?.print_mode === 'auto'
+                                ? 'Impression en cours !'
+                                : 'Demande d\'impression envoyée !'}
+                            </p>
+                          )}
+                          {!printRequested && <div className="mb-4" />}
                         </>
                       )}
                       <Button
@@ -442,7 +566,7 @@ export default function InvitePage() {
 
                       <Button
                         onClick={handlePhotoUpload}
-                        disabled={uploading}
+                        disabled={uploading || printRequesting}
                         className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25 disabled:opacity-50"
                       >
                         {uploading ? (
@@ -457,6 +581,31 @@ export default function InvitePage() {
                           </>
                         )}
                       </Button>
+
+                      {printEnabled && (
+                        <Button
+                          onClick={handlePrintRequest}
+                          disabled={uploading || printRequesting || printLimitReached}
+                          className="w-full h-12 mt-2 bg-gradient-to-r from-[#E91E63] to-[#F06292] text-white font-semibold text-base rounded-xl shadow-lg shadow-[#E91E63]/25 disabled:opacity-50"
+                        >
+                          {printRequesting ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Envoi + impression...
+                            </>
+                          ) : printLimitReached ? (
+                            <>
+                              <Printer className="mr-2 h-5 w-5" />
+                              Limite atteinte
+                            </>
+                          ) : (
+                            <>
+                              <Printer className="mr-2 h-5 w-5" />
+                              Envoyer + Imprimer
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

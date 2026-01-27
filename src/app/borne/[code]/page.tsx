@@ -437,8 +437,15 @@ export default function BornePage() {
   }
 
   // Print function
+  // Vérifier si la limite d'impression est atteinte
+  const printLimitReached = session?.print_enabled && session?.print_limit !== null && session?.print_limit !== undefined
+    && (session?.print_count ?? 0) >= session.print_limit
+
   async function handlePrint() {
-    if (!capturedImage) return
+    if (!capturedImage || !session) return
+
+    // Vérifier la limite avant d'imprimer
+    if (printLimitReached) return
 
     setState('printing')
 
@@ -473,6 +480,20 @@ export default function BornePage() {
         </html>
       `)
       printWindow.document.close()
+    }
+
+    // Incrémenter le compteur d'impression partagé
+    try {
+      const newCount = (session.print_count ?? 0) + 1
+      await supabase
+        .from('sessions')
+        .update({ print_count: newCount })
+        .eq('id', session.id)
+
+      // Mettre à jour l'état local
+      setSession({ ...session, print_count: newCount })
+    } catch (err) {
+      console.error('Error incrementing print count:', err)
     }
 
     // Return to camera after delay
@@ -716,12 +737,15 @@ export default function BornePage() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      className="w-20 h-20 rounded-full bg-gradient-to-b from-[#D4AF37] to-[#B8960C] hover:from-[#E5C349] hover:to-[#C9A71D] text-[#1A1A1E] border-2 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.4)]"
+                      className="w-20 h-20 rounded-full bg-gradient-to-b from-[#D4AF37] to-[#B8960C] hover:from-[#E5C349] hover:to-[#C9A71D] text-[#1A1A1E] border-2 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-40"
                       onClick={handlePrint}
+                      disabled={!!printLimitReached}
                     >
                       <Printer className="h-8 w-8" />
                     </Button>
-                    <span className="text-[#D4AF37] text-sm font-medium">Imprimer</span>
+                    <span className="text-[#D4AF37] text-sm font-medium">
+                      {printLimitReached ? 'Limite atteinte' : 'Imprimer'}
+                    </span>
                   </div>
                 </div>
               </div>
