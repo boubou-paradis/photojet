@@ -12,7 +12,7 @@ const getSupabaseAdmin = () => {
 // GET /api/affiliates/payments?affiliate_id=xxx — Historique des paiements
 export async function GET(request: NextRequest) {
   const pin = request.headers.get('x-admin-pin')
-  const access = await verifyAffiliateAdminAccess(pin)
+  const access = verifyAffiliateAdminAccess(pin)
   if (!access.authorized) {
     return NextResponse.json({ error: access.reason }, { status: 403 })
   }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 // POST /api/affiliates/payments — Marquer comme payé
 export async function POST(request: NextRequest) {
   const pin = request.headers.get('x-admin-pin')
-  const access = await verifyAffiliateAdminAccess(pin)
+  const access = verifyAffiliateAdminAccess(pin)
   if (!access.authorized) {
     return NextResponse.json({ error: access.reason }, { status: 403 })
   }

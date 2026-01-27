@@ -16,7 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const pin = request.headers.get('x-admin-pin')
-  const access = await verifyAffiliateAdminAccess(pin)
+  const access = verifyAffiliateAdminAccess(pin)
   if (!access.authorized) {
     return NextResponse.json({ error: access.reason }, { status: 403 })
   }

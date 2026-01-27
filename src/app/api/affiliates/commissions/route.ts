@@ -13,7 +13,7 @@ const getSupabaseAdmin = () => {
 // GET /api/affiliates/commissions — Calcul des commissions pour tous les affiliés
 export async function GET(request: NextRequest) {
   const pin = request.headers.get('x-admin-pin')
-  const access = await verifyAffiliateAdminAccess(pin)
+  const access = verifyAffiliateAdminAccess(pin)
   if (!access.authorized) {
     return NextResponse.json({ error: access.reason }, { status: 403 })
   }
