@@ -541,7 +541,7 @@ export default function SettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start"
         >
           {/* Colonne gauche : Informations générales */}
           <motion.div
