@@ -68,6 +68,7 @@ export type PhotoStatus = 'pending' | 'approved' | 'rejected'
 export type MessageStatus = 'pending' | 'approved' | 'rejected'
 export type PrintRequestStatus = 'pending' | 'printed' | 'rejected'
 export type PrintMode = 'manual' | 'auto'
+export type QRSize = 'small' | 'medium' | 'large'
 export type PhotoSource = 'invite' | 'borne'
 export type MessageSource = 'invite' | 'borne'
 export type CameraType = 'front' | 'back'
@@ -86,6 +87,7 @@ export interface Session {
   expires_at: string
   moderation_enabled: boolean
   show_qr_on_screen: boolean
+  qr_size: QRSize
   transition_type: TransitionType
   transition_duration: number
   slideshow_mode: SlideshowMode

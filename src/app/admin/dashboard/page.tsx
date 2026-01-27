@@ -729,6 +729,7 @@ export default function DashboardPage() {
           expires_at: expiresAt.toISOString(),
           moderation_enabled: false,
           show_qr_on_screen: true,
+          qr_size: 'medium',
           transition_type: 'fade',
           transition_duration: 5,
           slideshow_mode: 'all',

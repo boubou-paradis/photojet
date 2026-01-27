@@ -808,6 +808,14 @@ export default function LivePage() {
     />
   )
 
+  // Tailles QR code configurables (petit / moyen / grand)
+  const qrSizeMap = {
+    small:   { waiting: 80,  bar: 50,  fullscreen: 40 },
+    medium:  { waiting: 120, bar: 70,  fullscreen: 60 },
+    large:   { waiting: 180, bar: 100, fullscreen: 90 },
+  }
+  const qrSizes = qrSizeMap[session?.qr_size as keyof typeof qrSizeMap] || qrSizeMap.medium
+
   // QR Code component with pulse animation
   const renderQRCode = (size: number = 80) => (
     <div className="flex items-center gap-3">
@@ -1277,7 +1285,7 @@ export default function LivePage() {
                   transition={{ delay: 0.3 }}
                   className="fixed bottom-8 right-8"
                 >
-                  {renderQRCode(120)}
+                  {renderQRCode(qrSizes.waiting)}
                 </motion.div>
               )}
             </motion.div>
@@ -1329,7 +1337,7 @@ export default function LivePage() {
             >
               <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10">
                 <div className="bg-white p-1.5 rounded-lg">
-                  <QRCode value={getInviteUrl(code)} size={60} />
+                  <QRCode value={getInviteUrl(code)} size={qrSizes.fullscreen} />
                 </div>
                 <p className="text-xs text-center text-white/70 mt-1 font-mono">#{code}</p>
               </div>
@@ -1380,7 +1388,7 @@ export default function LivePage() {
                 </div>
 
                 {/* Right side: QR Code */}
-                {session.show_qr_on_screen && renderQRCode(70)}
+                {session.show_qr_on_screen && renderQRCode(qrSizes.bar)}
               </div>
             </div>
           </motion.div>

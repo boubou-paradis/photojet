@@ -41,7 +41,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
-import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode } from '@/types/database'
+import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
 import { generateSessionCode } from '@/lib/image-utils'
 import { toast } from 'sonner'
 
@@ -65,6 +65,7 @@ export default function SettingsPage() {
     code: '',
     moderation_enabled: false,
     show_qr_on_screen: true,
+    qr_size: 'medium' as QRSize,
     transition_type: 'fade' as TransitionType,
     transition_duration: 5,
     expires_at: '',
@@ -104,6 +105,7 @@ export default function SettingsPage() {
         code: selectedSession.code,
         moderation_enabled: false,
         show_qr_on_screen: selectedSession.show_qr_on_screen,
+        qr_size: selectedSession.qr_size ?? 'medium',
         transition_type: selectedSession.transition_type,
         transition_duration: selectedSession.transition_duration,
         expires_at: selectedSession.expires_at.split('T')[0],
@@ -216,6 +218,7 @@ export default function SettingsPage() {
           code: formData.code,
           moderation_enabled: formData.moderation_enabled,
           show_qr_on_screen: formData.show_qr_on_screen,
+          qr_size: formData.qr_size,
           transition_type: formData.transition_type,
           transition_duration: formData.transition_duration,
           expires_at: new Date(formData.expires_at).toISOString(),
@@ -607,6 +610,27 @@ export default function SettingsPage() {
                     }
                   />
                 </div>
+
+                {formData.show_qr_on_screen && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[#B0B0B5] text-sm">Taille du QR code</Label>
+                    <Select
+                      value={formData.qr_size}
+                      onValueChange={(value: QRSize) =>
+                        setFormData((prev) => ({ ...prev, qr_size: value }))
+                      }
+                    >
+                      <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                        <SelectItem value="small">Petit</SelectItem>
+                        <SelectItem value="medium">Moyen</SelectItem>
+                        <SelectItem value="large">Grand</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
