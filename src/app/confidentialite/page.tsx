@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import Footer from '@/components/Footer'
+import ProtectedContact, { ProtectedEmail } from '@/components/ProtectedContact'
 
 export default function ConfidentialitePage() {
   return (
@@ -47,8 +48,8 @@ export default function ConfidentialitePage() {
               <p>Guillaume Morel</p>
               <p>10 Lan Lande des Couëdies</p>
               <p>35600 Bains-sur-Oust</p>
-              <p className="mt-2">Email : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
-              <p>Téléphone : 06 48 10 61 66</p>
+              <p className="mt-2"><ProtectedContact type="email" /></p>
+              <p><ProtectedContact type="phone" /></p>
             </div>
           </section>
 
@@ -197,7 +198,7 @@ export default function ConfidentialitePage() {
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">8. Exercer vos droits</h2>
             <p className="mb-4">Pour exercer vos droits, contactez-nous :</p>
             <div className="bg-[#242428] rounded-lg p-4 border border-[#D4AF37]/20">
-              <p><strong className="text-white">Email :</strong> <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
+              <p><strong className="text-white">Email :</strong> <ProtectedEmail /></p>
               <p className="mt-3"><strong className="text-white">Courrier :</strong></p>
               <p>MG Events Animation</p>
               <p>Guillaume Morel</p>
@@ -306,8 +307,8 @@ export default function ConfidentialitePage() {
             <p>Guillaume Morel</p>
             <p>10 Lan Lande des Couëdies</p>
             <p>35600 Bains-sur-Oust</p>
-            <p className="mt-2">Email : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
-            <p>Téléphone : 06 48 10 61 66</p>
+            <p className="mt-2"><ProtectedContact type="email" /></p>
+            <p><ProtectedContact type="phone" /></p>
             <p>Site : <a href="https://animajet.fr" className="text-[#D4AF37] hover:underline">animajet.fr</a></p>
           </section>
 

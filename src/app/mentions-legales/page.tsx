@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import Footer from '@/components/Footer'
+import ProtectedContact, { ProtectedEmail } from '@/components/ProtectedContact'
 
 export default function MentionsLegalesPage() {
   return (
@@ -38,9 +39,9 @@ export default function MentionsLegalesPage() {
               <p>10 Lan Lande des Couëdies</p>
               <p>35600 Bains-sur-Oust</p>
               <p>France</p>
-              <p className="mt-3">Email : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
-              <p>Téléphone : 06 48 10 61 66</p>
-              <p className="mt-3">SIRET : 499 112 308 00030</p>
+              <p className="mt-3"><ProtectedContact type="email" /></p>
+              <p><ProtectedContact type="phone" /></p>
+              <p className="mt-3"><ProtectedContact type="siret" /></p>
               <p>Code APE : 9329Z (Autres activités récréatives et de loisirs)</p>
             </div>
           </section>
@@ -49,7 +50,7 @@ export default function MentionsLegalesPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">2. Directeur de la publication</h2>
             <p>Guillaume Morel</p>
-            <p>Email : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
+            <p><ProtectedContact type="email" /></p>
           </section>
 
           {/* Section 3 */}
@@ -100,7 +101,7 @@ export default function MentionsLegalesPage() {
               <li>Droit d&apos;opposition</li>
             </ul>
             <p className="mt-4">
-              Pour exercer ces droits, contactez-nous à : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a>
+              Pour exercer ces droits, contactez-nous à : <ProtectedEmail />
             </p>
           </section>
 
@@ -150,8 +151,8 @@ export default function MentionsLegalesPage() {
           <section className="bg-[#242428] rounded-lg p-6 border border-[#D4AF37]/20">
             <h2 className="text-xl font-semibold text-[#D4AF37] mb-4">Contact</h2>
             <p className="mb-2">Pour toute question concernant ces mentions légales :</p>
-            <p>Email : <a href="mailto:animajet3@gmail.com" className="text-[#D4AF37] hover:underline">animajet3@gmail.com</a></p>
-            <p>Téléphone : 06 48 10 61 66</p>
+            <p><ProtectedContact type="email" /></p>
+            <p><ProtectedContact type="phone" /></p>
           </section>
         </div>
       </div>
