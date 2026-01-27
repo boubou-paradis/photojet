@@ -78,7 +78,6 @@ export default function InvitePage() {
           .single()
 
         console.log('Invite page: Supabase response:', { data, error })
-        console.log('Invite page: print_enabled =', data?.print_enabled, 'print_mode =', data?.print_mode)
 
         if (error) throw error
 
