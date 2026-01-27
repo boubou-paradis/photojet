@@ -612,6 +612,9 @@ export default function SettingsPage() {
             >
               <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
                 <h3 className="text-sm font-semibold text-white">Diaporama</h3>
+                <p className="text-xs text-[#6B6B70]">
+                  Affichage sur l&apos;écran de projection
+                </p>
               </div>
               <div className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
