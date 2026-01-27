@@ -68,7 +68,6 @@ export default function SettingsPage() {
     qr_size: 'medium' as QRSize,
     transition_type: 'fade' as TransitionType,
     transition_duration: 5,
-    expires_at: '',
     is_active: true,
     // Borne settings
     borne_countdown: true,
@@ -108,7 +107,6 @@ export default function SettingsPage() {
         qr_size: selectedSession.qr_size ?? 'medium',
         transition_type: selectedSession.transition_type,
         transition_duration: selectedSession.transition_duration,
-        expires_at: selectedSession.expires_at.split('T')[0],
         is_active: selectedSession.is_active,
         // Borne settings
         borne_countdown: selectedSession.borne_countdown ?? true,
@@ -253,7 +251,6 @@ export default function SettingsPage() {
           qr_size: formData.qr_size,
           transition_type: formData.transition_type,
           transition_duration: formData.transition_duration,
-          expires_at: new Date(formData.expires_at).toISOString(),
           is_active: formData.is_active,
           // Borne settings
           borne_countdown: formData.borne_countdown,
@@ -587,17 +584,6 @@ export default function SettingsPage() {
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="expires" className="text-[#B0B0B5] text-sm">Date d&apos;expiration</Label>
-                <Input
-                  id="expires"
-                  type="date"
-                  value={formData.expires_at}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, expires_at: e.target.value }))}
-                  className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] text-white"
-                />
               </div>
 
               <div className="flex items-center justify-between pt-2">
