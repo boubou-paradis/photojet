@@ -461,6 +461,12 @@ export default function QuizPage() {
         answerStats: [0, 0, 0, 0],
       })
 
+      // Lancer la musique de fond automatiquement
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play().then(() => setIsAudioPlaying(true)).catch(() => {})
+      }
+
       toast.success(`Lobby affiché! Code: ${session.code}`)
       console.log('showLobby: opening /live/' + session.code)
       window.open(`/live/${session.code}`, 'photojet-live')
@@ -595,8 +601,11 @@ export default function QuizPage() {
   async function nextQuestion() {
     if (!session) return
 
-    // Stopper l'audio de la réponse précédente
+    // Stopper l'audio de la réponse précédente & relancer la musique de fond
     stopAnswerAudio()
+    if (audioRef.current) {
+      audioRef.current.play().then(() => setIsAudioPlaying(true)).catch(() => {})
+    }
 
     const nextIndex = currentQuestionIndex + 1
     if (nextIndex >= questions.length) {
