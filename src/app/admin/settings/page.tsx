@@ -17,6 +17,8 @@ import {
   X,
   MessageCircle,
   Printer,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +50,8 @@ export default function SettingsPage() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [printerStatus, setPrinterStatus] = useState<'unknown' | 'ready' | 'error'>('unknown')
+  const [testingPrint, setTestingPrint] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -155,6 +159,49 @@ export default function SettingsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleTestPrint() {
+    setTestingPrint(true)
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>AnimaJet - Test impression</title>
+            <style>
+              @page { margin: 15mm; }
+              body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: white; }
+              .card { text-align: center; padding: 40px; border: 3px solid #D4AF37; border-radius: 20px; max-width: 400px; }
+              h1 { color: #D4AF37; font-size: 28px; margin-bottom: 10px; }
+              p { color: #666; font-size: 16px; }
+              .check { font-size: 60px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="check">✅</div>
+              <h1>AnimaJet</h1>
+              <p>Test d'impression réussi !</p>
+              <p style="margin-top: 20px; color: #999; font-size: 12px;">Si vous voyez cette page imprimée, votre imprimante fonctionne correctement.</p>
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() { window.print(); }, 300);
+                window.onafterprint = function() { window.close(); };
+              };
+            <\/script>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      // On considère que si la fenêtre s'est ouverte, le test est lancé
+      setPrinterStatus('ready')
+    } else {
+      setPrinterStatus('error')
+    }
+    setTestingPrint(false)
   }
 
   async function handleSave() {
@@ -1005,6 +1052,54 @@ export default function SettingsPage() {
                   </>
                 )}
               </div>
+
+              {/* Statut imprimante */}
+              {formData.print_enabled && (
+                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                        printerStatus === 'ready'
+                          ? 'bg-[#4CAF50]/10 border border-[#4CAF50]/30'
+                          : printerStatus === 'error'
+                          ? 'bg-[#E53935]/10 border border-[#E53935]/30'
+                          : 'bg-white/5 border border-white/10'
+                      }`}>
+                        {printerStatus === 'ready' ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-[#4CAF50]" />
+                            <span className="text-sm text-[#4CAF50] font-medium">Imprimante prête</span>
+                          </>
+                        ) : printerStatus === 'error' ? (
+                          <>
+                            <XCircle className="h-4 w-4 text-[#E53935]" />
+                            <span className="text-sm text-[#E53935] font-medium">Non détectée</span>
+                          </>
+                        ) : (
+                          <>
+                            <Printer className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-400 font-medium">Non testée</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestPrint}
+                      disabled={testingPrint}
+                      className="border-[#E91E63]/30 text-[#E91E63] hover:bg-[#E91E63]/10 hover:border-[#E91E63]/50"
+                    >
+                      {testingPrint ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Printer className="h-4 w-4 mr-1.5" />
+                      )}
+                      Tester l&apos;impression
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
