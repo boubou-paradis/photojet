@@ -26,8 +26,8 @@ export async function verifyAffiliateAdminAccess(pin?: string | null): Promise<{
     return { authorized: false, reason: 'Non connecté' }
   }
 
-  // Vérifier la whitelist
-  if (!ADMIN_WHITELIST.includes(user.email)) {
+  // Vérifier la whitelist (comparaison insensible à la casse)
+  if (!ADMIN_WHITELIST.includes(user.email.toLowerCase().trim())) {
     return { authorized: false, reason: 'Non autorisé' }
   }
 

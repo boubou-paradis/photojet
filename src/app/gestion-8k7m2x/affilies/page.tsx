@@ -76,12 +76,33 @@ export default function AffiliatesAdminPage() {
   // 1. Vérifier que l'utilisateur est connecté et dans la whitelist
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.email !== 'mg.events35@gmail.com') {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError) {
+          console.error('[Affiliates] Auth error:', authError.message)
+          router.replace('/admin/dashboard')
+          return
+        }
+
+        if (!user) {
+          console.warn('[Affiliates] No user session found')
+          router.replace('/admin/dashboard')
+          return
+        }
+
+        const userEmail = (user.email || '').toLowerCase().trim()
+        if (userEmail !== 'mg.events35@gmail.com') {
+          console.warn('[Affiliates] Unauthorized email:', userEmail)
+          router.replace('/admin/dashboard')
+          return
+        }
+
+        setAuthChecking(false)
+      } catch (err) {
+        console.error('[Affiliates] Auth check failed:', err)
         router.replace('/admin/dashboard')
-        return
       }
-      setAuthChecking(false)
     }
     checkAuth()
   }, [supabase, router])
