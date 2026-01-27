@@ -206,7 +206,39 @@ export default function SettingsPage() {
     setTestingPrint(false)
   }
 
-  async function handleSave() {
+  // Sauvegarde automatique avec debounce (800ms après le dernier changement)
+  const isInitialLoad = useRef(true)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Ne pas sauvegarder au chargement initial
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false
+      return
+    }
+    if (!selectedSession) return
+
+    // Annuler le timeout précédent
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    // Debounce : sauvegarder 800ms après le dernier changement
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSave()
+    }, 800)
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [formData])
+
+  // Reset isInitialLoad quand on change de session
+  useEffect(() => {
+    isInitialLoad.current = true
+  }, [selectedSession?.id])
+
+  async function autoSave() {
     if (!selectedSession) return
 
     setSaving(true)
@@ -250,12 +282,11 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      toast.success('Paramètres enregistrés')
-      fetchSessions()
+      // Petit indicateur discret (pas de toast à chaque frappe)
+      setSaving(false)
     } catch (err) {
       toast.error('Erreur lors de la sauvegarde')
       console.error(err)
-    } finally {
       setSaving(false)
     }
   }
@@ -489,18 +520,19 @@ export default function SettingsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
-            >
+            <div className="flex items-center gap-2 text-sm">
               {saving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <span className="flex items-center gap-1.5 text-[#D4AF37]">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enregistrement...
+                </span>
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <span className="flex items-center gap-1.5 text-[#4CAF50]">
+                  <CheckCircle className="h-4 w-4" />
+                  Enregistré
+                </span>
               )}
-              Enregistrer
-            </Button>
+            </div>
           </div>
         </div>
       </header>
