@@ -371,6 +371,9 @@ export default function LivePage() {
     isFinished?: boolean
   } | null>(null)
 
+  // Connected players (via Presence tracking)
+  const [connectedPlayers, setConnectedPlayers] = useState<{ odientId: string; odientName: string }[]>([])
+
   // Get wheel segments from broadcast state, or parse from database as fallback
   const wheelSegments: WheelSegment[] = useMemo(() => {
     if (wheelState?.segments && wheelState.segments.length > 0) {
@@ -687,7 +690,7 @@ export default function LivePage() {
     }
   }, [session?.code, supabase])
 
-  // Subscribe to Quiz game broadcast channel for real-time sync
+  // Subscribe to Quiz game broadcast channel for real-time sync + Presence
   useEffect(() => {
     if (!session?.code) return
 
@@ -697,6 +700,19 @@ export default function LivePage() {
         if (payload.payload) {
           setQuizState(payload.payload)
         }
+      })
+      .on('presence', { event: 'sync' }, () => {
+        // Track connected players via Presence
+        const state = quizChannel.presenceState()
+        const players: { odientId: string; odientName: string }[] = []
+        Object.values(state).forEach((presences) => {
+          (presences as unknown as Array<{ odientId: string; odientName: string }>).forEach((p) => {
+            if (p.odientId && p.odientName) {
+              players.push({ odientId: p.odientId, odientName: p.odientName })
+            }
+          })
+        })
+        setConnectedPlayers(players)
       })
       .subscribe()
 
@@ -995,32 +1011,39 @@ export default function LivePage() {
         </motion.button>
 
         {/* Players counter - floating badge top left */}
-        <motion.div
-          className="fixed top-6 left-6 z-50"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full pl-4 pr-6 py-3 border border-white/10">
-            <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-              <Users className="h-5 w-5 text-[#D4AF37]" />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <motion.span
-                key={quizParticipants.length}
-                className="text-3xl font-black text-white"
-                initial={{ scale: 1.3, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 400 }}
-              >
-                {quizParticipants.length}
-              </motion.span>
-              <span className="text-sm text-gray-400 font-medium">
-                joueur{quizParticipants.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          </div>
-        </motion.div>
+        {(() => {
+          // Use connected players in lobby, participants during game
+          const isLobbyPhase = !quizState?.gameActive
+          const playerCount = isLobbyPhase ? connectedPlayers.length : quizParticipants.length
+          return (
+            <motion.div
+              className="fixed top-6 left-6 z-50"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full pl-4 pr-6 py-3 border border-white/10">
+                <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-[#D4AF37]" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <motion.span
+                    key={playerCount}
+                    className="text-3xl font-black text-white"
+                    initial={{ scale: 1.3, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 400 }}
+                  >
+                    {playerCount}
+                  </motion.span>
+                  <span className="text-sm text-gray-400 font-medium">
+                    joueur{playerCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )
+        })()}
 
         {/* Main content */}
         <main className="flex-1 flex flex-col items-center justify-center px-8 py-12 relative z-10">
