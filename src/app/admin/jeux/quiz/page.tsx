@@ -80,6 +80,8 @@ export default function QuizPage() {
 
   // Audio global (musique de fond)
   const [quizAudio, setQuizAudio] = useState<string | null>(null)
+  const [quizAudioName, setQuizAudioName] = useState<string | null>(null)
+  const [quizAudioVolume, setQuizAudioVolume] = useState(0.7)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -749,17 +751,28 @@ export default function QuizPage() {
     if (file) {
       const url = URL.createObjectURL(file)
       setQuizAudio(url)
+      setQuizAudioName(file.name.replace(/\.[^.]+$/, ''))
 
       // Create audio element
       const audio = new Audio(url)
       audio.loop = true
       audio.preload = 'auto'
+      audio.volume = quizAudioVolume
       audio.onplay = () => setIsAudioPlaying(true)
       audio.onpause = () => setIsAudioPlaying(false)
       audio.onended = () => setIsAudioPlaying(false)
       audioRef.current = audio
 
       toast.success('Musique chargée!')
+    }
+  }
+
+  // Changer le volume
+  function changeVolume(newVolume: number) {
+    const clamped = Math.max(0, Math.min(1, newVolume))
+    setQuizAudioVolume(clamped)
+    if (audioRef.current) {
+      audioRef.current.volume = clamped
     }
   }
 
@@ -1165,7 +1178,7 @@ export default function QuizPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <label className="flex-1">
+                <label className="shrink-0">
                   <input
                     type="file"
                     accept="audio/*"
@@ -1182,7 +1195,7 @@ export default function QuizPage() {
                   <>
                     <button
                       onClick={toggleAudio}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`shrink-0 p-2 rounded-lg transition-colors ${
                         isAudioPlaying
                           ? 'bg-green-500 text-white hover:bg-green-600'
                           : 'bg-[#D4AF37] text-black hover:bg-[#F4D03F]'
@@ -1195,20 +1208,55 @@ export default function QuizPage() {
                         pauseAudio()
                         audioRef.current = null
                         setQuizAudio(null)
+                        setQuizAudioName(null)
                       }}
-                      className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                      className="shrink-0 p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
                     >
-                      <VolumeX className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </>
                 )}
               </div>
 
               {quizAudio && (
-                <p className={`text-xs mt-2 flex items-center gap-1 ${isAudioPlaying ? 'text-green-400' : 'text-gray-400'}`}>
-                  <Volume2 className="h-3 w-3" />
-                  {isAudioPlaying ? 'Musique en cours...' : 'Musique prête - Cliquez ▶ pour tester'}
-                </p>
+                <>
+                  {/* Titre du morceau */}
+                  <div className={`flex items-center gap-2 mt-3 ${isAudioPlaying ? 'text-green-400' : 'text-gray-400'}`}>
+                    <Music className="h-3 w-3 shrink-0" />
+                    <span className="text-xs truncate">{quizAudioName || 'Sans titre'}</span>
+                    {isAudioPlaying && (
+                      <span className="text-xs shrink-0 animate-pulse">&#9835; En cours...</span>
+                    )}
+                  </div>
+
+                  {/* Contrôle du volume */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => changeVolume(0)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Muet"
+                    >
+                      <VolumeX className="h-4 w-4" />
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={quizAudioVolume}
+                      onChange={(e) => changeVolume(parseFloat(e.target.value))}
+                      className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#D4AF37]"
+                    />
+                    <button
+                      onClick={() => changeVolume(1)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Volume max"
+                    >
+                      <Volume2 className="h-4 w-4" />
+                    </button>
+                    <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(quizAudioVolume * 100)}%</span>
+                  </div>
+                </>
               )}
             </div>
 
