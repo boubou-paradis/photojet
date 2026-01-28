@@ -149,7 +149,7 @@ export default function QuizPage() {
       const state = channel.presenceState()
       const players: { odientId: string; odientName: string }[] = []
       Object.values(state).forEach((presences) => {
-        (presences as Array<{ odientId: string; odientName: string }>).forEach((p) => {
+        (presences as unknown as Array<{ odientId: string; odientName: string }>).forEach((p) => {
           if (p.odientId && p.odientName) {
             players.push({ odientId: p.odientId, odientName: p.odientName })
           }
