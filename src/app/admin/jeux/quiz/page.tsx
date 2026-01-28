@@ -92,7 +92,10 @@ export default function QuizPage() {
 
   // Audio de la bonne réponse (lecture en jeu)
   const [isAnswerAudioPlaying, setIsAnswerAudioPlaying] = useState(false)
+  const [answerAudioVolume, setAnswerAudioVolume] = useState(0.7)
   const answerAudioRef = useRef<HTMLAudioElement | null>(null)
+  // Cache local des blobs audio pour éviter de re-télécharger depuis Supabase
+  const audioLocalCacheRef = useRef<Map<string, string>>(new Map())
 
   const router = useRouter()
   const supabase = createClient()
@@ -366,7 +369,11 @@ export default function QuizPage() {
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName)
       const audioUrl = urlData.publicUrl
 
-      const updated = { ...editingQuestion!, audioUrl }
+      // Garder le blob local en cache pour lecture instantanée
+      const localBlobUrl = URL.createObjectURL(file)
+      audioLocalCacheRef.current.set(audioUrl, localBlobUrl)
+
+      const updated = { ...editingQuestion!, audioUrl, audioFileName: file.name.replace(/\.[^.]+$/, '') } as QuizQuestion
       setEditingQuestion(updated)
       updateQuestion(updated)
       toast.success('Audio ajouté')
@@ -821,16 +828,43 @@ export default function QuizPage() {
       answerAudioRef.current = null
     }
 
-    const audio = new Audio()
-    audio.preload = 'auto'
-    audio.onplay = () => setIsAnswerAudioPlaying(true)
-    audio.onpause = () => setIsAnswerAudioPlaying(false)
-    audio.onended = () => {
-      setIsAnswerAudioPlaying(false)
-      answerAudioRef.current = null
+    const audioUrl = currentQ.audioUrl
+    const cachedBlobUrl = audioLocalCacheRef.current.get(audioUrl)
+
+    function createAudioElement(src: string) {
+      const audio = new Audio()
+      audio.preload = 'auto'
+      audio.volume = answerAudioVolume
+      audio.onplay = () => setIsAnswerAudioPlaying(true)
+      audio.onpause = () => setIsAnswerAudioPlaying(false)
+      audio.onended = () => {
+        setIsAnswerAudioPlaying(false)
+        answerAudioRef.current = null
+      }
+      audio.src = src
+      answerAudioRef.current = audio
     }
-    audio.src = currentQ.audioUrl
-    answerAudioRef.current = audio
+
+    if (cachedBlobUrl) {
+      // Blob local disponible → lecture instantanée
+      createAudioElement(cachedBlobUrl)
+    } else {
+      // Pas de cache local → télécharger en blob pour lecture rapide
+      fetch(audioUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob)
+          audioLocalCacheRef.current.set(audioUrl, blobUrl)
+          // Ne créer l'élément que si on est toujours sur la même question
+          if (questions[currentQuestionIndex]?.audioUrl === audioUrl) {
+            createAudioElement(blobUrl)
+          }
+        })
+        .catch(() => {
+          // Fallback : utiliser l'URL directe
+          createAudioElement(audioUrl)
+        })
+    }
   }
 
   // Jouer l'audio de la bonne réponse (déjà préchargé)
@@ -859,6 +893,15 @@ export default function QuizPage() {
       answerAudioRef.current.currentTime = 0
       answerAudioRef.current = null
       setIsAnswerAudioPlaying(false)
+    }
+  }
+
+  // Changer le volume de l'audio réponse
+  function changeAnswerAudioVolume(newVolume: number) {
+    const clamped = Math.max(0, Math.min(1, newVolume))
+    setAnswerAudioVolume(clamped)
+    if (answerAudioRef.current) {
+      answerAudioRef.current.volume = clamped
     }
   }
 
@@ -1424,27 +1467,55 @@ export default function QuizPage() {
 
               {/* Mini-player audio bonne réponse */}
               {showResults && currentQuestion?.audioUrl && (
-                <div className="flex items-center gap-2 p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4">
-                  <Music className="h-4 w-4 text-[#E91E63] flex-shrink-0" />
-                  <span className="text-[#E91E63] text-sm font-medium flex-1">
-                    {isAnswerAudioPlaying ? 'Audio en cours...' : 'Audio terminé'}
-                  </span>
-                  <button
-                    onClick={toggleAnswerAudio}
-                    className={`p-2 rounded-lg transition-colors ${
-                      isAnswerAudioPlaying
-                        ? 'bg-[#E91E63] text-white'
-                        : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
-                    }`}
-                  >
-                    {isAnswerAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={stopAnswerAudio}
-                    className="p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 transition-colors"
-                  >
-                    <Square className="h-4 w-4" />
-                  </button>
+                <div className="p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-[#E91E63] flex-shrink-0" />
+                    <span className="text-[#E91E63] text-sm font-medium flex-1 truncate">
+                      {(currentQuestion as QuizQuestion & { audioFileName?: string }).audioFileName || 'Piste audio'}
+                      {isAnswerAudioPlaying && <span className="animate-pulse ml-1">&#9835;</span>}
+                    </span>
+                    <button
+                      onClick={toggleAnswerAudio}
+                      className={`shrink-0 p-2 rounded-lg transition-colors ${
+                        isAnswerAudioPlaying
+                          ? 'bg-[#E91E63] text-white'
+                          : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
+                      }`}
+                    >
+                      {isAnswerAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={stopAnswerAudio}
+                      className="shrink-0 p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 transition-colors"
+                    >
+                      <Square className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {/* Volume */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => changeAnswerAudioVolume(0)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
+                    >
+                      <VolumeX className="h-3.5 w-3.5" />
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={answerAudioVolume}
+                      onChange={(e) => changeAnswerAudioVolume(parseFloat(e.target.value))}
+                      className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#E91E63]"
+                    />
+                    <button
+                      onClick={() => changeAnswerAudioVolume(1)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(answerAudioVolume * 100)}%</span>
+                  </div>
                 </div>
               )}
 
