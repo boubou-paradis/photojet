@@ -119,7 +119,7 @@ export default function PlayQuizPage() {
     }
   }, [])
 
-  // Subscribe to Supabase quiz channel
+  // Subscribe to Supabase quiz channel with Presence tracking
   useEffect(() => {
     if (!sessionCode) return
 
@@ -135,18 +135,25 @@ export default function PlayQuizPage() {
           setConnected(true)
         }
       })
-      .subscribe((status) => {
+      .subscribe(async (status) => {
         console.log('Supabase channel status:', status)
         if (status === 'SUBSCRIBED') {
           setConnected(true)
           setPlayerState('WAITING')
+
+          // Track presence - let admin know this player is connected
+          await channel.track({
+            odientId: playerId,
+            odientName: decodeURIComponent(playerName),
+            joinedAt: Date.now(),
+          })
         }
       })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [sessionCode, supabase])
+  }, [sessionCode, supabase, playerId, playerName])
 
   // Handle quiz state changes from Supabase
   useEffect(() => {

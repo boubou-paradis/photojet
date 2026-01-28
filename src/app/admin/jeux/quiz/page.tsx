@@ -80,6 +80,7 @@ export default function QuizPage() {
   const [participants, setParticipants] = useState<QuizParticipant[]>([])
   const [answerStats, setAnswerStats] = useState<number[]>([0, 0, 0, 0])
   const [showPodium, setShowPodium] = useState(false)
+  const [connectedPlayers, setConnectedPlayers] = useState<{ odientId: string; odientName: string }[]>([])
 
   // Audio global (musique de fond)
   const [quizAudio, setQuizAudio] = useState<string | null>(null)
@@ -136,12 +137,27 @@ export default function QuizPage() {
     }
   }, [])
 
-  // Setup broadcast channel
+  // Setup broadcast channel with Presence tracking
   useEffect(() => {
     if (!session) return
 
     const channel = supabase.channel(`quiz-game-${session.code}`)
     broadcastChannelRef.current = channel
+
+    // Listen to presence events to track connected players
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState()
+      const players: { odientId: string; odientName: string }[] = []
+      Object.values(state).forEach((presences) => {
+        (presences as Array<{ odientId: string; odientName: string }>).forEach((p) => {
+          if (p.odientId && p.odientName) {
+            players.push({ odientId: p.odientId, odientName: p.odientName })
+          }
+        })
+      })
+      setConnectedPlayers(players)
+    })
+
     channel.subscribe()
 
     return () => {
@@ -1723,7 +1739,7 @@ export default function QuizPage() {
             ) : (
               /* Step 2: Lobby is visible, show player count and Launch button */
               <div className="space-y-4">
-                {/* Player count */}
+                {/* Player count - show connected players in lobby */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1735,8 +1751,14 @@ export default function QuizPage() {
                         <span className="text-2xl">👥</span>
                       </div>
                       <div>
-                        <p className="text-[#6B6B70] text-sm">Participants actifs</p>
-                        <p className="text-[#D4AF37] text-3xl font-bold">{participants.length}</p>
+                        <p className="text-[#6B6B70] text-sm">Joueurs connectés</p>
+                        <p className="text-[#D4AF37] text-3xl font-bold">{connectedPlayers.length}</p>
+                        {connectedPlayers.length > 0 && (
+                          <p className="text-[#6B6B70] text-xs mt-1 truncate max-w-[200px]">
+                            {connectedPlayers.slice(0, 3).map(p => p.odientName).join(', ')}
+                            {connectedPlayers.length > 3 && ` +${connectedPlayers.length - 3}`}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <button
