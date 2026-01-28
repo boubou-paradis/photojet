@@ -1822,16 +1822,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Clear data button - hidden when lobby is visible */}
-            {!lobbyVisible && questions.length > 0 && questions !== DEFAULT_QUESTIONS && (
-              <button
-                onClick={clearAllData}
-                className="w-full py-3 border border-red-500/50 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Supprimer toutes les questions
-              </button>
-            )}
           </motion.div>
         ) : (
           /* Control Panel */
