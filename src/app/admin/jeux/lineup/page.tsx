@@ -928,11 +928,11 @@ export default function LineupPage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0F] relative">
-      {/* Animated background effects - Violet/Purple theme */}
+      {/* Animated background effects - Gold/Violet premium theme */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-fuchsia-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-[#D4AF37]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Header */}
@@ -972,13 +972,13 @@ export default function LineupPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 max-w-2xl">
+      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
           /* Configuration */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-6 space-y-6"
+            className="card-gold rounded-xl p-6 space-y-6 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300"
           >
             <div className="flex items-center gap-3 mb-4">
               <span className="text-4xl">🏃</span>
@@ -1142,7 +1142,7 @@ export default function LineupPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
+            className="card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
           >
             {/* Header avec status */}
             <div className="flex items-center justify-between mb-3">

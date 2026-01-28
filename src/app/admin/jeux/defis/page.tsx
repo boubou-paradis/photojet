@@ -411,11 +411,11 @@ export default function DefisPage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0F] relative">
-      {/* Animated background effects - Emerald/Green theme */}
+      {/* Animated background effects - Gold/Violet premium theme */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-[#D4AF37]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Header */}
@@ -455,7 +455,7 @@ export default function DefisPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
           /* Configuration */
           <motion.div
@@ -463,7 +463,7 @@ export default function DefisPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="bg-[#242428] rounded-xl p-6">
+            <div className="card-gold rounded-xl p-6 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-4xl">📸</span>
                 <div>
@@ -568,7 +568,7 @@ export default function DefisPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
+              className="card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-white font-bold flex items-center gap-2">
@@ -646,7 +646,7 @@ export default function DefisPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-[#242428] rounded-xl p-4"
+              className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300"
             >
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                 <Star className="h-5 w-5 text-[#D4AF37]" />

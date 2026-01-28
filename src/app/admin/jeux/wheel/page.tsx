@@ -737,7 +737,7 @@ export default function WheelPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-4 py-4 lg:py-6 max-w-6xl">
+      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
           /* Configuration - 2 colonnes sur desktop */
           <motion.div
@@ -748,7 +748,7 @@ export default function WheelPage() {
             {/* Colonne gauche - Configuration */}
             <div className="flex-1 space-y-4">
               {/* Segments */}
-              <div className="bg-[#242428] rounded-xl p-4">
+              <div className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">🎡</span>
                   <div>
@@ -811,7 +811,7 @@ export default function WheelPage() {
               </div>
 
               {/* Audio Section - Compact */}
-              <div className="bg-[#242428] rounded-xl p-4">
+              <div className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
                     <Music className="h-4 w-4 text-[#D4AF37]" />
@@ -927,7 +927,7 @@ export default function WheelPage() {
             </div>
 
             {/* Colonne droite - Prévisualisation (hidden on mobile) */}
-            <div className="hidden lg:flex flex-col items-center justify-center bg-[#242428] rounded-xl p-6 min-w-[340px]">
+            <div className="hidden lg:flex flex-col items-center justify-center card-gold rounded-xl p-6 min-w-[340px]">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Prévisualisation</h3>
               <WheelPreview segments={segments} size={280} />
               <p className="text-gray-500 text-xs mt-4 text-center">
@@ -940,7 +940,7 @@ export default function WheelPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
+            className="card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
           >
             {/* Header avec status */}
             <div className="flex items-center justify-between mb-4">

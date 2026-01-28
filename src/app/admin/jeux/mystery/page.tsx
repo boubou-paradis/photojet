@@ -769,11 +769,11 @@ export default function MysteryPage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
-      {/* Animated background effects */}
+      {/* Animated background effects - Gold/Violet premium theme */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-cyan-500/3 to-transparent rounded-full" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
       {/* Header */}
@@ -815,13 +815,13 @@ export default function MysteryPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 w-full px-4 py-4">
+      <main className="relative z-10 px-8 py-6">
         {gameActive ? (
           /* Remote Control Panel */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl border-2 border-[#D4AF37] overflow-hidden"
+            className="card-gold rounded-xl border-2 border-[#D4AF37] overflow-hidden hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
           >
             {/* Header compact */}
             <div className="p-4 bg-gradient-to-br from-[#D4AF37]/10 to-transparent">
@@ -921,7 +921,7 @@ export default function MysteryPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#242428] rounded-xl p-4 space-y-4 w-full"
+            className="card-gold rounded-xl p-4 space-y-4 w-full hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300"
           >
             {/* Global Reveal Audio Section */}
             <div className="bg-[#1A1A1E] rounded-xl p-4 border border-cyan-500/30">
