@@ -405,14 +405,19 @@ export default function QuizPage() {
   }
 
   function togglePreviewAudio(url: string) {
-    if (previewAudioRef.current && previewAudioPlaying) {
+    // Si un audio est en cours, l'arrêter
+    if (previewAudioRef.current) {
       previewAudioRef.current.pause()
       previewAudioRef.current = null
-      setPreviewAudioPlaying(false)
-      return
+      // Si on était en lecture, on arrête et c'est tout
+      if (previewAudioPlaying) {
+        setPreviewAudioPlaying(false)
+        return
+      }
     }
 
-    // Utiliser le cache blob si disponible pour lecture instantanée
+    // Lancer la lecture
+    setPreviewAudioPlaying(false) // Reset état
     const cachedUrl = audioLocalCacheRef.current.get(url) || url
     const audio = new Audio(cachedUrl)
     audio.volume = answerAudioVolume
@@ -420,8 +425,19 @@ export default function QuizPage() {
       setPreviewAudioPlaying(false)
       previewAudioRef.current = null
     }
-    audio.play().then(() => setPreviewAudioPlaying(true)).catch(() => toast.error('Impossible de lire l\'audio'))
+    audio.onerror = () => {
+      setPreviewAudioPlaying(false)
+      previewAudioRef.current = null
+      toast.error('Impossible de lire l\'audio')
+    }
     previewAudioRef.current = audio
+    audio.play().then(() => {
+      setPreviewAudioPlaying(true)
+    }).catch(() => {
+      setPreviewAudioPlaying(false)
+      previewAudioRef.current = null
+      toast.error('Impossible de lire l\'audio')
+    })
   }
 
   function stopPreviewAudio() {
@@ -1195,14 +1211,16 @@ export default function QuizPage() {
                           >
                             {previewAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </button>
-                          {previewAudioPlaying && (
-                            <button
-                              onClick={stopPreviewAudio}
-                              className="shrink-0 p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50"
-                            >
-                              <Square className="h-4 w-4" />
-                            </button>
-                          )}
+                          <button
+                            onClick={stopPreviewAudio}
+                            className={`shrink-0 p-2 rounded-lg transition-colors ${
+                              previewAudioPlaying
+                                ? 'bg-red-500/30 text-red-400 hover:bg-red-500/50'
+                                : 'bg-gray-600/20 text-gray-500'
+                            }`}
+                          >
+                            <Square className="h-4 w-4" />
+                          </button>
                           <button
                             onClick={() => questionAudioInputRef.current?.click()}
                             className="px-2 py-1.5 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
