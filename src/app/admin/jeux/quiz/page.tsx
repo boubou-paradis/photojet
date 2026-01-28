@@ -85,7 +85,7 @@ export default function QuizPage() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Audio par question (preview)
+  // Audio par question (preview) — utilise answerAudioVolume pour le jeu
   const [previewAudioPlaying, setPreviewAudioPlaying] = useState(false)
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const questionAudioInputRef = useRef<HTMLInputElement>(null)
@@ -411,8 +411,15 @@ export default function QuizPage() {
       setPreviewAudioPlaying(false)
       return
     }
-    const audio = new Audio(url)
-    audio.onended = () => setPreviewAudioPlaying(false)
+
+    // Utiliser le cache blob si disponible pour lecture instantanée
+    const cachedUrl = audioLocalCacheRef.current.get(url) || url
+    const audio = new Audio(cachedUrl)
+    audio.volume = answerAudioVolume
+    audio.onended = () => {
+      setPreviewAudioPlaying(false)
+      previewAudioRef.current = null
+    }
     audio.play().then(() => setPreviewAudioPlaying(true)).catch(() => toast.error('Impossible de lire l\'audio'))
     previewAudioRef.current = audio
   }
@@ -896,12 +903,15 @@ export default function QuizPage() {
     }
   }
 
-  // Changer le volume de l'audio réponse
+  // Changer le volume de l'audio réponse (preview + jeu)
   function changeAnswerAudioVolume(newVolume: number) {
     const clamped = Math.max(0, Math.min(1, newVolume))
     setAnswerAudioVolume(clamped)
     if (answerAudioRef.current) {
       answerAudioRef.current.volume = clamped
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.volume = clamped
     }
   }
 
@@ -1163,38 +1173,75 @@ export default function QuizPage() {
                       className="hidden"
                     />
                     {editingQuestion.audioUrl ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => togglePreviewAudio(editingQuestion.audioUrl!)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            previewAudioPlaying
-                              ? 'bg-green-500 text-white'
-                              : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
-                          }`}
-                        >
-                          {previewAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        </button>
-                        {previewAudioPlaying && (
+                      <div className="space-y-2">
+                        {/* Titre du morceau */}
+                        <div className="flex items-center gap-2 text-[#E91E63]">
+                          <Music className="h-3 w-3 shrink-0" />
+                          <span className="text-xs font-medium truncate flex-1">
+                            {(editingQuestion as QuizQuestion & { audioFileName?: string }).audioFileName || 'Piste audio'}
+                          </span>
+                          {previewAudioPlaying && <span className="text-xs animate-pulse">&#9835; Lecture...</span>}
+                        </div>
+
+                        {/* Contrôles lecture */}
+                        <div className="flex items-center gap-2">
                           <button
-                            onClick={stopPreviewAudio}
-                            className="p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50"
+                            onClick={() => togglePreviewAudio(editingQuestion.audioUrl!)}
+                            className={`shrink-0 p-2 rounded-lg transition-colors ${
+                              previewAudioPlaying
+                                ? 'bg-green-500 text-white'
+                                : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
+                            }`}
                           >
-                            <Square className="h-4 w-4" />
+                            {previewAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </button>
-                        )}
-                        <span className="text-green-400 text-xs flex-1">Audio chargé</span>
-                        <button
-                          onClick={() => questionAudioInputRef.current?.click()}
-                          className="px-2 py-1 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
-                        >
-                          Changer
-                        </button>
-                        <button
-                          onClick={() => removeQuestionAudio(editingQuestion.id)}
-                          className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                          {previewAudioPlaying && (
+                            <button
+                              onClick={stopPreviewAudio}
+                              className="shrink-0 p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50"
+                            >
+                              <Square className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => questionAudioInputRef.current?.click()}
+                            className="px-2 py-1.5 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
+                          >
+                            Changer
+                          </button>
+                          <button
+                            onClick={() => removeQuestionAudio(editingQuestion.id)}
+                            className="shrink-0 p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Volume (partagé avec le jeu) */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => changeAnswerAudioVolume(0)}
+                            className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
+                          >
+                            <VolumeX className="h-3.5 w-3.5" />
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={answerAudioVolume}
+                            onChange={(e) => changeAnswerAudioVolume(parseFloat(e.target.value))}
+                            className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#E91E63]"
+                          />
+                          <button
+                            onClick={() => changeAnswerAudioVolume(1)}
+                            className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
+                          >
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(answerAudioVolume * 100)}%</span>
+                        </div>
                       </div>
                     ) : (
                       <button
