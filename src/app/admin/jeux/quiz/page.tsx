@@ -24,6 +24,9 @@ import {
   Pause,
   Upload,
   Square,
+  Download,
+  FileSpreadsheet,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -97,6 +100,12 @@ export default function QuizPage() {
   const answerAudioRef = useRef<HTMLAudioElement | null>(null)
   // Cache local des blobs audio pour éviter de re-télécharger depuis Supabase
   const audioLocalCacheRef = useRef<Map<string, string>>(new Map())
+
+  // Import CSV
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false)
+  const [csvPreviewQuestions, setCsvPreviewQuestions] = useState<QuizQuestion[]>([])
+  const [csvImportErrors, setCsvImportErrors] = useState<string[]>([])
+  const csvInputRef = useRef<HTMLInputElement>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -347,6 +356,166 @@ export default function QuizPage() {
     setQuestions(updatedQuestions)
     saveQuestionsToDatabase(updatedQuestions)
     if (editingQuestion?.id === id) setEditingQuestion(null)
+  }
+
+  // ========== Import/Export CSV ==========
+
+  function handleCsvFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result as string
+      parseCsvContent(text)
+    }
+    reader.readAsText(file, 'UTF-8')
+
+    // Reset input
+    if (csvInputRef.current) csvInputRef.current.value = ''
+  }
+
+  function parseCsvContent(text: string) {
+    const errors: string[] = []
+    const parsedQuestions: QuizQuestion[] = []
+
+    // Split lignes et ignorer les vides
+    const lines = text.split(/\r?\n/).filter(line => line.trim())
+
+    if (lines.length < 2) {
+      errors.push('Le fichier doit contenir au moins une ligne d\'en-tête et une question')
+      setCsvImportErrors(errors)
+      setCsvPreviewQuestions([])
+      setShowCsvImportModal(true)
+      return
+    }
+
+    // Ignorer la première ligne (en-tête)
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim()
+      if (!line) continue
+
+      // Parser avec point-virgule, gérer les guillemets
+      const cols = parseCsvLine(line)
+
+      if (cols.length < 6) {
+        errors.push(`Ligne ${i + 1}: Pas assez de colonnes (${cols.length}/6 minimum)`)
+        continue
+      }
+
+      const [question, rep1, rep2, rep3, rep4, bonneRepStr, tempsStr, pointsStr, audioFile] = cols
+
+      if (!question || !rep1 || !rep2 || !rep3 || !rep4) {
+        errors.push(`Ligne ${i + 1}: Question ou réponses manquantes`)
+        continue
+      }
+
+      const bonneRep = parseInt(bonneRepStr || '1', 10)
+      if (bonneRep < 1 || bonneRep > 4 || isNaN(bonneRep)) {
+        errors.push(`Ligne ${i + 1}: Bonne réponse doit être 1, 2, 3 ou 4 (reçu: "${bonneRepStr}")`)
+        continue
+      }
+
+      const temps = parseInt(tempsStr || '20', 10) || 20
+      const points = parseInt(pointsStr || '10', 10) || 10
+
+      parsedQuestions.push({
+        id: `csv_${Date.now()}_${i}`,
+        question: question.trim(),
+        answers: [rep1.trim(), rep2.trim(), rep3.trim(), rep4.trim()],
+        correctAnswer: bonneRep - 1, // Index 0-based
+        timeLimit: Math.max(5, Math.min(120, temps)),
+        points: Math.max(1, points),
+        audioUrl: undefined,
+        // Stocker le nom du fichier audio pour référence
+        ...(audioFile?.trim() ? { audioFileName: audioFile.trim().replace(/\.[^.]+$/, ''), pendingAudioFile: audioFile.trim() } : {}),
+      } as QuizQuestion)
+    }
+
+    setCsvPreviewQuestions(parsedQuestions)
+    setCsvImportErrors(errors)
+    setShowCsvImportModal(true)
+  }
+
+  // Parser une ligne CSV avec gestion des guillemets
+  function parseCsvLine(line: string): string[] {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"') {
+        inQuotes = !inQuotes
+      } else if (char === ';' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    result.push(current.trim())
+    return result
+  }
+
+  function confirmCsvImport() {
+    if (csvPreviewQuestions.length === 0) return
+
+    const updatedQuestions = [...questions, ...csvPreviewQuestions]
+    setQuestions(updatedQuestions)
+    saveQuestionsToDatabase(updatedQuestions)
+
+    const audioCount = csvPreviewQuestions.filter(q => (q as QuizQuestion & { pendingAudioFile?: string }).pendingAudioFile).length
+    let message = `${csvPreviewQuestions.length} question(s) importée(s)`
+    if (audioCount > 0) {
+      message += ` — ${audioCount} fichier(s) audio à ajouter manuellement`
+    }
+    toast.success(message)
+
+    setShowCsvImportModal(false)
+    setCsvPreviewQuestions([])
+    setCsvImportErrors([])
+  }
+
+  function exportToCsv() {
+    if (questions.length === 0) {
+      toast.error('Aucune question à exporter')
+      return
+    }
+
+    const header = 'question;reponse1;reponse2;reponse3;reponse4;bonne_reponse;temps;points;fichier_audio'
+    const lines = questions.map(q => {
+      const audioFileName = (q as QuizQuestion & { audioFileName?: string }).audioFileName || ''
+      return [
+        escapeCsvField(q.question),
+        escapeCsvField(q.answers[0] || ''),
+        escapeCsvField(q.answers[1] || ''),
+        escapeCsvField(q.answers[2] || ''),
+        escapeCsvField(q.answers[3] || ''),
+        q.correctAnswer + 1, // 1-based pour l'export
+        q.timeLimit,
+        q.points,
+        escapeCsvField(audioFileName),
+      ].join(';')
+    })
+
+    const csvContent = [header, ...lines].join('\n')
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' }) // BOM pour Excel
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `quiz_export_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+
+    toast.success(`${questions.length} question(s) exportée(s)`)
+  }
+
+  function escapeCsvField(field: string): string {
+    if (field.includes(';') || field.includes('"') || field.includes('\n')) {
+      return `"${field.replace(/"/g, '""')}"`
+    }
+    return field
   }
 
   // Upload audio pour une question spécifique
@@ -1079,13 +1248,38 @@ export default function QuizPage() {
                     <p className="text-gray-400 text-sm">Créez vos questions</p>
                   </div>
                 </div>
-                <button
-                  onClick={addQuestion}
-                  className="px-4 py-2 bg-[#D4AF37] text-black rounded-xl font-bold hover:bg-[#F4D03F] flex items-center gap-2"
-                >
-                  <Plus className="h-5 w-5" />
-                  Ajouter
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => csvInputRef.current?.click()}
+                    className="px-3 py-2 bg-[#2E2E33] text-gray-300 rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm"
+                    title="Importer depuis CSV"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Importer
+                  </button>
+                  <input
+                    ref={csvInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleCsvFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={exportToCsv}
+                    className="px-3 py-2 bg-[#2E2E33] text-gray-300 rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm"
+                    title="Exporter en CSV"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exporter
+                  </button>
+                  <button
+                    onClick={addQuestion}
+                    className="px-4 py-2 bg-[#D4AF37] text-black rounded-xl font-bold hover:bg-[#F4D03F] flex items-center gap-2"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Ajouter
+                  </button>
+                </div>
               </div>
 
               {/* Questions list */}
@@ -1712,6 +1906,134 @@ export default function QuizPage() {
           </div>
         )}
       </main>
+
+      {/* Modal Import CSV */}
+      {showCsvImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#242428] rounded-2xl border border-white/10 shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet className="h-5 w-5 text-[#D4AF37]" />
+                <h3 className="text-lg font-bold text-white">Import CSV</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCsvImportModal(false)
+                  setCsvPreviewQuestions([])
+                  setCsvImportErrors([])
+                }}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Erreurs */}
+              {csvImportErrors.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-red-400 font-medium mb-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    {csvImportErrors.length} erreur(s) détectée(s)
+                  </div>
+                  <ul className="text-red-300 text-sm space-y-1 max-h-24 overflow-y-auto">
+                    {csvImportErrors.map((err, i) => (
+                      <li key={i}>• {err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Aperçu questions */}
+              {csvPreviewQuestions.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-400 font-medium">
+                      {csvPreviewQuestions.length} question(s) prête(s) à importer
+                    </span>
+                    <span className="text-gray-500 text-sm">
+                      {csvPreviewQuestions.filter(q => (q as QuizQuestion & { pendingAudioFile?: string }).pendingAudioFile).length} avec audio référencé
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {csvPreviewQuestions.map((q, i) => (
+                      <div key={q.id} className="bg-[#1A1A1E] rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500 font-mono text-sm">{i + 1}.</span>
+                          <div className="flex-1">
+                            <p className="text-white text-sm">{q.question}</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {q.answers.map((a, ai) => (
+                                <span
+                                  key={ai}
+                                  className={`text-xs px-2 py-0.5 rounded ${
+                                    ai === q.correctAnswer
+                                      ? 'bg-green-500/20 text-green-400'
+                                      : 'bg-gray-700 text-gray-400'
+                                  }`}
+                                >
+                                  {a}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                              <span>{q.timeLimit}s</span>
+                              <span>{q.points} pts</span>
+                              {(q as QuizQuestion & { pendingAudioFile?: string }).pendingAudioFile && (
+                                <span className="text-[#E91E63] flex items-center gap-1">
+                                  <Music className="h-3 w-3" />
+                                  {(q as QuizQuestion & { pendingAudioFile?: string }).pendingAudioFile}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Aucune question valide trouvée dans le fichier.</p>
+                  <p className="text-sm mt-2">Format attendu (séparateur point-virgule) :</p>
+                  <code className="text-xs text-gray-400 block mt-1 bg-[#1A1A1E] p-2 rounded">
+                    question;rep1;rep2;rep3;rep4;bonne_reponse;temps;points;audio
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => {
+                  setShowCsvImportModal(false)
+                  setCsvPreviewQuestions([])
+                  setCsvImportErrors([])
+                }}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmCsvImport}
+                disabled={csvPreviewQuestions.length === 0}
+                className="px-4 py-2 bg-[#D4AF37] text-black rounded-lg font-bold hover:bg-[#F4D03F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Importer {csvPreviewQuestions.length} question(s)
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
