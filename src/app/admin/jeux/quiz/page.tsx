@@ -27,11 +27,13 @@ import {
   Download,
   FileSpreadsheet,
   AlertTriangle,
+  Package,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session, QuizQuestion, QuizParticipant } from '@/types/database'
 import { toast } from 'sonner'
+import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 
 // Default questions (Mariage)
 const DEFAULT_QUESTIONS: QuizQuestion[] = [
@@ -107,6 +109,9 @@ export default function QuizPage() {
   const [csvPreviewQuestions, setCsvPreviewQuestions] = useState<QuizQuestion[]>([])
   const [csvImportErrors, setCsvImportErrors] = useState<string[]>([])
   const csvInputRef = useRef<HTMLInputElement>(null)
+
+  // Quiz pré-packagés
+  const [showPrepackagedModal, setShowPrepackagedModal] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -567,6 +572,25 @@ export default function QuizPage() {
       return `"${field.replace(/"/g, '""')}"`
     }
     return field
+  }
+
+  // Ajouter un quiz pré-packagé
+  function addPrepackagedQuiz(quiz: PrepackagedQuiz) {
+    const newQuestions: QuizQuestion[] = quiz.questions.map((q, index) => ({
+      id: `prepack-${quiz.id}-${Date.now()}-${index}`,
+      question: q.question,
+      answers: [...q.answers],
+      correctAnswer: q.correctAnswer - 1, // Convert from 1-based to 0-based
+      timeLimit: q.time,
+      points: q.points,
+      audioUrl: null,
+    }))
+
+    const updatedQuestions = [...questions, ...newQuestions]
+    setQuestions(updatedQuestions)
+    saveQuestionsToDatabase(updatedQuestions)
+    setShowPrepackagedModal(false)
+    toast.success(`${quiz.emoji} ${newQuestions.length} questions ajoutées !`)
   }
 
   // Upload audio pour une question spécifique
@@ -1348,6 +1372,14 @@ export default function QuizPage() {
                   >
                     <Download className="h-4 w-4" />
                     Exporter
+                  </button>
+                  <button
+                    onClick={() => setShowPrepackagedModal(true)}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+                    title="Quiz prêts à l'emploi"
+                  >
+                    <Package className="h-4 w-4" />
+                    Quiz prêts
                   </button>
                   <button
                     onClick={addQuestion}
@@ -2195,6 +2227,78 @@ export default function QuizPage() {
               >
                 <Check className="h-4 w-4" />
                 Importer {csvPreviewQuestions.length} question(s)
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Quiz pré-packagés */}
+      {showPrepackagedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30">
+                  <Package className="h-5 w-5 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Quiz prêts à l&apos;emploi</h3>
+                  <p className="text-sm text-gray-400">75 questions réparties en 5 thèmes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPrepackagedModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {prepackagedQuizzes.map((quiz) => (
+                  <motion.div
+                    key={quiz.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="card-gold rounded-xl p-5 cursor-pointer hover:border-[#D4AF37]/50 hover:shadow-[0_0_25px_rgba(212,175,55,0.2)] transition-all duration-300 group"
+                    onClick={() => addPrepackagedQuiz(quiz)}
+                  >
+                    <div className="text-4xl mb-3">{quiz.emoji}</div>
+                    <h4 className="text-lg font-bold text-white mb-1">{quiz.name}</h4>
+                    <p className="text-sm text-gray-400 mb-3">{quiz.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#D4AF37] font-medium">
+                        {quiz.questions.length} questions
+                      </span>
+                      <span className="text-xs text-gray-500 group-hover:text-[#D4AF37] transition-colors">
+                        Cliquer pour ajouter
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-[#1A1A1E] rounded-xl border border-[rgba(255,255,255,0.05)]">
+                <p className="text-sm text-gray-400">
+                  <span className="text-[#D4AF37] font-medium">Note :</span> Les questions seront ajoutées à votre quiz actuel sans supprimer les questions existantes.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => setShowPrepackagedModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Fermer
               </button>
             </div>
           </motion.div>
