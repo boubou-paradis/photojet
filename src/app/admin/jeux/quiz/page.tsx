@@ -1180,11 +1180,14 @@ export default function QuizPage() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0F] relative">
-      {/* Animated background effects - Red/Orange theme */}
+      {/* Animated background effects - Premium gold/violet theme */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-[#D4AF37]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/3 left-0 w-72 h-72 bg-violet-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
+        {/* Central radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
       {/* Header */}
@@ -1245,7 +1248,7 @@ export default function QuizPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+      <main className="relative z-10 container mx-auto px-6 py-6 max-w-7xl">
         {!gameActive ? (
           /* Configuration */
           <motion.div
@@ -1253,19 +1256,24 @@ export default function QuizPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="bg-[#242428] rounded-xl p-6">
+            <motion.div
+              whileHover={{ scale: 1.001 }}
+              className="card-gold rounded-xl p-6 transition-all duration-300 hover:border-[#D4AF37]/40 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)]"
+            >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">❓</span>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 flex items-center justify-center border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                    <HelpCircle className="h-6 w-6 text-[#D4AF37]" />
+                  </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">Quiz</h2>
-                    <p className="text-gray-400 text-sm">Créez vos questions</p>
+                    <p className="text-[#6B6B70] text-sm">Créez vos questions</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => csvInputRef.current?.click()}
-                    className="px-3 py-2 bg-[#2E2E33] text-gray-300 rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm"
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
                     title="Importer depuis CSV"
                   >
                     <FileSpreadsheet className="h-4 w-4" />
@@ -1280,7 +1288,7 @@ export default function QuizPage() {
                   />
                   <button
                     onClick={exportToCsv}
-                    className="px-3 py-2 bg-[#2E2E33] text-gray-300 rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm"
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
                     title="Exporter en CSV"
                   >
                     <Download className="h-4 w-4" />
@@ -1288,14 +1296,14 @@ export default function QuizPage() {
                   </button>
                   <button
                     onClick={addQuestion}
-                    className="px-4 py-2 bg-[#D4AF37] text-black rounded-xl font-bold hover:bg-[#F4D03F] flex items-center gap-2"
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-xl font-bold hover:from-[#F4D03F] hover:to-[#D4AF37] flex items-center gap-2 transition-all duration-200 shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)]"
                   >
                     <Plus className="h-5 w-5" />
                     Ajouter
                   </button>
                   <button
                     onClick={clearAllQuestions}
-                    className="px-3 py-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 flex items-center gap-2 text-sm border border-red-500/30"
+                    className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                     title="Supprimer toutes les questions"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1305,42 +1313,73 @@ export default function QuizPage() {
               </div>
 
               {/* Questions list */}
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {questions.map((q, index) => (
-                  <div
-                    key={q.id}
-                    className={`flex items-center gap-3 rounded-lg p-3 cursor-pointer transition-all ${
-                      editingQuestion?.id === q.id ? 'bg-[#D4AF37]/20 border border-[#D4AF37]' : 'bg-[#1A1A1E] hover:bg-[#2E2E33]'
-                    }`}
-                    onClick={() => setEditingQuestion(q)}
-                  >
-                    <span className="text-gray-500 font-mono text-sm w-6">{index + 1}.</span>
-                    <span className="flex-1 text-white truncate">{q.question}</span>
-                    {q.audioUrl && (
-                      <Music className="h-3.5 w-3.5 text-[#E91E63] flex-shrink-0" />
-                    )}
-                    <span className="px-2 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded text-xs">
-                      {q.timeLimit}s
-                    </span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeQuestion(q.id); }}
-                      className="p-1 text-gray-500 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#D4AF37]/20 scrollbar-track-transparent">
+                {questions.length === 0 ? (
+                  <div className="text-center py-12 text-[#6B6B70]">
+                    <HelpCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Aucune question pour le moment</p>
+                    <p className="text-sm mt-1">Cliquez sur &quot;Ajouter&quot; pour créer votre première question</p>
                   </div>
-                ))}
+                ) : (
+                  questions.map((q, index) => (
+                    <motion.div
+                      key={q.id}
+                      whileHover={{ scale: 1.005, x: 4 }}
+                      className={`flex items-center gap-3 rounded-xl p-3.5 cursor-pointer transition-all duration-200 ${
+                        editingQuestion?.id === q.id
+                          ? 'bg-gradient-to-r from-[#D4AF37]/20 to-[#D4AF37]/10 border border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
+                          : 'bg-[#1A1A1E]/80 hover:bg-[#2E2E33] border border-transparent hover:border-[#D4AF37]/20 hover:shadow-[0_0_15px_rgba(212,175,55,0.1)]'
+                      }`}
+                      onClick={() => setEditingQuestion(q)}
+                    >
+                      {/* Numéro stylé */}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 ${
+                        editingQuestion?.id === q.id
+                          ? 'bg-[#D4AF37] text-black shadow-[0_0_10px_rgba(212,175,55,0.5)]'
+                          : 'bg-[#2E2E33] text-[#6B6B70] group-hover:bg-[#D4AF37]/20 group-hover:text-[#D4AF37]'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <span className="flex-1 text-white truncate font-medium">{q.question}</span>
+                      {q.audioUrl && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-[#E91E63]/10 rounded-lg border border-[#E91E63]/20">
+                          <Music className="h-3.5 w-3.5 text-[#E91E63]" />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 px-2.5 py-1 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20">
+                        <Timer className="h-3 w-3 text-[#D4AF37]" />
+                        <span className="text-[#D4AF37] text-xs font-semibold">{q.timeLimit}s</span>
+                      </div>
+                      <div className="flex items-center gap-1 px-2.5 py-1 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                        <Award className="h-3 w-3 text-violet-400" />
+                        <span className="text-violet-400 text-xs font-semibold">{q.points}pts</span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeQuestion(q.id); }}
+                        className="p-2 text-[#6B6B70] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </motion.div>
+                  ))
+                )}
               </div>
-            </div>
+            </motion.div>
 
             {/* Question editor */}
             {editingQuestion && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#242428] rounded-xl p-6"
+                whileHover={{ scale: 1.001 }}
+                className="card-gold rounded-xl p-6 transition-all duration-300 hover:border-violet-500/30 hover:shadow-[0_0_25px_rgba(139,92,246,0.15)]"
               >
-                <h3 className="text-white font-bold mb-4">Modifier la question</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center border border-violet-500/30">
+                    <HelpCircle className="h-5 w-5 text-violet-400" />
+                  </div>
+                  <h3 className="text-white font-bold text-lg">Modifier la question</h3>
+                </div>
                 <div className="space-y-4">
                   <input
                     value={editingQuestion.question}
@@ -1529,10 +1568,15 @@ export default function QuizPage() {
             )}
 
             {/* Audio Controls */}
-            <div className="bg-[#242428] rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Music className="h-5 w-5 text-[#D4AF37]" />
-                <h3 className="text-white font-bold">Musique du Quiz</h3>
+            <motion.div
+              whileHover={{ scale: 1.001 }}
+              className="card-gold rounded-xl p-5 mb-4 transition-all duration-300 hover:border-[#D4AF37]/40 hover:shadow-[0_0_25px_rgba(212,175,55,0.15)]"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+                  <Music className="h-5 w-5 text-[#D4AF37]" />
+                </div>
+                <h3 className="text-white font-bold text-lg">Musique du Quiz</h3>
               </div>
 
               <div className="flex items-center gap-3">
@@ -1616,15 +1660,17 @@ export default function QuizPage() {
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
 
             {/* Action buttons */}
             {!lobbyVisible ? (
               /* Step 1: Show Lobby button */
-              <button
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={showLobby}
                 disabled={launching || questions.length === 0}
-                className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-black font-bold rounded-xl text-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(212,175,55,0.4)] hover:shadow-[0_0_40px_rgba(212,175,55,0.6)] border border-[#D4AF37]/50"
               >
                 {launching ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -1634,37 +1680,43 @@ export default function QuizPage() {
                     Afficher le Lobby ({questions.length} questions)
                   </>
                 )}
-              </button>
+              </motion.button>
             ) : (
               /* Step 2: Lobby is visible, show player count and Launch button */
               <div className="space-y-4">
                 {/* Player count */}
-                <div className="bg-[#1A1A1E] rounded-xl p-4 border border-[#D4AF37]/30">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="card-gold rounded-xl p-5 border-[#D4AF37]/40 shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+                >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                        <span className="text-xl">👥</span>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/30 to-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                        <span className="text-2xl">👥</span>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Joueurs connectés</p>
-                        <p className="text-white text-2xl font-bold">{participants.length}</p>
+                        <p className="text-[#6B6B70] text-sm">Joueurs connectés</p>
+                        <p className="text-[#D4AF37] text-3xl font-bold">{participants.length}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => window.open(`/live/${session?.code}`, 'photojet-live')}
-                      className="px-3 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-lg text-sm flex items-center gap-2"
+                      className="px-4 py-2.5 bg-[#2E2E33] hover:bg-[#3E3E43] text-white rounded-xl text-sm flex items-center gap-2 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30 transition-all duration-200"
                     >
                       <Monitor className="h-4 w-4" />
-                      Voir l'écran
+                      Voir l&apos;écran
                     </button>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Launch Quiz button */}
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={launchGame}
                   disabled={launching}
-                  className="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-green-500 via-green-400 to-green-500 text-white font-bold rounded-xl text-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] border border-green-400/50"
                 >
                   {launching ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -1674,7 +1726,7 @@ export default function QuizPage() {
                       Lancer le Quiz
                     </>
                   )}
-                </button>
+                </motion.button>
 
                 {/* Cancel button */}
                 <button
@@ -1722,55 +1774,63 @@ export default function QuizPage() {
           </motion.div>
         ) : (
           /* Control Panel */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main controls */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="lg:col-span-2 bg-[#242428] rounded-xl p-4 border-2 border-[#D4AF37]"
+              className="lg:col-span-2 card-gold rounded-xl p-5 border-[#D4AF37]/50 shadow-[0_0_30px_rgba(212,175,55,0.2)]"
             >
               {/* Question display */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[#D4AF37] font-bold">
-                  Question {currentQuestionIndex + 1}/{questions.length}
-                </span>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/40 shadow-[0_0_10px_rgba(212,175,55,0.3)]">
+                    <span className="text-[#D4AF37] font-bold">{currentQuestionIndex + 1}</span>
+                  </div>
+                  <span className="text-[#B0B0B5] text-sm">sur {questions.length} questions</span>
+                </div>
                 {timeLeft !== null && (
-                  <span className={`text-2xl font-bold font-mono ${
-                    timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-white'
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                    timeLeft <= 5 ? 'bg-red-500/20 border border-red-500/50' : 'bg-[#2E2E33] border border-[rgba(255,255,255,0.1)]'
                   }`}>
-                    {timeLeft}s
-                  </span>
+                    <Timer className={`h-5 w-5 ${timeLeft <= 5 ? 'text-red-500' : 'text-[#D4AF37]'}`} />
+                    <span className={`text-2xl font-bold font-mono ${
+                      timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-white'
+                    }`}>
+                      {timeLeft}s
+                    </span>
+                  </div>
                 )}
               </div>
 
               {currentQuestion && (
-                <div className="bg-[#1A1A1E] rounded-lg p-4 mb-4">
-                  <p className="text-xl text-white font-bold mb-4">{currentQuestion.question}</p>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#1A1A1E]/80 rounded-xl p-5 mb-5 border border-[rgba(255,255,255,0.05)]">
+                  <p className="text-xl text-white font-bold mb-5">{currentQuestion.question}</p>
+                  <div className="grid grid-cols-2 gap-3">
                     {currentQuestion.answers.map((answer, i) => {
                       const isCorrect = i === currentQuestion.correctAnswer
                       const percentage = totalAnswers > 0 ? (answerStats[i] / totalAnswers * 100) : 0
                       return (
                         <div
                           key={i}
-                          className={`p-3 rounded-lg relative overflow-hidden ${
+                          className={`p-4 rounded-xl relative overflow-hidden transition-all duration-300 ${
                             showResults
                               ? isCorrect
-                                ? 'bg-green-500/20 border-2 border-green-500'
-                                : 'bg-[#2E2E33]'
-                              : 'bg-[#2E2E33]'
+                                ? 'bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                                : 'bg-[#2E2E33] border border-[rgba(255,255,255,0.05)]'
+                              : 'bg-[#2E2E33] border border-[rgba(255,255,255,0.05)]'
                           }`}
                         >
                           {showResults && (
                             <div
-                              className="absolute inset-0 bg-[#D4AF37]/10"
+                              className="absolute inset-0 bg-gradient-to-r from-[#D4AF37]/20 to-transparent"
                               style={{ width: `${percentage}%` }}
                             />
                           )}
                           <div className="relative flex items-center justify-between">
-                            <span className="text-white">{answer}</span>
+                            <span className="text-white font-medium">{answer}</span>
                             {showResults && (
-                              <span className="text-[#D4AF37] font-bold">{answerStats[i]}</span>
+                              <span className="text-[#D4AF37] font-bold text-lg">{answerStats[i]}</span>
                             )}
                           </div>
                         </div>
@@ -1835,50 +1895,58 @@ export default function QuizPage() {
               )}
 
               {/* Controls */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {!isAnswering && !showResults && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={startQuestion}
-                    className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-green-500 via-green-400 to-green-500 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.6)] border border-green-400/50"
                   >
                     <Play className="h-5 w-5" />
                     Lancer la question
-                  </button>
+                  </motion.button>
                 )}
 
                 {isAnswering && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={revealAnswer}
-                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(249,115,22,0.4)] hover:shadow-[0_0_35px_rgba(249,115,22,0.6)] border border-orange-400/50"
                   >
                     <Check className="h-5 w-5" />
                     Révéler la réponse
-                  </button>
+                  </motion.button>
                 )}
 
                 {showResults && currentQuestionIndex < questions.length - 1 && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={nextQuestion}
-                    className="w-full py-3 bg-[#D4AF37] hover:bg-[#F4D03F] text-black rounded-lg font-bold flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-black rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:shadow-[0_0_35px_rgba(212,175,55,0.6)] border border-[#D4AF37]/50"
                   >
                     <SkipForward className="h-5 w-5" />
                     Question suivante
-                  </button>
+                  </motion.button>
                 )}
 
                 {showResults && currentQuestionIndex >= questions.length - 1 && !showPodium && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={displayPodium}
-                    className="w-full py-3 bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFC107] hover:to-[#FF8C00] text-black rounded-lg font-bold flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-[#FFD700] via-[#FFC107] to-[#FFD700] text-black rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_30px_rgba(255,215,0,0.5)] hover:shadow-[0_0_40px_rgba(255,215,0,0.7)] border border-[#FFD700]/50"
                   >
                     <Award className="h-5 w-5" />
                     Afficher le Podium 🏆
-                  </button>
+                  </motion.button>
                 )}
 
                 {showPodium && (
-                  <div className="text-center py-4 text-[#D4AF37] font-bold text-xl">
-                    🏆 Podium affiché!
+                  <div className="text-center py-5 bg-gradient-to-r from-[#FFD700]/20 via-[#FFD700]/10 to-[#FFD700]/20 rounded-xl border border-[#FFD700]/30">
+                    <span className="text-[#FFD700] font-bold text-xl">🏆 Podium affiché!</span>
                   </div>
                 )}
               </div>
@@ -1886,7 +1954,7 @@ export default function QuizPage() {
               {/* Quitter */}
               <button
                 onClick={exitGame}
-                className="w-full mt-4 py-2 bg-red-500/30 hover:bg-red-500 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full mt-5 py-3 bg-red-500/10 hover:bg-red-500/30 text-red-400 hover:text-red-300 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 border border-red-500/20 hover:border-red-500/40"
               >
                 <X className="h-4 w-4" />
                 Quitter le jeu
@@ -1898,29 +1966,52 @@ export default function QuizPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-[#242428] rounded-xl p-4"
+              className="card-gold rounded-xl p-5 transition-all duration-300 hover:border-[#D4AF37]/40 hover:shadow-[0_0_25px_rgba(212,175,55,0.15)]"
             >
-              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-[#D4AF37]" />
-                Classement
-              </h3>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+                  <Trophy className="h-5 w-5 text-[#D4AF37]" />
+                </div>
+                <h3 className="text-white font-bold text-lg">Classement</h3>
+              </div>
 
               {sortedParticipants.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  En attente des joueurs...
+                <div className="text-center py-10 text-[#6B6B70]">
+                  <Trophy className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p>En attente des joueurs...</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {sortedParticipants.map((p, index) => (
-                    <div key={p.odientId} className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2">
-                      <span className={`font-bold w-6 text-center ${
-                        index === 0 ? 'text-[#FFD700]' : index === 1 ? 'text-[#C0C0C0]' : index === 2 ? 'text-[#CD7F32]' : 'text-gray-500'
+                    <motion.div
+                      key={p.odientId}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`flex items-center gap-3 rounded-xl p-3 transition-all duration-200 ${
+                        index === 0
+                          ? 'bg-gradient-to-r from-[#FFD700]/20 to-transparent border border-[#FFD700]/30'
+                          : index === 1
+                          ? 'bg-gradient-to-r from-[#C0C0C0]/15 to-transparent border border-[#C0C0C0]/20'
+                          : index === 2
+                          ? 'bg-gradient-to-r from-[#CD7F32]/15 to-transparent border border-[#CD7F32]/20'
+                          : 'bg-[#1A1A1E]/80 border border-transparent hover:border-[rgba(255,255,255,0.05)]'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                        index === 0
+                          ? 'bg-[#FFD700]/30 text-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.3)]'
+                          : index === 1
+                          ? 'bg-[#C0C0C0]/20 text-[#C0C0C0]'
+                          : index === 2
+                          ? 'bg-[#CD7F32]/20 text-[#CD7F32]'
+                          : 'bg-[#2E2E33] text-[#6B6B70]'
                       }`}>
                         {index + 1}
-                      </span>
-                      <span className="text-white flex-1 truncate">{p.odientName}</span>
-                      <span className="text-[#D4AF37] font-bold">{p.totalScore}</span>
-                    </div>
+                      </div>
+                      <span className="text-white flex-1 truncate font-medium">{p.odientName}</span>
+                      <span className="text-[#D4AF37] font-bold">{p.totalScore} pts</span>
+                    </motion.div>
                   ))}
                 </div>
               )}
@@ -1931,16 +2022,18 @@ export default function QuizPage() {
 
       {/* Modal Import CSV */}
       {showCsvImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#242428] rounded-2xl border border-white/10 shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
               <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-5 w-5 text-[#D4AF37]" />
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30">
+                  <FileSpreadsheet className="h-5 w-5 text-[#D4AF37]" />
+                </div>
                 <h3 className="text-lg font-bold text-white">Import CSV</h3>
               </div>
               <button
