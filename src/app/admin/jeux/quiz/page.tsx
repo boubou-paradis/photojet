@@ -1696,7 +1696,7 @@ export default function QuizPage() {
                         <span className="text-2xl">👥</span>
                       </div>
                       <div>
-                        <p className="text-[#6B6B70] text-sm">Joueurs connectés</p>
+                        <p className="text-[#6B6B70] text-sm">Participants actifs</p>
                         <p className="text-[#D4AF37] text-3xl font-bold">{participants.length}</p>
                       </div>
                     </div>

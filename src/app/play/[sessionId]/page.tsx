@@ -439,6 +439,14 @@ export default function PlayQuizPage() {
             if (isCorrect) {
               participants[participantIndex].correctAnswers += 1
             }
+          } else {
+            // New participant - add them to the list
+            participants.push({
+              odientId: playerId,
+              odientName: decodeURIComponent(playerName),
+              totalScore: pointsEarned,
+              correctAnswers: isCorrect ? 1 : 0,
+            })
           }
 
           // Save to database
