@@ -87,6 +87,7 @@ export default function QuizPage() {
 
   // Audio par question (preview) — utilise answerAudioVolume pour le jeu
   const [previewAudioPlaying, setPreviewAudioPlaying] = useState(false)
+  const [audioUploading, setAudioUploading] = useState(false)
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const questionAudioInputRef = useRef<HTMLInputElement>(null)
 
@@ -358,6 +359,25 @@ export default function QuizPage() {
       return
     }
 
+    // 1. Créer le blob local IMMÉDIATEMENT pour prévisualisation instantanée
+    const localBlobUrl = URL.createObjectURL(file)
+    const audioFileName = file.name.replace(/\.[^.]+$/, '')
+
+    // 2. Mettre à jour l'UI immédiatement avec le blob local
+    const tempUpdated = {
+      ...editingQuestion!,
+      audioUrl: localBlobUrl,
+      audioFileName
+    } as QuizQuestion
+    setEditingQuestion(tempUpdated)
+
+    // Mettre en cache pour lecture instantanée
+    audioLocalCacheRef.current.set(localBlobUrl, localBlobUrl)
+
+    toast.success('Audio prêt ! Upload en cours...')
+    setAudioUploading(true)
+
+    // 3. Uploader en arrière-plan vers Supabase
     try {
       const fileName = `quiz-audio/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
       const { error: uploadError } = await supabase.storage
@@ -367,19 +387,27 @@ export default function QuizPage() {
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName)
-      const audioUrl = urlData.publicUrl
+      const supabaseUrl = urlData.publicUrl
 
-      // Garder le blob local en cache pour lecture instantanée
-      const localBlobUrl = URL.createObjectURL(file)
-      audioLocalCacheRef.current.set(audioUrl, localBlobUrl)
+      // 4. Mettre à jour avec l'URL Supabase pour persistance
+      audioLocalCacheRef.current.set(supabaseUrl, localBlobUrl)
 
-      const updated = { ...editingQuestion!, audioUrl, audioFileName: file.name.replace(/\.[^.]+$/, '') } as QuizQuestion
-      setEditingQuestion(updated)
-      updateQuestion(updated)
-      toast.success('Audio ajouté')
+      const finalUpdated = {
+        ...editingQuestion!,
+        audioUrl: supabaseUrl,
+        audioFileName
+      } as QuizQuestion
+      setEditingQuestion(finalUpdated)
+      updateQuestion(finalUpdated)
+
+      toast.success('Audio sauvegardé !')
     } catch (err) {
       console.error('Error uploading audio:', err)
-      toast.error('Erreur lors de l\'upload audio')
+      toast.error('Erreur upload - L\'audio fonctionne localement mais ne sera pas sauvegardé')
+      // Garder le blob local quand même pour cette session
+      updateQuestion(tempUpdated)
+    } finally {
+      setAudioUploading(false)
     }
 
     // Reset input
@@ -1190,12 +1218,18 @@ export default function QuizPage() {
                     />
                     {editingQuestion.audioUrl ? (
                       <div className="space-y-2">
-                        {/* Titre du morceau */}
+                        {/* Titre du morceau + indicateur upload */}
                         <div className="flex items-center gap-2 text-[#E91E63]">
                           <Music className="h-3 w-3 shrink-0" />
                           <span className="text-xs font-medium truncate flex-1">
                             {(editingQuestion as QuizQuestion & { audioFileName?: string }).audioFileName || 'Piste audio'}
                           </span>
+                          {audioUploading && (
+                            <span className="text-xs text-yellow-400 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Sauvegarde...
+                            </span>
+                          )}
                           {previewAudioPlaying && <span className="text-xs animate-pulse">&#9835; Lecture...</span>}
                         </div>
 
