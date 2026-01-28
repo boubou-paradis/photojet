@@ -358,6 +358,20 @@ export default function QuizPage() {
     if (editingQuestion?.id === id) setEditingQuestion(null)
   }
 
+  function clearAllQuestions() {
+    if (questions.length === 0) {
+      toast.error('Aucune question à supprimer')
+      return
+    }
+    if (!window.confirm(`Supprimer les ${questions.length} question(s) ? Cette action est irréversible.`)) {
+      return
+    }
+    setQuestions([])
+    saveQuestionsToDatabase([])
+    setEditingQuestion(null)
+    toast.success('Toutes les questions ont été supprimées')
+  }
+
   // ========== Import/Export CSV ==========
 
   function handleCsvFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1278,6 +1292,14 @@ export default function QuizPage() {
                   >
                     <Plus className="h-5 w-5" />
                     Ajouter
+                  </button>
+                  <button
+                    onClick={clearAllQuestions}
+                    className="px-3 py-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 flex items-center gap-2 text-sm border border-red-500/30"
+                    title="Supprimer toutes les questions"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Tout vider
                   </button>
                 </div>
               </div>
