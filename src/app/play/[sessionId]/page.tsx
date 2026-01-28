@@ -85,6 +85,8 @@ export default function PlayQuizPage() {
 
   // Results
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null)
+  const [lastPointsEarned, setLastPointsEarned] = useState<number>(0)
+  const [lastSpeedBonus, setLastSpeedBonus] = useState<string>('')
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [myRank, setMyRank] = useState<number | null>(null)
   const [myScore, setMyScore] = useState(0)
@@ -96,6 +98,26 @@ export default function PlayQuizPage() {
   // Refs
   const clientRef = useRef(getLocalClient())
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const answerTimeRef = useRef<number>(0) // Track time when answer was submitted
+
+  // Calculate progressive points based on response time
+  const calculateProgressivePoints = useCallback((basePoints: number, timeUsedMs: number, totalTimeMs: number): { points: number; bonus: string } => {
+    const timePercent = (timeUsedMs / totalTimeMs) * 100
+
+    if (timePercent <= 25) {
+      // 0-25% du temps utilisé = 100% des points
+      return { points: basePoints, bonus: 'Éclair !' }
+    } else if (timePercent <= 50) {
+      // 25-50% du temps = 75% des points
+      return { points: Math.round(basePoints * 0.75), bonus: 'Rapide !' }
+    } else if (timePercent <= 75) {
+      // 50-75% du temps = 50% des points
+      return { points: Math.round(basePoints * 0.5), bonus: 'Bien !' }
+    } else {
+      // 75-100% du temps = 25% des points
+      return { points: Math.round(basePoints * 0.25), bonus: 'Juste à temps' }
+    }
+  }, [])
 
   // Subscribe to Supabase quiz channel
   useEffect(() => {
@@ -173,6 +195,8 @@ export default function PlayQuizPage() {
       setPlayerState('WAITING')
       setSelectedAnswer(null)
       setCorrectKey(null)
+      setLastPointsEarned(0)
+      setLastSpeedBonus('')
     } else if (!quizState.gameActive) {
       // Quiz not active
       setPlayerState('WAITING')
@@ -283,6 +307,8 @@ export default function PlayQuizPage() {
           setSelectedAnswer(null)
           setCorrectKey(null)
           setLastAnswerCorrect(null)
+          setLastPointsEarned(0)
+          setLastSpeedBonus('')
           setPlayerState('ANSWERING')
           setTotalTimeMs(q.durationMs)
           setCanAnswer(false)
@@ -362,10 +388,28 @@ export default function PlayQuizPage() {
       // Convert key to index (A=0, B=1, C=2, D=3)
       const answerIndex = ['A', 'B', 'C', 'D'].indexOf(key)
 
-      // Check if answer is correct and calculate points
+      // Check if answer is correct and calculate progressive points based on time
       const currentQ = quizState?.questions[currentQuestion.index]
       const isCorrect = currentQ && answerIndex === currentQ.correctAnswer
-      const pointsEarned = isCorrect ? (currentQ?.points || 10) : 0
+
+      // Calculate time used (totalTimeMs - timeLeftMs = time used)
+      const timeUsedMs = totalTimeMs - timeLeftMs
+      answerTimeRef.current = timeUsedMs
+
+      // Calculate progressive points based on response time
+      const basePoints = currentQ?.points || 10
+      let pointsEarned = 0
+      let speedBonus = ''
+
+      if (isCorrect) {
+        const result = calculateProgressivePoints(basePoints, timeUsedMs, totalTimeMs)
+        pointsEarned = result.points
+        speedBonus = result.bonus
+      }
+
+      // Store for display in reveal state
+      setLastPointsEarned(pointsEarned)
+      setLastSpeedBonus(speedBonus)
 
       // Save answer to Supabase if using production mode
       if (useSupabase && sessionId) {
@@ -427,7 +471,7 @@ export default function PlayQuizPage() {
         nonce: currentQuestion.nonce,
       })
     },
-    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, useSupabase, sessionId, supabase, quizState]
+    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, useSupabase, sessionId, supabase, quizState, calculateProgressivePoints, totalTimeMs, timeLeftMs]
   )
 
   // Render based on state
@@ -670,13 +714,23 @@ export default function PlayQuizPage() {
                       <CheckCircle2 className="w-10 h-10 text-green-400" />
                     </motion.div>
                     <div className="text-2xl font-black text-green-400 tracking-wide">Correct !</div>
+                    {lastSpeedBonus && (
+                      <motion.div
+                        className="text-yellow-300 text-sm font-bold mt-1"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        {lastSpeedBonus}
+                      </motion.div>
+                    )}
                     <motion.div
                       className="text-[#D4AF37] text-xl font-bold mt-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3, type: 'spring', stiffness: 400 }}
                     >
-                      +{currentQuestion.points} pts
+                      +{lastPointsEarned} pts
                     </motion.div>
                   </div>
                 ) : lastAnswerCorrect === false ? (
