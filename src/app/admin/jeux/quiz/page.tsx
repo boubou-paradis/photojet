@@ -115,6 +115,27 @@ export default function QuizPage() {
     fetchSession()
   }, [])
 
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      // Stop all audio when component unmounts
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+        audioRef.current = null
+      }
+      if (answerAudioRef.current) {
+        answerAudioRef.current.pause()
+        answerAudioRef.current.src = ''
+        answerAudioRef.current = null
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+        previewAudioRef.current = null
+      }
+    }
+  }, [])
+
   // Setup broadcast channel
   useEffect(() => {
     if (!session) return
@@ -890,9 +911,27 @@ export default function QuizPage() {
   async function exitGame() {
     if (!session) return
 
-    // Stopper tout audio
+    // Stopper et nettoyer tout audio
     stopAnswerAudio()
     pauseAudio()
+
+    // Cleanup complet des éléments audio
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+      audioRef.current = null
+    }
+    if (answerAudioRef.current) {
+      answerAudioRef.current.pause()
+      answerAudioRef.current.src = ''
+      answerAudioRef.current = null
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current = null
+    }
+    setIsAudioPlaying(false)
+    setIsAnswerAudioPlaying(false)
 
     // On garde les questions dans la DB, on reset juste l'état du jeu
     setGameActive(false)
