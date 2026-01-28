@@ -112,6 +112,7 @@ export default function QuizPage() {
 
   // Quiz pré-packagés
   const [showPrepackagedModal, setShowPrepackagedModal] = useState(false)
+  const [addedQuizIds, setAddedQuizIds] = useState<Set<string>>(new Set())
 
   const router = useRouter()
   const supabase = createClient()
@@ -576,6 +577,12 @@ export default function QuizPage() {
 
   // Ajouter un quiz pré-packagé
   function addPrepackagedQuiz(quiz: PrepackagedQuiz) {
+    // Anti double-clic : vérifier si déjà ajouté
+    if (addedQuizIds.has(quiz.id)) {
+      toast.error(`${quiz.emoji} Le quiz "${quiz.name}" a déjà été ajouté !`)
+      return
+    }
+
     const newQuestions: QuizQuestion[] = quiz.questions.map((q, index) => ({
       id: `prepack-${quiz.id}-${Date.now()}-${index}`,
       question: q.question,
@@ -589,8 +596,12 @@ export default function QuizPage() {
     const updatedQuestions = [...questions, ...newQuestions]
     setQuestions(updatedQuestions)
     saveQuestionsToDatabase(updatedQuestions)
+
+    // Tracker le quiz comme ajouté
+    setAddedQuizIds(prev => new Set([...prev, quiz.id]))
+
     setShowPrepackagedModal(false)
-    toast.success(`${quiz.emoji} ${newQuestions.length} questions ajoutées !`)
+    toast.success(`${quiz.emoji} ${newQuestions.length} questions "${quiz.name}" ajoutées !`)
   }
 
   // Upload audio pour une question spécifique
@@ -2263,26 +2274,42 @@ export default function QuizPage() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {prepackagedQuizzes.map((quiz) => (
-                  <motion.div
-                    key={quiz.id}
-                    whileHover={{ scale: 1.02 }}
-                    className="card-gold rounded-xl p-5 cursor-pointer hover:border-[#D4AF37]/50 hover:shadow-[0_0_25px_rgba(212,175,55,0.2)] transition-all duration-300 group"
-                    onClick={() => addPrepackagedQuiz(quiz)}
-                  >
-                    <div className="text-4xl mb-3">{quiz.emoji}</div>
-                    <h4 className="text-lg font-bold text-white mb-1">{quiz.name}</h4>
-                    <p className="text-sm text-gray-400 mb-3">{quiz.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#D4AF37] font-medium">
-                        {quiz.questions.length} questions
-                      </span>
-                      <span className="text-xs text-gray-500 group-hover:text-[#D4AF37] transition-colors">
-                        Cliquer pour ajouter
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                {prepackagedQuizzes.map((quiz) => {
+                  const isAdded = addedQuizIds.has(quiz.id)
+                  return (
+                    <motion.div
+                      key={quiz.id}
+                      whileHover={!isAdded ? { scale: 1.02 } : {}}
+                      className={`card-gold rounded-xl p-5 transition-all duration-300 group relative ${
+                        isAdded
+                          ? 'opacity-60 cursor-default border-green-500/30'
+                          : 'cursor-pointer hover:border-[#D4AF37]/50 hover:shadow-[0_0_25px_rgba(212,175,55,0.2)]'
+                      }`}
+                      onClick={() => !isAdded && addPrepackagedQuiz(quiz)}
+                    >
+                      {isAdded && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                      <div className="text-4xl mb-3">{quiz.emoji}</div>
+                      <h4 className="text-lg font-bold text-white mb-1">{quiz.name}</h4>
+                      <p className="text-sm text-gray-400 mb-3">{quiz.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#D4AF37] font-medium">
+                          {quiz.questions.length} questions
+                        </span>
+                        <span className={`text-xs transition-colors ${
+                          isAdded
+                            ? 'text-green-400'
+                            : 'text-gray-500 group-hover:text-[#D4AF37]'
+                        }`}>
+                          {isAdded ? 'Ajouté !' : 'Cliquer pour ajouter'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </div>
 
               <div className="mt-6 p-4 bg-[#1A1A1E] rounded-xl border border-[rgba(255,255,255,0.05)]">
