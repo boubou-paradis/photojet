@@ -1248,7 +1248,7 @@ export default function QuizPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-6 py-6 max-w-7xl">
+      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
           /* Configuration */
           <motion.div
