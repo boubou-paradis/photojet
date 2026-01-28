@@ -541,8 +541,11 @@ export default function QuizPage() {
     setTimeLeft(currentQ.timeLimit)
     setAnswerStats([0, 0, 0, 0])
 
-    // Play audio if available
+    // Play background audio if available
     playAudio()
+
+    // Précharger l'audio de la réponse pendant que les joueurs répondent
+    preloadAnswerAudio()
 
     await supabase
       .from('sessions')
@@ -794,30 +797,46 @@ export default function QuizPage() {
     setIsAudioPlaying(false)
   }
 
-  // Jouer l'audio de la bonne réponse
-  function playAnswerAudio() {
+  // Précharger l'audio de la réponse en arrière-plan
+  function preloadAnswerAudio() {
     const currentQ = questions[currentQuestionIndex]
     if (!currentQ?.audioUrl) return
 
-    // Arrêter un éventuel audio précédent
+    // Nettoyer un éventuel préchargement précédent
     if (answerAudioRef.current) {
       answerAudioRef.current.pause()
       answerAudioRef.current = null
     }
 
-    const audio = new Audio(currentQ.audioUrl)
+    const audio = new Audio()
+    audio.preload = 'auto'
     audio.onplay = () => setIsAnswerAudioPlaying(true)
     audio.onpause = () => setIsAnswerAudioPlaying(false)
     audio.onended = () => {
       setIsAnswerAudioPlaying(false)
       answerAudioRef.current = null
     }
-    audio.play().then(() => {
-      setIsAnswerAudioPlaying(true)
-    }).catch(err => {
-      console.error('Answer audio play failed:', err)
-    })
+    audio.src = currentQ.audioUrl
     answerAudioRef.current = audio
+  }
+
+  // Jouer l'audio de la bonne réponse (déjà préchargé)
+  function playAnswerAudio() {
+    if (!answerAudioRef.current) {
+      // Fallback si pas préchargé
+      const currentQ = questions[currentQuestionIndex]
+      if (!currentQ?.audioUrl) return
+      preloadAnswerAudio()
+    }
+
+    if (answerAudioRef.current) {
+      answerAudioRef.current.currentTime = 0
+      answerAudioRef.current.play().then(() => {
+        setIsAnswerAudioPlaying(true)
+      }).catch(err => {
+        console.error('Answer audio play failed:', err)
+      })
+    }
   }
 
   // Arrêter l'audio de la bonne réponse
