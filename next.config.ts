@@ -26,6 +26,26 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(self), microphone=(self), geolocation=()',
   },
+  // Phase 2 - CSP en mode REPORT-ONLY (observe sans bloquer)
+  // Les violations apparaissent dans la console du navigateur
+  // Quand plus aucune violation n'apparaît, passer en mode actif (Phase 3)
+  {
+    key: 'Content-Security-Policy-Report-Only',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://*.vercel-analytics.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://unesekcovbxeapevuqmc.supabase.co https://animajet.fr https://*.supabase.co",
+      "connect-src 'self' https://unesekcovbxeapevuqmc.supabase.co wss://unesekcovbxeapevuqmc.supabase.co https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.resend.com https://va.vercel-scripts.com https://*.vercel-analytics.com",
+      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com",
+      "media-src 'self' blob: https://unesekcovbxeapevuqmc.supabase.co",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
+  },
 ];
 
 const nextConfig: NextConfig = {
