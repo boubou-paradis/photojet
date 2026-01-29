@@ -14,8 +14,8 @@ const IMAGE_SIGNATURES: { type: string; bytes: number[] }[] = [
   { type: 'image/heic', bytes: [0x00, 0x00, 0x00] }, // HEIC/HEIF (ftyp box)
 ]
 
-// Taille maximale en octets (10 Mo comme recommandé par l'audit)
-export const MAX_FILE_SIZE = 10 * 1024 * 1024
+// Taille maximale en octets (25 Mo - les photos sont compressées à 1 Mo avant upload)
+export const MAX_FILE_SIZE = 25 * 1024 * 1024
 
 export interface ImageValidationResult {
   valid: boolean
