@@ -5,6 +5,81 @@ export interface CompressionProgress {
   progress?: number
 }
 
+// Magic bytes pour les formats d'image autorisés
+const IMAGE_SIGNATURES: { type: string; bytes: number[] }[] = [
+  { type: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] },
+  { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] },
+  { type: 'image/gif', bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF87a ou GIF89a
+  { type: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF header (WebP)
+  { type: 'image/heic', bytes: [0x00, 0x00, 0x00] }, // HEIC/HEIF (ftyp box)
+]
+
+// Taille maximale en octets (10 Mo comme recommandé par l'audit)
+export const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+export interface ImageValidationResult {
+  valid: boolean
+  error?: string
+  detectedType?: string
+}
+
+/**
+ * Valide un fichier image en vérifiant :
+ * 1. La taille du fichier
+ * 2. Les magic bytes (signature du fichier)
+ *
+ * Protège contre les fichiers malveillants déguisés en images
+ */
+export async function validateImageFile(file: File): Promise<ImageValidationResult> {
+  // Vérifier la taille
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: `La taille maximale est de ${formatFileSize(MAX_FILE_SIZE)}`
+    }
+  }
+
+  // Vérifier la taille minimale (fichier vide ou trop petit)
+  if (file.size < 100) {
+    return {
+      valid: false,
+      error: 'Fichier invalide ou corrompu'
+    }
+  }
+
+  // Lire les premiers octets du fichier
+  try {
+    const buffer = await file.slice(0, 12).arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+
+    // Vérifier les magic bytes
+    for (const sig of IMAGE_SIGNATURES) {
+      const matches = sig.bytes.every((byte, index) => bytes[index] === byte)
+      if (matches) {
+        // Vérification spéciale pour WebP (doit avoir WEBP après RIFF)
+        if (sig.type === 'image/webp') {
+          const webpMarker = new Uint8Array(await file.slice(8, 12).arrayBuffer())
+          if (String.fromCharCode(...webpMarker) !== 'WEBP') {
+            continue
+          }
+        }
+        return { valid: true, detectedType: sig.type }
+      }
+    }
+
+    // Aucune signature reconnue
+    return {
+      valid: false,
+      error: 'Format d\'image non supporté. Utilisez JPG, PNG, GIF ou WebP'
+    }
+  } catch {
+    return {
+      valid: false,
+      error: 'Impossible de lire le fichier'
+    }
+  }
+}
+
 export async function compressImage(
   file: File,
   onProgress?: (progress: CompressionProgress) => void

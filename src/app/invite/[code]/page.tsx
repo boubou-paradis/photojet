@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
-import { compressImage } from '@/lib/image-utils'
+import { compressImage, validateImageFile, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
 import { Session } from '@/types/database'
 
 type TabType = 'photo' | 'message'
@@ -103,17 +103,16 @@ export default function InvitePage() {
     }
   }, [code, router, supabase])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      setError('Seules les images sont acceptées')
-      return
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setError('La taille maximale est de 50MB')
+    // Validation sécurisée avec vérification des magic bytes
+    const validation = await validateImageFile(file)
+    if (!validation.valid) {
+      setError(validation.error || 'Fichier invalide')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
       return
     }
 
