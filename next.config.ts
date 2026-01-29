@@ -26,11 +26,9 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(self), microphone=(self), geolocation=()',
   },
-  // Phase 2 - CSP en mode REPORT-ONLY (observe sans bloquer)
-  // Les violations apparaissent dans la console du navigateur
-  // Quand plus aucune violation n'apparaît, passer en mode actif (Phase 3)
+  // Phase 3 - CSP ACTIF (bloque les violations)
   {
-    key: 'Content-Security-Policy-Report-Only',
+    key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://*.vercel-analytics.com https://vercel.live",
