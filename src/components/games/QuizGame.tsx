@@ -469,7 +469,7 @@ export default function QuizGame({
 
       {/* PODIUM - Affiché à la fin du quiz */}
       <AnimatePresence>
-        {isFinished && podiumWinners.length > 0 && (
+        {isFinished && (
           <QuizPodiumPremium
             winners={podiumWinners}
             allParticipants={sortedParticipants.map((p, i) => ({

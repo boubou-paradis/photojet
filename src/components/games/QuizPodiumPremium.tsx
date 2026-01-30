@@ -210,8 +210,21 @@ export default function QuizPodiumPremium({
             </h1>
             <Trophy className="w-10 h-10 text-[#D4AF37]" />
           </div>
-          <p className="text-gray-400 text-lg">Félicitations aux gagnants !</p>
+          <p className="text-gray-400 text-lg">{hasEnoughPlayers ? 'Félicitations aux gagnants !' : 'Quiz terminé !'}</p>
         </motion.div>
+
+        {/* Message si pas de joueurs */}
+        {!hasEnoughPlayers && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-center mb-12"
+          >
+            <p className="text-2xl text-gray-300 mb-2">Aucun participant n&apos;a répondu au quiz</p>
+            <p className="text-gray-500">Les scores apparaîtront ici lors de la prochaine partie</p>
+          </motion.div>
+        )}
 
         {/* Podium */}
         {hasEnoughPlayers && !showFullRanking && (
