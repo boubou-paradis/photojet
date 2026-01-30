@@ -122,22 +122,51 @@ export default function QuizPage() {
     fetchSession()
   }, [])
 
+  // Helper pour nettoyer complètement un élément audio
+  const cleanupAudioElement = useCallback((audio: HTMLAudioElement | null, blobUrl?: string | null) => {
+    if (audio) {
+      audio.pause()
+      audio.onplay = null
+      audio.onpause = null
+      audio.onended = null
+      audio.onerror = null
+      audio.src = ''
+      audio.load() // Force le navigateur à libérer les ressources
+    }
+    if (blobUrl && blobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrl)
+    }
+  }, [])
+
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       // Stop all audio when component unmounts
       if (audioRef.current) {
         audioRef.current.pause()
+        audioRef.current.onplay = null
+        audioRef.current.onpause = null
+        audioRef.current.onended = null
         audioRef.current.src = ''
+        audioRef.current.load()
         audioRef.current = null
       }
       if (answerAudioRef.current) {
         answerAudioRef.current.pause()
+        answerAudioRef.current.onplay = null
+        answerAudioRef.current.onpause = null
+        answerAudioRef.current.onended = null
         answerAudioRef.current.src = ''
+        answerAudioRef.current.load()
         answerAudioRef.current = null
       }
       if (previewAudioRef.current) {
         previewAudioRef.current.pause()
+        previewAudioRef.current.onplay = null
+        previewAudioRef.current.onpause = null
+        previewAudioRef.current.onended = null
+        previewAudioRef.current.src = ''
+        previewAudioRef.current.load()
         previewAudioRef.current = null
       }
     }
@@ -962,25 +991,43 @@ export default function QuizPage() {
   async function exitGame() {
     if (!session) return
 
-    // Stopper et nettoyer tout audio
+    // Stopper et nettoyer tout audio avec cleanup complet
     stopAnswerAudio()
-    pauseAudio()
 
-    // Cleanup complet des éléments audio
+    // Cleanup complet des éléments audio (retirer listeners + libérer ressources)
     if (audioRef.current) {
       audioRef.current.pause()
+      audioRef.current.onplay = null
+      audioRef.current.onpause = null
+      audioRef.current.onended = null
       audioRef.current.src = ''
+      audioRef.current.load()
       audioRef.current = null
     }
     if (answerAudioRef.current) {
       answerAudioRef.current.pause()
+      answerAudioRef.current.onplay = null
+      answerAudioRef.current.onpause = null
+      answerAudioRef.current.onended = null
       answerAudioRef.current.src = ''
+      answerAudioRef.current.load()
       answerAudioRef.current = null
     }
     if (previewAudioRef.current) {
       previewAudioRef.current.pause()
+      previewAudioRef.current.onplay = null
+      previewAudioRef.current.onpause = null
+      previewAudioRef.current.onended = null
+      previewAudioRef.current.src = ''
+      previewAudioRef.current.load()
       previewAudioRef.current = null
     }
+    // Révoquer les URLs blob
+    if (quizAudio && quizAudio.startsWith('blob:')) {
+      URL.revokeObjectURL(quizAudio)
+    }
+    setQuizAudio(null)
+    setQuizAudioName(null)
     setIsAudioPlaying(false)
     setIsAnswerAudioPlaying(false)
 
@@ -1032,6 +1079,44 @@ export default function QuizPage() {
       return
     }
 
+    // Stopper et nettoyer tout audio avec cleanup complet
+    stopAnswerAudio()
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.onplay = null
+      audioRef.current.onpause = null
+      audioRef.current.onended = null
+      audioRef.current.src = ''
+      audioRef.current.load()
+      audioRef.current = null
+    }
+    if (answerAudioRef.current) {
+      answerAudioRef.current.pause()
+      answerAudioRef.current.onplay = null
+      answerAudioRef.current.onpause = null
+      answerAudioRef.current.onended = null
+      answerAudioRef.current.src = ''
+      answerAudioRef.current.load()
+      answerAudioRef.current = null
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current.onplay = null
+      previewAudioRef.current.onpause = null
+      previewAudioRef.current.onended = null
+      previewAudioRef.current.src = ''
+      previewAudioRef.current.load()
+      previewAudioRef.current = null
+    }
+    // Révoquer les URLs blob
+    if (quizAudio && quizAudio.startsWith('blob:')) {
+      URL.revokeObjectURL(quizAudio)
+    }
+    setIsAudioPlaying(false)
+    setIsAnswerAudioPlaying(false)
+    setQuizAudio(null)
+    setQuizAudioName(null)
+
     await supabase
       .from('sessions')
       .update({
@@ -1080,6 +1165,21 @@ export default function QuizPage() {
   function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) {
+      // Nettoyer l'ancien audio avant d'en créer un nouveau
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.onplay = null
+        audioRef.current.onpause = null
+        audioRef.current.onended = null
+        audioRef.current.src = ''
+        audioRef.current.load()
+        audioRef.current = null
+      }
+      // Révoquer l'ancienne URL blob
+      if (quizAudio && quizAudio.startsWith('blob:')) {
+        URL.revokeObjectURL(quizAudio)
+      }
+
       const url = URL.createObjectURL(file)
       setQuizAudio(url)
       setQuizAudioName(file.name.replace(/\.[^.]+$/, ''))
@@ -1705,8 +1805,20 @@ export default function QuizPage() {
                     </button>
                     <button
                       onClick={() => {
-                        pauseAudio()
-                        audioRef.current = null
+                        if (audioRef.current) {
+                          audioRef.current.pause()
+                          audioRef.current.onplay = null
+                          audioRef.current.onpause = null
+                          audioRef.current.onended = null
+                          audioRef.current.src = ''
+                          audioRef.current.load()
+                          audioRef.current = null
+                        }
+                        // Révoquer l'URL blob
+                        if (quizAudio && quizAudio.startsWith('blob:')) {
+                          URL.revokeObjectURL(quizAudio)
+                        }
+                        setIsAudioPlaying(false)
                         setQuizAudio(null)
                         setQuizAudioName(null)
                       }}
