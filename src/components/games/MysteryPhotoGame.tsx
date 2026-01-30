@@ -464,7 +464,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
               <span className="text-7xl mb-6 block">🎉</span>
               <h2 className="text-5xl font-bold text-white mb-4">Bien joué !</h2>
               <p className="text-[#D4AF37] text-3xl">
-                Préparez-vous pour la manche {currentRound + 1}...
+                Préparez-vous pour la photo suivante
               </p>
             </motion.div>
           </motion.div>
