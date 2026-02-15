@@ -960,6 +960,121 @@ export async function sendTrialWelcomeEmail(params: {
   }
 }
 
+export async function sendRenewalConfirmationEmail(params: {
+  to: string
+  nextBillingDate: string
+}) {
+  if (!resend) {
+    return { success: false, error: 'Resend not configured' }
+  }
+
+  const { to, nextBillingDate } = params
+
+  // Format date in French
+  const formattedDate = new Date(nextBillingDate).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: 'Votre abonnement AnimaJet est reactif !',
+      html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abonnement renouvele</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
+
+          <!-- Green Success Glow -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #4CAF50 20%, #66BB6A 50%, #4CAF50 80%, transparent 100%); border-radius: 20px 20px 0 0;"></td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px; border-radius: 20px 20px 0 0;">
+              <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="120" height="120" style="display: block; width: 120px; height: 120px; border: 0; border-radius: 15px;" />
+              <h1 style="margin: 25px 0 0 0; color: #4CAF50; font-size: 26px; font-weight: 700;">
+                Abonnement renouvele avec succes !
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 40px;">
+              <p style="margin: 0 0 25px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
+                Bonne nouvelle ! Votre abonnement AnimaJet a ete renouvele avec succes. Vous avez de nouveau acces a toutes les fonctionnalites.
+              </p>
+
+              <!-- Next billing info -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(145deg, #242428 0%, #1E1E22 100%); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 12px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <p style="margin: 0 0 8px; color: #6B6B70; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">Prochaine echeance</p>
+                    <p style="margin: 0; color: #D4AF37; font-size: 20px; font-weight: 700;">${formattedDate}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 35px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
+                Vos sessions et photos sont de nouveau accessibles. Merci pour votre confiance !
+              </p>
+
+              <!-- CTA -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a href="${APP_URL}/login" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #1A1A1E; text-decoration: none; padding: 18px 45px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);">
+                      Acceder a mon dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
+              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 14px; text-align: center;">
+                Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
+              </p>
+              <p style="margin: 0; color: #4A4A4F; font-size: 12px; text-align: center; line-height: 1.8;">
+                &copy; 2025 AnimaJet - Tous droits reserves<br>
+                <span style="color: #6B6B70;">Cree par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
+    })
+
+    return { success: true, data: result }
+  } catch (error: unknown) {
+    console.error('[Email] Renewal confirmation error:', error instanceof Error ? error.message : error)
+    return { success: false, error }
+  }
+}
+
 export async function sendDataDeletionWarningEmail(params: { to: string; daysLeft: number }) {
   if (!resend) {
     return { success: false, error: 'Resend not configured' }

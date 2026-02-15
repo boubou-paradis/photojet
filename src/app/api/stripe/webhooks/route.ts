@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
-import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail } from '@/lib/resend'
+import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail, sendRenewalConfirmationEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
 import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
 
@@ -432,10 +432,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { c
     })
     .eq('id', data.id)
 
-  // Reactivate sessions when subscription becomes active again
+  // Reactivate sessions and send confirmation email when subscription becomes active again
   if (newStatus === 'active' && previousStatus !== 'active') {
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
     console.log(`[Webhook] subscription.updated: reactivated sessions for user ${data.user_id} (${previousStatus} → active)`)
+
+    // Send renewal confirmation email
+    const { data: profile } = await getSupabaseAdmin()
+      .from('user_profiles')
+      .select('email')
+      .eq('id', data.user_id)
+      .single()
+
+    if (profile?.email) {
+      await sendRenewalConfirmationEmail({
+        to: profile.email,
+        nextBillingDate: periodEnd,
+      })
+      console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
+    }
   }
 }
 
@@ -574,6 +589,22 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
     // Reactivate sessions
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+
+    // Send renewal confirmation email
+    const { data: profile } = await getSupabaseAdmin()
+      .from('user_profiles')
+      .select('email')
+      .eq('id', data.user_id)
+      .single()
+
+    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd)
+    if (profile?.email) {
+      await sendRenewalConfirmationEmail({
+        to: profile.email,
+        nextBillingDate: periodEnd,
+      })
+      console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
+    }
 
     console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment (was: ${data.status})`)
   }
