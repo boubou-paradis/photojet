@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
-import { sendWelcomeEmail, sendExpiredEmail } from '@/lib/resend'
+import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail } from '@/lib/resend'
 import { createClient } from '@supabase/supabase-js'
 import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
 
@@ -109,6 +109,11 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         await handlePaymentFailed(invoice)
+        break
+      }
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+        await handlePaymentSucceeded(invoice)
         break
       }
     }
@@ -431,16 +436,77 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subscriptionId = (invoice as any).subscription as string
+  const rawSub = (invoice as any).subscription
+  const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id
   if (!subscriptionId) return
 
   const { data } = await getSupabaseAdmin()
     .from('subscriptions')
-    .select('id')
+    .select('id, user_id')
     .eq('stripe_subscription_id', subscriptionId)
     .single()
 
   if (!data) return
 
   await getSupabaseAdmin().from('subscriptions').update({ status: 'past_due' }).eq('id', data.id)
+
+  // Deactivate sessions when payment fails
+  await getSupabaseAdmin().from('sessions').update({ is_active: false }).eq('user_id', data.user_id)
+
+  // Send payment failed email
+  const { data: profile } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('email')
+    .eq('id', data.user_id)
+    .single()
+
+  if (profile?.email) {
+    await sendPaymentFailedEmail({ to: profile.email })
+  }
+}
+
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawSub = (invoice as any).subscription
+  const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id
+  if (!subscriptionId) return
+
+  // Only reactivate if this is a renewal (not the first invoice)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const billingReason = (invoice as any).billing_reason as string | null
+  if (billingReason !== 'subscription_cycle' && billingReason !== 'subscription_update') return
+
+  const { data } = await getSupabaseAdmin()
+    .from('subscriptions')
+    .select('id, user_id, status')
+    .eq('stripe_subscription_id', subscriptionId)
+    .single()
+
+  if (!data) return
+
+  // Reactivate subscription if it was past_due
+  if (data.status === 'past_due' || data.status === 'expired') {
+    // Get fresh subscription data from Stripe
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription & {
+      current_period_start: number
+      current_period_end: number
+    }
+
+    const now = new Date()
+    const defaultEnd = getDefaultPeriodEnd()
+
+    await getSupabaseAdmin()
+      .from('subscriptions')
+      .update({
+        status: 'active',
+        current_period_start: safeTimestampToISO(stripeSubscription.current_period_start, now),
+        current_period_end: safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd),
+      })
+      .eq('id', data.id)
+
+    // Reactivate sessions
+    await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+
+    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment`)
+  }
 }

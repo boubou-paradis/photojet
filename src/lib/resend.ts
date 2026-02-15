@@ -295,7 +295,9 @@ export async function sendExpiringEmail(params: {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: `Votre abonnement AnimaJet expire dans ${daysLeft} jours`,
+      subject: daysLeft === 0
+        ? 'Votre abonnement AnimaJet expire aujourd\'hui !'
+        : `Votre abonnement AnimaJet expire dans ${daysLeft} jours`,
       html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -329,7 +331,10 @@ export async function sendExpiringEmail(params: {
           <tr>
             <td style="background-color: #1A1A1E; padding: 40px;">
               <p style="margin: 0 0 25px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
-                Votre abonnement AnimaJet expire dans <strong style="color: #E53935; font-size: 20px;">${daysLeft} jours</strong>.
+                ${daysLeft === 0
+                  ? 'Votre abonnement AnimaJet <strong style="color: #E53935; font-size: 20px;">expire aujourd\'hui</strong> !'
+                  : `Votre abonnement AnimaJet expire dans <strong style="color: #E53935; font-size: 20px;">${daysLeft} jours</strong>.`
+                }
               </p>
               <p style="margin: 0 0 35px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
                 Si vous ne renouvelez pas, vos photos et sessions seront desactivees apres l'expiration.
@@ -594,6 +599,100 @@ export async function sendExpiredEmail(params: { to: string }) {
     return { success: true, data: result }
   } catch (error: unknown) {
     console.error('[Email] Error:', error instanceof Error ? error.message : error)
+    return { success: false, error }
+  }
+}
+
+export async function sendPaymentFailedEmail(params: { to: string }) {
+  if (!resend) {
+    return { success: false, error: 'Resend not configured' }
+  }
+
+  const { to } = params
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: 'Echec de paiement - Votre abonnement AnimaJet est suspendu',
+      html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echec de paiement</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
+
+          <!-- Red Warning -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #E53935 30%, #FF5722 50%, #E53935 70%, transparent 100%); border-radius: 20px 20px 0 0;"></td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px; border-radius: 20px 20px 0 0;">
+              <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="100" height="100" style="display: block; width: 100px; height: 100px; border: 0; border-radius: 15px;" />
+              <h1 style="margin: 25px 0 0 0; color: #E53935; font-size: 26px; font-weight: 700;">
+                Echec de paiement
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 40px;">
+              <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
+                Le renouvellement de votre abonnement AnimaJet a echoue. Votre carte bancaire a ete refusee.
+              </p>
+              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
+                <strong style="color: #E53935;">Votre acces a AnimaJet est suspendu</strong> jusqu'a la regularisation du paiement. Vos sessions et photos sont temporairement desactivees.
+              </p>
+              <p style="margin: 0 0 35px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
+                Mettez a jour vos informations de paiement pour retrouver l'acces immediatement :
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a href="${APP_URL}/admin/settings" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #1A1A1E; text-decoration: none; padding: 18px 45px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);">
+                      Mettre a jour mon paiement
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
+              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 14px; text-align: center;">
+                Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
+              </p>
+              <p style="margin: 0; color: #4A4A4F; font-size: 12px; text-align: center; line-height: 1.8;">
+                &copy; 2025 AnimaJet - Tous droits reserves<br>
+                <span style="color: #6B6B70;">Cree par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
+    })
+
+    return { success: true, data: result }
+  } catch (error: unknown) {
+    console.error('[Email] Payment failed email error:', error instanceof Error ? error.message : error)
     return { success: false, error }
   }
 }

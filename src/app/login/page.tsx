@@ -98,13 +98,14 @@ export default function LoginPage() {
             return
           }
 
-          setError(accessResult.message)
+          // Payment failed / past_due - show specific message
+          if (subscription?.status === 'past_due') {
+            setError('Votre paiement a echoue. Votre acces est suspendu. Mettez a jour vos informations de paiement dans votre espace Stripe.')
+          } else {
+            setError(accessResult.message)
+          }
           await supabase.auth.signOut()
           return
-        }
-
-        if (subscription?.status === 'past_due') {
-          toast.warning('Votre paiement est en retard. Mettez a jour vos informations de paiement.')
         }
 
         if (accessResult.status === 'valid_trial') {
