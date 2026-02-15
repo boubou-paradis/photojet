@@ -385,30 +385,58 @@ async function updateExistingUser(
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { current_period_start: number; current_period_end: number }) {
-  const { data } = await getSupabaseAdmin()
+  // Try to find by stripe_subscription_id first
+  let { data } = await getSupabaseAdmin()
     .from('subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, status')
     .eq('stripe_subscription_id', subscription.id)
     .single()
 
+  // Fallback: find by stripe_customer_id (handles new subscription after expiration)
+  if (!data) {
+    const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.toString()
+    if (customerId) {
+      const result = await getSupabaseAdmin()
+        .from('subscriptions')
+        .select('id, user_id, status')
+        .eq('stripe_customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      data = result.data
+      if (data) {
+        console.log(`[Webhook] subscription.updated: found by customer_id ${customerId} (new subscription ID: ${subscription.id})`)
+      }
+    }
+  }
+
   if (!data) return
 
+  const previousStatus = data.status
   const now = new Date()
   const defaultEnd = getDefaultPeriodEnd()
   const periodStart = safeTimestampToISO(subscription.current_period_start, now)
   const periodEnd = safeTimestampToISO(subscription.current_period_end, defaultEnd)
   const canceledAt = subscription.canceled_at ? safeTimestampToISO(subscription.canceled_at) : null
+  const newStatus = subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
 
   await getSupabaseAdmin()
     .from('subscriptions')
     .update({
-      status: subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due',
+      stripe_subscription_id: subscription.id,
+      status: newStatus,
       current_period_start: periodStart,
       current_period_end: periodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,
       canceled_at: canceledAt,
     })
     .eq('id', data.id)
+
+  // Reactivate sessions when subscription becomes active again
+  if (newStatus === 'active' && previousStatus !== 'active') {
+    await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+    console.log(`[Webhook] subscription.updated: reactivated sessions for user ${data.user_id} (${previousStatus} → active)`)
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -471,21 +499,60 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id
   if (!subscriptionId) return
 
-  // Only reactivate if this is a renewal (not the first invoice)
+  // Skip only the very first invoice of a brand-new checkout (handled by checkout.session.completed)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const billingReason = (invoice as any).billing_reason as string | null
-  if (billingReason !== 'subscription_cycle' && billingReason !== 'subscription_update') return
+  if (billingReason === 'subscription_create') {
+    // Check if this is a RE-subscription (existing user) or a brand-new user
+    // For re-subscriptions via portal, we still need to reactivate
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const customerId = typeof (invoice as any).customer === 'string' ? (invoice as any).customer : (invoice as any).customer?.id
+    if (customerId) {
+      const { data: existingSub } = await getSupabaseAdmin()
+        .from('subscriptions')
+        .select('id, status')
+        .eq('stripe_customer_id', customerId)
+        .single()
+      // If no existing record, this is a brand-new user → skip (handled by checkout.session.completed)
+      if (!existingSub || (existingSub.status !== 'past_due' && existingSub.status !== 'expired' && existingSub.status !== 'canceled')) {
+        return
+      }
+      console.log(`[Webhook] payment_succeeded: re-subscription detected for customer ${customerId} (billing_reason: subscription_create)`)
+    } else {
+      return
+    }
+  }
 
-  const { data } = await getSupabaseAdmin()
+  // Try to find by stripe_subscription_id first
+  let { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id, user_id, status')
     .eq('stripe_subscription_id', subscriptionId)
     .single()
 
+  // Fallback: find by stripe_customer_id (handles new subscription after expiration)
+  if (!data) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const customerId = typeof (invoice as any).customer === 'string' ? (invoice as any).customer : (invoice as any).customer?.id
+    if (customerId) {
+      const result = await getSupabaseAdmin()
+        .from('subscriptions')
+        .select('id, user_id, status')
+        .eq('stripe_customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      data = result.data
+      if (data) {
+        console.log(`[Webhook] payment_succeeded: found by customer_id ${customerId} (new subscription ID: ${subscriptionId})`)
+      }
+    }
+  }
+
   if (!data) return
 
-  // Reactivate subscription if it was past_due
-  if (data.status === 'past_due' || data.status === 'expired') {
+  // Reactivate subscription if it was inactive
+  if (data.status === 'past_due' || data.status === 'expired' || data.status === 'canceled') {
     // Get fresh subscription data from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription & {
       current_period_start: number
@@ -498,6 +565,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     await getSupabaseAdmin()
       .from('subscriptions')
       .update({
+        stripe_subscription_id: subscriptionId,
         status: 'active',
         current_period_start: safeTimestampToISO(stripeSubscription.current_period_start, now),
         current_period_end: safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd),
@@ -507,6 +575,6 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     // Reactivate sessions
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
 
-    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment`)
+    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment (was: ${data.status})`)
   }
 }
