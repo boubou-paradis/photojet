@@ -90,8 +90,13 @@ export default function LoginPage() {
         // Use the trial access logic
         const accessResult = checkAccess(subscription, profile?.role)
 
-        if (!accessResult.canAccess) {
-          if (accessResult.status === 'weekend_blocked') {
+        // Also check date-based expiration for 'active' subscriptions
+        const now = new Date()
+        const periodEnd = subscription?.current_period_end ? new Date(subscription.current_period_end) : null
+        const isDateExpired = subscription?.status === 'active' && periodEnd && now > periodEnd
+
+        if (!accessResult.canAccess || isDateExpired) {
+          if (accessResult.status === 'weekend_blocked' && !isDateExpired) {
             // Let them through, the admin layout will show the weekend block modal
             toast.info('Essai en cours - disponible en semaine uniquement')
             router.push('/admin/dashboard')
@@ -101,6 +106,8 @@ export default function LoginPage() {
           // Payment failed / past_due - show specific message
           if (subscription?.status === 'past_due') {
             setError('Votre paiement a echoue. Votre acces est suspendu. Mettez a jour vos informations de paiement dans votre espace Stripe.')
+          } else if (isDateExpired) {
+            setError('Votre abonnement a expire. Renouvelez-le pour continuer a utiliser AnimaJet.')
           } else {
             setError(accessResult.message)
           }

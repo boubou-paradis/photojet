@@ -133,16 +133,23 @@ export default function AdminLayout({
         return
       }
 
-      // Active subscription = full access
+      // Check subscription validity: BOTH status AND date
+      const now = new Date()
+
       if (sub.status === 'active') {
+        // Check if current_period_end is past (date-based expiration)
+        const periodEnd = sub.current_period_end ? new Date(sub.current_period_end) : null
+        if (periodEnd && now > periodEnd) {
+          // Status is 'active' but date has passed - subscription is actually expired
+          router.push('/?access=expired')
+          return
+        }
         setAccessChecked(true)
         return
       }
 
-      // Trialing subscription = check expiration and weekend
       if (sub.status === 'trialing') {
         const trialEnd = sub.trial_end ? new Date(sub.trial_end) : null
-        const now = new Date()
 
         // Check if trial expired
         if (trialEnd && now > trialEnd) {

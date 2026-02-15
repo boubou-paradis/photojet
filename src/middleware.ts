@@ -10,8 +10,7 @@ const PROTECTED_ROUTES = ['/admin']
 // Routes that should always be accessible (public)
 const PUBLIC_ROUTES = [
   '/login',
-  '/api/stripe/webhooks',
-  '/api/trial',
+  '/api/',
   '/invite',
   '/join',
   '/live',
@@ -23,18 +22,52 @@ const PUBLIC_ROUTES = [
   '/mentions-legales',
   '/subscription',
   '/borne',
+  '/trial',
+  '/host',
+  '/robots',
+  '/sitemap',
+  '/animation-',
+  '/gestion-',
 ]
+
+function isSubscriptionValid(status: string, currentPeriodEnd: string | null, trialEnd: string | null): boolean {
+  const now = new Date()
+
+  // Only 'active' and 'trialing' can possibly be valid
+  if (status !== 'active' && status !== 'trialing') {
+    return false
+  }
+
+  // For trialing: check trial_end date
+  if (status === 'trialing') {
+    if (!trialEnd) return false
+    return now < new Date(trialEnd)
+  }
+
+  // For active: check current_period_end date
+  if (status === 'active') {
+    if (!currentPeriodEnd) return true // No end date = unlimited (safety fallback)
+    return now < new Date(currentPeriodEnd)
+  }
+
+  return false
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip public routes and static assets
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
-  if (isPublicRoute || pathname === '/' || pathname.startsWith('/_next') || pathname.startsWith('/api/') && !pathname.startsWith('/admin')) {
+  // Skip static assets
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf)$/)) {
     return NextResponse.next()
   }
 
-  // Only check protected routes
+  // Skip public routes
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
+  if (isPublicRoute || pathname === '/') {
+    return NextResponse.next()
+  }
+
+  // Only enforce on protected routes
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
   if (!isProtectedRoute) {
     return NextResponse.next()
@@ -42,9 +75,7 @@ export async function middleware(request: NextRequest) {
 
   // Create Supabase client for middleware
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -58,9 +89,7 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
@@ -78,21 +107,16 @@ export async function middleware(request: NextRequest) {
   const trialExpires = request.cookies.get('trial_expires_at')?.value
 
   if (!user && trialToken && trialExpires) {
-    // Trial user - check if expired
-    const now = new Date()
-    const expiresAt = new Date(trialExpires)
-    if (now > expiresAt) {
+    if (new Date() > new Date(trialExpires)) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       url.searchParams.set('access', 'expired')
       return NextResponse.redirect(url)
     }
-    // Trial is still valid
     return response
   }
 
   if (!user) {
-    // No auth at all - redirect to login
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -110,10 +134,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Check subscription status
+  // Check subscription - get status AND dates
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status, trial_end, current_period_end')
+    .select('status, current_period_end, trial_end')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -126,41 +150,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const status = subscription.status
+  // Check BOTH status AND date
+  const valid = isSubscriptionValid(
+    subscription.status,
+    subscription.current_period_end,
+    subscription.trial_end
+  )
 
-  // Active subscription = full access
-  if (status === 'active') {
-    return response
+  if (!valid) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    url.searchParams.set('access', 'expired')
+    return NextResponse.redirect(url)
   }
 
-  // Trialing = check expiration
-  if (status === 'trialing') {
-    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end) : null
-    if (trialEnd && new Date() > trialEnd) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      url.searchParams.set('access', 'expired')
-      return NextResponse.redirect(url)
-    }
-    return response
-  }
-
-  // past_due, canceled, expired = block access
-  const url = request.nextUrl.clone()
-  url.pathname = '/'
-  url.searchParams.set('access', 'expired')
-  return NextResponse.redirect(url)
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     * - public files (images, etc.)
-     */
     '/((?!_next/static|_next/image|favicon.ico|images/|logo|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }

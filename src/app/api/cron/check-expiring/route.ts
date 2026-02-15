@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendExpiringEmail } from '@/lib/resend'
+import { sendExpiringEmail, sendExpiredEmail } from '@/lib/resend'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -118,11 +118,74 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[Cron] check-expiring: ${emailsSent.length} emails sent`, emailsSent)
+  // ============================================================
+  // AUTO-EXPIRE: Set status to 'expired' for subscriptions
+  // where current_period_end has passed but status is still 'active'
+  // This is the safety net that fixes the core bug.
+  // ============================================================
+  const { data: staleActive } = await supabase
+    .from('subscriptions')
+    .select('id, user_id')
+    .eq('status', 'active')
+    .lt('current_period_end', now.toISOString())
+
+  const expiredUsers: string[] = []
+
+  if (staleActive && staleActive.length > 0) {
+    for (const sub of staleActive) {
+      // Update subscription status to expired
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'expired' })
+        .eq('id', sub.id)
+
+      // Deactivate all sessions for this user
+      await supabase
+        .from('sessions')
+        .update({ is_active: false })
+        .eq('user_id', sub.user_id)
+
+      // Send expired email
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('id', sub.user_id)
+        .single()
+
+      if (profile?.email) {
+        await sendExpiredEmail({ to: profile.email })
+        expiredUsers.push(profile.email)
+      }
+    }
+  }
+
+  // Also expire stale 'trialing' subscriptions
+  const { data: staleTrialing } = await supabase
+    .from('subscriptions')
+    .select('id, user_id')
+    .eq('status', 'trialing')
+    .lt('trial_end', now.toISOString())
+
+  if (staleTrialing && staleTrialing.length > 0) {
+    for (const sub of staleTrialing) {
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'expired' })
+        .eq('id', sub.id)
+
+      await supabase
+        .from('sessions')
+        .update({ is_active: false })
+        .eq('user_id', sub.user_id)
+    }
+  }
+
+  console.log(`[Cron] check-expiring: ${emailsSent.length} reminder emails, ${expiredUsers.length} auto-expired`, { emailsSent, expiredUsers })
 
   return NextResponse.json({
     success: true,
     emailsSent: emailsSent.length,
-    details: emailsSent,
+    autoExpired: expiredUsers.length,
+    details: { reminders: emailsSent, expired: expiredUsers },
   })
 }
