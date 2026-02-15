@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { Loader2, LogIn, ArrowLeft, Sparkles, Lock, Mail, CheckCircle } from 'lucide-react'
+import { Loader2, LogIn, ArrowLeft, Sparkles, Lock, Mail, CheckCircle, CreditCard, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase'
@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [expired, setExpired] = useState(false)
+  const [renewLoading, setRenewLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -103,15 +105,9 @@ export default function LoginPage() {
             return
           }
 
-          // Payment failed / past_due - show specific message
-          if (subscription?.status === 'past_due') {
-            setError('Votre paiement a echoue. Votre acces est suspendu. Mettez a jour vos informations de paiement dans votre espace Stripe.')
-          } else if (isDateExpired) {
-            setError('Votre abonnement a expire. Renouvelez-le pour continuer a utiliser AnimaJet.')
-          } else {
-            setError(accessResult.message)
-          }
-          await supabase.auth.signOut()
+          // Subscription expired/past_due - show renewal screen
+          // Keep the user logged in so they can access the Stripe portal
+          setExpired(true)
           return
         }
 
@@ -129,6 +125,135 @@ export default function LoginPage() {
     }
   }
 
+  const handleRenew = async () => {
+    setRenewLoading(true)
+    try {
+      const response = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        // If portal fails (no stripe customer), redirect to checkout
+        toast.error('Redirection vers la page d\'abonnement...')
+        window.location.href = '/#pricing'
+      }
+    } catch {
+      window.location.href = '/#pricing'
+    } finally {
+      setRenewLoading(false)
+    }
+  }
+
+  const handleLogoutFromExpired = async () => {
+    await supabase.auth.signOut()
+    setExpired(false)
+    setError(null)
+    setEmail('')
+    setPassword('')
+  }
+
+  // ============================================================
+  // EXPIRED SCREEN - shown when user logs in with expired sub
+  // ============================================================
+  if (expired) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center p-4 overflow-hidden">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md relative z-10"
+        >
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-red-500/20 via-[#D4AF37]/10 to-red-500/20 rounded-3xl blur-xl opacity-50" />
+
+            <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-red-500/20 overflow-hidden">
+              {/* Top red line */}
+              <div className="h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+
+              <div className="p-8">
+                {/* Icon */}
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  className="text-center mb-6"
+                >
+                  <div className="relative inline-block">
+                    <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full" />
+                    <div className="relative w-24 h-24 mx-auto rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+                      <AlertTriangle className="h-12 w-12 text-red-500" />
+                    </div>
+                  </div>
+
+                  <h1 className="text-2xl font-bold text-white mt-6">
+                    Abonnement expire
+                  </h1>
+                  <p className="text-gray-400 text-sm mt-3 leading-relaxed">
+                    Votre abonnement AnimaJet a expire. Renouvelez-le pour retrouver l&apos;acces a toutes vos fonctionnalites, sessions et photos.
+                  </p>
+                </motion.div>
+
+                {/* Renew button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-3"
+                >
+                  <Button
+                    onClick={handleRenew}
+                    disabled={renewLoading}
+                    className="w-full h-14 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] hover:opacity-90 text-[#0D0D0F] font-bold text-lg rounded-xl shadow-lg shadow-[#D4AF37]/25 transition-all hover:shadow-[#D4AF37]/40 hover:scale-[1.02]"
+                  >
+                    {renewLoading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <>
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        Renouveler mon abonnement
+                      </>
+                    )}
+                  </Button>
+
+                  <button
+                    onClick={handleLogoutFromExpired}
+                    className="w-full py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    Se deconnecter
+                  </button>
+                </motion.div>
+
+                {/* Info */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-6 p-4 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl"
+                >
+                  <p className="text-xs text-gray-400 text-center leading-relaxed">
+                    Vous serez redirige vers votre espace de facturation Stripe pour mettre a jour votre moyen de paiement et reactiver votre abonnement.
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* Bottom golden line */}
+              <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // ============================================================
+  // NORMAL LOGIN SCREEN
+  // ============================================================
   return (
     <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center p-4 overflow-hidden">
       {/* Animated background effects */}
