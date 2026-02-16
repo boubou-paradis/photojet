@@ -130,15 +130,33 @@ export async function GET(request: NextRequest) {
     )
 
     if (!authUser) {
-      return NextResponse.json({
-        error: 'User not found in auth, profiles, or subscriptions',
-        stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
-        stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
-        hint: 'The user account was fully deleted. They need to re-subscribe via checkout.',
-      }, { status: 404 })
-    }
+      // Auth user was fully deleted - recreate it
+      const tempPassword = `Recover_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email.toLowerCase(),
+        password: tempPassword,
+        email_confirm: true,
+      })
 
-    userId = authUser.id
+      if (createError || !newUser?.user) {
+        return NextResponse.json({
+          error: 'Failed to recreate auth user',
+          detail: createError?.message,
+          stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
+          stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
+        }, { status: 500 })
+      }
+
+      userId = newUser.user.id
+
+      // Send password reset so user can set their own password
+      await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: email.toLowerCase(),
+      })
+    } else {
+      userId = authUser.id
+    }
 
     // Create user_profiles record
     await supabase.from('user_profiles').upsert({
