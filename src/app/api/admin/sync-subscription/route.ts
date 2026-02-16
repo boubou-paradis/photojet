@@ -107,29 +107,8 @@ export async function GET(request: NextRequest) {
     dbSub = result.data
   }
 
-  if (!dbSub) {
-    return NextResponse.json({
-      error: 'No subscription found in Supabase DB',
-      stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
-      stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
-      hint: 'The subscription exists in Stripe but not in the database',
-    }, { status: 404 })
-  }
-
-  const previousStatus = dbSub.status
-  const previousPeriodEnd = dbSub.current_period_end
-
   // ============================================================
-  // STEP 4: Check user_profiles
-  // ============================================================
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('id, email')
-    .eq('id', dbSub.user_id)
-    .single()
-
-  // ============================================================
-  // STEP 5: Update DB with Stripe data
+  // STEP 3b: If no DB record, find auth user and CREATE records
   // ============================================================
   const dbStatus = stripeSub.status === 'active' ? 'active'
     : stripeSub.status === 'trialing' ? 'trialing'
@@ -137,46 +116,105 @@ export async function GET(request: NextRequest) {
     : stripeSub.status === 'canceled' ? 'canceled'
     : 'expired'
 
-  await supabase
-    .from('subscriptions')
-    .update({
-      stripe_subscription_id: stripeSub.id,
-      stripe_customer_id: stripeCustomer.id,
-      status: dbStatus,
-      ...(stripePeriodEnd ? { current_period_end: stripePeriodEnd } : {}),
-      ...(stripePeriodStart ? { current_period_start: stripePeriodStart } : {}),
-    })
-    .eq('id', dbSub.id)
+  let userId: string
+  let previousStatus = 'none'
+  let previousPeriodEnd = ''
+  let profileCreated = false
+  let subscriptionCreated = false
 
-  // Reactivate sessions if active
-  if (dbStatus === 'active') {
-    await supabase
-      .from('sessions')
-      .update({ is_active: true })
-      .eq('user_id', dbSub.user_id)
-  }
+  if (!dbSub) {
+    // Find auth user
+    const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    const authUser = authUsers?.users?.find(u =>
+      u.email?.toLowerCase() === email.toLowerCase()
+    )
 
-  // ============================================================
-  // STEP 6: Fix missing profile if needed
-  // ============================================================
-  let profileFixed = false
-  if (!profile) {
+    if (!authUser) {
+      return NextResponse.json({
+        error: 'User not found in auth, profiles, or subscriptions',
+        stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
+        stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
+        hint: 'The user account was fully deleted. They need to re-subscribe via checkout.',
+      }, { status: 404 })
+    }
+
+    userId = authUser.id
+
+    // Create user_profiles record
     await supabase.from('user_profiles').upsert({
-      id: dbSub.user_id,
+      id: userId,
       email: email.toLowerCase(),
       role: 'user',
     })
-    profileFixed = true
+    profileCreated = true
+
+    // Create subscription record
+    const { data: newSub } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        stripe_customer_id: stripeCustomer.id,
+        stripe_subscription_id: stripeSub.id,
+        stripe_price_id: stripeSub.items.data[0]?.price.id || null,
+        status: dbStatus,
+        current_period_start: stripePeriodStart || new Date().toISOString(),
+        current_period_end: stripePeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single()
+
+    subscriptionCreated = true
+    dbSub = newSub
+
+    // Reactivate existing sessions or note there are none
+    if (dbStatus === 'active') {
+      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+    }
+  } else {
+    // Record exists - update it
+    userId = dbSub.user_id
+    previousStatus = dbSub.status
+    previousPeriodEnd = dbSub.current_period_end
+
+    await supabase
+      .from('subscriptions')
+      .update({
+        stripe_subscription_id: stripeSub.id,
+        stripe_customer_id: stripeCustomer.id,
+        status: dbStatus,
+        ...(stripePeriodEnd ? { current_period_end: stripePeriodEnd } : {}),
+        ...(stripePeriodStart ? { current_period_start: stripePeriodStart } : {}),
+      })
+      .eq('id', dbSub.id)
+
+    if (dbStatus === 'active') {
+      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+    }
+
+    // Fix missing profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('id', userId)
+      .single()
+
+    if (!profile) {
+      await supabase.from('user_profiles').upsert({
+        id: userId,
+        email: email.toLowerCase(),
+        role: 'user',
+      })
+      profileCreated = true
+    }
   }
 
   // ============================================================
-  // STEP 7: Send renewal confirmation email
+  // STEP 5: Send renewal confirmation email
   // ============================================================
   let emailSent = false
-  const sendTo = profile?.email || email
   if (dbStatus === 'active' && stripePeriodEnd) {
     const result = await sendRenewalConfirmationEmail({
-      to: sendTo,
+      to: email,
       nextBillingDate: stripePeriodEnd,
     })
     emailSent = result.success === true
@@ -188,10 +226,10 @@ export async function GET(request: NextRequest) {
     stripeSubscription: { id: stripeSub.id, status: stripeSub.status },
     before: { status: previousStatus, period_end: previousPeriodEnd },
     after: { status: dbStatus, period_end: stripePeriodEnd },
-    profileInDb: profile ? { id: profile.id, email: profile.email } : null,
-    profileFixed,
+    profileCreated,
+    subscriptionCreated,
     sessionsReactivated: dbStatus === 'active',
-    emailSentTo: sendTo,
+    emailSentTo: email,
     emailSent,
   })
 }
