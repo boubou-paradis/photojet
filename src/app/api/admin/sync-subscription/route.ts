@@ -3,10 +3,8 @@
 //
 // Manual subscription sync endpoint.
 // Syncs a user's subscription from Stripe → Supabase and sends renewal email.
-// Protected by CRON_SECRET.
 //
-// Usage: GET /api/admin/sync-subscription?email=user@example.com
-// Header: Authorization: Bearer <CRON_SECRET>
+// Usage: GET /api/admin/sync-subscription?email=user@example.com&secret=ADMIN_PIN
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -21,7 +19,7 @@ const getSupabaseAdmin = () => {
 }
 
 export async function GET(request: NextRequest) {
-  // Auth check: accept CRON_SECRET (header) or ADMIN_SECRET_PIN (query param)
+  // Auth check
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   const secretParam = request.nextUrl.searchParams.get('secret')
@@ -42,175 +40,158 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
 
-  // 1. Find user - try multiple approaches
-  // Try exact match first
-  let { data: profile } = await supabase
-    .from('user_profiles')
-    .select('id, email')
-    .eq('email', email)
-    .single()
+  // ============================================================
+  // STEP 1: Find the Stripe customer by email
+  // ============================================================
+  const customers = await stripe.customers.list({ email: email.toLowerCase(), limit: 5 })
 
-  // Try case-insensitive match
-  if (!profile) {
-    const { data: profiles } = await supabase
-      .from('user_profiles')
-      .select('id, email')
-      .ilike('email', email)
-    if (profiles && profiles.length > 0) {
-      profile = profiles[0]
-    }
-  }
-
-  // Try via Supabase Auth
-  if (!profile) {
-    const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const authUser = authUsers?.users?.find(u =>
-      u.email?.toLowerCase() === email.toLowerCase()
-    )
-    if (authUser) {
-      // User exists in auth but maybe not in user_profiles
-      // Try finding subscription directly by user_id
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('id, stripe_subscription_id, stripe_customer_id, status, current_period_end, user_id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      return NextResponse.json({
-        debug: true,
-        message: 'User found in auth but NOT in user_profiles table',
-        authUser: { id: authUser.id, email: authUser.email },
-        subscription: sub || 'none',
-        fix: 'Profile row missing - need to check user_profiles table',
-      })
-    }
-
-    // Last resort: list all profiles to find similar emails
-    const { data: allProfiles } = await supabase
-      .from('user_profiles')
-      .select('id, email')
-      .ilike('email', `%${email.split('@')[0]}%`)
-
+  if (customers.data.length === 0) {
     return NextResponse.json({
-      error: `User not found: ${email}`,
-      similarProfiles: allProfiles || [],
-      hint: 'Check if the email is spelled correctly or if the user was deleted',
+      error: `No Stripe customer found for email: ${email}`,
+      hint: 'Check the email in the Stripe dashboard',
     }, { status: 404 })
   }
 
-  // 2. Get subscription from DB
-  const { data: subscription } = await supabase
+  const stripeCustomer = customers.data[0]
+
+  // ============================================================
+  // STEP 2: Find active subscription in Stripe for this customer
+  // ============================================================
+  const stripeSubs = await stripe.subscriptions.list({
+    customer: stripeCustomer.id,
+    limit: 5,
+  })
+
+  // Try active first, then any status
+  let stripeSub = stripeSubs.data.find(s => s.status === 'active')
+    || stripeSubs.data.find(s => s.status === 'trialing')
+    || stripeSubs.data[0]
+
+  if (!stripeSub) {
+    return NextResponse.json({
+      error: 'No subscription found in Stripe',
+      stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
+    }, { status: 404 })
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawSub = stripeSub as any
+  const stripePeriodEnd = rawSub.current_period_end
+    ? new Date(rawSub.current_period_end * 1000).toISOString()
+    : rawSub.items?.data?.[0]?.current_period_end
+      ? new Date(rawSub.items.data[0].current_period_end * 1000).toISOString()
+      : ''
+  const stripePeriodStart = rawSub.current_period_start
+    ? new Date(rawSub.current_period_start * 1000).toISOString()
+    : rawSub.items?.data?.[0]?.current_period_start
+      ? new Date(rawSub.items.data[0].current_period_start * 1000).toISOString()
+      : ''
+
+  // ============================================================
+  // STEP 3: Find subscription in Supabase (by customer_id or subscription_id)
+  // ============================================================
+  let { data: dbSub } = await supabase
     .from('subscriptions')
-    .select('id, stripe_subscription_id, stripe_customer_id, status, current_period_end')
-    .eq('user_id', profile.id)
+    .select('id, user_id, status, current_period_end, stripe_subscription_id, stripe_customer_id')
+    .eq('stripe_customer_id', stripeCustomer.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
 
-  if (!subscription) {
+  if (!dbSub) {
+    const result = await supabase
+      .from('subscriptions')
+      .select('id, user_id, status, current_period_end, stripe_subscription_id, stripe_customer_id')
+      .eq('stripe_subscription_id', stripeSub.id)
+      .single()
+    dbSub = result.data
+  }
+
+  if (!dbSub) {
     return NextResponse.json({
-      error: 'No subscription found for user',
-      user: { id: profile.id, email: profile.email },
+      error: 'No subscription found in Supabase DB',
+      stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
+      stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
+      hint: 'The subscription exists in Stripe but not in the database',
     }, { status: 404 })
   }
 
-  const previousStatus = subscription.status
-  const previousPeriodEnd = subscription.current_period_end
+  const previousStatus = dbSub.status
+  const previousPeriodEnd = dbSub.current_period_end
 
-  // 3. Try to get subscription from Stripe
-  let stripeStatus = 'unknown'
-  let stripePeriodEnd = ''
-  let stripeSubId = subscription.stripe_subscription_id
+  // ============================================================
+  // STEP 4: Check user_profiles
+  // ============================================================
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('id, email')
+    .eq('id', dbSub.user_id)
+    .single()
 
-  // First try by subscription ID
-  if (subscription.stripe_subscription_id) {
-    try {
-      const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
-      stripeStatus = stripeSub.status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rawSub = stripeSub as any
-      stripePeriodEnd = rawSub.current_period_end
-        ? new Date(rawSub.current_period_end * 1000).toISOString()
-        : ''
-      stripeSubId = stripeSub.id
-    } catch {
-      console.log(`[Sync] Subscription ${subscription.stripe_subscription_id} not found in Stripe, trying by customer ID`)
-    }
-  }
-
-  // If not found or deleted, try finding by customer ID
-  if (stripeStatus === 'unknown' && subscription.stripe_customer_id) {
-    try {
-      const subs = await stripe.subscriptions.list({
-        customer: subscription.stripe_customer_id,
-        status: 'active',
-        limit: 1,
-      })
-
-      if (subs.data.length > 0) {
-        const stripeSub = subs.data[0]
-        stripeStatus = stripeSub.status
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawSub = stripeSub as any
-        stripePeriodEnd = rawSub.current_period_end
-          ? new Date(rawSub.current_period_end * 1000).toISOString()
-          : ''
-        stripeSubId = stripeSub.id
-      }
-    } catch (err) {
-      console.error('[Sync] Error listing subscriptions by customer:', err)
-    }
-  }
-
-  if (stripeStatus === 'unknown') {
-    return NextResponse.json({
-      error: 'Could not find active subscription in Stripe',
-      db: { status: previousStatus, period_end: previousPeriodEnd },
-    }, { status: 404 })
-  }
-
-  // 4. Update DB with Stripe data
-  const dbStatus = stripeStatus === 'active' ? 'active'
-    : stripeStatus === 'trialing' ? 'trialing'
-    : stripeStatus === 'past_due' ? 'past_due'
-    : stripeStatus === 'canceled' ? 'canceled'
+  // ============================================================
+  // STEP 5: Update DB with Stripe data
+  // ============================================================
+  const dbStatus = stripeSub.status === 'active' ? 'active'
+    : stripeSub.status === 'trialing' ? 'trialing'
+    : stripeSub.status === 'past_due' ? 'past_due'
+    : stripeSub.status === 'canceled' ? 'canceled'
     : 'expired'
 
   await supabase
     .from('subscriptions')
     .update({
-      stripe_subscription_id: stripeSubId,
+      stripe_subscription_id: stripeSub.id,
+      stripe_customer_id: stripeCustomer.id,
       status: dbStatus,
-      current_period_end: stripePeriodEnd || undefined,
+      ...(stripePeriodEnd ? { current_period_end: stripePeriodEnd } : {}),
+      ...(stripePeriodStart ? { current_period_start: stripePeriodStart } : {}),
     })
-    .eq('id', subscription.id)
+    .eq('id', dbSub.id)
 
-  // 5. Reactivate sessions if now active
+  // Reactivate sessions if active
   if (dbStatus === 'active') {
     await supabase
       .from('sessions')
       .update({ is_active: true })
-      .eq('user_id', profile.id)
+      .eq('user_id', dbSub.user_id)
   }
 
-  // 6. Send renewal confirmation email (always when active, this is a manual sync)
+  // ============================================================
+  // STEP 6: Fix missing profile if needed
+  // ============================================================
+  let profileFixed = false
+  if (!profile) {
+    await supabase.from('user_profiles').upsert({
+      id: dbSub.user_id,
+      email: email.toLowerCase(),
+      role: 'user',
+    })
+    profileFixed = true
+  }
+
+  // ============================================================
+  // STEP 7: Send renewal confirmation email
+  // ============================================================
   let emailSent = false
+  const sendTo = profile?.email || email
   if (dbStatus === 'active' && stripePeriodEnd) {
-    await sendRenewalConfirmationEmail({
-      to: email,
+    const result = await sendRenewalConfirmationEmail({
+      to: sendTo,
       nextBillingDate: stripePeriodEnd,
     })
-    emailSent = true
+    emailSent = result.success === true
   }
 
   return NextResponse.json({
     success: true,
-    user: email,
+    stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
+    stripeSubscription: { id: stripeSub.id, status: stripeSub.status },
     before: { status: previousStatus, period_end: previousPeriodEnd },
-    after: { status: dbStatus, period_end: stripePeriodEnd, stripe_subscription_id: stripeSubId },
+    after: { status: dbStatus, period_end: stripePeriodEnd },
+    profileInDb: profile ? { id: profile.id, email: profile.email } : null,
+    profileFixed,
     sessionsReactivated: dbStatus === 'active',
+    emailSentTo: sendTo,
     emailSent,
   })
 }
