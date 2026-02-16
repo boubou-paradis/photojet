@@ -42,15 +42,62 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
 
-  // 1. Find user
-  const { data: profile } = await supabase
+  // 1. Find user - try multiple approaches
+  // Try exact match first
+  let { data: profile } = await supabase
     .from('user_profiles')
     .select('id, email')
     .eq('email', email)
     .single()
 
+  // Try case-insensitive match
   if (!profile) {
-    return NextResponse.json({ error: `User not found: ${email}` }, { status: 404 })
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, email')
+      .ilike('email', email)
+    if (profiles && profiles.length > 0) {
+      profile = profiles[0]
+    }
+  }
+
+  // Try via Supabase Auth
+  if (!profile) {
+    const { data: authUsers } = await supabase.auth.admin.listUsers()
+    const authUser = authUsers?.users?.find(u =>
+      u.email?.toLowerCase() === email.toLowerCase()
+    )
+    if (authUser) {
+      // User exists in auth but maybe not in user_profiles
+      // Try finding subscription directly by user_id
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id, stripe_subscription_id, stripe_customer_id, status, current_period_end, user_id')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      return NextResponse.json({
+        debug: true,
+        message: 'User found in auth but NOT in user_profiles table',
+        authUser: { id: authUser.id, email: authUser.email },
+        subscription: sub || 'none',
+        fix: 'Profile row missing - need to check user_profiles table',
+      })
+    }
+
+    // Last resort: list all profiles to find similar emails
+    const { data: allProfiles } = await supabase
+      .from('user_profiles')
+      .select('id, email')
+      .ilike('email', `%${email.split('@')[0]}%`)
+
+    return NextResponse.json({
+      error: `User not found: ${email}`,
+      similarProfiles: allProfiles || [],
+      hint: 'Check if the email is spelled correctly or if the user was deleted',
+    }, { status: 404 })
   }
 
   // 2. Get subscription from DB
@@ -63,7 +110,10 @@ export async function GET(request: NextRequest) {
     .single()
 
   if (!subscription) {
-    return NextResponse.json({ error: 'No subscription found for user' }, { status: 404 })
+    return NextResponse.json({
+      error: 'No subscription found for user',
+      user: { id: profile.id, email: profile.email },
+    }, { status: 404 })
   }
 
   const previousStatus = subscription.status
