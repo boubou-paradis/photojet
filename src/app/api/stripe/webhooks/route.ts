@@ -31,6 +31,31 @@ function getDefaultPeriodEnd(): Date {
   return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 }
 
+// Extract current_period_start/end from Stripe subscription object.
+// Handles both old API versions (top-level fields) and new versions (on items.data[0]).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractPeriodDates(subscription: any): { periodStart: number | undefined; periodEnd: number | undefined } {
+  // Try top-level first (older Stripe API versions)
+  let periodStart = typeof subscription.current_period_start === 'number' ? subscription.current_period_start : undefined
+  let periodEnd = typeof subscription.current_period_end === 'number' ? subscription.current_period_end : undefined
+
+  // Fallback: try items.data[0] (newer Stripe API versions 2024-10-28+)
+  if (periodStart === undefined || periodEnd === undefined) {
+    const item = subscription.items?.data?.[0]
+    if (item) {
+      if (periodStart === undefined && typeof item.current_period_start === 'number') {
+        periodStart = item.current_period_start
+      }
+      if (periodEnd === undefined && typeof item.current_period_end === 'number') {
+        periodEnd = item.current_period_end
+      }
+    }
+  }
+
+  console.log(`[Webhook] extractPeriodDates: start=${periodStart}, end=${periodEnd}, source=${periodStart !== undefined ? 'found' : 'missing'}`)
+  return { periodStart, periodEnd }
+}
+
 const getSupabaseAdmin = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -97,7 +122,7 @@ export async function POST(request: NextRequest) {
         break
       }
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription & { current_period_start: number; current_period_end: number }
+        const subscription = event.data.object as Stripe.Subscription
         await handleSubscriptionUpdated(subscription)
         break
       }
@@ -141,11 +166,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Get subscription from Stripe
-  const stripeSubscriptionResponse = await stripe.subscriptions.retrieve(session.subscription as string)
-  const stripeSubscription = stripeSubscriptionResponse as unknown as Stripe.Subscription & {
-    current_period_start: number
-    current_period_end: number
-  }
+  const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription as string)
 
   const password = generatePassword()
   const sessionCode = await generateUniqueSessionCode()
@@ -200,8 +221,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Create subscription record
   const now = new Date()
   const defaultEnd = getDefaultPeriodEnd()
-  const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, now)
-  const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd)
+  const { periodStart: rawStart, periodEnd: rawEnd } = extractPeriodDates(stripeSubscription)
+  const periodStart = safeTimestampToISO(rawStart, now)
+  const periodEnd = safeTimestampToISO(rawEnd, defaultEnd)
   const trialStart = stripeSubscription.trial_start ? safeTimestampToISO(stripeSubscription.trial_start) : null
   const trialEnd = stripeSubscription.trial_end ? safeTimestampToISO(stripeSubscription.trial_end) : null
 
@@ -289,7 +311,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 async function updateExistingUser(
   userId: string,
-  stripeSubscription: Stripe.Subscription & { current_period_start: number; current_period_end: number },
+  stripeSubscription: Stripe.Subscription,
   checkoutSession: Stripe.Checkout.Session,
   sessionCode: string,
   promoCode?: string
@@ -315,8 +337,9 @@ async function updateExistingUser(
 
   const now = new Date()
   const defaultEnd = getDefaultPeriodEnd()
-  const periodStart = safeTimestampToISO(stripeSubscription.current_period_start, now)
-  const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd)
+  const { periodStart: rawStart, periodEnd: rawEnd } = extractPeriodDates(stripeSubscription)
+  const periodStart = safeTimestampToISO(rawStart, now)
+  const periodEnd = safeTimestampToISO(rawEnd, defaultEnd)
 
   const subscriptionData = {
     user_id: userId,
@@ -384,7 +407,7 @@ async function updateExistingUser(
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { current_period_start: number; current_period_end: number }) {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Try to find by stripe_subscription_id first
   let { data } = await getSupabaseAdmin()
     .from('subscriptions')
@@ -415,10 +438,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription & { c
   const previousStatus = data.status
   const now = new Date()
   const defaultEnd = getDefaultPeriodEnd()
-  const periodStart = safeTimestampToISO(subscription.current_period_start, now)
-  const periodEnd = safeTimestampToISO(subscription.current_period_end, defaultEnd)
+  const { periodStart: rawStart, periodEnd: rawEnd } = extractPeriodDates(subscription)
+  const periodStart = safeTimestampToISO(rawStart, now)
+  const periodEnd = safeTimestampToISO(rawEnd, defaultEnd)
   const canceledAt = subscription.canceled_at ? safeTimestampToISO(subscription.canceled_at) : null
   const newStatus = subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
+
+  console.log(`[Webhook] subscription.updated: ${previousStatus} → ${newStatus}, period_end=${periodEnd}, sub_id=${subscription.id}`)
 
   await getSupabaseAdmin()
     .from('subscriptions')
@@ -566,28 +592,32 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   if (!data) return
 
-  // Reactivate subscription if it was inactive
-  if (data.status === 'past_due' || data.status === 'expired' || data.status === 'canceled') {
-    // Get fresh subscription data from Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription & {
-      current_period_start: number
-      current_period_end: number
-    }
+  const previousStatus = data.status
 
-    const now = new Date()
-    const defaultEnd = getDefaultPeriodEnd()
+  // Get fresh subscription data from Stripe
+  const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const { periodStart: rawStart, periodEnd: rawEnd } = extractPeriodDates(stripeSubscription)
 
-    await getSupabaseAdmin()
-      .from('subscriptions')
-      .update({
-        stripe_subscription_id: subscriptionId,
-        status: 'active',
-        current_period_start: safeTimestampToISO(stripeSubscription.current_period_start, now),
-        current_period_end: safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd),
-      })
-      .eq('id', data.id)
+  const now = new Date()
+  const defaultEnd = getDefaultPeriodEnd()
+  const periodStart = safeTimestampToISO(rawStart, now)
+  const periodEnd = safeTimestampToISO(rawEnd, defaultEnd)
 
-    // Reactivate sessions
+  console.log(`[Webhook] payment_succeeded: user=${data.user_id}, db_status=${previousStatus}, stripe_status=${stripeSubscription.status}, period_end=${periodEnd}`)
+
+  // ALWAYS update subscription data when payment succeeds (status + dates)
+  await getSupabaseAdmin()
+    .from('subscriptions')
+    .update({
+      stripe_subscription_id: subscriptionId,
+      status: 'active',
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
+    })
+    .eq('id', data.id)
+
+  // Reactivate sessions + send email only on reactivation (not regular monthly renewals)
+  if (previousStatus === 'past_due' || previousStatus === 'expired' || previousStatus === 'canceled') {
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
 
     // Send renewal confirmation email
@@ -597,7 +627,6 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       .eq('id', data.user_id)
       .single()
 
-    const periodEnd = safeTimestampToISO(stripeSubscription.current_period_end, defaultEnd)
     if (profile?.email) {
       await sendRenewalConfirmationEmail({
         to: profile.email,
@@ -606,6 +635,6 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
     }
 
-    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment (was: ${data.status})`)
+    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment (was: ${previousStatus})`)
   }
 }
