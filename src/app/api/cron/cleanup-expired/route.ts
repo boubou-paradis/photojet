@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendDataDeletionWarningEmail } from '@/lib/resend'
+import { stripe } from '@/lib/stripe'
 
 const GRACE_PERIOD_DAYS = 30
 const WARNING_DAYS = [7, 1] // Send warnings at 7 days and 1 day before deletion
@@ -31,10 +32,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
   const now = new Date()
-  const results = {
-    warningsSent: [] as string[],
-    usersDeleted: [] as string[],
-    errors: [] as string[],
+  const results: {
+    warningsSent: string[]
+    usersDeleted: string[]
+    skippedStillActive?: string[]
+    errors: string[]
+  } = {
+    warningsSent: [],
+    usersDeleted: [],
+    errors: [],
   }
 
   // ============================================================
@@ -54,13 +60,30 @@ export async function GET(request: NextRequest) {
 
     const { data: expiringUsers } = await supabase
       .from('subscriptions')
-      .select('id, user_id, current_period_end')
+      .select('id, user_id, current_period_end, stripe_customer_id, stripe_subscription_id')
       .in('status', ['expired', 'canceled', 'past_due'])
       .gte('current_period_end', targetStart.toISOString())
       .lte('current_period_end', targetEnd.toISOString())
 
     if (expiringUsers) {
       for (const sub of expiringUsers) {
+        // SAFETY CHECK: Don't warn users who have renewed in Stripe
+        const isStillActive = await checkStripeSubscriptionActive(sub.stripe_customer_id, sub.stripe_subscription_id)
+        if (isStillActive.active) {
+          // Silently fix DB and skip warning
+          await supabase
+            .from('subscriptions')
+            .update({
+              status: 'active',
+              ...(isStillActive.periodEnd ? { current_period_end: isStillActive.periodEnd } : {}),
+              ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
+            })
+            .eq('id', sub.id)
+          results.skippedStillActive = results.skippedStillActive || []
+          results.skippedStillActive.push(sub.user_id)
+          continue
+        }
+
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('email')
@@ -86,13 +109,31 @@ export async function GET(request: NextRequest) {
 
   const { data: usersToDelete } = await supabase
     .from('subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, stripe_customer_id, stripe_subscription_id')
     .in('status', ['expired', 'canceled', 'past_due'])
     .lt('current_period_end', deletionThreshold.toISOString())
 
   if (usersToDelete) {
     for (const sub of usersToDelete) {
       try {
+        // SAFETY CHECK: Verify subscription is truly inactive in Stripe before deleting
+        const isStillActive = await checkStripeSubscriptionActive(sub.stripe_customer_id, sub.stripe_subscription_id)
+        if (isStillActive.active) {
+          // User renewed in Stripe but DB was not updated — fix DB instead of deleting
+          console.log(`[Cron cleanup] SKIPPING user ${sub.user_id}: Stripe subscription is still active (${isStillActive.status}, ends ${isStillActive.periodEnd}). Syncing DB instead.`)
+          await supabase
+            .from('subscriptions')
+            .update({
+              status: 'active',
+              ...(isStillActive.periodEnd ? { current_period_end: isStillActive.periodEnd } : {}),
+              ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
+            })
+            .eq('id', sub.id)
+          results.skippedStillActive = results.skippedStillActive || []
+          results.skippedStillActive.push(sub.user_id)
+          continue
+        }
+
         await deleteUserData(supabase, sub.user_id)
         results.usersDeleted.push(sub.user_id)
       } catch (error) {
@@ -236,4 +277,59 @@ async function deleteUserData(
   await supabase.auth.admin.deleteUser(userId)
 
   console.log(`[Cron cleanup] Successfully deleted all data for user ${userId}`)
+}
+
+// Check if a user's Stripe subscription is actually still active
+// This prevents deleting data for users who renewed but whose DB wasn't updated
+async function checkStripeSubscriptionActive(
+  stripeCustomerId: string | null,
+  stripeSubscriptionId: string | null
+): Promise<{ active: boolean; status?: string; periodStart?: string; periodEnd?: string }> {
+  try {
+    // Check by subscription ID first
+    if (stripeSubscriptionId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId) as any
+      if (sub.status === 'active' || sub.status === 'trialing') {
+        const periodEnd = sub.current_period_end
+          ? new Date(sub.current_period_end * 1000).toISOString()
+          : sub.items?.data?.[0]?.current_period_end
+            ? new Date(sub.items.data[0].current_period_end * 1000).toISOString()
+            : undefined
+        const periodStart = sub.current_period_start
+          ? new Date(sub.current_period_start * 1000).toISOString()
+          : sub.items?.data?.[0]?.current_period_start
+            ? new Date(sub.items.data[0].current_period_start * 1000).toISOString()
+            : undefined
+        return { active: true, status: sub.status, periodStart, periodEnd }
+      }
+    }
+
+    // Fallback: check all subscriptions for this customer
+    if (stripeCustomerId) {
+      const subs = await stripe.subscriptions.list({ customer: stripeCustomerId, limit: 5 })
+      const activeSub = subs.data.find(s => s.status === 'active' || s.status === 'trialing')
+      if (activeSub) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = activeSub as any
+        const periodEnd = raw.current_period_end
+          ? new Date(raw.current_period_end * 1000).toISOString()
+          : raw.items?.data?.[0]?.current_period_end
+            ? new Date(raw.items.data[0].current_period_end * 1000).toISOString()
+            : undefined
+        const periodStart = raw.current_period_start
+          ? new Date(raw.current_period_start * 1000).toISOString()
+          : raw.items?.data?.[0]?.current_period_start
+            ? new Date(raw.items.data[0].current_period_start * 1000).toISOString()
+            : undefined
+        return { active: true, status: activeSub.status, periodStart, periodEnd }
+      }
+    }
+  } catch (error) {
+    // If Stripe lookup fails, err on the side of caution: don't delete
+    console.error('[Cron cleanup] Stripe check failed:', error instanceof Error ? error.message : error)
+    return { active: true, status: 'unknown_stripe_error' }
+  }
+
+  return { active: false }
 }
