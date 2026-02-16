@@ -130,24 +130,92 @@ export async function GET(request: NextRequest) {
     )
 
     if (!authUser) {
-      // Auth user was fully deleted - recreate it
+      // Auth user was fully deleted - try multiple methods to recreate
+
+      let newUserId: string | null = null
+
+      // Method 1: admin.createUser
       const tempPassword = `Recover_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
         email: email.toLowerCase(),
         password: tempPassword,
         email_confirm: true,
       })
+      if (created?.user) {
+        newUserId = created.user.id
+      }
 
-      if (createError || !newUser?.user) {
+      // Method 2: inviteUserByEmail (bypasses signup restrictions)
+      if (!newUserId) {
+        const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
+          email.toLowerCase()
+        )
+        if (invited?.user) {
+          newUserId = invited.user.id
+        }
+      }
+
+      // Method 3: Direct GoTrue Admin API call
+      if (!newUserId) {
+        const gotrueRes = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            },
+            body: JSON.stringify({
+              email: email.toLowerCase(),
+              password: tempPassword,
+              email_confirm: true,
+            }),
+          }
+        )
+        const gotrueData = await gotrueRes.json()
+        if (gotrueData?.id) {
+          newUserId = gotrueData.id
+        }
+      }
+
+      // Method 4: Check if user actually exists but was soft-deleted (re-list with broader search)
+      if (!newUserId) {
+        // Try GoTrue list endpoint with broader params
+        const listRes = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users?per_page=50`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            },
+          }
+        )
+        const listData = await listRes.json()
+        const allUsers = listData?.users || listData || []
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const found = Array.isArray(allUsers) ? allUsers.find((u: any) =>
+          u.email?.toLowerCase() === email.toLowerCase()
+        ) : null
+        if (found?.id) {
+          newUserId = found.id
+          // Unban / reactivate if needed
+          await supabase.auth.admin.updateUserById(found.id, {
+            ban_duration: 'none',
+          })
+        }
+      }
+
+      if (!newUserId) {
         return NextResponse.json({
-          error: 'Failed to recreate auth user',
-          detail: createError?.message,
+          error: 'Could not create or find auth user (all methods failed)',
           stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
           stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
+          hint: 'Check Supabase Auth settings: enable email signups, or check if user is soft-deleted in auth.users table via Supabase SQL editor.',
         }, { status: 500 })
       }
 
-      userId = newUser.user.id
+      userId = newUserId
 
       // Send password reset so user can set their own password
       await supabase.auth.admin.generateLink({
