@@ -540,57 +540,55 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id
   if (!subscriptionId) return
 
-  // Skip only the very first invoice of a brand-new checkout (handled by checkout.session.completed)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const billingReason = (invoice as any).billing_reason as string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customerId = typeof (invoice as any).customer === 'string' ? (invoice as any).customer : (invoice as any).customer?.id
+
+  console.log(`[Webhook] payment_succeeded: billing_reason=${billingReason}, subscription=${subscriptionId}, customer=${customerId}`)
+
+  // For brand-new users (first checkout), skip - handled by checkout.session.completed
   if (billingReason === 'subscription_create') {
-    // Check if this is a RE-subscription (existing user) or a brand-new user
-    // For re-subscriptions via portal, we still need to reactivate
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const customerId = typeof (invoice as any).customer === 'string' ? (invoice as any).customer : (invoice as any).customer?.id
-    if (customerId) {
-      const { data: existingSub } = await getSupabaseAdmin()
-        .from('subscriptions')
-        .select('id, status')
-        .eq('stripe_customer_id', customerId)
-        .single()
-      // If no existing record, this is a brand-new user → skip (handled by checkout.session.completed)
-      if (!existingSub || (existingSub.status !== 'past_due' && existingSub.status !== 'expired' && existingSub.status !== 'canceled')) {
-        return
-      }
-      console.log(`[Webhook] payment_succeeded: re-subscription detected for customer ${customerId} (billing_reason: subscription_create)`)
-    } else {
+    // Check if this customer already has a subscription record (re-subscription)
+    if (!customerId) return
+    const { data: existingSub } = await getSupabaseAdmin()
+      .from('subscriptions')
+      .select('id, status')
+      .eq('stripe_customer_id', customerId)
+      .single()
+    if (!existingSub) {
+      console.log(`[Webhook] payment_succeeded: new user, skipping (handled by checkout.session.completed)`)
       return
     }
+    // Existing user re-subscribing → continue to reactivate
+    console.log(`[Webhook] payment_succeeded: re-subscription for existing customer ${customerId} (current db status: ${existingSub.status})`)
   }
 
-  // Try to find by stripe_subscription_id first
+  // Find subscription record: by stripe_subscription_id, then by stripe_customer_id
   let { data } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id, user_id, status')
     .eq('stripe_subscription_id', subscriptionId)
     .single()
 
-  // Fallback: find by stripe_customer_id (handles new subscription after expiration)
-  if (!data) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const customerId = typeof (invoice as any).customer === 'string' ? (invoice as any).customer : (invoice as any).customer?.id
-    if (customerId) {
-      const result = await getSupabaseAdmin()
-        .from('subscriptions')
-        .select('id, user_id, status')
-        .eq('stripe_customer_id', customerId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      data = result.data
-      if (data) {
-        console.log(`[Webhook] payment_succeeded: found by customer_id ${customerId} (new subscription ID: ${subscriptionId})`)
-      }
+  if (!data && customerId) {
+    const result = await getSupabaseAdmin()
+      .from('subscriptions')
+      .select('id, user_id, status')
+      .eq('stripe_customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    data = result.data
+    if (data) {
+      console.log(`[Webhook] payment_succeeded: found by customer_id ${customerId}`)
     }
   }
 
-  if (!data) return
+  if (!data) {
+    console.log(`[Webhook] payment_succeeded: no subscription record found, skipping`)
+    return
+  }
 
   const previousStatus = data.status
 
@@ -605,7 +603,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   console.log(`[Webhook] payment_succeeded: user=${data.user_id}, db_status=${previousStatus}, stripe_status=${stripeSubscription.status}, period_end=${periodEnd}`)
 
-  // ALWAYS update subscription data when payment succeeds (status + dates)
+  // ALWAYS update subscription data when payment succeeds
   await getSupabaseAdmin()
     .from('subscriptions')
     .update({
@@ -616,25 +614,24 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     })
     .eq('id', data.id)
 
-  // Reactivate sessions + send email only on reactivation (not regular monthly renewals)
-  if (previousStatus === 'past_due' || previousStatus === 'expired' || previousStatus === 'canceled') {
-    await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+  // ALWAYS ensure sessions are active when payment succeeds
+  await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
 
-    // Send renewal confirmation email
-    const { data: profile } = await getSupabaseAdmin()
-      .from('user_profiles')
-      .select('email')
-      .eq('id', data.user_id)
-      .single()
+  // Send renewal confirmation email for all non-first payments
+  // (first payment = subscription_create for new user, already handled above with early return)
+  const { data: profile } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('email')
+    .eq('id', data.user_id)
+    .single()
 
-    if (profile?.email) {
-      await sendRenewalConfirmationEmail({
-        to: profile.email,
-        nextBillingDate: periodEnd,
-      })
-      console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
-    }
-
-    console.log(`[Webhook] Subscription reactivated for user ${data.user_id} after successful payment (was: ${previousStatus})`)
+  if (profile?.email) {
+    await sendRenewalConfirmationEmail({
+      to: profile.email,
+      nextBillingDate: periodEnd,
+    })
+    console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
   }
+
+  console.log(`[Webhook] payment_succeeded done: user=${data.user_id}, ${previousStatus} → active, period_end=${periodEnd}`)
 }

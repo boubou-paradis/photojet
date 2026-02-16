@@ -139,9 +139,9 @@ export async function GET(request: NextRequest) {
       .eq('user_id', profile.id)
   }
 
-  // 6. Send renewal confirmation email if reactivated
+  // 6. Send renewal confirmation email (always when active, this is a manual sync)
   let emailSent = false
-  if (dbStatus === 'active' && previousStatus !== 'active' && stripePeriodEnd) {
+  if (dbStatus === 'active' && stripePeriodEnd) {
     await sendRenewalConfirmationEmail({
       to: email,
       nextBillingDate: stripePeriodEnd,
