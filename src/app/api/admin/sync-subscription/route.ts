@@ -130,98 +130,154 @@ export async function GET(request: NextRequest) {
     )
 
     if (!authUser) {
-      // Auth user was fully deleted - try multiple methods to recreate
+      // Auth user not found via listUsers - could be soft-deleted or fully gone
+      // Collect diagnostics for each method attempted
+      const diagnostics: Record<string, string> = {}
 
       let newUserId: string | null = null
-
-      // Method 1: admin.createUser
       const tempPassword = `Recover_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-        email: email.toLowerCase(),
-        password: tempPassword,
-        email_confirm: true,
-      })
-      if (created?.user) {
-        newUserId = created.user.id
+
+      // Method 1: Direct GoTrue GET to find soft-deleted users
+      try {
+        let page = 1
+        let foundSoftDeleted = false
+        while (page <= 10 && !foundSoftDeleted) {
+          const listRes = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users?page=${page}&per_page=100`,
+            {
+              headers: {
+                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              },
+            }
+          )
+          const listData = await listRes.json()
+          const users = listData?.users || []
+          if (users.length === 0) break
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const found = users.find((u: any) =>
+            u.email?.toLowerCase() === email.toLowerCase()
+          )
+          if (found?.id) {
+            diagnostics['method1_gotrue_list'] = `Found user ${found.id} on page ${page}, deleted_at=${found.deleted_at}, banned_until=${found.banned_until}`
+            // User exists! Try to reactivate
+            const { error: updateErr } = await supabase.auth.admin.updateUserById(found.id, {
+              ban_duration: 'none',
+              email_confirm: true,
+            })
+            if (updateErr) {
+              diagnostics['method1_reactivate'] = `Failed: ${updateErr.message}`
+            } else {
+              newUserId = found.id
+              diagnostics['method1_reactivate'] = 'Success'
+            }
+            foundSoftDeleted = true
+          }
+          page++
+        }
+        if (!foundSoftDeleted) {
+          diagnostics['method1_gotrue_list'] = `Not found in ${page - 1} pages`
+        }
+      } catch (e) {
+        diagnostics['method1_gotrue_list'] = `Error: ${e instanceof Error ? e.message : String(e)}`
       }
 
-      // Method 2: inviteUserByEmail (bypasses signup restrictions)
+      // Method 2: admin.createUser
+      if (!newUserId) {
+        const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+          email: email.toLowerCase(),
+          password: tempPassword,
+          email_confirm: true,
+        })
+        if (created?.user) {
+          newUserId = created.user.id
+          diagnostics['method2_createUser'] = `Success: ${created.user.id}`
+        } else {
+          diagnostics['method2_createUser'] = `Failed: ${createErr?.message || 'no user returned'}`
+        }
+      }
+
+      // Method 3: inviteUserByEmail
       if (!newUserId) {
         const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
           email.toLowerCase()
         )
         if (invited?.user) {
           newUserId = invited.user.id
+          diagnostics['method3_invite'] = `Success: ${invited.user.id}`
+        } else {
+          diagnostics['method3_invite'] = `Failed: ${inviteErr?.message || 'no user returned'}`
         }
       }
 
-      // Method 3: Direct GoTrue Admin API call
+      // Method 4: Direct GoTrue POST (create user via REST)
       if (!newUserId) {
-        const gotrueRes = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            },
-            body: JSON.stringify({
-              email: email.toLowerCase(),
-              password: tempPassword,
-              email_confirm: true,
-            }),
+        try {
+          const gotrueRes = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              },
+              body: JSON.stringify({
+                email: email.toLowerCase(),
+                password: tempPassword,
+                email_confirm: true,
+              }),
+            }
+          )
+          const gotrueData = await gotrueRes.json()
+          if (gotrueData?.id) {
+            newUserId = gotrueData.id
+            diagnostics['method4_gotrue_post'] = `Success: ${gotrueData.id}`
+          } else {
+            diagnostics['method4_gotrue_post'] = `Failed: ${JSON.stringify(gotrueData).slice(0, 200)}`
           }
-        )
-        const gotrueData = await gotrueRes.json()
-        if (gotrueData?.id) {
-          newUserId = gotrueData.id
+        } catch (e) {
+          diagnostics['method4_gotrue_post'] = `Error: ${e instanceof Error ? e.message : String(e)}`
         }
       }
 
-      // Method 4: Check if user actually exists but was soft-deleted (re-list with broader search)
+      // Method 5: If all create methods fail, try signUp (client-side method)
       if (!newUserId) {
-        // Try GoTrue list endpoint with broader params
-        const listRes = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users?per_page=50`,
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            },
-          }
-        )
-        const listData = await listRes.json()
-        const allUsers = listData?.users || listData || []
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const found = Array.isArray(allUsers) ? allUsers.find((u: any) =>
-          u.email?.toLowerCase() === email.toLowerCase()
-        ) : null
-        if (found?.id) {
-          newUserId = found.id
-          // Unban / reactivate if needed
-          await supabase.auth.admin.updateUserById(found.id, {
-            ban_duration: 'none',
+        const { data: signedUp, error: signupErr } = await supabase.auth.signUp({
+          email: email.toLowerCase(),
+          password: tempPassword,
+        })
+        if (signedUp?.user) {
+          newUserId = signedUp.user.id
+          diagnostics['method5_signup'] = `Success: ${signedUp.user.id}`
+          // Confirm email via admin
+          await supabase.auth.admin.updateUserById(signedUp.user.id, {
+            email_confirm: true,
           })
+        } else {
+          diagnostics['method5_signup'] = `Failed: ${signupErr?.message || 'no user returned'}`
         }
       }
 
       if (!newUserId) {
         return NextResponse.json({
           error: 'Could not create or find auth user (all methods failed)',
+          diagnostics,
           stripeCustomer: { id: stripeCustomer.id, email: stripeCustomer.email },
           stripeSubscription: { id: stripeSub.id, status: stripeSub.status, period_end: stripePeriodEnd },
-          hint: 'Check Supabase Auth settings: enable email signups, or check if user is soft-deleted in auth.users table via Supabase SQL editor.',
+          hint: 'Go to Supabase Dashboard → Authentication → Users, search for the email, and add the user manually. Then re-run this endpoint.',
         }, { status: 500 })
       }
 
       userId = newUserId
 
       // Send password reset so user can set their own password
-      await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email: email.toLowerCase(),
-      })
+      try {
+        await supabase.auth.admin.generateLink({
+          type: 'recovery',
+          email: email.toLowerCase(),
+        })
+      } catch { /* best effort */ }
     } else {
       userId = authUser.id
     }
