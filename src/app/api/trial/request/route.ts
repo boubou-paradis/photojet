@@ -114,19 +114,6 @@ export async function POST(request: NextRequest) {
                       'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Verify admin access works before creating user
-    const { data: adminCheck, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 })
-    if (adminCheckError) {
-      console.error('[Trial Request] Admin check failed:', adminCheckError.message)
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-      const isSameAsAnon = key === anonKey
-      return NextResponse.json(
-        { error: `Erreur de configuration serveur (admin=${!!adminCheck}, sameKey=${isSameAsAnon}, keyLen=${key.length}, err=${adminCheckError.message})` },
-        { status: 500 }
-      )
-    }
-
     // Create user in Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
@@ -147,7 +134,7 @@ export async function POST(request: NextRequest) {
         )
       }
       return NextResponse.json(
-        { error: `Erreur lors de la création du compte: ${authError.message || 'Unknown error'}` },
+        { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
         { status: 500 }
       )
     }
@@ -218,9 +205,8 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Trial Request] Error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: `Une erreur est survenue: ${message}` },
+      { error: 'Une erreur est survenue. Veuillez réessayer.' },
       { status: 500 }
     )
   }
