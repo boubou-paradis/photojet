@@ -114,7 +114,20 @@ export async function POST(request: NextRequest) {
                       'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Create user in Supabase Auth (handles duplicate check automatically)
+    // Verify admin access works before creating user
+    const { data: adminCheck, error: adminCheckError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 })
+    if (adminCheckError) {
+      console.error('[Trial Request] Admin check failed:', adminCheckError.message)
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      const isSameAsAnon = key === anonKey
+      return NextResponse.json(
+        { error: `Erreur de configuration serveur (admin=${!!adminCheck}, sameKey=${isSameAsAnon}, keyLen=${key.length}, err=${adminCheckError.message})` },
+        { status: 500 }
+      )
+    }
+
+    // Create user in Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
