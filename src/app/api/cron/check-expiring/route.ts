@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendExpiringEmail, sendExpiredEmail } from '@/lib/resend'
+import { sendExpiringEmail, sendExpiredEmail, sendTrialExpiredEmail } from '@/lib/resend'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -166,6 +166,8 @@ export async function GET(request: NextRequest) {
     .eq('status', 'trialing')
     .lt('trial_end', now.toISOString())
 
+  const trialExpiredUsers: string[] = []
+
   if (staleTrialing && staleTrialing.length > 0) {
     for (const sub of staleTrialing) {
       await supabase
@@ -177,15 +179,28 @@ export async function GET(request: NextRequest) {
         .from('sessions')
         .update({ is_active: false })
         .eq('user_id', sub.user_id)
+
+      // Send trial expired email
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('id', sub.user_id)
+        .single()
+
+      if (profile?.email) {
+        await sendTrialExpiredEmail({ to: profile.email })
+        trialExpiredUsers.push(profile.email)
+      }
     }
   }
 
-  console.log(`[Cron] check-expiring: ${emailsSent.length} reminder emails, ${expiredUsers.length} auto-expired`, { emailsSent, expiredUsers })
+  console.log(`[Cron] check-expiring: ${emailsSent.length} reminder emails, ${expiredUsers.length} auto-expired, ${trialExpiredUsers.length} trial-expired`, { emailsSent, expiredUsers, trialExpiredUsers })
 
   return NextResponse.json({
     success: true,
     emailsSent: emailsSent.length,
     autoExpired: expiredUsers.length,
-    details: { reminders: emailsSent, expired: expiredUsers },
+    trialExpired: trialExpiredUsers.length,
+    details: { reminders: emailsSent, expired: expiredUsers, trialExpired: trialExpiredUsers },
   })
 }

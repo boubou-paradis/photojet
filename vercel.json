@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/check-expiring",
-      "schedule": "0 9 * * *"
+      "schedule": "0 */4 * * *"
     },
     {
       "path": "/api/cron/cleanup-expired",

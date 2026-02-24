@@ -3,6 +3,17 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
+
+// isWeekend inline (middleware = Edge runtime, ne peut pas importer trial.ts qui utilise crypto)
+function isWeekend(): boolean {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    timeZone: 'Europe/Paris',
+  })
+  const dayName = formatter.format(new Date())
+  return dayName === 'Fri' || dayName === 'Sat' || dayName === 'Sun'
+}
 
 // Routes that require an active subscription
 const PROTECTED_ROUTES = ['/admin']
@@ -107,12 +118,39 @@ export async function middleware(request: NextRequest) {
   const trialExpires = request.cookies.get('trial_expires_at')?.value
 
   if (!user && trialToken && trialExpires) {
+    // Check expiration
     if (new Date() > new Date(trialExpires)) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       url.searchParams.set('access', 'expired')
       return NextResponse.redirect(url)
     }
+
+    // Weekend block for trial cookies
+    if (isWeekend()) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/trial/blocked-weekend'
+      return NextResponse.redirect(url)
+    }
+
+    // Validate trial token against DB to prevent cookie manipulation
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: dbToken } = await supabaseAdmin
+      .from('trial_tokens')
+      .select('id, expires_at')
+      .eq('token', trialToken)
+      .single()
+
+    if (!dbToken || new Date() > new Date(dbToken.expires_at)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      url.searchParams.set('access', 'expired')
+      return NextResponse.redirect(url)
+    }
+
     return response
   }
 
@@ -161,6 +199,13 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.searchParams.set('access', 'expired')
+    return NextResponse.redirect(url)
+  }
+
+  // Weekend block for trialing subscriptions
+  if (subscription.status === 'trialing' && isWeekend()) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/trial/blocked-weekend'
     return NextResponse.redirect(url)
   }
 
