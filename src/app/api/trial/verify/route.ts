@@ -94,12 +94,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (authError) {
-      // Check if user already exists
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-      const existingUser = existingUsers?.users?.find(u => u.email === email)
-
-      if (existingUser) {
-        // User already exists - mark token as used and redirect to login
+      console.error('[Trial Verify] Auth error:', authError.message, authError)
+      // User already exists in Auth
+      if (authError.message?.includes('already') || authError.message?.includes('exists') || authError.message?.includes('duplicate') || authError.status === 422) {
+        // Mark token as used and redirect to login
         await supabaseAdmin
           .from('trial_tokens')
           .update({ used_at: new Date().toISOString() })
@@ -108,7 +106,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${APP_URL}/login?message=account_exists`)
       }
 
-      console.error('[Trial Verify] Auth error:', authError)
       return NextResponse.redirect(`${APP_URL}/trial/error`)
     }
 

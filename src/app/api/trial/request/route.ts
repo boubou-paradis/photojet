@@ -93,20 +93,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(u => u.email === normalizedEmail)
-
-    if (existingUser) {
-      return NextResponse.json(
-        {
-          error: 'Un compte existe déjà avec cet email. Connectez-vous sur la page de connexion.',
-          alreadyUsed: true
-        },
-        { status: 400 }
-      )
-    }
-
     // Generate credentials
     const password = generatePassword()
     const sessionCode = await generateUniqueSessionCode()
@@ -122,7 +108,7 @@ export async function POST(request: NextRequest) {
                       'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth (handles duplicate check automatically)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
@@ -130,9 +116,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
-      console.error('[Trial Request] Auth error:', authError)
+      console.error('[Trial Request] Auth error:', authError.message, authError)
+      // User already exists in Auth (listUsers pagination could miss them)
+      if (authError.message?.includes('already') || authError.message?.includes('exists') || authError.message?.includes('duplicate') || authError.status === 422) {
+        return NextResponse.json(
+          {
+            error: 'Un compte existe déjà avec cet email. Connectez-vous sur la page de connexion.',
+            alreadyUsed: true
+          },
+          { status: 400 }
+        )
+      }
       return NextResponse.json(
-        { error: 'Erreur lors de la création du compte' },
+        { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
         { status: 500 }
       )
     }
