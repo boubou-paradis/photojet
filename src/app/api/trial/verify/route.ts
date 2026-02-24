@@ -9,10 +9,16 @@ import { sendTrialWelcomeEmail } from '@/lib/resend'
 
 // Admin client for database operations
 const getSupabaseAdmin = () => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not configured')
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  if (key === 'your_service_role_key_here' || key.length < 50) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY appears to be invalid (placeholder or too short)')
+  }
+
+  return createClient(url, key)
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'

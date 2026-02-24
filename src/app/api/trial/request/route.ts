@@ -10,10 +10,16 @@ import crypto from 'crypto'
 
 // Admin client for database operations
 const getSupabaseAdmin = () => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not configured')
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  if (key === 'your_service_role_key_here' || key.length < 50) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY appears to be invalid (placeholder or too short)')
+  }
+
+  return createClient(url, key)
 }
 
 // Generate unique session code
@@ -116,8 +122,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
-      console.error('[Trial Request] Auth error:', authError.message, authError)
-      // User already exists in Auth (listUsers pagination could miss them)
+      console.error('[Trial Request] Auth error:', authError.message, JSON.stringify(authError))
+      // User already exists in Auth
       if (authError.message?.includes('already') || authError.message?.includes('exists') || authError.message?.includes('duplicate') || authError.status === 422) {
         return NextResponse.json(
           {
@@ -128,7 +134,7 @@ export async function POST(request: NextRequest) {
         )
       }
       return NextResponse.json(
-        { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
+        { error: `Erreur lors de la création du compte: ${authError.message || 'Unknown error'}` },
         { status: 500 }
       )
     }
@@ -199,8 +205,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Trial Request] Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Une erreur est survenue' },
+      { error: `Une erreur est survenue: ${message}` },
       { status: 500 }
     )
   }
