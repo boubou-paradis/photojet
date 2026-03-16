@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
 
   // Create Supabase client for middleware
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request,
   })
 
   const supabase = createServerClient(
@@ -100,7 +100,7 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
-            request: { headers: request.headers },
+            request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
