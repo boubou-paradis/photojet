@@ -108,8 +108,8 @@ export default function HeroV5({
             <div className="card-float rounded-2xl p-6 border-[#2A2A2E] max-w-[420px] lg:ml-auto">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Essai gratuit 24h</h3>
-                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès complet par email (lun → jeu)</p>
+                  <h3 className="text-lg font-semibold text-white">Essai gratuit 7 jours</h3>
+                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès complet par email, week-end inclus</p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400 uppercase">
                   Gratuit

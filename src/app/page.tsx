@@ -99,7 +99,7 @@ const jsonLd = {
           name: "Puis-je essayer AnimaJet gratuitement ?",
           acceptedAnswer: {
             '@type': 'Answer',
-            text: "Oui, AnimaJet propose un essai gratuit de 24h avec accès à toutes les fonctionnalités, disponible du lundi au jeudi. Sans carte bancaire.",
+            text: "Oui, AnimaJet propose un essai gratuit de 7 jours avec accès à toutes les fonctionnalités, week-end inclus. Sans carte bancaire.",
           },
         },
         {
@@ -398,7 +398,7 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Essai gratuit 24h disponible • Abonnement mensuel résiliable
+                Essai gratuit 7 jours disponible • Abonnement mensuel résiliable
               </p>
             </motion.div>
 
@@ -421,7 +421,7 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border-2 border-emerald-500/30">
                     <Gift className="h-8 w-8 text-emerald-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 24h</h3>
+                  <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 7 jours</h3>
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-bold text-emerald-500">0€</span>
                     <span className="text-gray-500">pour tester</span>

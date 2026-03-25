@@ -61,11 +61,11 @@ export function generateTrialToken(): string {
 }
 
 /**
- * Calcule la date d'expiration (24h après création)
+ * Calcule la date d'expiration (7 jours après création)
  */
 export function calculateExpirationDate(): Date {
   const expires = new Date()
-  expires.setHours(expires.getHours() + 24)
+  expires.setDate(expires.getDate() + 7)
   return expires
 }
 
@@ -118,20 +118,9 @@ export function checkTrialAccess(token: TrialToken | null): TrialAccessResult {
     return {
       canAccess: false,
       status: 'expired',
-      message: 'Votre essai gratuit de 24h a expiré. Abonnez-vous pour continuer !',
+      message: 'Votre essai gratuit de 7 jours a expiré. Abonnez-vous pour continuer !',
       token,
       timeRemaining: 0
-    }
-  }
-
-  // C'est le week-end
-  if (isWeekend()) {
-    return {
-      canAccess: false,
-      status: 'weekend_blocked',
-      message: "L'essai gratuit n'est pas disponible le week-end. Abonnez-vous pour animer vos événements !",
-      token,
-      timeRemaining: getTimeRemaining(token.expires_at)
     }
   }
 
@@ -203,19 +192,7 @@ export function checkAccess(
       return {
         canAccess: false,
         status: 'trial_expired',
-        message: 'Votre essai gratuit de 24h a expiré. Abonnez-vous pour continuer !',
-        isTrialUser: true
-      }
-    }
-
-    // Vérifier si c'est le weekend
-    if (isWeekend()) {
-      const timeRemaining = trialEnd ? trialEnd.getTime() - now.getTime() : 0
-      return {
-        canAccess: false,
-        status: 'weekend_blocked',
-        message: "L'essai gratuit n'est pas disponible le week-end. Abonnez-vous pour animer vos événements !",
-        trialTimeRemaining: Math.max(0, timeRemaining),
+        message: 'Votre essai gratuit de 7 jours a expiré. Abonnez-vous pour continuer !',
         isTrialUser: true
       }
     }
@@ -284,7 +261,7 @@ export function checkAccess(
 export function getTrialEmailTemplate(token: string, appUrl: string): { subject: string; html: string } {
   const verifyUrl = `${appUrl}/api/trial/verify?token=${token}`
 
-  const subject = "🎁 Votre accès AnimaJet 24h est prêt !"
+  const subject = "🎁 Votre accès AnimaJet 7 jours est prêt !"
 
   const html = `
 <!DOCTYPE html>
@@ -353,10 +330,10 @@ export function getTrialEmailTemplate(token: string, appUrl: string): { subject:
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px; font-size: 14px; color: #D4AF37; font-weight: bold;">
-                      ⏰ Ce lien est valide 24h
+                      ⏰ Votre essai est valide 7 jours
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
-                      L'essai gratuit est disponible du lundi au jeudi uniquement.
+                      Testez AnimaJet sur vos événements, week-end inclus.
                     </p>
                   </td>
                 </tr>
@@ -371,7 +348,7 @@ export function getTrialEmailTemplate(token: string, appUrl: string): { subject:
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px; font-size: 14px; color: #ffffff; font-weight: bold;">
-                      Pour utiliser AnimaJet le week-end sur vos événements :
+                      Après l'essai, continuez avec un abonnement :
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
                       Abonnement <strong style="color: #D4AF37;">29,90€/mois</strong> sans engagement

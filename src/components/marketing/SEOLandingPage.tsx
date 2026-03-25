@@ -336,7 +336,7 @@ export default function SEOLandingPage({
                     <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border-2 border-emerald-500/30">
                       <Gift className="h-8 w-8 text-emerald-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 24h</h3>
+                    <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 7 jours</h3>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold text-emerald-500">0€</span>
                       <span className="text-gray-500">pour tester</span>

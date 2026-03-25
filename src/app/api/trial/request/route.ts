@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendTrialWelcomeEmail } from '@/lib/resend'
 import { generatePassword, generateSessionCode } from '@/lib/stripe'
-import { isWeekend } from '@/lib/trial'
 import crypto from 'crypto'
 
 // Admin client for database operations
@@ -70,14 +69,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if it's the weekend
-    if (isWeekend()) {
-      return NextResponse.json(
-        { error: 'L\'essai gratuit n\'est disponible que du lundi au jeudi. Revenez en semaine ou abonnez-vous pour accéder le week-end !' },
-        { status: 400 }
-      )
-    }
-
     const supabaseAdmin = getSupabaseAdmin()
     const normalizedEmail = email.toLowerCase()
 
@@ -92,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (existingTrial) {
       return NextResponse.json(
         {
-          error: 'Vous avez déjà bénéficié de votre essai gratuit 24h.',
+          error: 'Vous avez déjà bénéficié de votre essai gratuit 7 jours.',
           alreadyUsed: true
         },
         { status: 400 }
@@ -104,9 +95,9 @@ export async function POST(request: NextRequest) {
     const sessionCode = await generateUniqueSessionCode()
     const token = crypto.randomBytes(32).toString('hex')
 
-    // Calculate expiration (24 hours from now)
+    // Calculate expiration (7 days from now)
     const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
+    expiresAt.setDate(expiresAt.getDate() + 7)
 
     // Get IP and user agent for tracking
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] ||
