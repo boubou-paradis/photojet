@@ -458,25 +458,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     })
     .eq('id', data.id)
 
-  // Reactivate sessions and send confirmation email when subscription becomes active again
+  // Reactivate sessions when subscription becomes active again
+  // (renewal email is sent by handlePaymentSucceeded to avoid duplicates)
   if (newStatus === 'active' && previousStatus !== 'active') {
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
     console.log(`[Webhook] subscription.updated: reactivated sessions for user ${data.user_id} (${previousStatus} → active)`)
-
-    // Send renewal confirmation email
-    const { data: profile } = await getSupabaseAdmin()
-      .from('user_profiles')
-      .select('email')
-      .eq('id', data.user_id)
-      .single()
-
-    if (profile?.email) {
-      await sendRenewalConfirmationEmail({
-        to: profile.email,
-        nextBillingDate: periodEnd,
-      })
-      console.log(`[Webhook] Renewal confirmation email sent to ${profile.email}`)
-    }
   }
 }
 

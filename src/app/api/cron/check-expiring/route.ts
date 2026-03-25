@@ -89,34 +89,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Check for subscriptions expiring today
-  const todayStart = new Date(now)
-  todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date(now)
-  todayEnd.setHours(23, 59, 59, 999)
-
-  const { data: expiringToday } = await supabase
-    .from('subscriptions')
-    .select('id, user_id, current_period_end')
-    .eq('status', 'active')
-    .eq('cancel_at_period_end', true)
-    .gte('current_period_end', todayStart.toISOString())
-    .lte('current_period_end', todayEnd.toISOString())
-
-  if (expiringToday) {
-    for (const sub of expiringToday) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('email')
-        .eq('id', sub.user_id)
-        .single()
-
-      if (profile?.email) {
-        await sendExpiringEmail({ to: profile.email, daysLeft: 0 })
-        emailsSent.push(`0d: ${profile.email}`)
-      }
-    }
-  }
+  // NOTE: No "expiring today" email — the webhook customer.subscription.deleted
+  // sends the expired email on the same day, avoiding duplicates.
 
   // ============================================================
   // AUTO-EXPIRE: Set status to 'expired' for subscriptions
