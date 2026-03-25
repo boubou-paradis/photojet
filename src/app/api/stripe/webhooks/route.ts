@@ -497,26 +497,30 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   const { data } = await getSupabaseAdmin()
     .from('subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, status')
     .eq('stripe_subscription_id', subscriptionId)
     .single()
 
   if (!data) return
+
+  const alreadyPastDue = data.status === 'past_due'
 
   await getSupabaseAdmin().from('subscriptions').update({ status: 'past_due' }).eq('id', data.id)
 
   // Deactivate sessions when payment fails
   await getSupabaseAdmin().from('sessions').update({ is_active: false }).eq('user_id', data.user_id)
 
-  // Send payment failed email
-  const { data: profile } = await getSupabaseAdmin()
-    .from('user_profiles')
-    .select('email')
-    .eq('id', data.user_id)
-    .single()
+  // Send payment failed email only on first failure (not on Stripe retries)
+  if (!alreadyPastDue) {
+    const { data: profile } = await getSupabaseAdmin()
+      .from('user_profiles')
+      .select('email')
+      .eq('id', data.user_id)
+      .single()
 
-  if (profile?.email) {
-    await sendPaymentFailedEmail({ to: profile.email })
+    if (profile?.email) {
+      await sendPaymentFailedEmail({ to: profile.email })
+    }
   }
 }
 
