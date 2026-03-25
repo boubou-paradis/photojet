@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendExpiringEmail, sendExpiredEmail, sendTrialExpiredEmail } from '@/lib/resend'
+import { sendExpiredEmail, sendTrialExpiredEmail } from '@/lib/resend'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -25,73 +25,6 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
   const now = new Date()
-  const emailsSent: string[] = []
-
-  // Check for subscriptions expiring in 7 days
-  const in7Days = new Date(now)
-  in7Days.setDate(in7Days.getDate() + 7)
-  const in7DaysStart = new Date(in7Days)
-  in7DaysStart.setHours(0, 0, 0, 0)
-  const in7DaysEnd = new Date(in7Days)
-  in7DaysEnd.setHours(23, 59, 59, 999)
-
-  const { data: expiring7Days } = await supabase
-    .from('subscriptions')
-    .select('id, user_id, current_period_end')
-    .eq('status', 'active')
-    .eq('cancel_at_period_end', true)
-    .gte('current_period_end', in7DaysStart.toISOString())
-    .lte('current_period_end', in7DaysEnd.toISOString())
-
-  if (expiring7Days) {
-    for (const sub of expiring7Days) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('email')
-        .eq('id', sub.user_id)
-        .single()
-
-      if (profile?.email) {
-        await sendExpiringEmail({ to: profile.email, daysLeft: 7 })
-        emailsSent.push(`7d: ${profile.email}`)
-      }
-    }
-  }
-
-  // Check for subscriptions expiring in 3 days
-  const in3Days = new Date(now)
-  in3Days.setDate(in3Days.getDate() + 3)
-  const in3DaysStart = new Date(in3Days)
-  in3DaysStart.setHours(0, 0, 0, 0)
-  const in3DaysEnd = new Date(in3Days)
-  in3DaysEnd.setHours(23, 59, 59, 999)
-
-  const { data: expiring3Days } = await supabase
-    .from('subscriptions')
-    .select('id, user_id, current_period_end')
-    .eq('status', 'active')
-    .eq('cancel_at_period_end', true)
-    .gte('current_period_end', in3DaysStart.toISOString())
-    .lte('current_period_end', in3DaysEnd.toISOString())
-
-  if (expiring3Days) {
-    for (const sub of expiring3Days) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('email')
-        .eq('id', sub.user_id)
-        .single()
-
-      if (profile?.email) {
-        await sendExpiringEmail({ to: profile.email, daysLeft: 3 })
-        emailsSent.push(`3d: ${profile.email}`)
-      }
-    }
-  }
-
-  // NOTE: No "expiring today" email — the webhook customer.subscription.deleted
-  // sends the expired email on the same day, avoiding duplicates.
-
   // ============================================================
   // AUTO-EXPIRE: Set status to 'expired' for subscriptions
   // where current_period_end has passed but status is still 'active'
@@ -168,13 +101,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[Cron] check-expiring: ${emailsSent.length} reminder emails, ${expiredUsers.length} auto-expired, ${trialExpiredUsers.length} trial-expired`, { emailsSent, expiredUsers, trialExpiredUsers })
+  console.log(`[Cron] check-expiring: ${expiredUsers.length} auto-expired, ${trialExpiredUsers.length} trial-expired`, { expiredUsers, trialExpiredUsers })
 
   return NextResponse.json({
     success: true,
-    emailsSent: emailsSent.length,
     autoExpired: expiredUsers.length,
     trialExpired: trialExpiredUsers.length,
-    details: { reminders: emailsSent, expired: expiredUsers, trialExpired: trialExpiredUsers },
+    details: { expired: expiredUsers, trialExpired: trialExpiredUsers },
   })
 }
