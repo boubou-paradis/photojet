@@ -442,9 +442,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const periodStart = safeTimestampToISO(rawStart, now)
   const periodEnd = safeTimestampToISO(rawEnd, defaultEnd)
   const canceledAt = subscription.canceled_at ? safeTimestampToISO(subscription.canceled_at) : null
-  const newStatus = subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
+  const rawNewStatus = subscription.status as 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
 
-  console.log(`[Webhook] subscription.updated: ${previousStatus} → ${newStatus}, period_end=${periodEnd}, sub_id=${subscription.id}`)
+  // Prevent resetting a subscription to 'active' if its period has already ended.
+  // This avoids a daily loop: cron expires it → webhook reactivates it → cron expires it again.
+  const periodEndDate = new Date(periodEnd)
+  const newStatus = (rawNewStatus === 'active' && periodEndDate < now) ? 'expired' : rawNewStatus
+
+  console.log(`[Webhook] subscription.updated: ${previousStatus} → ${newStatus}${rawNewStatus !== newStatus ? ` (Stripe said '${rawNewStatus}' but period_end=${periodEnd} is in the past)` : ''}, period_end=${periodEnd}, sub_id=${subscription.id}`)
 
   await getSupabaseAdmin()
     .from('subscriptions')
