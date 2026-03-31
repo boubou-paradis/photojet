@@ -7,7 +7,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 export const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'
-const FROM_EMAIL = 'AnimaJet <noreply@animajet.fr>'
+const FROM_EMAIL = 'AnimaJet <contact@animajet.fr>'
 
 export async function sendWelcomeEmail(params: {
   to: string
