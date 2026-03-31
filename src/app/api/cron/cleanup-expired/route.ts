@@ -70,17 +70,20 @@ export async function GET(request: NextRequest) {
         // SAFETY CHECK: Don't warn users who have renewed in Stripe
         const isStillActive = await checkStripeSubscriptionActive(sub.stripe_customer_id, sub.stripe_subscription_id)
         if (isStillActive.active) {
-          // Silently fix DB and skip warning
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              ...(isStillActive.periodEnd ? { current_period_end: isStillActive.periodEnd } : {}),
-              ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
-            })
-            .eq('id', sub.id)
-          results.skippedStillActive = results.skippedStillActive || []
-          results.skippedStillActive.push(sub.user_id)
+          // Only reset to active if Stripe confirms a FUTURE period end
+          // (avoids resetting on API errors or missing periodEnd which causes daily email loops)
+          if (isStillActive.periodEnd && new Date(isStillActive.periodEnd) > now) {
+            await supabase
+              .from('subscriptions')
+              .update({
+                status: 'active',
+                current_period_end: isStillActive.periodEnd,
+                ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
+              })
+              .eq('id', sub.id)
+            results.skippedStillActive = results.skippedStillActive || []
+            results.skippedStillActive.push(sub.user_id)
+          }
           continue
         }
 
@@ -119,18 +122,24 @@ export async function GET(request: NextRequest) {
         // SAFETY CHECK: Verify subscription is truly inactive in Stripe before deleting
         const isStillActive = await checkStripeSubscriptionActive(sub.stripe_customer_id, sub.stripe_subscription_id)
         if (isStillActive.active) {
-          // User renewed in Stripe but DB was not updated — fix DB instead of deleting
-          console.log(`[Cron cleanup] SKIPPING user ${sub.user_id}: Stripe subscription is still active (${isStillActive.status}, ends ${isStillActive.periodEnd}). Syncing DB instead.`)
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              ...(isStillActive.periodEnd ? { current_period_end: isStillActive.periodEnd } : {}),
-              ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
-            })
-            .eq('id', sub.id)
-          results.skippedStillActive = results.skippedStillActive || []
-          results.skippedStillActive.push(sub.user_id)
+          // Only reset to active if Stripe confirms a FUTURE period end
+          // (avoids resetting on API errors or missing periodEnd which causes daily email loops)
+          const hasFuturePeriodEnd = isStillActive.periodEnd && new Date(isStillActive.periodEnd) > now
+          if (hasFuturePeriodEnd) {
+            console.log(`[Cron cleanup] SKIPPING user ${sub.user_id}: Stripe subscription is still active (${isStillActive.status}, ends ${isStillActive.periodEnd}). Syncing DB instead.`)
+            await supabase
+              .from('subscriptions')
+              .update({
+                status: 'active',
+                current_period_end: isStillActive.periodEnd,
+                ...(isStillActive.periodStart ? { current_period_start: isStillActive.periodStart } : {}),
+              })
+              .eq('id', sub.id)
+            results.skippedStillActive = results.skippedStillActive || []
+            results.skippedStillActive.push(sub.user_id)
+          } else {
+            console.log(`[Cron cleanup] SKIPPING deletion for user ${sub.user_id}: Stripe says active but no confirmed future period end (periodEnd=${isStillActive.periodEnd}). Keeping as expired.`)
+          }
           continue
         }
 

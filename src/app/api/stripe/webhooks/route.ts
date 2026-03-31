@@ -474,23 +474,29 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const { data } = await getSupabaseAdmin()
     .from('subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, status')
     .eq('stripe_subscription_id', subscription.id)
     .single()
 
   if (!data) return
 
+  // Check before updating to avoid sending duplicate expired emails
+  // (the check-expiring cron may have already set status to 'expired' and sent the email)
+  const wasAlreadyExpired = data.status === 'expired'
+
   await getSupabaseAdmin().from('subscriptions').update({ status: 'expired' }).eq('id', data.id)
   await getSupabaseAdmin().from('sessions').update({ is_active: false }).eq('user_id', data.user_id)
 
-  const { data: profile } = await getSupabaseAdmin()
-    .from('user_profiles')
-    .select('email')
-    .eq('id', data.user_id)
-    .single()
+  if (!wasAlreadyExpired) {
+    const { data: profile } = await getSupabaseAdmin()
+      .from('user_profiles')
+      .select('email')
+      .eq('id', data.user_id)
+      .single()
 
-  if (profile?.email) {
-    await sendExpiredEmail({ to: profile.email })
+    if (profile?.email) {
+      await sendExpiredEmail({ to: profile.email })
+    }
   }
 }
 
