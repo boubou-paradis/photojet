@@ -8,6 +8,7 @@ export const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'
 const FROM_EMAIL = 'AnimaJet <contact@animajet.fr>'
+const REPLY_TO = 'animajet3@gmail.com'
 
 export async function sendWelcomeEmail(params: {
   to: string
@@ -36,6 +37,7 @@ export async function sendWelcomeEmail(params: {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: 'Bienvenue sur AnimaJet ! Vos identifiants de connexion',
       attachments,
       html: `
@@ -295,6 +297,7 @@ export async function sendExpiringEmail(params: {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: daysLeft === 0
         ? 'Votre abonnement AnimaJet expire aujourd\'hui !'
         : `Votre abonnement AnimaJet expire dans ${daysLeft} jours`,
@@ -389,6 +392,7 @@ export async function sendTrialEmail(params: { to: string; token: string }) {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: '🎁 Votre accès AnimaJet 7 jours est prêt !',
       html: `
 <!DOCTYPE html>
@@ -526,6 +530,7 @@ export async function sendExpiredEmail(params: { to: string }) {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: 'Votre abonnement AnimaJet a expire',
       html: `
 <!DOCTYPE html>
@@ -614,6 +619,7 @@ export async function sendPaymentFailedEmail(params: { to: string }) {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: 'Echec de paiement - Votre abonnement AnimaJet est suspendu',
       html: `
 <!DOCTYPE html>
@@ -722,6 +728,7 @@ export async function sendTrialWelcomeEmail(params: {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: '🎁 Votre compte AnimaJet (Essai 7 jours) est prêt !',
       html: `
 <!DOCTYPE html>
@@ -971,6 +978,7 @@ export async function sendTrialExpiredEmail(params: { to: string }) {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: 'Votre essai gratuit AnimaJet a expire',
       html: `
 <!DOCTYPE html>
@@ -1085,6 +1093,7 @@ export async function sendRenewalConfirmationEmail(params: {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: 'Votre abonnement AnimaJet est reactif !',
       html: `
 <!DOCTYPE html>
@@ -1189,6 +1198,7 @@ export async function sendDataDeletionWarningEmail(params: { to: string; daysLef
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      reply_to: REPLY_TO,
       subject: daysLeft === 0
         ? 'URGENT : Vos donnees AnimaJet seront supprimees aujourd\'hui'
         : `Vos donnees AnimaJet seront supprimees dans ${daysLeft} jours`,
