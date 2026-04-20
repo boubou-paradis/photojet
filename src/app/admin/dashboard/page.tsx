@@ -54,7 +54,7 @@ import { toast } from 'sonner'
 import { getInviteUrl } from '@/lib/utils'
 
 // Subscription Status Card Component
-function SubscriptionStatusCard({ subscription }: { subscription: Subscription }) {
+function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subscription; isOwner?: boolean }) {
   const [portalLoading, setPortalLoading] = useState(false)
   const now = new Date()
   const end = new Date(subscription.current_period_end!)
@@ -76,7 +76,7 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
     }
   }
   const diff = end.getTime() - now.getTime()
-  const isLifetime = end.getFullYear() >= 2090
+  const isLifetime = isOwner || end.getFullYear() >= 2090
 
   // Calculate days and hours remaining
   const totalHours = Math.floor(diff / (1000 * 60 * 60))
@@ -197,6 +197,7 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [borneConnection, setBorneConnection] = useState<BorneConnection | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [isOwner, setIsOwner] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [togglingModeration, setTogglingModeration] = useState(false)
@@ -232,9 +233,10 @@ export default function DashboardPage() {
     }
   }, [selectedSession])
 
-  // Fetch subscription on mount
+  // Fetch subscription and role on mount
   useEffect(() => {
     fetchSubscription()
+    fetchUserRole()
   }, [])
 
   // Polling fallback: filet de sécurité discret (60s)
@@ -367,6 +369,13 @@ export default function DashboardPage() {
       console.error('Error fetching borne connection:', err)
       setBorneConnection(null)
     }
+  }
+
+  async function fetchUserRole() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('user_profiles').select('role').eq('id', user.id).single()
+    if (data?.role === 'owner') setIsOwner(true)
   }
 
   async function fetchSubscription() {
@@ -2226,7 +2235,7 @@ export default function DashboardPage() {
 
               {/* Subscription Status Card */}
               {subscription && subscription.current_period_end && (
-                <SubscriptionStatusCard subscription={subscription} />
+                <SubscriptionStatusCard subscription={subscription} isOwner={isOwner} />
               )}
 
               {/* Speed Meter */}
