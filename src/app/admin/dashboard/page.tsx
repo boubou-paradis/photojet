@@ -76,6 +76,7 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
     }
   }
   const diff = end.getTime() - now.getTime()
+  const isLifetime = end.getFullYear() >= 2090
 
   // Calculate days and hours remaining
   const totalHours = Math.floor(diff / (1000 * 60 * 60))
@@ -88,7 +89,7 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
     : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000)
   const totalDuration = end.getTime() - start.getTime()
   const elapsed = now.getTime() - start.getTime()
-  const progressPercent = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100))
+  const progressPercent = isLifetime ? 100 : Math.max(0, Math.min(100, (elapsed / totalDuration) * 100))
 
   // Determine status color
   const isExpired = diff <= 0
@@ -137,6 +138,11 @@ function SubscriptionStatusCard({ subscription }: { subscription: Subscription }
         <div className="flex items-center justify-between">
           {isExpired ? (
             <p className="text-red-500 font-bold text-sm">Expiré</p>
+          ) : isLifetime ? (
+            <>
+              <span className="font-bold text-lg text-[#D4AF37]">Accès à vie</span>
+              <span className="text-[10px] text-[#D4AF37]/60">∞</span>
+            </>
           ) : (
             <>
               <span className={`font-bold text-lg ${statusColor}`}>
