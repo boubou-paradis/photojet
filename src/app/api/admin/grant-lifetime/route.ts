@@ -68,18 +68,15 @@ export async function GET(request: NextRequest) {
     updated_at: new Date().toISOString(),
   })
 
-  // ── 3. Upsert subscription active until 2099 ─────────────────
-  const { data: existingSub } = await supabase
+  // ── 3. Mettre toutes les subscriptions à active jusqu'en 2099 ──
+  const lifetimeEnd = '2099-12-31T23:59:59.000Z'
+
+  const { data: allSubs } = await supabase
     .from('subscriptions')
     .select('id')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
 
-  const lifetimeEnd = '2099-12-31T23:59:59.000Z'
-
-  if (existingSub) {
+  if (allSubs && allSubs.length > 0) {
     await supabase
       .from('subscriptions')
       .update({
@@ -90,7 +87,7 @@ export async function GET(request: NextRequest) {
         canceled_at: null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', existingSub.id)
+      .eq('user_id', userId)
   } else {
     await supabase.from('subscriptions').insert({
       user_id: userId,
