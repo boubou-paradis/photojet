@@ -88,7 +88,8 @@ export default async function AdminLayout({
   // ============================================================
   // 3. Check user role (owners always have access)
   // ============================================================
-  const { data: profile } = await supabase
+  const supabaseAdmin = createAdminClient()
+  const { data: profile } = await supabaseAdmin
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)
