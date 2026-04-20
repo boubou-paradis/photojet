@@ -61,19 +61,19 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 2. Mettre role=owner dans user_profiles ──────────────────
-  const { rowCount: updated } = await supabase
+  const { error: updateError } = await supabase
     .from('user_profiles')
-    .update({ role: 'owner', updated_at: new Date().toISOString() })
+    .update({ role: 'owner' })
     .eq('id', userId)
-    .then(r => ({ rowCount: r.data }))
 
-  if (!updated) {
-    // La ligne n'existe pas encore, on l'insère
-    await supabase.from('user_profiles').insert({
+  let insertError = null
+  if (updateError) {
+    const { error: ie } = await supabase.from('user_profiles').insert({
       id: userId,
       email: normalizedEmail,
       role: 'owner',
     })
+    insertError = ie
   }
 
   // Vérification : lire le rôle réel en DB
@@ -133,10 +133,9 @@ export async function GET(request: NextRequest) {
     userId,
     userCreated,
     roleInDB: profileCheck?.role,
+    updateError: updateError?.message || null,
+    insertError: insertError?.message || null,
     subscriptionEnd: lifetimeEnd,
     magicLink,
-    note: userCreated
-      ? 'Nouveau compte créé. Partager le magicLink pour que l\'utilisateur définisse son mot de passe.'
-      : 'Compte existant mis à jour avec accès à vie.',
   })
 }
