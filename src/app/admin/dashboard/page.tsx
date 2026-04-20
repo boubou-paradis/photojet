@@ -372,10 +372,11 @@ export default function DashboardPage() {
   }
 
   async function fetchUserRole() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('user_profiles').select('role').eq('id', user.id).single()
-    if (data?.role === 'owner') setIsOwner(true)
+    try {
+      const res = await fetch('/api/user/role')
+      const data = await res.json()
+      if (data?.role === 'owner') setIsOwner(true)
+    } catch { /* silent */ }
   }
 
   async function fetchSubscription() {
