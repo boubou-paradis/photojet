@@ -407,6 +407,15 @@ async function updateExistingUser(
   }
 }
 
+async function isOwner(userId: string): Promise<boolean> {
+  const { data } = await getSupabaseAdmin()
+    .from('user_profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  return data?.role === 'owner'
+}
+
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Try to find by stripe_subscription_id first
   let { data } = await getSupabaseAdmin()
@@ -434,6 +443,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   if (!data) return
+  if (await isOwner(data.user_id)) {
+    console.log(`[Webhook] subscription.updated: skipped for owner ${data.user_id}`)
+    return
+  }
 
   const previousStatus = data.status
   const now = new Date()
@@ -479,6 +492,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .single()
 
   if (!data) return
+  if (await isOwner(data.user_id)) {
+    console.log(`[Webhook] subscription.deleted: skipped for owner ${data.user_id}`)
+    return
+  }
 
   // Check before updating to avoid sending duplicate expired emails
   // (the check-expiring cron may have already set status to 'expired' and sent the email)
@@ -588,6 +605,10 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   if (!data) {
     console.log(`[Webhook] payment_succeeded: no subscription record found, skipping`)
+    return
+  }
+  if (await isOwner(data.user_id)) {
+    console.log(`[Webhook] payment_succeeded: skipped for owner ${data.user_id}`)
     return
   }
 
