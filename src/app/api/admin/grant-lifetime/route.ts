@@ -60,13 +60,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Could not resolve user ID' }, { status: 500 })
   }
 
-  // ── 2. Upsert user_profiles with role=owner ──────────────────
-  await supabase.from('user_profiles').upsert({
-    id: userId,
-    email: normalizedEmail,
-    role: 'owner',
-    updated_at: new Date().toISOString(),
-  })
+  // ── 2. Mettre role=owner dans user_profiles ──────────────────
+  const { rowCount: updated } = await supabase
+    .from('user_profiles')
+    .update({ role: 'owner', updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .then(r => ({ rowCount: r.data }))
+
+  if (!updated) {
+    // La ligne n'existe pas encore, on l'insère
+    await supabase.from('user_profiles').insert({
+      id: userId,
+      email: normalizedEmail,
+      role: 'owner',
+    })
+  }
+
+  // Vérification : lire le rôle réel en DB
+  const { data: profileCheck } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
 
   // ── 3. Mettre toutes les subscriptions à active jusqu'en 2099 ──
   const lifetimeEnd = '2099-12-31T23:59:59.000Z'
@@ -117,7 +132,7 @@ export async function GET(request: NextRequest) {
     email: normalizedEmail,
     userId,
     userCreated,
-    role: 'owner',
+    roleInDB: profileCheck?.role,
     subscriptionEnd: lifetimeEnd,
     magicLink,
     note: userCreated
