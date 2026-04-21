@@ -274,6 +274,31 @@ export default function Home() {
         onTrialRequest={handleTrialRequest}
       />
 
+      {/* Advantage bar */}
+      <div className="relative z-10 w-full bg-[#111] border-y border-white/5 py-5 px-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-center lg:justify-between items-center gap-x-6 gap-y-4">
+          {[
+            { icon: '📡', title: 'Aucune application', desc: 'Aucun téléchargement, aucune installation' },
+            { icon: '⏱', title: 'Mise en place express', desc: 'QR code généré en 2 secondes' },
+            { icon: '📺', title: 'Affichage en direct', desc: 'Sur écran géant, ambiance garantie' },
+            { icon: '👥', title: 'Pour tous vos événements', desc: 'Mariages, soirées, bars, clubs, entreprises' },
+            { icon: '🌐', title: '100% en ligne', desc: 'Une simple connexion internet suffit' },
+          ].map((item) => (
+            <div key={item.title} className="flex items-center gap-2.5 text-sm">
+              <span className="text-xl">{item.icon}</span>
+              <div>
+                <span className="text-white font-semibold">{item.title}</span>
+                <span className="text-gray-500"> — {item.desc}</span>
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <span>🇫🇷</span>
+            <span className="text-xs text-gray-400 font-medium">Made in France</span>
+          </div>
+        </div>
+      </div>
+
       {/* Rest of the page */}
       <div className="relative z-10 content-layer">
         {/* How it works Section */}
