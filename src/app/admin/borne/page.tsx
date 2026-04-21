@@ -308,8 +308,17 @@ export default function BornePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-6"
           />
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 mb-4">
-            <Tablet className="h-8 w-8 text-cyan-400" />
+          <div
+            className="inline-flex items-center justify-center mb-6"
+            style={{ filter: 'drop-shadow(0 0 18px rgba(212,175,55,0.45))' }}
+          >
+            <Image
+              src="/images/borne-photo.png"
+              alt="Borne photo"
+              width={220}
+              height={220}
+              className="rounded-2xl object-contain"
+            />
           </div>
           <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5 text-[#D4AF37]" />
