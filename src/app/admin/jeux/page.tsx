@@ -4,63 +4,56 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { toast } from 'sonner'
 
-// Game card data with unique color schemes
+// Game card data
 const games = [
   {
     id: 'mystery',
     name: 'Photo Mystère',
-    emoji: '🔍',
+    image: '/images/games/photo-mystere.png',
     description: 'Devinez la photo cachée pixel par pixel',
     path: '/admin/jeux/mystery',
     available: true,
-    gradient: 'from-cyan-500/20 via-blue-600/20 to-cyan-400/20',
     glowColor: 'rgba(6, 182, 212, 0.5)',
     borderHover: 'hover:border-cyan-400',
-    iconBg: 'bg-gradient-to-br from-cyan-500/30 to-blue-600/30',
     accentColor: 'text-cyan-400',
   },
   {
     id: 'lineup',
     name: 'Le Bon Ordre',
-    emoji: '🏃',
+    image: '/images/games/le-bon-ordre.png',
     description: "2 équipes s'affrontent pour remettre les numéros dans l'ordre le plus vite possible",
     path: '/admin/jeux/lineup',
     available: true,
-    gradient: 'from-violet-500/20 via-purple-600/20 to-fuchsia-500/20',
     glowColor: 'rgba(139, 92, 246, 0.5)',
     borderHover: 'hover:border-violet-400',
-    iconBg: 'bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30',
     accentColor: 'text-violet-400',
   },
   {
     id: 'wheel',
     name: 'Roue de la Destinée',
-    emoji: '🎡',
+    image: '/images/games/roue-de-la-destinee.png',
     description: 'Tournez la roue et découvrez votre défi',
     path: '/admin/jeux/wheel',
     available: true,
-    gradient: 'from-amber-500/20 via-yellow-500/20 to-orange-400/20',
     glowColor: 'rgba(212, 175, 55, 0.6)',
     borderHover: 'hover:border-[#D4AF37]',
-    iconBg: 'bg-gradient-to-br from-amber-500/30 to-yellow-500/30',
     accentColor: 'text-[#D4AF37]',
   },
   {
     id: 'quiz',
     name: 'Quiz',
-    emoji: '❓',
+    image: '/images/games/quiz.png',
     description: 'Questions-réponses interactif en équipe',
     path: '/admin/jeux/quiz',
     available: true,
-    gradient: 'from-red-500/20 via-orange-500/20 to-amber-400/20',
     glowColor: 'rgba(239, 68, 68, 0.5)',
     borderHover: 'hover:border-red-400',
-    iconBg: 'bg-gradient-to-br from-red-500/30 to-orange-400/30',
     accentColor: 'text-red-400',
   },
 ]
@@ -79,7 +72,6 @@ export default function JeuxPage() {
 
   async function fetchSession() {
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
@@ -171,7 +163,6 @@ export default function JeuxPage() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="text-center mb-12 md:mb-16"
         >
-          {/* Decorative line */}
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: '120px' }}
@@ -179,7 +170,6 @@ export default function JeuxPage() {
             className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-8"
           />
 
-          {/* Icon */}
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -190,7 +180,6 @@ export default function JeuxPage() {
             <div className="absolute inset-0 rounded-2xl bg-[#D4AF37]/20 blur-xl animate-pulse" />
           </motion.div>
 
-          {/* Title with glow */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#D4AF37] to-white mb-4 relative">
             Jeux & Animations
             <span className="absolute inset-0 text-4xl md:text-5xl lg:text-6xl font-black text-[#D4AF37] blur-2xl opacity-30">
@@ -198,7 +187,6 @@ export default function JeuxPage() {
             </span>
           </h1>
 
-          {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -210,7 +198,6 @@ export default function JeuxPage() {
             <Sparkles className="h-5 w-5 text-[#D4AF37]" />
           </motion.p>
 
-          {/* Decorative line */}
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: '120px' }}
@@ -219,7 +206,7 @@ export default function JeuxPage() {
           />
         </motion.div>
 
-        {/* Games Grid - 3 columns desktop, 2 tablet, 1 mobile */}
+        {/* Games Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {games.map((game, index) => (
             <motion.div
@@ -248,46 +235,34 @@ export default function JeuxPage() {
 
               {/* Card */}
               <div className={`
-                relative h-full rounded-2xl overflow-hidden
-                bg-gradient-to-br ${game.gradient}
+                relative rounded-2xl overflow-hidden min-h-[280px]
                 border-2 border-white/5 ${game.available ? game.borderHover : ''}
-                group-hover:border-opacity-100 transition-all duration-300
-                backdrop-blur-sm
+                transition-all duration-300
               `}>
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12" />
-                </div>
+                {/* Background image */}
+                <Image
+                  src={game.image}
+                  alt={game.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
 
-                {/* Inner content */}
-                <div className="relative p-6 md:p-8 flex flex-col items-center text-center min-h-[280px]">
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 transition-all duration-300 group-hover:from-black/75" />
 
-                  {/* Icon container with glow */}
-                  <div className={`
-                    relative w-20 h-20 md:w-24 md:h-24 rounded-2xl ${game.iconBg}
-                    flex items-center justify-center mb-6
-                    group-hover:scale-110 transition-transform duration-300
-                  `}>
-                    <span className="text-5xl md:text-6xl relative z-10 transform group-hover:scale-110 transition-transform duration-300">
-                      {game.emoji}
-                    </span>
-                    {/* Icon glow */}
-                    <div
-                      className="absolute inset-0 rounded-2xl blur-2xl opacity-50 group-hover:opacity-80 transition-opacity"
-                      style={{ background: game.glowColor }}
-                    />
-                  </div>
+                {/* Corner accent glow */}
+                <div
+                  className="absolute top-0 right-0 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity"
+                  style={{ background: `radial-gradient(circle at top right, ${game.glowColor}, transparent 70%)` }}
+                />
 
-                  {/* Game name */}
-                  <h3 className={`
-                    text-xl md:text-2xl font-bold text-white mb-3
-                    group-hover:${game.accentColor} transition-colors duration-300
-                  `}>
+                {/* Content */}
+                <div className="relative z-10 p-6 md:p-8 flex flex-col justify-end min-h-[280px]">
+                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2 drop-shadow-lg">
                     {game.name}
                   </h3>
-
-                  {/* Description */}
-                  <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6 flex-1">
+                  <p className="text-gray-300 text-sm md:text-base leading-relaxed mb-4 drop-shadow">
                     {game.description}
                   </p>
 
@@ -298,7 +273,7 @@ export default function JeuxPage() {
                       opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0
                       transition-all duration-300
                     `}>
-                      <span className="text-sm font-semibold">Lancer le jeu</span>
+                      <span className="text-sm font-semibold drop-shadow">Lancer le jeu</span>
                       <motion.span
                         animate={{ x: hoveredGame === game.id ? [0, 5, 0] : 0 }}
                         transition={{ repeat: hoveredGame === game.id ? Infinity : 0, duration: 0.8 }}
@@ -307,19 +282,11 @@ export default function JeuxPage() {
                       </motion.span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit">
                       <span className="text-amber-400 text-sm font-semibold">Bientôt disponible</span>
                     </div>
                   )}
                 </div>
-
-                {/* Corner accent */}
-                <div
-                  className="absolute top-0 right-0 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity"
-                  style={{
-                    background: `radial-gradient(circle at top right, ${game.glowColor}, transparent 70%)`
-                  }}
-                />
               </div>
             </motion.div>
           ))}
@@ -339,14 +306,6 @@ export default function JeuxPage() {
           </div>
         </motion.div>
       </main>
-
-      {/* CSS for shimmer animation */}
-      <style jsx global>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%) skewX(-12deg); }
-          100% { transform: translateX(100%) skewX(-12deg); }
-        }
-      `}</style>
     </div>
   )
 }
