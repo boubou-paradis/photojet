@@ -104,16 +104,13 @@ export default function HeroV5({
               <ArrowRight className="h-4 w-4" />
             </a>
 
-            {/* Trial Form - Conversion focus */}
+            {/* Form - Conversion focus */}
             <div className="card-float rounded-2xl p-6 border-[#2A2A2E] max-w-[420px] lg:ml-auto">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Essai gratuit 7 jours</h3>
-                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès complet par email, week-end inclus</p>
+                  <h3 className="text-lg font-semibold text-white">Commencer maintenant</h3>
+                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès immédiat à toutes les fonctionnalités</p>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400 uppercase">
-                  Gratuit
-                </span>
               </div>
 
               {trialSuccess ? (
@@ -150,7 +147,7 @@ export default function HeroV5({
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
                       <>
-                        Recevoir mon accès
+                        Découvrir AnimaJet
                         <ArrowRight className="h-5 w-5 ml-2" />
                       </>
                     )}
@@ -161,11 +158,11 @@ export default function HeroV5({
                   <div className="flex items-center justify-center gap-4 pt-1 text-xs text-[#6B6B70]">
                     <span className="flex items-center gap-1.5">
                       <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                      Sans carte bancaire
+                      Accès immédiat
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                      Accès immédiat
+                      Toutes les fonctionnalités
                     </span>
                   </div>
                 </div>

@@ -7,14 +7,11 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
-  ArrowRight,
   Loader2,
   Check,
   Sparkles,
   Facebook,
-  Gift,
   Mail,
-  CheckCircle,
   Palette,
   ImageIcon,
   Target,
@@ -96,10 +93,10 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: "Puis-je essayer AnimaJet gratuitement ?",
+          name: "Combien coûte AnimaJet ?",
           acceptedAnswer: {
             '@type': 'Answer',
-            text: "Oui, AnimaJet propose un essai gratuit de 7 jours avec accès à toutes les fonctionnalités, week-end inclus. Sans carte bancaire.",
+            text: "AnimaJet propose un abonnement mensuel à 29,90€/mois, résiliable à tout moment. Vous avez accès à toutes les fonctionnalités : photos en direct, jeux interactifs, borne photo, personnalisation complète.",
           },
         },
         {
@@ -151,11 +148,6 @@ const pricingFeatures = [
   'Utilisable 7j/7 y compris week-end',
 ]
 
-const trialFeatures = [
-  'Toutes les fonctionnalités',
-  'Valide du lundi au jeudi',
-  'Sans carte bancaire',
-]
 
 export default function Home() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -398,96 +390,18 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Essai gratuit 7 jours disponible • Abonnement mensuel résiliable
+                Abonnement mensuel résiliable à tout moment
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
-              {/* Trial Card - Mis en avant */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="card-float rounded-2xl p-8 relative overflow-hidden border-2 border-emerald-500/50 md:scale-105"
-                style={{ boxShadow: '0 0 40px rgba(16, 185, 129, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500" />
-                <div className="absolute top-0 right-0 bg-emerald-500 text-white px-4 py-1.5 rounded-bl-xl font-bold text-sm">
-                  RECOMMANDÉ
-                </div>
-
-                <div className="mb-6 pt-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border-2 border-emerald-500/30">
-                    <Gift className="h-8 w-8 text-emerald-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Essai Gratuit 7 jours</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold text-emerald-500">0€</span>
-                    <span className="text-gray-500">pour tester</span>
-                  </div>
-                </div>
-
-                <ul className="space-y-3 mb-6">
-                  {trialFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3 text-gray-300 text-sm">
-                      <Check className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Trial Form */}
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                    <Input
-                      type="email"
-                      name="trial-email"
-                      autoComplete="off"
-                      placeholder="votre@email.com"
-                      value={trialEmail}
-                      onChange={(e) => {
-                        setTrialEmail(e.target.value)
-                        setError(null)
-                      }}
-                      className="pl-11 h-12 bg-[#1A1A1E] border-[#3a3a3a] focus:border-emerald-500 focus:ring-emerald-500/20 text-white placeholder:text-gray-500"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={() => handleTrialRequest(trialEmail)}
-                    disabled={trialLoading || !trialEmail || trialSuccess}
-                    className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-lg shadow-emerald-500/25"
-                  >
-                    {trialLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : trialSuccess ? (
-                      <>
-                        <CheckCircle className="h-5 w-5 mr-2" />
-                        Email envoyé !
-                      </>
-                    ) : (
-                      <>
-                        Recevoir mon accès gratuit
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-xs text-gray-500 text-center">
-                    Sans carte bancaire • Accès immédiat par email
-                  </p>
-                </div>
-              </motion.div>
-
+            <div className="flex justify-center">
               {/* Subscription Card */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="card-float rounded-2xl p-8 relative overflow-hidden border-[#D4AF37]/30"
+                transition={{ delay: 0.1 }}
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-[#D4AF37]/30 w-full max-w-md"
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37]" />
                 <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1.5 rounded-bl-xl font-bold text-sm">
