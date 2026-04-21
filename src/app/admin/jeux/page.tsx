@@ -220,7 +220,7 @@ export default function JeuxPage() {
         </motion.div>
 
         {/* Games Grid - 3 columns desktop, 2 tablet, 1 mobile */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {games.map((game, index) => (
             <motion.div
               key={game.id}
