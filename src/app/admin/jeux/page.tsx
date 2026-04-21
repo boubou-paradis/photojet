@@ -61,8 +61,6 @@ const games = [
 export default function JeuxPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [hoveredGame, setHoveredGame] = useState<string | null>(null)
-
   const router = useRouter()
   const supabase = createClient()
 
@@ -218,8 +216,6 @@ export default function JeuxPage() {
                 duration: 0.5,
                 ease: [0.23, 1, 0.32, 1]
               }}
-              onMouseEnter={() => setHoveredGame(game.id)}
-              onMouseLeave={() => setHoveredGame(null)}
               onClick={() => game.available && router.push(game.path)}
               className={`
                 group relative rounded-2xl cursor-pointer
@@ -227,19 +223,12 @@ export default function JeuxPage() {
                 ${game.available ? 'hover:scale-[1.03] hover:-translate-y-2' : 'opacity-50 cursor-not-allowed'}
               `}
             >
-              {/* Glow effect on hover */}
-              <div
-                className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
-                style={{ background: game.glowColor }}
-              />
-
               {/* Card */}
               <div className={`
-                relative rounded-2xl overflow-hidden min-h-[280px]
+                relative rounded-2xl overflow-hidden aspect-video
                 border-2 border-white/5 ${game.available ? game.borderHover : ''}
-                transition-all duration-300
+                transition-all duration-300 group-hover:brightness-110
               `}>
-                {/* Background image */}
                 <Image
                   src={game.image}
                   alt={game.name}
@@ -247,46 +236,6 @@ export default function JeuxPage() {
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
-
-                {/* Dark overlay for readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 transition-all duration-300 group-hover:from-black/75" />
-
-                {/* Corner accent glow */}
-                <div
-                  className="absolute top-0 right-0 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity"
-                  style={{ background: `radial-gradient(circle at top right, ${game.glowColor}, transparent 70%)` }}
-                />
-
-                {/* Content */}
-                <div className="relative z-10 p-6 md:p-8 flex flex-col justify-end min-h-[280px]">
-                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2 drop-shadow-lg">
-                    {game.name}
-                  </h3>
-                  <p className="text-gray-300 text-sm md:text-base leading-relaxed mb-4 drop-shadow">
-                    {game.description}
-                  </p>
-
-                  {/* CTA */}
-                  {game.available ? (
-                    <div className={`
-                      flex items-center gap-2 ${game.accentColor}
-                      opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0
-                      transition-all duration-300
-                    `}>
-                      <span className="text-sm font-semibold drop-shadow">Lancer le jeu</span>
-                      <motion.span
-                        animate={{ x: hoveredGame === game.id ? [0, 5, 0] : 0 }}
-                        transition={{ repeat: hoveredGame === game.id ? Infinity : 0, duration: 0.8 }}
-                      >
-                        →
-                      </motion.span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40 w-fit">
-                      <span className="text-amber-400 text-sm font-semibold">Bientôt disponible</span>
-                    </div>
-                  )}
-                </div>
               </div>
             </motion.div>
           ))}
