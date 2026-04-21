@@ -145,7 +145,6 @@ const pricingFeatures = [
   'Modération des contenus',
   'Téléchargement album ZIP',
   'Support prioritaire',
-  'Utilisable 7j/7 y compris week-end',
 ]
 
 
@@ -513,9 +512,6 @@ export default function Home() {
                         <Sparkles className="h-5 w-5 mr-2" />
                         S&apos;abonner maintenant
                       </Button>
-                      <p className="text-xs text-gray-500 text-center">
-                        Utilisable 7j/7 y compris le week-end
-                      </p>
                     </>
                   )}
                 </div>
