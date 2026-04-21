@@ -150,15 +150,6 @@ export interface Session {
   lineup_current_points: number
   lineup_show_winner: boolean
   lineup_audio: string | null // JSON of WheelAudioSettings (reused for lineup)
-  // Vote Photo settings
-  vote_active: boolean
-  vote_photos: string | null // JSON array of VotePhotoCandidate
-  vote_votes: string | null // JSON array of VoteRecord
-  vote_is_open: boolean
-  vote_show_results: boolean
-  vote_show_podium: boolean
-  vote_timer: number | null // Optional timer in seconds
-  vote_timer_left: number | null
   // Wheel (Roue de la Destinée) settings
   wheel_active: boolean
   wheel_segments: string | null // JSON array of WheelSegment
@@ -166,11 +157,6 @@ export interface Session {
   wheel_result: string | null // Current result text
   wheel_history: string | null // JSON array of WheelResult
   wheel_audio: string | null // JSON of WheelAudioSettings
-  // Challenges (Défis Photo) settings
-  challenges_active: boolean
-  challenges_list: string | null // JSON array of PhotoChallenge
-  challenges_submissions: string | null // JSON array of ChallengeSubmission
-  challenges_current: string | null // Current challenge ID being displayed
   // Quiz settings
   quiz_active: boolean
   quiz_lobby_visible?: boolean // Lobby screen visible (before quiz starts)
@@ -220,19 +206,6 @@ export interface LineupGameState {
   showWinner: boolean
 }
 
-// Vote Photo types
-export interface VotePhotoCandidate {
-  photoId: string
-  photoUrl: string
-  votes: number
-}
-
-export interface VoteRecord {
-  odientId: string
-  photoId: string
-  timestamp: string
-}
-
 // Wheel (Roue de la Destinée) types
 export interface WheelSegment {
   id: string
@@ -251,25 +224,6 @@ export interface WheelAudioSettings {
   url: string | null
   enabled: boolean
   filename: string | null
-}
-
-// Challenges (Défis Photo) types
-export interface PhotoChallenge {
-  id: string
-  title: string
-  description?: string
-  points: number
-  enabled: boolean
-}
-
-export interface ChallengeSubmission {
-  id: string
-visitorId: string
-  visitorName: string
-  challengeId: string
-  photoUrl: string
-  status: 'pending' | 'approved' | 'rejected'
-  submittedAt: string
 }
 
 // Quiz types

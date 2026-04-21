@@ -38,19 +38,6 @@ const games = [
     accentColor: 'text-violet-400',
   },
   {
-    id: 'vote',
-    name: 'Vote Photo',
-    emoji: '🗳️',
-    description: 'Votez pour élire la meilleure photo',
-    path: '/admin/jeux/vote',
-    available: false,
-    gradient: 'from-rose-500/20 via-pink-500/20 to-orange-400/20',
-    glowColor: 'rgba(244, 63, 94, 0.5)',
-    borderHover: 'hover:border-rose-400',
-    iconBg: 'bg-gradient-to-br from-rose-500/30 to-orange-400/30',
-    accentColor: 'text-rose-400',
-  },
-  {
     id: 'wheel',
     name: 'Roue de la Destinée',
     emoji: '🎡',
@@ -62,19 +49,6 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     iconBg: 'bg-gradient-to-br from-amber-500/30 to-yellow-500/30',
     accentColor: 'text-[#D4AF37]',
-  },
-  {
-    id: 'defis',
-    name: 'Défis Photo',
-    emoji: '📸',
-    description: 'Réalisez des défis photo créatifs',
-    path: '/admin/jeux/defis',
-    available: true,
-    gradient: 'from-emerald-500/20 via-green-500/20 to-teal-400/20',
-    glowColor: 'rgba(16, 185, 129, 0.5)',
-    borderHover: 'hover:border-emerald-400',
-    iconBg: 'bg-gradient-to-br from-emerald-500/30 to-teal-400/30',
-    accentColor: 'text-emerald-400',
   },
   {
     id: 'quiz',
@@ -360,7 +334,7 @@ export default function JeuxPage() {
         >
           <div className="inline-flex items-center gap-3 text-gray-600 text-sm">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-700" />
-            <span>5 jeux disponibles</span>
+            <span>4 jeux disponibles</span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-700" />
           </div>
         </motion.div>
