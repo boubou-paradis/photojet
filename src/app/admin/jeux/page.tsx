@@ -28,7 +28,7 @@ const games = [
     id: 'lineup',
     name: 'Le Bon Ordre',
     emoji: '🏃',
-    description: "2 équipes s'affrontent pour classer les photos",
+    description: "2 équipes s'affrontent pour remettre les numéros dans l'ordre le plus vite possible",
     path: '/admin/jeux/lineup',
     available: true,
     gradient: 'from-violet-500/20 via-purple-600/20 to-fuchsia-500/20',
