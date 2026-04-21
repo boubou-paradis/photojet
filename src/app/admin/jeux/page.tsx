@@ -225,7 +225,7 @@ export default function JeuxPage() {
             >
               {/* Card */}
               <div className={`
-                relative rounded-2xl overflow-hidden aspect-video
+                relative rounded-2xl overflow-hidden aspect-[4/3]
                 border-2 border-white/5 ${game.available ? game.borderHover : ''}
                 transition-all duration-300 group-hover:brightness-110
               `}>
