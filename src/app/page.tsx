@@ -49,7 +49,7 @@ const jsonLd = {
       featureList: [
         'Photos et messages en direct',
         'Diaporama HD temps réel',
-        '7 jeux interactifs',
+        '4 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz)',
         'QR codes personnalisés',
         'Borne photo intégrée',
         'Personnalisation logo et arrière-plan',
@@ -139,7 +139,7 @@ const pricingFeatures = [
   'Photos et messages illimités',
   'Diaporama en direct HD',
   'Borne photo intégrée',
-  '7 jeux interactifs',
+  '4 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz)',
   'QR codes personnalisés',
   'Personnalisation logo + arrière-plan',
   'Modération des contenus',

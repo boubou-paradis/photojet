@@ -168,16 +168,6 @@ export default function JeuxPage() {
             className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-8"
           />
 
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, type: 'spring' }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 mb-6 relative"
-          >
-            <span className="text-5xl">🎮</span>
-            <div className="absolute inset-0 rounded-2xl bg-[#D4AF37]/20 blur-xl animate-pulse" />
-          </motion.div>
-
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#D4AF37] to-white mb-4 relative">
             Jeux & Animations
             <span className="absolute inset-0 text-4xl md:text-5xl lg:text-6xl font-black text-[#D4AF37] blur-2xl opacity-30">
