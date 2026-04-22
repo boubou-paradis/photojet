@@ -158,7 +158,16 @@ export default function Home() {
   const [promoCode, setPromoCode] = useState('')
   const [showPromo, setShowPromo] = useState(false)
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const searchParams = useSearchParams()
+
+  // Check admin status on mount
+  useEffect(() => {
+    fetch('/api/auth/is-admin')
+      .then((r) => r.json())
+      .then((data) => { if (data.isAdmin) setIsAdmin(true) })
+      .catch(() => {})
+  }, [])
 
   // Show toast if redirected with access=expired
   useEffect(() => {
@@ -271,6 +280,7 @@ export default function Home() {
         error={error}
         setError={setError}
         onTrialRequest={handleTrialRequest}
+        isAdmin={isAdmin}
       />
 
       {/* Advantage bar */}

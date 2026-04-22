@@ -13,6 +13,7 @@ interface HeroV5Props {
   error: string | null
   setError: (error: string | null) => void
   onTrialRequest: (email: string) => void
+  isAdmin?: boolean
   // Optional props kept for compatibility with SEOLandingPage
   headline?: string
   highlightedText?: string
@@ -36,6 +37,7 @@ export default function HeroV5({
   error,
   setError,
   onTrialRequest,
+  isAdmin = false,
 }: HeroV5Props) {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -110,85 +112,89 @@ export default function HeroV5({
             </div>
           </div>
 
-          {/* Right column — form */}
-          <div className="space-y-3 w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto">
+          {/* Right column — login + form (form visible to admin only) */}
+          <div className={`w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto ${isAdmin ? 'space-y-3' : 'flex items-center justify-center'}`}>
             {/* Login link */}
             <a
               href="/login"
-              className="flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl transition-all border border-[#D4AF37]/30 backdrop-blur-sm"
+              className={`flex items-center justify-center gap-2 font-medium text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl transition-all border border-[#D4AF37]/30 backdrop-blur-sm ${
+                isAdmin ? 'px-6 py-3 text-sm' : 'w-full px-10 py-5 text-xl'
+              }`}
             >
               Déjà abonné ? Se connecter
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className={isAdmin ? 'h-4 w-4' : 'h-6 w-6'} />
             </a>
 
-            {/* Form card */}
-            <div
-              className="rounded-2xl p-6 border border-[#2A2A2E]"
-              style={{ background: 'rgba(13,13,15,0.80)', backdropFilter: 'blur(16px)' }}
-            >
-              <div className="mb-5">
-                <h3 className="text-lg font-semibold text-white">Commencer maintenant</h3>
-                <p className="text-xs text-[#6B6B70] mt-0.5">Accès immédiat à toutes les fonctionnalités</p>
-              </div>
-
-              {trialSuccess ? (
-                <div className="text-center py-6">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <Check className="h-7 w-7 text-emerald-500" />
-                  </div>
-                  <p className="text-emerald-400 font-semibold">Email envoyé !</p>
-                  <p className="text-sm text-gray-500 mt-1">Vérifiez votre boîte de réception</p>
+            {/* Form card — admin only */}
+            {isAdmin && (
+              <div
+                className="rounded-2xl p-6 border border-[#2A2A2E]"
+                style={{ background: 'rgba(13,13,15,0.80)', backdropFilter: 'blur(16px)' }}
+              >
+                <div className="mb-5">
+                  <h3 className="text-lg font-semibold text-white">Commencer maintenant</h3>
+                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès immédiat à toutes les fonctionnalités</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                    <Input
-                      type="email"
-                      name="hero-trial-email"
-                      autoComplete="off"
-                      placeholder="votre@email.com"
-                      value={trialEmail}
-                      onChange={(e) => {
-                        setTrialEmail(e.target.value)
-                        setError(null)
-                      }}
-                      className="pl-12 h-12 text-base bg-[#0D0D0F] border-[#2E2E33] focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 text-white placeholder:text-gray-600 rounded-xl"
-                    />
-                  </div>
 
-                  <Button
-                    onClick={() => onTrialRequest(trialEmail)}
-                    disabled={trialLoading || !trialEmail}
-                    className="w-full h-12 text-base bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] hover:brightness-110 text-[#0D0D0F] font-bold rounded-xl shadow-[0_4px_24px_rgba(212,175,55,0.25)] transition-all"
-                  >
-                    {trialLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <>
-                        Découvrir AnimaJet
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
+                {trialSuccess ? (
+                  <div className="text-center py-6">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <Check className="h-7 w-7 text-emerald-500" />
+                    </div>
+                    <p className="text-emerald-400 font-semibold">Email envoyé !</p>
+                    <p className="text-sm text-gray-500 mt-1">Vérifiez votre boîte de réception</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                      <Input
+                        type="email"
+                        name="hero-trial-email"
+                        autoComplete="off"
+                        placeholder="votre@email.com"
+                        value={trialEmail}
+                        onChange={(e) => {
+                          setTrialEmail(e.target.value)
+                          setError(null)
+                        }}
+                        className="pl-12 h-12 text-base bg-[#0D0D0F] border-[#2E2E33] focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 text-white placeholder:text-gray-600 rounded-xl"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={() => onTrialRequest(trialEmail)}
+                      disabled={trialLoading || !trialEmail}
+                      className="w-full h-12 text-base bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] hover:brightness-110 text-[#0D0D0F] font-bold rounded-xl shadow-[0_4px_24px_rgba(212,175,55,0.25)] transition-all"
+                    >
+                      {trialLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          Découvrir AnimaJet
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </>
+                      )}
+                    </Button>
+
+                    {error && (
+                      <p className="text-sm text-red-500 text-center">{error}</p>
                     )}
-                  </Button>
 
-                  {error && (
-                    <p className="text-sm text-red-500 text-center">{error}</p>
-                  )}
-
-                  <div className="flex items-center justify-center gap-4 pt-1 text-xs text-[#6B6B70]">
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                      Accès immédiat
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                      Toutes les fonctionnalités
-                    </span>
+                    <div className="flex items-center justify-center gap-4 pt-1 text-xs text-[#6B6B70]">
+                      <span className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
+                        Accès immédiat
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
+                        Toutes les fonctionnalités
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
