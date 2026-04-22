@@ -117,12 +117,15 @@ export default function HeroV5({
             {/* Login link */}
             <a
               href="/login"
-              className={`flex items-center justify-center gap-2 font-medium text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl transition-all border border-[#D4AF37]/30 backdrop-blur-sm ${
-                isAdmin ? 'px-6 py-3 text-sm' : 'w-full px-10 py-5 text-xl'
+              className={`flex items-center justify-center gap-2 font-bold transition-all ${
+                isAdmin
+                  ? 'px-6 py-3 text-sm text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl border border-[#D4AF37]/30 backdrop-blur-sm'
+                  : 'w-full max-w-md px-12 py-6 text-2xl text-[#0a0a14] rounded-2xl shadow-lg shadow-yellow-500/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/40'
               }`}
+              style={!isAdmin ? { background: 'linear-gradient(135deg, #d4af37, #c49b2a)' } : undefined}
             >
               Déjà abonné ? Se connecter
-              <ArrowRight className={isAdmin ? 'h-4 w-4' : 'h-6 w-6'} />
+              <ArrowRight className={isAdmin ? 'h-4 w-4' : 'h-7 w-7'} />
             </a>
 
             {/* Form card — admin only */}
