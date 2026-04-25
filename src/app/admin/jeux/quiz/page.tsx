@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Loader2,
   Monitor,
+  FileText,
   X,
   Plus,
   Trash2,
@@ -1424,16 +1425,24 @@ export default function QuizPage() {
               </div>
             </div>
           </div>
-          {gameActive && (
-            <Button
-              size="sm"
-              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-              className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
-            >
-              <Monitor className="h-4 w-4 mr-2" />
-              Voir le diaporama
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <a href="/quiz-regles.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
+              </Button>
+            </a>
+            {gameActive && (
+              <Button
+                size="sm"
+                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
+                className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+              >
+                <Monitor className="h-4 w-4 mr-2" />
+                Voir le diaporama
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

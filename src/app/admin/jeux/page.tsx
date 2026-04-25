@@ -58,6 +58,7 @@ const games = [
     glowColor: 'rgba(239, 68, 68, 0.5)',
     borderHover: 'hover:border-red-400',
     accentColor: 'text-red-400',
+    notice: '/quiz-regles.pdf',
   },
 ]
 
