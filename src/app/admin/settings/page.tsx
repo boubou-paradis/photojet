@@ -19,6 +19,7 @@ import {
   Printer,
   CheckCircle,
   XCircle,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1014,14 +1015,22 @@ export default function SettingsPage() {
             className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#E91E63]/50 hover:shadow-[0_0_20px_rgba(233,30,99,0.15)]"
           >
             <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#E91E63]/10 flex items-center justify-center">
-                  <Printer className="h-4 w-4 text-[#E91E63]" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#E91E63]/10 flex items-center justify-center">
+                    <Printer className="h-4 w-4 text-[#E91E63]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Impression</h3>
+                    <p className="text-xs text-[#6B6B70]">Permettre aux invités de demander une impression</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">Impression</h3>
-                  <p className="text-xs text-[#6B6B70]">Permettre aux invités de demander une impression</p>
-                </div>
+                <a href="/impression-photo-notice.pdf" target="_blank" rel="noopener noreferrer">
+                  <Button variant="ghost" size="sm" className="text-[#E91E63] hover:text-pink-300 border border-[#E91E63]/30 hover:border-[#E91E63]">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Notice
+                  </Button>
+                </a>
               </div>
             </div>
             <div className="p-3">
