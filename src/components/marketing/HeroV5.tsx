@@ -112,28 +112,22 @@ export default function HeroV5({
             </div>
           </div>
 
-          {/* Right column — login + form (form visible to admin only) */}
-          <div className={`w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto ${isAdmin ? 'space-y-3' : 'flex items-center justify-center'}`}>
+          {/* Right column — login + form */}
+          <div className="w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto space-y-3">
             {/* Login link */}
             <a
               href="/login"
-              className={`flex items-center justify-center gap-2 font-bold transition-all ${
-                isAdmin
-                  ? 'px-6 py-3 text-sm text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl border border-[#D4AF37]/30 backdrop-blur-sm'
-                  : 'w-full max-w-md px-12 py-6 text-2xl text-[#0a0a14] rounded-2xl shadow-lg shadow-yellow-500/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/40'
-              }`}
-              style={!isAdmin ? { background: 'linear-gradient(135deg, #d4af37, #c49b2a)' } : undefined}
+              className="flex items-center justify-center gap-2 font-bold transition-all px-6 py-3 text-sm text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl border border-[#D4AF37]/30 backdrop-blur-sm"
             >
               Déjà abonné ? Se connecter
-              <ArrowRight className={isAdmin ? 'h-4 w-4' : 'h-7 w-7'} />
+              <ArrowRight className="h-4 w-4" />
             </a>
 
-            {/* Form card — admin only */}
-            {isAdmin && (
-              <div
-                className="rounded-2xl p-6 border border-[#2A2A2E]"
-                style={{ background: 'rgba(13,13,15,0.80)', backdropFilter: 'blur(16px)' }}
-              >
+            {/* Form card — visible to all */}
+            <div
+              className="rounded-2xl p-6 border border-[#2A2A2E]"
+              style={{ background: 'rgba(13,13,15,0.80)', backdropFilter: 'blur(16px)' }}
+            >
                 <div className="mb-5">
                   <h3 className="text-lg font-semibold text-white">Commencer maintenant</h3>
                   <p className="text-xs text-[#6B6B70] mt-0.5">Accès immédiat à toutes les fonctionnalités</p>
@@ -196,8 +190,7 @@ export default function HeroV5({
                     </div>
                   </div>
                 )}
-              </div>
-            )}
+            </div>
           </div>
 
         </div>
