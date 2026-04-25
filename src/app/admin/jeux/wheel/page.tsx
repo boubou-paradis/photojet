@@ -234,8 +234,8 @@ export default function WheelPage() {
 
   function addSegment() {
     if (!newSegmentText.trim()) return
-    if (segments.length >= 12) {
-      toast.error('Maximum 12 segments')
+    if (segments.length >= 20) {
+      toast.error('Maximum 20 segments')
       return
     }
 
@@ -753,7 +753,7 @@ export default function WheelPage() {
                   <span className="text-2xl">🎡</span>
                   <div>
                     <h2 className="text-lg font-bold text-white">Segments</h2>
-                    <p className="text-gray-400 text-xs">{segments.length}/12 segments</p>
+                    <p className="text-gray-400 text-xs">{segments.length}/20 segments</p>
                   </div>
                 </div>
 
@@ -768,7 +768,7 @@ export default function WheelPage() {
                   />
                   <button
                     onClick={addSegment}
-                    disabled={segments.length >= 12}
+                    disabled={segments.length >= 20}
                     className="px-3 py-2 bg-[#D4AF37] text-black rounded-lg font-bold hover:bg-[#F4D03F] disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
@@ -776,7 +776,7 @@ export default function WheelPage() {
                 </div>
 
                 {/* Segments list - hauteur fixe avec scroll */}
-                <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
                   {segments.map((segment, index) => (
                     <div
                       key={segment.id}
