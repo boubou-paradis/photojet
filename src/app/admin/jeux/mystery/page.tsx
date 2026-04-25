@@ -17,6 +17,7 @@ import {
   Monitor,
   Music,
   Volume2,
+  FileText,
   VolumeX,
   Trash2,
 } from 'lucide-react'
@@ -801,16 +802,24 @@ export default function MysteryPage() {
               </div>
             </div>
           </div>
-          {gameActive && (
-            <Button
-              size="sm"
-              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-              className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:opacity-90 transition-opacity"
-            >
-              <Monitor className="h-4 w-4 mr-2" />
-              Diaporama
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <a href="/photo-mystere-regles.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300 border border-cyan-400/30 hover:border-cyan-400">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
+              </Button>
+            </a>
+            {gameActive && (
+              <Button
+                size="sm"
+                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:opacity-90 transition-opacity"
+              >
+                <Monitor className="h-4 w-4 mr-2" />
+                Diaporama
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

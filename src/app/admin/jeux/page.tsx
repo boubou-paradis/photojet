@@ -22,6 +22,7 @@ const games = [
     glowColor: 'rgba(6, 182, 212, 0.5)',
     borderHover: 'hover:border-cyan-400',
     accentColor: 'text-cyan-400',
+    notice: '/photo-mystere-regles.pdf',
   },
   {
     id: 'lineup',
