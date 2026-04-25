@@ -18,6 +18,7 @@ import {
   VolumeX,
   Upload,
   Trash2,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -958,16 +959,24 @@ export default function LineupPage() {
               </div>
             </div>
           </div>
-          {gameActive && (
-            <Button
-              size="sm"
-              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-              className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
-            >
-              <Monitor className="h-4 w-4 mr-2" />
-              Voir le diaporama
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <a href="/le-bon-ordre-regles-du-jeu.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
+              </Button>
+            </a>
+            {gameActive && (
+              <Button
+                size="sm"
+                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
+                className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
+              >
+                <Monitor className="h-4 w-4 mr-2" />
+                Voir le diaporama
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

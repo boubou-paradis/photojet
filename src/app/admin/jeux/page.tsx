@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, FileText } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -33,6 +33,7 @@ const games = [
     glowColor: 'rgba(139, 92, 246, 0.5)',
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
+    notice: '/le-bon-ordre-regles-du-jeu.pdf',
   },
   {
     id: 'wheel',
@@ -226,6 +227,20 @@ export default function JeuxPage() {
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
+                {/* Badge notice PDF */}
+                {'notice' in game && game.notice && (
+                  <a
+                    href={game.notice as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white backdrop-blur-sm transition-all hover:scale-105"
+                    style={{ background: 'rgba(139,92,246,0.85)', border: '1px solid rgba(139,92,246,0.5)' }}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Notice
+                  </a>
+                )}
               </div>
             </motion.div>
           ))}
