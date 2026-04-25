@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Loader2,
   Monitor,
+  FileText,
   X,
   Plus,
   Trash2,
@@ -723,16 +724,24 @@ export default function WheelPage() {
               </div>
             </div>
           </div>
-          {gameActive && (
-            <Button
-              size="sm"
-              onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-              className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-semibold hover:opacity-90 transition-opacity"
-            >
-              <Monitor className="h-4 w-4 mr-2" />
-              Voir le diaporama
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <a href="/roue-de-la-destinee-regles.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
+              </Button>
+            </a>
+            {gameActive && (
+              <Button
+                size="sm"
+                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
+                className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-semibold hover:opacity-90 transition-opacity"
+              >
+                <Monitor className="h-4 w-4 mr-2" />
+                Voir le diaporama
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
