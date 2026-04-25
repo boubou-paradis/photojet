@@ -10,16 +10,6 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import AdminLayoutClient from './admin-layout-client'
 
-// isWeekend inline (même logique que trial.ts, Europe/Paris)
-function isWeekend(): boolean {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    timeZone: 'Europe/Paris',
-  })
-  const dayName = formatter.format(new Date())
-  return dayName === 'Fri' || dayName === 'Sat' || dayName === 'Sun'
-}
-
 function createAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,11 +36,6 @@ export default async function AdminLayout({
 
     if (now > expiresAt) {
       redirect('/trial/expired')
-    }
-
-    // Weekend block for trial cookies
-    if (isWeekend()) {
-      redirect('/trial/blocked-weekend')
     }
 
     // Validate trial token against DB to prevent cookie manipulation
@@ -139,11 +124,6 @@ export default async function AdminLayout({
   if (status === 'trialing') {
     if (trial_end && now > new Date(trial_end)) {
       redirect('/?access=expired')
-    }
-
-    // Weekend block for trialing subscriptions
-    if (isWeekend()) {
-      redirect('/trial/blocked-weekend')
     }
 
     return (
