@@ -25,7 +25,7 @@ export default function CGVPage() {
         </Link>
 
         <h1 className="text-3xl sm:text-4xl font-bold text-[#D4AF37] mb-2">Conditions Générales de Vente</h1>
-        <p className="text-gray-400 mb-8">Dernière mise à jour : Janvier 2025</p>
+        <p className="text-gray-400 mb-8">Dernière mise à jour : Avril 2026</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
           {/* Article 1 */}
@@ -35,9 +35,8 @@ export default function CGVPage() {
 
             <div className="bg-[#242428] rounded-lg p-4 border border-[#D4AF37]/20 mb-4">
               <p className="font-semibold text-white mb-2">Le Prestataire :</p>
-              <p>MG Events Animation</p>
-              <p>Guillaume Morel</p>
-              <p>10 Lan Lande des Couëdies</p>
+              <p>MG Events — Guillaume Morel, Entrepreneur Individuel (EI)</p>
+              <p>10 La Lande des Couédies</p>
               <p>35600 Bains-sur-Oust</p>
               <p><ProtectedContact type="siret" /></p>
               <p><ProtectedContact type="email" /></p>
@@ -132,24 +131,23 @@ export default function CGVPage() {
           <section>
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">Article 6 - Droit de rétractation</h2>
 
-            <h3 className="text-lg font-semibold text-white mb-2">6.1 Délai de rétractation</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">6.1 Absence de droit de rétractation</h3>
             <p className="mb-4">
-              Conformément à l&apos;article L221-18 du Code de la consommation, le Client dispose d&apos;un délai de 14 jours à compter de la souscription pour exercer son droit de rétractation, sans avoir à justifier de motif.
+              Conformément à l&apos;article L221-28 du Code de la consommation, le droit de rétractation ne s&apos;applique pas
+              au présent contrat. AnimaJet est un service de fourniture de contenu numérique non fourni sur support matériel
+              dont l&apos;exécution commence immédiatement après la souscription, avec l&apos;accord préalable exprès du Client
+              et sa renonciation expresse à son droit de rétractation.
+            </p>
+            <p className="mb-4">
+              En validant sa souscription, le Client reconnaît expressément que l&apos;exécution du service commence
+              immédiatement et renonce à son droit de rétractation.
             </p>
 
-            <h3 className="text-lg font-semibold text-white mb-2">6.2 Exercice du droit de rétractation</h3>
-            <p className="mb-4">
-              Pour exercer ce droit, le Client doit envoyer une demande claire à : <ProtectedEmail />
-            </p>
-
-            <h3 className="text-lg font-semibold text-white mb-2">6.3 Remboursement</h3>
-            <p className="mb-4">
-              En cas de rétractation, AnimaJet remboursera le Client dans un délai de 14 jours suivant la réception de la demande.
-            </p>
-
-            <h3 className="text-lg font-semibold text-white mb-2">6.4 Exception</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">6.2 Résiliation à tout moment</h3>
             <p>
-              Si le Client a commencé à utiliser le service pendant le délai de rétractation, il sera redevable d&apos;un montant proportionnel au service fourni.
+              En lieu et place du droit de rétractation, le Client peut résilier son abonnement à tout moment
+              depuis son espace personnel ou en contactant <ProtectedEmail />. La résiliation prend effet à
+              la fin de la période de facturation en cours, sans remboursement prorata temporis.
             </p>
           </section>
 
