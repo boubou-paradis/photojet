@@ -16,21 +16,22 @@ interface WheelGameProps {
   spinMode?: 'auto' | 'manual'
 }
 
-// Couleurs casino alternées: bordeaux, orange, bleu royal, argenté
-const CASINO_COLORS = ['#8B0000', '#FF8C00', '#1E40AF', '#E8E8E8']
+// Violet/or — style carte "Roue de la Destinée"
+const CASINO_COLORS = ['#3D1878', '#6327A8', '#4E22A0', '#7B40C2']
 
 const PARTICLES = Array.from({ length: 40 }, (_, i) => ({
   id: i, delay: Math.random() * 5, duration: 6 + Math.random() * 4,
   x: Math.random() * 100, size: 2 + Math.random() * 4,
 }))
 
-const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FF6B6B', '#8B0000']
-
-// Ampoules autour du cadre
-const BULBS = Array.from({ length: 32 }, (_, i) => ({
+// Rayons dorés statiques (pas de Math.random pour éviter les hydration issues)
+const RAYS = Array.from({ length: 18 }, (_, i) => ({
   id: i,
-  angle: (i * 360 / 32 - 90) * (Math.PI / 180),
+  angle: i * 20,
+  opacity: 0.06 + (i % 3) * 0.05,
 }))
+
+const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FF6B6B', '#8B0000']
 
 export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings, spinMode = 'auto' }: WheelGameProps) {
   const [rotation, setRotation] = useState(0)
@@ -38,7 +39,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const [showConfetti, setShowConfetti] = useState(false)
   const [showFinished, setShowFinished] = useState(false)
   const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
-  const [bulbPhase, setBulbPhase] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const previousSpinning = useRef(false)
   const previousSpinToIndex = useRef<number | undefined>(undefined)
@@ -48,7 +48,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const infiniteRotationRef = useRef(0)
   const [windowHeight, setWindowHeight] = useState(800)
 
-  // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen()
@@ -59,34 +58,18 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }
   }, [])
 
-  // Listen for fullscreen changes
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // Animation des ampoules
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBulbPhase(prev => (prev + 1) % 4)
-    }, 300)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Fade out audio smoothly
   const fadeOutAudio = useCallback((audio: HTMLAudioElement, duration: number = 500) => {
-    if (fadeIntervalRef.current) {
-      clearInterval(fadeIntervalRef.current)
-    }
-
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
     const initialVolume = audio.volume
     const steps = 20
     const stepTime = duration / steps
     const volumeStep = initialVolume / steps
-
     fadeIntervalRef.current = setInterval(() => {
       if (audio.volume > volumeStep) {
         audio.volume = Math.max(0, audio.volume - volumeStep)
@@ -95,15 +78,11 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         audio.pause()
         audio.currentTime = 0
         audio.volume = initialVolume
-        if (fadeIntervalRef.current) {
-          clearInterval(fadeIntervalRef.current)
-          fadeIntervalRef.current = null
-        }
+        if (fadeIntervalRef.current) { clearInterval(fadeIntervalRef.current); fadeIntervalRef.current = null }
       }
     }, stepTime)
   }, [])
 
-  // Filtrer les segments disponibles (non utilisés)
   const availableSegments = useMemo(() =>
     segments.filter(s => !usedSegmentIds.includes(s.id)),
     [segments, usedSegmentIds]
@@ -111,35 +90,24 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
   useEffect(() => { setWindowHeight(window.innerHeight) }, [])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (fadeIntervalRef.current) {
-        clearInterval(fadeIntervalRef.current)
-      }
-      if (customAudioRef.current) {
-        customAudioRef.current.pause()
-      }
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
+      if (customAudioRef.current) customAudioRef.current.pause()
     }
   }, [])
 
-  // Afficher l'écran de fin quand le jeu est terminé
   useEffect(() => {
     if (isGameFinished) {
-      const timer = setTimeout(() => {
-        setShowFinished(true)
-        setShowConfetti(true)
-      }, 6000)
+      const timer = setTimeout(() => { setShowFinished(true); setShowConfetti(true) }, 6000)
       return () => clearTimeout(timer)
     }
   }, [isGameFinished])
 
-  // Handle spin start
   useEffect(() => {
     if (isSpinning && !previousSpinning.current) {
       setShowResult(false)
       setShowConfetti(false)
-
       if (audioSettings?.enabled && audioSettings?.url && customAudioRef.current) {
         customAudioRef.current.currentTime = 0
         customAudioRef.current.volume = 1
@@ -148,7 +116,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       } else if (audioRef.current) {
         audioRef.current.play().catch(() => {})
       }
-
       if (spinToIndex !== undefined) {
         setIsInfiniteSpinning(false)
         const segmentAngle = 360 / availableSegments.length
@@ -160,7 +127,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       }
     } else if (!isSpinning && previousSpinning.current) {
       setIsInfiniteSpinning(false)
-      // Fadeout audio seulement en mode auto (pas manuel, déjà arrêté)
       if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
@@ -169,7 +135,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     previousSpinning.current = isSpinning
   }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio, spinMode])
 
-  // Handle spinToIndex change during spinning (manual mode stop)
   const [isManualStop, setIsManualStop] = useState(false)
   useEffect(() => {
     if (isSpinning && spinToIndex !== undefined && previousSpinToIndex.current === undefined) {
@@ -177,19 +142,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       setIsManualStop(true)
       const segmentAngle = 360 / availableSegments.length
       const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-      // Mode manuel: seulement 1-2 tours pour un arrêt rapide
       const fullRotations = 1 + Math.floor(Math.random() * 1)
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
-
-      // Mode manuel: arrêter la musique immédiatement
       if (customAudioRef.current && !customAudioRef.current.paused) {
         customAudioRef.current.pause()
         customAudioRef.current.currentTime = 0
       }
     }
-    if (!isSpinning) {
-      setIsManualStop(false)
-    }
+    if (!isSpinning) setIsManualStop(false)
     previousSpinToIndex.current = spinToIndex
   }, [spinToIndex, isSpinning, availableSegments.length, rotation])
 
@@ -209,66 +169,60 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       const textX = cx + textRadius * Math.cos(textAngle)
       const textY = cy + textRadius * Math.sin(textAngle)
       const textRotation = (textAngle * 180) / Math.PI + 90
-      // Utiliser les couleurs casino alternées
-      const casinoColor = CASINO_COLORS[index % CASINO_COLORS.length]
-      return { id: segment.id, pathData, color: casinoColor, text: segment.text, textX, textY, textRotation }
+      return { id: segment.id, pathData, color: CASINO_COLORS[index % CASINO_COLORS.length], text: segment.text, textX, textY, textRotation }
     })
   }, [availableSegments])
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      {/* FOND VIOLET/MAUVE GRADIENT */}
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #2D1B4E 0%, #4A1F6E 25%, #6B2D8E 50%, #4A1F6E 75%, #2D1B4E 100%)' }}>
-        {/* Étoiles scintillantes */}
+
+      {/* FOND NOIR + RAYONS DORÉS */}
+      <div className="absolute inset-0" style={{ background: '#050008' }}>
+        {RAYS.map((ray) => (
+          <div key={ray.id} className="absolute top-1/2 left-1/2"
+            style={{
+              width: '70%', height: '1px',
+              transformOrigin: '0 0',
+              transform: `rotate(${ray.angle}deg)`,
+              background: `linear-gradient(to right, transparent, rgba(212,175,55,${ray.opacity}), transparent)`,
+            }} />
+        ))}
+
+        {/* Étincelles dorées */}
         {PARTICLES.map((p) => (
           <motion.div key={p.id} className="absolute"
             style={{ width: p.size, height: p.size, left: `${p.x}%`, top: `${Math.random() * 100}%` }}
             initial={{ opacity: 0, scale: 0 }}
-            animate={{
-              opacity: [0, 1, 1, 0],
-              scale: [0, 1, 1, 0],
-              rotate: [0, 180, 360]
-            }}
+            animate={{ opacity: [0, 1, 1, 0], scale: [0, 1, 1, 0], rotate: [0, 180, 360] }}
             transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}>
-            <svg viewBox="0 0 24 24" fill="#FFD700" className="w-full h-full drop-shadow-[0_0_4px_#FFD700]">
+            <svg viewBox="0 0 24 24" fill="#D4AF37" className="w-full h-full drop-shadow-[0_0_4px_#D4AF37]">
               <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41L12 0Z" />
             </svg>
           </motion.div>
         ))}
 
-        {/* Halo lumineux central */}
+        {/* Halo doré central */}
         <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.15) 0%, rgba(139,0,0,0.1) 40%, transparent 70%)' }}
-          animate={{ scale: [1, 1.05, 1], opacity: [0.4, 0.6, 0.4] }}
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(80,30,140,0.06) 45%, transparent 70%)' }}
+          animate={{ scale: [1, 1.06, 1], opacity: [0.5, 0.8, 0.5] }}
           transition={{ duration: 3, repeat: Infinity }} />
       </div>
 
       {/* Bouton plein écran */}
-      <motion.button
-        onClick={toggleFullscreen}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        transition={{ duration: 0.3 }}
+      <motion.button onClick={toggleFullscreen} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}
         className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
-        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-      >
-        {isFullscreen ? (
-          <Minimize className="h-6 w-6 text-[#D4AF37]" />
-        ) : (
-          <Maximize className="h-6 w-6 text-[#D4AF37]" />
-        )}
+        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
+        {isFullscreen ? <Minimize className="h-6 w-6 text-[#D4AF37]" /> : <Maximize className="h-6 w-6 text-[#D4AF37]" />}
       </motion.button>
 
       {/* CONTENU PRINCIPAL */}
       <div className="relative z-10 h-full flex flex-col items-center justify-start pt-6 pb-8">
-        {/* TITRE PREMIUM */}
+
+        {/* TITRE */}
         <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-6">
           <h1 className="text-4xl md:text-6xl font-black tracking-wider"
-            style={{
-              color: '#FFD700',
-              textShadow: '0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 40px #FF6B00, 0 4px 0 #8B6914, 0 5px 10px rgba(0,0,0,0.5)'
-            }}>
+            style={{ color: '#FFD700', textShadow: '0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 40px #FF6B00, 0 4px 0 #8B6914, 0 5px 10px rgba(0,0,0,0.5)' }}>
             ROUE DE LA DESTINÉE
           </h1>
           <p className="text-white/80 mt-2 text-base md:text-lg tracking-widest uppercase"
@@ -277,101 +231,61 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           </p>
         </motion.div>
 
-        {/* CONTAINER ROUE AVEC SOCLE */}
+        {/* ROUE + SOCLE */}
         <div className="relative mt-4">
-          {/* SOCLE/PIED ROUGE */}
+
+          {/* SOCLE DORÉ */}
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-80 h-20">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-16"
               style={{
-                background: 'linear-gradient(to bottom, #8B0000 0%, #5C0000 50%, #3D0000 100%)',
+                background: 'linear-gradient(to bottom, #D4AF37 0%, #B8960C 45%, #7A6200 100%)',
                 borderRadius: '0 0 20px 20px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.2)'
+                boxShadow: '0 10px 30px rgba(0,0,0,0.7), inset 0 2px 0 rgba(255,255,255,0.3)'
               }} />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-8"
               style={{
-                background: 'linear-gradient(to bottom, #A00000 0%, #6B0000 100%)',
+                background: 'linear-gradient(to bottom, #E5C84A 0%, #B8960C 100%)',
                 borderRadius: '0 0 10px 10px',
-                boxShadow: '0 5px 15px rgba(0,0,0,0.4)'
+                boxShadow: '0 5px 15px rgba(0,0,0,0.5)'
               }} />
-            {/* Vis décoratives */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-40">
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#8B7500] shadow-lg" />
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#8B7500] shadow-lg" />
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#FFD700] to-[#8B7500] shadow-lg" />
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#FFD700] to-[#8B7500] shadow-lg" />
             </div>
           </div>
 
-          {/* CADRE ROUGE AVEC AMPOULES */}
+          {/* CADRE DORÉ */}
           <div className="relative">
-            {/* Ombre de la roue */}
-            <div className="absolute inset-0 rounded-full blur-3xl opacity-40"
-              style={{ background: 'radial-gradient(circle, rgba(139,0,0,0.8) 0%, transparent 70%)', transform: 'translateY(30px) scale(1.15)' }} />
+            {/* Ombre portée dorée */}
+            <div className="absolute inset-0 rounded-full blur-3xl opacity-60"
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%)', transform: 'translateY(30px) scale(1.2)' }} />
 
-            {/* Cadre extérieur rouge */}
-            <div className="absolute -inset-8 rounded-full"
+            {/* Anneau doré extérieur */}
+            <motion.div className="absolute -inset-8 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, #B22222 0%, #8B0000 30%, #5C0000 70%, #8B0000 100%)',
-                boxShadow: '0 0 40px rgba(139,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.5)'
-              }}>
-              {/* Ampoules lumineuses */}
-              {BULBS.map((bulb, i) => {
-                const x = 50 + 47 * Math.cos(bulb.angle)
-                const y = 50 + 47 * Math.sin(bulb.angle)
-                const isLit = (i + bulbPhase) % 2 === 0
-                return (
-                  <motion.div key={bulb.id}
-                    className="absolute w-4 h-4 rounded-full"
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      background: isLit
-                        ? 'radial-gradient(circle, #FFFF00 0%, #FFD700 50%, #FFA500 100%)'
-                        : 'radial-gradient(circle, #8B7500 0%, #5C4000 50%, #3D2900 100%)',
-                      boxShadow: isLit
-                        ? '0 0 15px #FFD700, 0 0 30px #FFA500, 0 0 45px rgba(255,165,0,0.5)'
-                        : '0 0 5px rgba(139,117,0,0.3)',
-                    }}
-                    animate={isLit ? {
-                      boxShadow: [
-                        '0 0 15px #FFD700, 0 0 30px #FFA500',
-                        '0 0 20px #FFD700, 0 0 40px #FFA500',
-                        '0 0 15px #FFD700, 0 0 30px #FFA500'
-                      ]
-                    } : {}}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                  />
-                )
-              })}
-            </div>
+                background: 'linear-gradient(135deg, #F0D060 0%, #D4AF37 25%, #A07810 55%, #D4AF37 80%, #F0D060 100%)',
+                boxShadow: '0 0 40px rgba(212,175,55,0.6), 0 0 80px rgba(212,175,55,0.2), inset 0 0 20px rgba(0,0,0,0.5)'
+              }}
+              animate={{ boxShadow: ['0 0 40px rgba(212,175,55,0.5), 0 0 80px rgba(212,175,55,0.2)', '0 0 60px rgba(212,175,55,0.8), 0 0 120px rgba(212,175,55,0.3)', '0 0 40px rgba(212,175,55,0.5), 0 0 80px rgba(212,175,55,0.2)'] }}
+              transition={{ duration: 2.5, repeat: Infinity }}>
+              <div className="absolute inset-3 rounded-full border-2 border-[#8B7500]/50" />
+              <div className="absolute inset-5 rounded-full border border-[#FFD700]/20" />
+            </motion.div>
 
-            {/* Flèche/Indicateur doré premium */}
+            {/* Flèche dorée */}
             <motion.div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-10 z-30"
               animate={isSpinning ? { y: [-10, -6, -10] } : {}}
               transition={{ duration: 0.15, repeat: Infinity }}>
-              {/* Glow de la flèche */}
               <div className="absolute inset-0 blur-lg opacity-70"
-                style={{
-                  background: 'linear-gradient(to bottom, #FFD700, #D4AF37)',
-                  clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-                  width: '70px',
-                  height: '85px',
-                  transform: 'translateX(-5px)'
-                }} />
-              {/* Flèche principale */}
+                style={{ background: 'linear-gradient(to bottom, #FFD700, #D4AF37)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)', width: '70px', height: '85px', transform: 'translateX(-5px)' }} />
               <div className="relative w-[60px] h-[75px]"
-                style={{
-                  background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 40%, #B8960C 70%, #8B7500 100%)',
-                  clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-                  filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.6))',
-                  border: '3px solid #8B7500'
-                }}>
-                {/* Reflet sur la flèche */}
+                style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 40%, #B8960C 70%, #8B7500 100%)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.6))' }}>
                 <div className="absolute top-2 left-2 w-4 h-8 opacity-50"
                   style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.8), transparent)', clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
               </div>
             </motion.div>
 
-            {/* LA ROUE SVG */}
+            {/* ROUE SVG */}
             <motion.div
               animate={{ rotate: isInfiniteSpinning ? [rotation, rotation + 360] : rotation }}
               transition={
@@ -393,62 +307,48 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     <stop offset="100%" stopColor="#8B7500" />
                   </radialGradient>
                   <radialGradient id="centerHighlight" cx="30%" cy="30%" r="60%">
-                    <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
                     <stop offset="100%" stopColor="transparent" />
                   </radialGradient>
                   <filter id="glow">
                     <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                     <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
                   </filter>
-                  <filter id="innerShadow">
-                    <feOffset dx="0" dy="2"/>
-                    <feGaussianBlur stdDeviation="3"/>
-                    <feComposite operator="out" in="SourceGraphic"/>
-                    <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0"/>
-                    <feBlend in2="SourceGraphic" mode="normal"/>
-                  </filter>
                 </defs>
 
-                {/* Bordure extérieure métallique */}
-                <circle cx="200" cy="200" r="185" fill="none" stroke="#2a2a2a" strokeWidth="6" />
-                <circle cx="200" cy="200" r="180" fill="none" stroke="url(#goldGradient)" strokeWidth="10" filter="url(#glow)" />
-                <circle cx="200" cy="200" r="172" fill="none" stroke="#1a1a1a" strokeWidth="4" />
+                {/* Anneaux dorés extérieurs */}
+                <circle cx="200" cy="200" r="178" fill="none" stroke="url(#goldGradient)" strokeWidth="14" filter="url(#glow)" />
+                <circle cx="200" cy="200" r="168" fill="none" stroke="#7A6200" strokeWidth="2" />
+                <circle cx="200" cy="200" r="163" fill="none" stroke="rgba(255,215,0,0.3)" strokeWidth="1" />
 
-                {/* Segments de la roue */}
+                {/* Segments violets avec séparations dorées */}
                 {wheelSegments.map((seg, i) => (
                   <g key={seg.id}>
-                    <path d={seg.pathData} fill={seg.color} stroke="#1A1A1E" strokeWidth="2" />
-                    {/* Effet de brillance sur chaque segment */}
-                    <path d={seg.pathData} fill="url(#centerHighlight)" opacity="0.3" />
-                    {/* Numéro du segment au lieu du texte */}
-                    <text x={seg.textX} y={seg.textY}
-                      fill={seg.color === '#E8E8E8' ? '#1A1A1E' : 'white'}
+                    <path d={seg.pathData} fill={seg.color} stroke="#D4AF37" strokeWidth="3" />
+                    <path d={seg.pathData} fill="url(#centerHighlight)" opacity="0.15" />
+                    <text
+                      x={seg.textX} y={seg.textY}
+                      fill="white"
                       fontSize="28"
                       fontWeight="bold"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       transform={`rotate(${seg.textRotation}, ${seg.textX}, ${seg.textY})`}
-                      style={{
-                        textShadow: seg.color === '#E8E8E8' ? 'none' : '2px 2px 4px rgba(0,0,0,0.9)',
-                        fontFamily: 'Arial Black, sans-serif'
-                      }}>
+                      style={{ fontFamily: 'Arial Black, sans-serif', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))' }}>
                       {i + 1}
                     </text>
                   </g>
                 ))}
 
-                {/* Centre de la roue - Bouton doré 3D */}
-                <circle cx="200" cy="200" r="55" fill="#1a1a1a" />
+                {/* Centre doré 3D */}
+                <circle cx="200" cy="200" r="55" fill="#0a0014" />
                 <circle cx="200" cy="200" r="50" fill="url(#centerGradient)" filter="url(#glow)" />
-                {/* Reflet 3D */}
                 <ellipse cx="190" cy="185" rx="25" ry="15" fill="rgba(255,255,255,0.35)" />
-                {/* Cercle central */}
-                <circle cx="200" cy="200" r="28" fill="#1a1a1a" />
+                <circle cx="200" cy="200" r="28" fill="#0a0014" />
                 <circle cx="200" cy="200" r="23" fill="url(#centerGradient)" />
                 <ellipse cx="195" cy="193" rx="12" ry="8" fill="rgba(255,255,255,0.3)" />
-                {/* Point central */}
-                <circle cx="200" cy="200" r="8" fill="#1a1a1a" />
-                <circle cx="200" cy="200" r="5" fill="#D4AF37" />
+                <circle cx="200" cy="200" r="8" fill="#0a0014" />
+                <circle cx="200" cy="200" r="5" fill="#FFD700" />
               </svg>
             </motion.div>
           </div>
@@ -459,11 +359,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
                 className="absolute -bottom-24 left-1/2 -translate-x-1/2">
                 <div className="flex items-center gap-3 px-6 py-3 rounded-full"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(139,0,0,0.8), rgba(90,0,0,0.9))',
-                    border: '2px solid #D4AF37',
-                    boxShadow: '0 0 20px rgba(212,175,55,0.4), 0 5px 15px rgba(0,0,0,0.4)'
-                  }}>
+                  style={{ background: 'linear-gradient(135deg, rgba(50,20,100,0.9), rgba(30,10,70,0.95))', border: '2px solid #D4AF37', boxShadow: '0 0 20px rgba(212,175,55,0.4)' }}>
                   <motion.div className="w-3 h-3 bg-[#FFD700] rounded-full"
                     animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                     transition={{ duration: 0.4, repeat: Infinity }}
@@ -491,9 +387,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               const isStar = Math.random() > 0.85
               return (
                 <motion.div key={i} className="absolute"
-                  style={{ left: `${randX}%`, top: '-20px', width: randW, height: randH,
-                    backgroundColor: isStar ? 'transparent' : CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-                    borderRadius: isRound ? '50%' : '0%' }}
+                  style={{ left: `${randX}%`, top: '-20px', width: randW, height: randH, backgroundColor: isStar ? 'transparent' : CONFETTI_COLORS[i % CONFETTI_COLORS.length], borderRadius: isRound ? '50%' : '0%' }}
                   initial={{ y: -50, rotate: 0, opacity: 1 }}
                   animate={{ y: windowHeight + 100, rotate: randRot, opacity: [1, 1, 0] }}
                   exit={{ opacity: 0 }}
@@ -510,27 +404,22 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         )}
       </AnimatePresence>
 
-      {/* POPUP RESULTAT */}
+      {/* POPUP RÉSULTAT */}
       <AnimatePresence>
         {showResult && result && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center z-50">
-            <motion.div className="absolute inset-0 bg-black/85 backdrop-blur-sm"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
+            <motion.div className="absolute inset-0 bg-black/85 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
             <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%]"
-              style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(139,0,0,0.2) 30%, transparent 50%)' }}
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.25) 0%, rgba(80,30,140,0.15) 30%, transparent 50%)' }}
               animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 2, repeat: Infinity }} />
             <motion.div initial={{ scale: 0.5, y: 100 }} animate={{ scale: 1, y: 0 }}
               transition={{ type: 'spring', damping: 15 }} className="relative z-10 mx-4">
               <div className="relative rounded-3xl p-8 md:p-12 text-center max-w-lg"
-                style={{
-                  background: 'linear-gradient(135deg, #4A1F6E 0%, #2D1B4E 50%, #1A0F2E 100%)',
-                  boxShadow: '0 0 60px rgba(212,175,55,0.5), 0 0 100px rgba(139,0,0,0.3)',
-                  border: '4px solid #D4AF37'
-                }}>
+                style={{ background: 'linear-gradient(135deg, #2D0F50 0%, #1A0A30 50%, #0D0520 100%)', boxShadow: '0 0 60px rgba(212,175,55,0.5), 0 0 100px rgba(80,30,140,0.3)', border: '4px solid #D4AF37' }}>
                 <motion.div className="absolute inset-0 rounded-3xl" style={{ border: '4px solid #D4AF37' }}
-                  animate={{ boxShadow: ['0 0 0 0 rgba(212, 175, 55, 0)', '0 0 0 20px rgba(212, 175, 55, 0.3)', '0 0 0 40px rgba(212, 175, 55, 0)'] }}
+                  animate={{ boxShadow: ['0 0 0 0 rgba(212,175,55,0)', '0 0 0 20px rgba(212,175,55,0.3)', '0 0 0 40px rgba(212,175,55,0)'] }}
                   transition={{ duration: 1.5, repeat: Infinity }} />
                 <motion.div initial={{ scale: 0 }} animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: 1 }}
                   transition={{ duration: 0.6, delay: 0.2 }} className="text-7xl md:text-8xl mb-6">🎰</motion.div>
@@ -543,9 +432,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                   {[...Array(5)].map((_, i) => (
                     <motion.div key={i} className="text-2xl"
                       animate={{ scale: [1, 1.3, 1], rotate: [0, 15, -15, 0] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.1 }}>
-                      ⭐
-                    </motion.div>
+                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.1 }}>⭐</motion.div>
                   ))}
                 </motion.div>
               </div>
@@ -559,57 +446,31 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         {showFinished && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center z-50">
-            <motion.div className="absolute inset-0 bg-black/90 backdrop-blur-md"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
-
+            <motion.div className="absolute inset-0 bg-black/90 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
             <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300%] h-[300%]"
-              style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.25) 0%, rgba(139,0,0,0.15) 30%, transparent 50%)' }}
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, rgba(80,30,140,0.1) 30%, transparent 50%)' }}
               animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 3, repeat: Infinity }} />
-
             <motion.div className="relative z-10 text-center px-8" initial={{ scale: 0.5, y: 50 }} animate={{ scale: 1, y: 0 }}
               transition={{ type: 'spring', damping: 12 }}>
-
-              <motion.div className="text-[120px] md:text-[180px] mb-4"
-                initial={{ scale: 0, rotate: -30 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', delay: 0.2, damping: 10 }}>
-                🎰
-              </motion.div>
-
-              <motion.h1 className="text-5xl md:text-7xl font-black mb-4"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
+              <motion.div className="text-[120px] md:text-[180px] mb-4" initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', delay: 0.2, damping: 10 }}>🎰</motion.div>
+              <motion.h1 className="text-5xl md:text-7xl font-black mb-4" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 style={{ color: '#FFD700', textShadow: '0 0 30px #FFD700, 0 0 60px #FFD700, 0 0 90px #FF6B00' }}>
                 FÉLICITATIONS !
               </motion.h1>
-
-              <motion.p className="text-2xl md:text-3xl text-white mb-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+              <motion.p className="text-2xl md:text-3xl text-white mb-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }} style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
                 Tous les défis ont été relevés !
               </motion.p>
-
-              <motion.p className="text-lg text-white/60 uppercase tracking-widest"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}>
-                La roue de la destinée est terminée
-              </motion.p>
-
-              <motion.div className="flex justify-center gap-4 mt-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}>
+              <motion.p className="text-lg text-white/60 uppercase tracking-widest" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}>La roue de la destinée est terminée</motion.p>
+              <motion.div className="flex justify-center gap-4 mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
                 {[...Array(5)].map((_, i) => (
                   <motion.span key={i} className="text-4xl"
                     animate={{ scale: [1, 1.3, 1], rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}>
-                    ⭐
-                  </motion.span>
+                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}>⭐</motion.span>
                 ))}
               </motion.div>
             </motion.div>
@@ -617,15 +478,10 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         )}
       </AnimatePresence>
 
-      {/* Default tick sound (fallback) */}
       <audio ref={audioRef} preload="auto">
         <source src="/sounds/tick.mp3" type="audio/mpeg" />
       </audio>
-
-      {/* Custom audio for wheel spin */}
-      {audioSettings?.url && (
-        <audio ref={customAudioRef} preload="auto" src={audioSettings.url} />
-      )}
+      {audioSettings?.url && <audio ref={customAudioRef} preload="auto" src={audioSettings.url} />}
     </div>
   )
 }
