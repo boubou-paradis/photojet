@@ -129,8 +129,11 @@ export default function HeroV5({
               style={{ background: 'rgba(13,13,15,0.80)', backdropFilter: 'blur(16px)' }}
             >
                 <div className="mb-5">
-                  <h3 className="text-lg font-semibold text-white">Commencer maintenant</h3>
-                  <p className="text-xs text-[#6B6B70] mt-0.5">Accès immédiat à toutes les fonctionnalités</p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/40 mb-3">
+                    <span className="text-[#D4AF37] text-xs font-bold tracking-wide">🎁 7 JOURS GRATUITS</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Commencer votre essai gratuit</h3>
+                  <p className="text-xs text-[#6B6B70] mt-0.5">Sans carte bancaire — accès complet immédiat</p>
                 </div>
 
                 {trialSuccess ? (
@@ -181,11 +184,11 @@ export default function HeroV5({
                     <div className="flex items-center justify-center gap-4 pt-1 text-xs text-[#6B6B70]">
                       <span className="flex items-center gap-1.5">
                         <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                        Accès immédiat
+                        7 jours offerts
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Check className="h-3.5 w-3.5 text-[#D4AF37]" />
-                        Toutes les fonctionnalités
+                        Sans carte bancaire
                       </span>
                     </div>
                   </div>
