@@ -15,9 +15,8 @@ import {
 } from 'lucide-react'
 import AnimaJetLogo from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
-import WeekendBlockModal from '@/components/WeekendBlockModal'
 import { createClient } from '@/lib/supabase'
-import { isWeekend, formatTimeRemaining } from '@/lib/trial'
+import { formatTimeRemaining } from '@/lib/trial'
 import { toast } from 'sonner'
 
 const navItems = [
@@ -42,7 +41,6 @@ export default function AdminLayoutClient({
   const searchParams = useSearchParams()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [showWeekendBlock, setShowWeekendBlock] = useState(false)
   const [isTrialUser] = useState(serverIsTrialUser)
   const [trialExpiresAt] = useState(serverTrialExpiresAt)
 
@@ -52,13 +50,6 @@ export default function AdminLayoutClient({
       toast.success('Bienvenue ! Votre essai gratuit de 7 jours est actif.')
     }
   }, [searchParams])
-
-  // Check weekend block for trial users
-  useEffect(() => {
-    if (isTrialUser && isWeekend()) {
-      setShowWeekendBlock(true)
-    }
-  }, [isTrialUser])
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -280,12 +271,6 @@ export default function AdminLayoutClient({
         )}
       </AnimatePresence>
 
-      {/* Weekend Block Modal */}
-      <WeekendBlockModal
-        isOpen={showWeekendBlock}
-        trialExpiresAt={trialExpiresAt}
-        onSubscribe={handleSubscribe}
-      />
     </div>
   )
 }

@@ -3,16 +3,6 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// isWeekend inline (même logique que trial.ts, Europe/Paris)
-function isWeekend(): boolean {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    timeZone: 'Europe/Paris',
-  })
-  const dayName = formatter.format(new Date())
-  return dayName === 'Fri' || dayName === 'Sat' || dayName === 'Sun'
-}
-
 const getSupabaseAdmin = () => {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,13 +54,10 @@ export async function checkUserSubscription(userId: string): Promise<{
     return { valid: false, reason: `subscription_${status}` }
   }
 
-  // trialing: check trial_end date + weekend
+  // trialing: check trial_end date
   if (status === 'trialing') {
     if (!trial_end || now > new Date(trial_end)) {
       return { valid: false, reason: 'trial_expired' }
-    }
-    if (isWeekend()) {
-      return { valid: false, reason: 'weekend_blocked' }
     }
     return { valid: true }
   }

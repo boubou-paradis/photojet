@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isWeekend, isTokenExpired } from '@/lib/trial'
+import { isTokenExpired } from '@/lib/trial'
 import { generatePassword, generateSessionCode } from '@/lib/stripe'
 import { sendTrialWelcomeEmail } from '@/lib/resend'
 
@@ -76,11 +76,6 @@ export async function GET(request: NextRequest) {
     // Check if token is expired
     if (isTokenExpired(trialToken.expires_at)) {
       return NextResponse.redirect(`${APP_URL}/trial/expired`)
-    }
-
-    // Check if it's the weekend
-    if (isWeekend()) {
-      return NextResponse.redirect(`${APP_URL}/trial/blocked-weekend`)
     }
 
     // Check if already used - redirect to login if account exists
