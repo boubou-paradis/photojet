@@ -1,5 +1,13 @@
 'use client'
 
+// Handles both TEXT (string) and JSONB (already-parsed object) columns
+function parseJsonArray<T = unknown>(raw: unknown): T[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as T[]
+  if (typeof raw === 'string') { try { return JSON.parse(raw) } catch { return [] } }
+  return []
+}
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -251,11 +259,8 @@ export default function QuizPage() {
 
       // Charger les questions depuis la DB (même si le jeu n'est pas actif)
       if (data.quiz_questions) {
-        try {
-          setQuestions(JSON.parse(data.quiz_questions))
-        } catch {
-          setQuestions(DEFAULT_QUESTIONS)
-        }
+        const qs = parseJsonArray<QuizQuestion>(data.quiz_questions)
+        setQuestions(qs.length > 0 ? qs : DEFAULT_QUESTIONS)
       }
 
       // Initialize game state from session si le jeu est actif
@@ -265,13 +270,8 @@ export default function QuizPage() {
         setIsAnswering(data.quiz_is_answering ?? false)
         setShowResults(data.quiz_show_results ?? false)
         setTimeLeft(data.quiz_time_left ?? null)
-        if (data.quiz_participants) {
-          try {
-            setParticipants(JSON.parse(data.quiz_participants))
-          } catch {
-            setParticipants([])
-          }
-        }
+        const ps = parseJsonArray<QuizParticipant>(data.quiz_participants)
+        if (ps.length > 0) setParticipants(ps)
       } else {
         // Si le quiz n'est pas actif mais quiz_lobby_visible est true, on reset
         // Cela permet au diaporama de reprendre normalement
@@ -366,28 +366,18 @@ export default function QuizPage() {
           filter: `id=eq.${session.id}`,
         },
         (payload) => {
-          if (payload.new.quiz_participants) {
-            try {
-              setParticipants(JSON.parse(payload.new.quiz_participants))
-            } catch {
-              // Ignore
-            }
-          }
-          if (payload.new.quiz_answers) {
-            try {
-              const answers = JSON.parse(payload.new.quiz_answers)
-              const currentQ = questionsRef.current[currentQuestionIndexRef.current]
-              if (currentQ) {
-                const stats = [0, 0, 0, 0]
-                answers.filter((a: { questionId: string }) => a.questionId === currentQ.id).forEach((a: { answerIndex: number }) => {
-                  if (a.answerIndex >= 0 && a.answerIndex < 4) {
-                    stats[a.answerIndex]++
-                  }
-                })
-                setAnswerStats(stats)
-              }
-            } catch {
-              // Ignore
+          const ps = parseJsonArray<QuizParticipant>(payload.new.quiz_participants)
+          if (ps.length > 0) setParticipants(ps)
+
+          const answers = parseJsonArray<{ questionId: string; answerIndex: number }>(payload.new.quiz_answers)
+          if (answers.length > 0) {
+            const currentQ = questionsRef.current[currentQuestionIndexRef.current]
+            if (currentQ) {
+              const stats = [0, 0, 0, 0]
+              answers
+                .filter(a => a.questionId === currentQ.id)
+                .forEach(a => { if (a.answerIndex >= 0 && a.answerIndex < 4) stats[a.answerIndex]++ })
+              setAnswerStats(stats)
             }
           }
         }
@@ -1160,9 +1150,10 @@ export default function QuizPage() {
       .select('quiz_participants')
       .eq('id', session.id)
       .single()
-    const freshParticipants: QuizParticipant[] = data?.quiz_participants
-      ? (() => { try { return JSON.parse(data.quiz_participants) } catch { return participants } })()
-      : participants
+    const freshParticipants: QuizParticipant[] =
+      parseJsonArray<QuizParticipant>(data?.quiz_participants).length > 0
+        ? parseJsonArray<QuizParticipant>(data?.quiz_participants)
+        : participants
     if (freshParticipants.length > 0) {
       setParticipants(freshParticipants)
     }

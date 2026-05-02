@@ -1,5 +1,12 @@
 'use client'
 
+function parseJsonArray<T = unknown>(raw: unknown): T[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as T[]
+  if (typeof raw === 'string') { try { return JSON.parse(raw) } catch { return [] } }
+  return []
+}
+
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -139,9 +146,8 @@ export default function JoinQuizPage() {
           .eq('id', sessionId)
           .single()
 
-        const participants = session?.quiz_participants
-          ? JSON.parse(session.quiz_participants)
-          : []
+        const participants: { odientId: string; odientName: string; totalScore: number; correctAnswers: number }[] =
+          parseJsonArray(session?.quiz_participants)
 
         // Add new participant if not already exists
         if (!participants.find((p: { odientId: string }) => p.odientId === playerId)) {

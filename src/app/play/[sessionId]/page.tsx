@@ -1,5 +1,12 @@
 'use client'
 
+function parseJsonArray<T = unknown>(raw: unknown): T[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as T[]
+  if (typeof raw === 'string') { try { return JSON.parse(raw) } catch { return [] } }
+  return []
+}
+
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -439,7 +446,8 @@ export default function PlayQuizPage() {
             .single()
 
           // Update answers
-          const answers = session?.quiz_answers ? JSON.parse(session.quiz_answers) : []
+          const answers: { odientId: string; questionId: string; answerIndex: number; timestamp: number }[] =
+            parseJsonArray(session?.quiz_answers)
           answers.push({
             odientId: playerId,
             questionId: currentQuestion.nonce,
@@ -448,7 +456,8 @@ export default function PlayQuizPage() {
           })
 
           // Update participant score
-          const participants = session?.quiz_participants ? JSON.parse(session.quiz_participants) : []
+          const participants: { odientId: string; odientName: string; totalScore: number; correctAnswers: number }[] =
+            parseJsonArray(session?.quiz_participants)
           const participantIndex = participants.findIndex((p: { odientId: string }) => p.odientId === playerId)
 
           if (participantIndex >= 0) {
