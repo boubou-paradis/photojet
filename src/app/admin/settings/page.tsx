@@ -84,6 +84,7 @@ export default function SettingsPage() {
     custom_logo: null as string | null,
     logo_size: 'medium' as LogoSize,
     logo_position: 'center' as LogoPosition,
+    show_logo: true,
     // Messages settings
     messages_enabled: true,
     messages_frequency: 4,
@@ -123,6 +124,7 @@ export default function SettingsPage() {
         custom_logo: selectedSession.custom_logo ?? null,
         logo_size: selectedSession.logo_size ?? 'medium',
         logo_position: ((selectedSession.logo_position as string) === 'top-center' ? 'center' : selectedSession.logo_position ?? 'center') as LogoPosition,
+        show_logo: selectedSession.show_logo ?? true,
         // Messages settings
         messages_enabled: selectedSession.messages_enabled ?? true,
         messages_frequency: selectedSession.messages_frequency ?? 4,
@@ -267,6 +269,7 @@ export default function SettingsPage() {
           custom_logo: formData.custom_logo,
           logo_size: formData.logo_size,
           logo_position: formData.logo_position,
+          show_logo: formData.show_logo,
           // Messages settings
           messages_enabled: formData.messages_enabled,
           messages_frequency: formData.messages_frequency,
@@ -829,10 +832,21 @@ export default function SettingsPage() {
 
                 {/* Section Logo */}
                 <div className="space-y-4">
-                  <h4 className="text-white font-medium flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
-                    Logo personnalisé
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-white font-medium flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
+                      Logo personnalisé
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-[#B0B0B5] text-sm">Afficher</Label>
+                      <Switch
+                        checked={formData.show_logo}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, show_logo: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
 
                   <div className="flex items-center gap-4">
                     {formData.custom_logo ? (

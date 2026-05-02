@@ -113,6 +113,7 @@ export interface Session {
   custom_logo: string | null
   logo_size: LogoSize
   logo_position: LogoPosition
+  show_logo: boolean
   // Messages settings
   messages_enabled: boolean
   messages_frequency: number // Show message every X photos

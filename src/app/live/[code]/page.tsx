@@ -786,6 +786,7 @@ export default function LivePage() {
   const logoSize = session?.logo_size || 'medium'
   const rawLogoPosition: string = session?.logo_position || 'center'
   const logoPosition: LogoPosition = (rawLogoPosition === 'top-center' ? 'center' : rawLogoPosition) as LogoPosition
+  const showLogo = session?.show_logo ?? true
   const logoUrl = customLogo ? getStorageUrl(customLogo) : '/images/animajet_logo_principal.png'
   const logoSizeValues = logoSizes[logoSize]
 
@@ -1252,16 +1253,18 @@ export default function LivePage() {
       </motion.button>
 
       {/* Universal logo overlay */}
-      <div
-        className={[
-          'absolute z-30 pointer-events-none',
-          logoPosition === 'center' ? 'top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2' : '',
-          logoPosition === 'bottom-left' ? 'bottom-6 left-6' : '',
-          logoPosition === 'top-left' ? 'top-6 left-6' : '',
-        ].join(' ')}
-      >
-        {renderLogo()}
-      </div>
+      {showLogo && (
+        <div
+          className={[
+            'absolute z-30 pointer-events-none',
+            logoPosition === 'center' ? 'top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2' : '',
+            logoPosition === 'bottom-left' ? 'bottom-6 left-6' : '',
+            logoPosition === 'top-left' ? 'top-6 left-6' : '',
+          ].join(' ')}
+        >
+          {renderLogo()}
+        </div>
+      )}
 
       {slideshowItems.length === 0 ? (
         /* Waiting screen with rocket animation */
