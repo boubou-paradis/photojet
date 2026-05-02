@@ -435,62 +435,23 @@ export default function PlayQuizPage() {
       setLastPointsEarned(pointsEarned)
       setLastSpeedBonus(speedBonus)
 
-      // Save answer to Supabase if using production mode
-      if (useSupabase && sessionId) {
-        try {
-          // Get current answers and participants
-          const { data: session } = await supabase
-            .from('sessions')
-            .select('quiz_answers, quiz_participants')
-            .eq('id', sessionId)
-            .single()
-
-          // Update answers
-          const answers: { odientId: string; questionId: string; answerIndex: number; timestamp: number }[] =
-            parseJsonArray(session?.quiz_answers)
-          answers.push({
-            odientId: playerId,
+      // Save answer via API (service role bypasse RLS)
+      if (sessionId) {
+        fetch('/api/quiz/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            playerId,
+            playerName: decodeURIComponent(playerName),
             questionId: currentQuestion.nonce,
             answerIndex,
-            timestamp: clientSentAt,
-          })
+            pointsEarned,
+            isCorrect: !!isCorrect,
+          }),
+        }).catch(err => console.error('Error saving answer:', err))
 
-          // Update participant score
-          const participants: { odientId: string; odientName: string; totalScore: number; correctAnswers: number }[] =
-            parseJsonArray(session?.quiz_participants)
-          const participantIndex = participants.findIndex((p: { odientId: string }) => p.odientId === playerId)
-
-          if (participantIndex >= 0) {
-            participants[participantIndex].totalScore += pointsEarned
-            if (isCorrect) {
-              participants[participantIndex].correctAnswers += 1
-            }
-          } else {
-            // New participant - add them to the list
-            participants.push({
-              odientId: playerId,
-              odientName: decodeURIComponent(playerName),
-              totalScore: pointsEarned,
-              correctAnswers: isCorrect ? 1 : 0,
-            })
-          }
-
-          // Save to database
-          await supabase
-            .from('sessions')
-            .update({
-              quiz_answers: JSON.stringify(answers),
-              quiz_participants: JSON.stringify(participants),
-            })
-            .eq('id', sessionId)
-
-          // Update local score
-          if (isCorrect) {
-            setMyScore(prev => prev + pointsEarned)
-          }
-        } catch (err) {
-          console.error('Error saving answer:', err)
-        }
+        if (isCorrect) setMyScore(prev => prev + pointsEarned)
       }
 
       // Also send via BroadcastChannel for demo mode

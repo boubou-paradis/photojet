@@ -136,33 +136,14 @@ export default function JoinQuizPage() {
       })
     )
 
-    // Register player in Supabase if we have a valid session
+    // Register player via API (service role bypasse RLS)
     if (sessionId) {
       try {
-        // Get current participants
-        const { data: session } = await supabase
-          .from('sessions')
-          .select('quiz_participants')
-          .eq('id', sessionId)
-          .single()
-
-        const participants: { odientId: string; odientName: string; totalScore: number; correctAnswers: number }[] =
-          parseJsonArray(session?.quiz_participants)
-
-        // Add new participant if not already exists
-        if (!participants.find((p: { odientId: string }) => p.odientId === playerId)) {
-          participants.push({
-            odientId: playerId,
-            odientName: playerName.trim(),
-            totalScore: 0,
-            correctAnswers: 0,
-          })
-
-          await supabase
-            .from('sessions')
-            .update({ quiz_participants: JSON.stringify(participants) })
-            .eq('id', sessionId)
-        }
+        await fetch('/api/quiz/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, playerId, playerName: playerName.trim() }),
+        })
       } catch (err) {
         console.error('Error registering player:', err)
       }
