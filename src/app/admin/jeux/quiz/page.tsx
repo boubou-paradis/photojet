@@ -78,7 +78,7 @@ export default function QuizPage() {
   const [launching, setLaunching] = useState(false)
 
   // Configuration
-  const [questions, setQuestions] = useState<QuizQuestion[]>(DEFAULT_QUESTIONS)
+  const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null)
 
   // Game state
@@ -260,7 +260,7 @@ export default function QuizPage() {
       // Charger les questions depuis la DB (même si le jeu n'est pas actif)
       if (data.quiz_questions) {
         const qs = parseJsonArray<QuizQuestion>(data.quiz_questions)
-        setQuestions(qs.length > 0 ? qs : DEFAULT_QUESTIONS)
+        setQuestions(qs)
       }
 
       // Initialize game state from session si le jeu est actif

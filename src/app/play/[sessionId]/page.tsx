@@ -171,7 +171,7 @@ export default function PlayQuizPage() {
     if (!q) return
 
     if (quizState.gameActive && quizState.isAnswering) {
-      // Reset answer state when a new question arrives
+      // Seulement au changement de question
       if (q.id !== lastQuestionNonceRef.current) {
         lastQuestionNonceRef.current = q.id
         setSelectedAnswer(null)
@@ -179,26 +179,27 @@ export default function PlayQuizPage() {
         setLastPointsEarned(0)
         setLastSpeedBonus('')
         setCorrectKey(null)
+        setCurrentQuestion({
+          index: quizState.currentQuestionIndex,
+          question: q.question,
+          answers: {
+            A: q.answers[0] || '',
+            B: q.answers[1] || '',
+            C: q.answers[2] || '',
+            D: q.answers[3] || '',
+          },
+          opensAt: Date.now(),
+          closesAt: Date.now() + (quizState.timeLeft || 20) * 1000,
+          nonce: q.id,
+          hideQuestion: false,
+          points: q.points,
+        })
+        setPlayerState('ANSWERING')
+        setCanAnswer(true)
+        setTotalTimeMs((quizState.timeLeft || 20) * 1000)
       }
-      setCurrentQuestion({
-        index: quizState.currentQuestionIndex,
-        question: q.question,
-        answers: {
-          A: q.answers[0] || '',
-          B: q.answers[1] || '',
-          C: q.answers[2] || '',
-          D: q.answers[3] || '',
-        },
-        opensAt: Date.now(),
-        closesAt: Date.now() + (quizState.timeLeft || 20) * 1000,
-        nonce: q.id,
-        hideQuestion: false,
-        points: q.points,
-      })
-      setPlayerState('ANSWERING')
-      setCanAnswer(true)
-      setTotalTimeMs((quizState.timeLeft || 20) * 1000)
-      setTimeLeftMs((quizState.timeLeft || 20) * 1000)
+      // Sync timer toutes les secondes
+      setTimeLeftMs((quizState.timeLeft || 0) * 1000)
     } else if (quizState.gameActive && quizState.showResults) {
       // Results are shown
       const correctIndex = q.correctAnswer
