@@ -351,43 +351,38 @@ export default function QuizPage() {
     return () => clearInterval(timer)
   }, [isAnswering, timeLeft, session, questions, currentQuestionIndex, participants, answerStats, broadcastGameState, supabase])
 
-  // Subscribe to realtime answers (also works in lobby mode)
+  // Polling DB toutes les 3s pour participants + answer stats (plus fiable que postgres_changes + RLS)
   useEffect(() => {
-    if (!session || (!gameActive && !lobbyVisible)) return
+    if (!session?.id || (!gameActive && !lobbyVisible)) return
 
-    const channel = supabase
-      .channel(`quiz-realtime-${session.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sessions',
-          filter: `id=eq.${session.id}`,
-        },
-        (payload) => {
-          const ps = parseJsonArray<QuizParticipant>(payload.new.quiz_participants)
-          if (ps.length > 0) setParticipants(ps)
+    const refresh = async () => {
+      const { data } = await supabase
+        .from('sessions')
+        .select('quiz_participants, quiz_answers')
+        .eq('id', session.id)
+        .single()
+      if (!data) return
 
-          const answers = parseJsonArray<{ questionId: string; answerIndex: number }>(payload.new.quiz_answers)
-          if (answers.length > 0) {
-            const currentQ = questionsRef.current[currentQuestionIndexRef.current]
-            if (currentQ) {
-              const stats = [0, 0, 0, 0]
-              answers
-                .filter(a => a.questionId === currentQ.id)
-                .forEach(a => { if (a.answerIndex >= 0 && a.answerIndex < 4) stats[a.answerIndex]++ })
-              setAnswerStats(stats)
-            }
-          }
+      const ps = parseJsonArray<QuizParticipant>(data.quiz_participants)
+      setParticipants(ps)
+
+      const answers = parseJsonArray<{ questionId: string; answerIndex: number }>(data.quiz_answers)
+      if (answers.length > 0) {
+        const currentQ = questionsRef.current[currentQuestionIndexRef.current]
+        if (currentQ) {
+          const stats = [0, 0, 0, 0]
+          answers
+            .filter(a => a.questionId === currentQ.id)
+            .forEach(a => { if (a.answerIndex >= 0 && a.answerIndex < 4) stats[a.answerIndex]++ })
+          setAnswerStats(stats)
         }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+      }
     }
-  }, [session, gameActive, lobbyVisible, supabase])
+
+    refresh()
+    const interval = setInterval(refresh, 3000)
+    return () => clearInterval(interval)
+  }, [session?.id, gameActive, lobbyVisible, supabase])
 
   // Sauvegarder les questions dans la DB
   async function saveQuestionsToDatabase(updatedQuestions: QuizQuestion[]) {
