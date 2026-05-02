@@ -128,10 +128,14 @@ export default function QuizPage() {
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const currentQuestionIndexRef = useRef(0)
   const questionsRef = useRef<QuizQuestion[]>([])
+  const participantsRef = useRef<QuizParticipant[]>([])
+  const answerStatsRef = useRef<number[]>([0, 0, 0, 0])
 
-  // Sync refs so realtime callback always has latest values without re-mounting
+  // Sync refs — valeurs toujours fraîches sans re-monter les useEffect qui les utilisent
   useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex }, [currentQuestionIndex])
   useEffect(() => { questionsRef.current = questions }, [questions])
+  useEffect(() => { participantsRef.current = participants }, [participants])
+  useEffect(() => { answerStatsRef.current = answerStats }, [answerStats])
 
   useEffect(() => {
     fetchSession()
@@ -276,7 +280,6 @@ export default function QuizPage() {
         // Si le quiz n'est pas actif mais quiz_lobby_visible est true, on reset
         // Cela permet au diaporama de reprendre normalement
         if (data.quiz_lobby_visible === true) {
-          console.log('Reset quiz_lobby_visible car quiz non actif')
           await supabase
             .from('sessions')
             .update({ quiz_lobby_visible: false })
@@ -317,13 +320,13 @@ export default function QuizPage() {
 
           broadcastGameState({
             gameActive: true,
-            questions,
-            currentQuestionIndex,
+            questions: questionsRef.current,
+            currentQuestionIndex: currentQuestionIndexRef.current,
             isAnswering: false,
             showResults: true,
             timeLeft: 0,
-            participants,
-            answerStats,
+            participants: participantsRef.current,
+            answerStats: answerStatsRef.current,
           })
         } else {
           supabase
@@ -331,16 +334,15 @@ export default function QuizPage() {
             .update({ quiz_time_left: newTime })
             .eq('id', session.id)
 
-          // Broadcast time update every second for phone sync
           broadcastGameState({
             gameActive: true,
-            questions,
-            currentQuestionIndex,
+            questions: questionsRef.current,
+            currentQuestionIndex: currentQuestionIndexRef.current,
             isAnswering: true,
             showResults: false,
             timeLeft: newTime,
-            participants,
-            answerStats,
+            participants: participantsRef.current,
+            answerStats: answerStatsRef.current,
           })
         }
 
@@ -349,7 +351,7 @@ export default function QuizPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isAnswering, timeLeft, session, questions, currentQuestionIndex, participants, answerStats, broadcastGameState, supabase])
+  }, [isAnswering, timeLeft, session, broadcastGameState, supabase])
 
   // Polling DB toutes les 3s pour participants + answer stats (plus fiable que postgres_changes + RLS)
   useEffect(() => {
@@ -696,7 +698,9 @@ export default function QuizPage() {
     if (editingQuestion.audioUrl) {
       const path = editingQuestion.audioUrl.match(/photos\/(.+)/)
       if (path?.[1]) {
-        await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
+        try {
+          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
+        } catch { /* chemin audio invalide, ignoré */ }
       }
     }
 
@@ -760,7 +764,6 @@ export default function QuizPage() {
 
     setLaunching(true)
     try {
-      console.log('showLobby: updating session', session.id, 'code:', session.code)
       const { error, data } = await supabase
         .from('sessions')
         .update({
@@ -777,7 +780,6 @@ export default function QuizPage() {
         .eq('id', session.id)
         .select()
 
-      console.log('showLobby: Supabase response:', { error, data })
 
       if (error) throw error
 
@@ -803,7 +805,6 @@ export default function QuizPage() {
       }
 
       toast.success(`Lobby affiché! Code: ${session.code}`)
-      console.log('showLobby: opening /live/' + session.code)
       window.open(`/live/${session.code}`, 'photojet-live')
     } catch (err) {
       console.error('Error showing lobby:', err)

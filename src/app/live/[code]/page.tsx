@@ -1,5 +1,12 @@
 'use client'
 
+function parseJsonArray<T = unknown>(raw: unknown): T[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as T[]
+  if (typeof raw === 'string') { try { return JSON.parse(raw) } catch { return [] } }
+  return []
+}
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
@@ -1197,17 +1204,9 @@ export default function LivePage() {
 
   if (isQuizActive) {
     // Get quiz data from broadcast state or parse from database
-    const quizQuestions: QuizQuestion[] = quizState?.questions ?? (session.quiz_questions ? (() => {
-      try {
-        return JSON.parse(session.quiz_questions as string)
-      } catch {
-        return []
-      }
-    })() : [])
+    const quizQuestions: QuizQuestion[] = quizState?.questions ?? parseJsonArray<QuizQuestion>(session.quiz_questions)
 
-    const dbParticipants: QuizParticipant[] = session.quiz_participants ? (() => {
-      try { return JSON.parse(session.quiz_participants as string) } catch { return [] }
-    })() : []
+    const dbParticipants: QuizParticipant[] = parseJsonArray<QuizParticipant>(session.quiz_participants)
     const quizParticipants: QuizParticipant[] =
       (quizState?.participants && quizState.participants.length > 0)
         ? quizState.participants

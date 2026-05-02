@@ -136,12 +136,9 @@ export default function PlayQuizPage() {
   useEffect(() => {
     if (!sessionCode) return
 
-    console.log('Subscribing to Supabase quiz channel:', `quiz-game-${sessionCode}`)
-
     const channel = supabase
       .channel(`quiz-game-${sessionCode}`)
       .on('broadcast', { event: 'quiz_state' }, (payload) => {
-        console.log('Received quiz state from Supabase:', payload)
         if (payload.payload) {
           setQuizState(payload.payload as QuizBroadcastState)
           setUseSupabase(true)
@@ -275,7 +272,7 @@ export default function PlayQuizPage() {
             client.send({
               type: 'join_request',
               playerId,
-              playerName: decodeURIComponent(playerName),
+              playerName: safeDecode(playerName),
               sessionCode,
               timestamp: Date.now(),
             })
