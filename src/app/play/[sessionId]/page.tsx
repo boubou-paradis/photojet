@@ -7,6 +7,10 @@ function parseJsonArray<T = unknown>(raw: unknown): T[] {
   return []
 }
 
+function safeDecode(s: string): string {
+  try { return decodeURIComponent(s) } catch { return s }
+}
+
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -105,8 +109,9 @@ export default function PlayQuizPage() {
   // Refs
   const clientRef = useRef(getLocalClient())
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const answerTimeRef = useRef<number>(0) // Track time when answer was submitted
+  const answerTimeRef = useRef<number>(0)
   const lastQuestionNonceRef = useRef<string | null>(null)
+  const quizStateRef = useRef<QuizBroadcastState | null>(null)
 
   // Calculate progressive points based on response time
   const calculateProgressivePoints = useCallback((basePoints: number, timeUsedMs: number, totalTimeMs: number): { points: number; bonus: string } => {
@@ -144,17 +149,20 @@ export default function PlayQuizPage() {
         }
       })
       .subscribe(async (status) => {
-        console.log('Supabase channel status:', status)
         if (status === 'SUBSCRIBED') {
           setConnected(true)
           setPlayerState('WAITING')
-
-          // Track presence - let admin know this player is connected
-          await channel.track({
-            odientId: playerId,
-            odientName: decodeURIComponent(playerName),
-            joinedAt: Date.now(),
-          })
+          try {
+            await channel.track({
+              odientId: playerId,
+              odientName: safeDecode(playerName),
+              joinedAt: Date.now(),
+            })
+          } catch { /* presence non critique */ }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnected(false)
+        } else if (status === 'CLOSED') {
+          setConnected(false)
         }
       })
 
@@ -162,6 +170,9 @@ export default function PlayQuizPage() {
       supabase.removeChannel(channel)
     }
   }, [sessionCode, supabase, playerId, playerName])
+
+  // Sync quizState vers ref (pour handleAnswer sans dépendance instable)
+  useEffect(() => { quizStateRef.current = quizState }, [quizState])
 
   // Handle quiz state changes from Supabase
   useEffect(() => {
@@ -410,18 +421,15 @@ export default function PlayQuizPage() {
       setSelectedAnswer(key)
       setPlayerState('ANSWERED')
 
-      // Convert key to index (A=0, B=1, C=2, D=3)
       const answerIndex = ['A', 'B', 'C', 'D'].indexOf(key)
 
-      // Check if answer is correct and calculate progressive points based on time
-      const currentQ = quizState?.questions[currentQuestion.index]
+      // Utilise le ref pour éviter quizState dans les deps (recréation chaque seconde)
+      const currentQ = quizStateRef.current?.questions[currentQuestion.index]
       const isCorrect = currentQ && answerIndex === currentQ.correctAnswer
 
-      // Calculate time used (totalTimeMs - timeLeftMs = time used)
       const timeUsedMs = totalTimeMs - timeLeftMs
       answerTimeRef.current = timeUsedMs
 
-      // Calculate progressive points based on response time
       const basePoints = currentQ?.points || 10
       let pointsEarned = 0
       let speedBonus = ''
@@ -432,30 +440,41 @@ export default function PlayQuizPage() {
         speedBonus = result.bonus
       }
 
-      // Store for display in reveal state
       setLastPointsEarned(pointsEarned)
       setLastSpeedBonus(speedBonus)
 
-      // Save answer via API (service role bypasse RLS)
+      // Sauvegarde avec retry (3 tentatives)
       if (sessionId) {
-        fetch('/api/quiz/answer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            playerId,
-            playerName: decodeURIComponent(playerName),
-            questionId: currentQuestion.nonce,
-            answerIndex,
-            pointsEarned,
-            isCorrect: !!isCorrect,
-          }),
-        }).catch(err => console.error('Error saving answer:', err))
+        const body = JSON.stringify({
+          sessionId,
+          playerId,
+          playerName: safeDecode(playerName),
+          questionId: currentQuestion.nonce,
+          answerIndex,
+          pointsEarned,
+          isCorrect: !!isCorrect,
+        });
+        (async () => {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const res = await fetch('/api/quiz/answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+              })
+              if (res.ok) break
+              if (attempt === 2) console.error('Answer save failed after 3 attempts')
+            } catch {
+              if (attempt === 2) console.error('Answer save network error')
+              await new Promise(r => setTimeout(r, 400 * (attempt + 1)))
+            }
+          }
+        })()
 
         if (isCorrect) setMyScore(prev => prev + pointsEarned)
       }
 
-      // Also send via BroadcastChannel for demo mode
+      // BroadcastChannel pour mode démo (même navigateur)
       clientRef.current.send({
         type: 'answer_submitted',
         playerId,
@@ -467,7 +486,7 @@ export default function PlayQuizPage() {
         nonce: currentQuestion.nonce,
       })
     },
-    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, useSupabase, sessionId, supabase, quizState, calculateProgressivePoints, totalTimeMs, timeLeftMs]
+    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, sessionId, playerName, calculateProgressivePoints, totalTimeMs, timeLeftMs]
   )
 
   // Render based on state
@@ -504,7 +523,7 @@ export default function PlayQuizPage() {
               <WifiOff className="h-4 w-4 text-red-400 animate-pulse" />
             </div>
           )}
-          <span className="text-white font-bold text-lg tracking-wide">{decodeURIComponent(playerName)}</span>
+          <span className="text-white font-bold text-lg tracking-wide">{safeDecode(playerName)}</span>
         </div>
         <div className="flex items-center gap-3">
           {latency > 0 && (
