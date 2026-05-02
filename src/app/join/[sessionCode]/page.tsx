@@ -172,18 +172,6 @@ export default function JoinQuizPage() {
     router.push(`/play/${targetSessionId}?code=${sessionCode}&playerId=${playerId}&name=${encodeURIComponent(playerName.trim())}`)
   }
 
-  // MAINTENANCE — retirer cette section quand le quiz est rétabli
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex items-center justify-center p-4">
-      <div className="text-center max-w-sm">
-        <div className="text-5xl mb-6">🔧</div>
-        <h1 className="text-2xl font-bold text-white mb-3">Quiz temporairement indisponible</h1>
-        <p className="text-gray-400">Le quiz est en cours de maintenance. Merci de réessayer dans quelques instants.</p>
-      </div>
-    </div>
-  )
-  // FIN MAINTENANCE
-
   // Loading state
   if (loading) {
     return (
