@@ -1255,7 +1255,7 @@ export default function LivePage() {
       <div
         className={[
           'absolute z-30 pointer-events-none',
-          logoPosition === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' : '',
+          logoPosition === 'center' ? 'top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2' : '',
           logoPosition === 'bottom-left' ? 'bottom-6 left-6' : '',
           logoPosition === 'top-left' ? 'top-6 left-6' : '',
         ].join(' ')}
