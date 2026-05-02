@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
-import { Session, Photo, Message } from '@/types/database'
+import { Session, Photo, Message, LogoPosition } from '@/types/database'
 import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
@@ -784,7 +784,8 @@ export default function LivePage() {
   const bgOpacity = session?.background_opacity ?? 50
   const customLogo = session?.custom_logo
   const logoSize = session?.logo_size || 'medium'
-  const logoPosition = session?.logo_position || 'bottom-left'
+  const rawLogoPosition: string = session?.logo_position || 'center'
+  const logoPosition: LogoPosition = (rawLogoPosition === 'top-center' ? 'center' : rawLogoPosition) as LogoPosition
   const logoUrl = customLogo ? getStorageUrl(customLogo) : '/images/animajet_logo_principal.png'
   const logoSizeValues = logoSizes[logoSize]
 
@@ -1250,17 +1251,17 @@ export default function LivePage() {
         )}
       </motion.button>
 
-      {/* Logo at top-center position if selected */}
-      {logoPosition === 'top-center' && (
-        <motion.div
-          initial={false}
-          animate={{ opacity: showUI ? 1 : 0, y: showUI ? 0 : -20 }}
-          transition={{ duration: 0.3 }}
-          className="absolute top-6 left-1/2 -translate-x-1/2 z-40"
-        >
-          {renderLogo()}
-        </motion.div>
-      )}
+      {/* Universal logo overlay */}
+      <div
+        className={[
+          'absolute z-30 pointer-events-none',
+          logoPosition === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' : '',
+          logoPosition === 'bottom-left' ? 'bottom-6 left-6' : '',
+          logoPosition === 'top-left' ? 'top-6 left-6' : '',
+        ].join(' ')}
+      >
+        {renderLogo()}
+      </div>
 
       {slideshowItems.length === 0 ? (
         /* Waiting screen with rocket animation */
@@ -1282,19 +1283,6 @@ export default function LivePage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <div className="mb-6">
-                <img
-                  src={logoUrl || '/images/animajet_logo_principal.png'}
-                  alt="Logo"
-                  className="mx-auto drop-shadow-lg"
-                  style={{
-                    width: logoSize === 'small' ? 80 : logoSize === 'medium' ? 120 : 160,
-                    height: 'auto',
-                    objectFit: 'contain'
-                  }}
-                />
-              </div>
-
               <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-lg">{session.name}</h1>
 
               <p className="text-xl text-white/80 mb-12">
@@ -1385,9 +1373,8 @@ export default function LivePage() {
               }}
             >
               <div className="flex items-end justify-between">
-                {/* Left side: Logo + event info */}
+                {/* Left side: event info */}
                 <div className="flex items-center gap-4">
-                  {logoPosition === 'bottom-left' && renderLogo()}
                   <div>
                     <h1 className="text-2xl font-bold text-white drop-shadow-lg">{session.name}</h1>
                     <div className="flex items-center gap-4 mt-1">

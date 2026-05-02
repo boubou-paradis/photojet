@@ -83,7 +83,7 @@ export default function SettingsPage() {
     background_opacity: 50,
     custom_logo: null as string | null,
     logo_size: 'medium' as LogoSize,
-    logo_position: 'bottom-left' as LogoPosition,
+    logo_position: 'center' as LogoPosition,
     // Messages settings
     messages_enabled: true,
     messages_frequency: 4,
@@ -122,7 +122,7 @@ export default function SettingsPage() {
         background_opacity: selectedSession.background_opacity ?? 50,
         custom_logo: selectedSession.custom_logo ?? null,
         logo_size: selectedSession.logo_size ?? 'medium',
-        logo_position: selectedSession.logo_position ?? 'bottom-left',
+        logo_position: ((selectedSession.logo_position as string) === 'top-center' ? 'center' : selectedSession.logo_position ?? 'center') as LogoPosition,
         // Messages settings
         messages_enabled: selectedSession.messages_enabled ?? true,
         messages_frequency: selectedSession.messages_frequency ?? 4,
@@ -914,8 +914,9 @@ export default function SettingsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                          <SelectItem value="center">Centre</SelectItem>
                           <SelectItem value="bottom-left">Bas gauche</SelectItem>
-                          <SelectItem value="top-center">Haut centre</SelectItem>
+                          <SelectItem value="top-left">Haut gauche</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
