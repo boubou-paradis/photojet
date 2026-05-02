@@ -118,6 +118,12 @@ export default function QuizPage() {
   const router = useRouter()
   const supabase = createClient()
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const currentQuestionIndexRef = useRef(0)
+  const questionsRef = useRef<QuizQuestion[]>([])
+
+  // Sync refs so realtime callback always has latest values without re-mounting
+  useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex }, [currentQuestionIndex])
+  useEffect(() => { questionsRef.current = questions }, [questions])
 
   useEffect(() => {
     fetchSession()
@@ -370,8 +376,7 @@ export default function QuizPage() {
           if (payload.new.quiz_answers) {
             try {
               const answers = JSON.parse(payload.new.quiz_answers)
-              // Calculate stats for current question
-              const currentQ = questions[currentQuestionIndex]
+              const currentQ = questionsRef.current[currentQuestionIndexRef.current]
               if (currentQ) {
                 const stats = [0, 0, 0, 0]
                 answers.filter((a: { questionId: string }) => a.questionId === currentQ.id).forEach((a: { answerIndex: number }) => {
@@ -392,7 +397,7 @@ export default function QuizPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [session, gameActive, lobbyVisible, questions, currentQuestionIndex, supabase])
+  }, [session, gameActive, lobbyVisible, supabase])
 
   // Sauvegarder les questions dans la DB
   async function saveQuestionsToDatabase(updatedQuestions: QuizQuestion[]) {
@@ -1141,12 +1146,25 @@ export default function QuizPage() {
   }
 
   // Afficher le podium final
-  function displayPodium() {
+  async function displayPodium() {
+    if (!session) return
     setShowPodium(true)
     // Stopper audio de réponse + musique de fond
     stopAnswerAudio()
     if (audioRef.current) {
       audioRef.current.pause()
+    }
+    // Lire les participants depuis la DB pour avoir les scores à jour
+    const { data } = await supabase
+      .from('sessions')
+      .select('quiz_participants')
+      .eq('id', session.id)
+      .single()
+    const freshParticipants: QuizParticipant[] = data?.quiz_participants
+      ? (() => { try { return JSON.parse(data.quiz_participants) } catch { return participants } })()
+      : participants
+    if (freshParticipants.length > 0) {
+      setParticipants(freshParticipants)
     }
     broadcastGameState({
       gameActive: true,
@@ -1155,7 +1173,7 @@ export default function QuizPage() {
       isAnswering: false,
       showResults: true,
       timeLeft: null,
-      participants,
+      participants: freshParticipants,
       answerStats,
       isFinished: true,
     })
@@ -1915,12 +1933,12 @@ export default function QuizPage() {
                         <span className="text-2xl">👥</span>
                       </div>
                       <div>
-                        <p className="text-[#6B6B70] text-sm">Joueurs connectés</p>
-                        <p className="text-[#D4AF37] text-3xl font-bold">{connectedPlayers.length}</p>
-                        {connectedPlayers.length > 0 && (
+                        <p className="text-[#6B6B70] text-sm">Joueurs inscrits</p>
+                        <p className="text-[#D4AF37] text-3xl font-bold">{Math.max(participants.length, connectedPlayers.length)}</p>
+                        {participants.length > 0 && (
                           <p className="text-[#6B6B70] text-xs mt-1 truncate max-w-[200px]">
-                            {connectedPlayers.slice(0, 3).map(p => p.odientName).join(', ')}
-                            {connectedPlayers.length > 3 && ` +${connectedPlayers.length - 3}`}
+                            {participants.slice(0, 3).map(p => p.odientName).join(', ')}
+                            {participants.length > 3 && ` +${participants.length - 3}`}
                           </p>
                         )}
                       </div>

@@ -959,13 +959,13 @@ export default function LivePage() {
 
   if (isQuizLobbyVisible) {
     // Get participants from broadcast state or database
-    const quizParticipants: QuizParticipant[] = quizState?.participants ?? (session.quiz_participants ? (() => {
-      try {
-        return JSON.parse(session.quiz_participants as string)
-      } catch {
-        return []
-      }
-    })() : [])
+    const dbParticipantsLobby: QuizParticipant[] = session.quiz_participants ? (() => {
+      try { return JSON.parse(session.quiz_participants as string) } catch { return [] }
+    })() : []
+    const quizParticipants: QuizParticipant[] =
+      (quizState?.participants && quizState.participants.length > 0)
+        ? quizState.participants
+        : dbParticipantsLobby
 
     return (
       <div className="fixed inset-0 bg-gradient-to-b from-[#08080f] via-[#0d0d1a] to-[#080810] flex flex-col overflow-hidden">
@@ -1205,13 +1205,13 @@ export default function LivePage() {
       }
     })() : [])
 
-    const quizParticipants: QuizParticipant[] = quizState?.participants ?? (session.quiz_participants ? (() => {
-      try {
-        return JSON.parse(session.quiz_participants as string)
-      } catch {
-        return []
-      }
-    })() : [])
+    const dbParticipants: QuizParticipant[] = session.quiz_participants ? (() => {
+      try { return JSON.parse(session.quiz_participants as string) } catch { return [] }
+    })() : []
+    const quizParticipants: QuizParticipant[] =
+      (quizState?.participants && quizState.participants.length > 0)
+        ? quizState.participants
+        : dbParticipants
 
     return (
       <QuizGame

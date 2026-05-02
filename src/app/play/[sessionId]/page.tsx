@@ -99,6 +99,7 @@ export default function PlayQuizPage() {
   const clientRef = useRef(getLocalClient())
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const answerTimeRef = useRef<number>(0) // Track time when answer was submitted
+  const lastQuestionNonceRef = useRef<string | null>(null)
 
   // Calculate progressive points based on response time
   const calculateProgressivePoints = useCallback((basePoints: number, timeUsedMs: number, totalTimeMs: number): { points: number; bonus: string } => {
@@ -163,7 +164,15 @@ export default function PlayQuizPage() {
     if (!q) return
 
     if (quizState.gameActive && quizState.isAnswering) {
-      // Question is active
+      // Reset answer state when a new question arrives
+      if (q.id !== lastQuestionNonceRef.current) {
+        lastQuestionNonceRef.current = q.id
+        setSelectedAnswer(null)
+        setLastAnswerCorrect(null)
+        setLastPointsEarned(0)
+        setLastSpeedBonus('')
+        setCorrectKey(null)
+      }
       setCurrentQuestion({
         index: quizState.currentQuestionIndex,
         question: q.question,
@@ -183,7 +192,6 @@ export default function PlayQuizPage() {
       setCanAnswer(true)
       setTotalTimeMs((quizState.timeLeft || 20) * 1000)
       setTimeLeftMs((quizState.timeLeft || 20) * 1000)
-      setCorrectKey(null)
     } else if (quizState.gameActive && quizState.showResults) {
       // Results are shown
       const correctIndex = q.correctAnswer
@@ -214,7 +222,9 @@ export default function PlayQuizPage() {
     if (myEntry) {
       setMyScore(myEntry.totalScore)
     }
-  }, [quizState, useSupabase, playerId, selectedAnswer])
+  // selectedAnswer intentionnellement absent : la ref lastQuestionNonceRef gère le reset
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState, useSupabase, playerId])
 
   // Timer for smooth countdown (syncs with broadcasts from admin)
   useEffect(() => {
