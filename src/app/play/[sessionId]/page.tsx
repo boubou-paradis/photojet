@@ -55,6 +55,7 @@ interface QuizBroadcastState {
     correctAnswers: number
   }>
   answerStats: number[]
+  isFinished?: boolean
 }
 
 export default function PlayQuizPage() {
@@ -229,15 +230,23 @@ export default function PlayQuizPage() {
       setLastPointsEarned(0)
       setLastSpeedBonus('')
     } else if (!quizState.gameActive) {
-      // Quiz not active
       setPlayerState('WAITING')
     }
 
-    // Update score
-    const myEntry = quizState.participants.find(p => p.odientId === playerId)
-    if (myEntry) {
-      setMyScore(myEntry.totalScore)
+    // Podium affiché → afficher l'écran de fin avec le rang du joueur
+    if (quizState.isFinished) {
+      const sorted = [...quizState.participants].sort((a, b) => b.totalScore - a.totalScore)
+      const rank = sorted.findIndex(p => p.odientId === playerId) + 1
+      const myEntry = sorted.find(p => p.odientId === playerId)
+      if (rank > 0) setMyRank(rank)
+      if (myEntry) setMyScore(myEntry.totalScore)
+      setPlayerState('FINISHED')
+      return
     }
+
+    // Update score en cours de partie
+    const myEntry = quizState.participants.find(p => p.odientId === playerId)
+    if (myEntry) setMyScore(myEntry.totalScore)
   // selectedAnswer intentionnellement absent : la ref lastQuestionNonceRef gère le reset
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizState, useSupabase, playerId])
