@@ -31,6 +31,7 @@ const BULBS = Array.from({ length: 28 }, (_, i) => ({
 }))
 
 const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FF6B6B', '#8B0000']
+const SPIN_CSS_DURATION_MS = 8000
 
 export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings, spinMode = 'auto' }: WheelGameProps) {
   const [rotation, setRotation] = useState(0)
@@ -45,11 +46,9 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const infiniteRotationRef = useRef(0)
+  const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const spinStartTimeRef = useRef<number>(0)
   const [windowHeight, setWindowHeight] = useState(800)
-
-  const SPIN_CSS_DURATION_MS = 8000
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -102,6 +101,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   useEffect(() => {
     return () => {
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
       if (customAudioRef.current) customAudioRef.current.pause()
     }
   }, [])
@@ -140,13 +140,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
       if (spinMode === 'auto') {
-        // Attendre que l'animation CSS soit terminée avant d'afficher le gage
         const elapsed = Date.now() - spinStartTimeRef.current
         const remainingMs = Math.max(0, SPIN_CSS_DURATION_MS - elapsed)
-        setTimeout(() => { setShowResult(true); setShowConfetti(true) }, remainingMs + 50)
+        resultTimeoutRef.current = setTimeout(() => { setShowResult(true); setShowConfetti(true) }, remainingMs + 50)
       } else {
-        setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
+        resultTimeoutRef.current = setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
       }
     }
     previousSpinning.current = isSpinning
@@ -161,14 +161,15 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
       const fullRotations = spinMode === 'auto' ? 3 : 1
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
-      if (customAudioRef.current && !customAudioRef.current.paused) {
+      // En mode auto, l'audio continue pendant la décel et fade à la fin du spin
+      if (spinMode !== 'auto' && customAudioRef.current && !customAudioRef.current.paused) {
         customAudioRef.current.pause()
         customAudioRef.current.currentTime = 0
       }
     }
     if (!isSpinning) setIsManualStop(false)
     previousSpinToIndex.current = spinToIndex
-  }, [spinToIndex, isSpinning, availableSegments.length, rotation])
+  }, [spinToIndex, isSpinning, availableSegments.length, rotation, spinMode])
 
   const wheelSegments = useMemo(() => {
     const cx = 200, cy = 200, r = 160, count = availableSegments.length

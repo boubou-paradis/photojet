@@ -64,6 +64,7 @@ export default function WheelPage() {
   const pendingResultRef = useRef<{ segment: WheelSegment; index: number } | null>(null)
   const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const phase2TimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const finishSpinInProgressRef = useRef(false)
 
   // Audio state
   const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
@@ -122,10 +123,11 @@ export default function WheelPage() {
         .eq('id', session.id)
     }
 
-    // Cleanup on unmount or page unload
     window.addEventListener('beforeunload', cleanup)
 
     return () => {
+      if (spinTimeoutRef.current) { clearTimeout(spinTimeoutRef.current); spinTimeoutRef.current = null }
+      if (phase2TimeoutRef.current) { clearTimeout(phase2TimeoutRef.current); phase2TimeoutRef.current = null }
       window.removeEventListener('beforeunload', cleanup)
       cleanup()
     }
@@ -468,6 +470,7 @@ export default function WheelPage() {
 
     setIsSpinning(true)
     setResult(null)
+    finishSpinInProgressRef.current = false
 
     // Choose random segment from AVAILABLE segments only
     const randomIndex = Math.floor(Math.random() * availableSegments.length)
@@ -544,7 +547,8 @@ export default function WheelPage() {
   }
 
   async function finishSpin(selectedSegment: WheelSegment) {
-    if (!session) return
+    if (!session || finishSpinInProgressRef.current) return
+    finishSpinInProgressRef.current = true
 
     const newResult: WheelResult = {
       segmentId: selectedSegment.id,
@@ -580,6 +584,7 @@ export default function WheelPage() {
       audioSettings,
     })
 
+    finishSpinInProgressRef.current = false
     toast.success(`Résultat: ${selectedSegment.text}`)
 
     if (gameFinished) {
