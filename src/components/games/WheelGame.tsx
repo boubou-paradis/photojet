@@ -159,7 +159,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       setIsManualStop(true)
       const segmentAngle = 360 / availableSegments.length
       const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-      const fullRotations = 3
+      const fullRotations = spinMode === 'auto' ? 3 : 1
       setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
       if (customAudioRef.current && !customAudioRef.current.paused) {
         customAudioRef.current.pause()
@@ -325,7 +325,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               transition={
                 isInfiniteSpinning
                   ? { duration: 0.8, repeat: Infinity, ease: 'linear' }
-                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? (isManualStop ? [0.25, 0.1, 0.8, 1] : [0.25, 1, 0.5, 1]) : 'linear' }
+                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? (isManualStop && spinMode === 'auto' ? [0.25, 0.1, 0.8, 1] : [0.25, 1, 0.5, 1]) : 'linear' }
               }
               className="relative">
               <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">
