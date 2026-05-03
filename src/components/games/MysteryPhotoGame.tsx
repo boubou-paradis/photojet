@@ -153,13 +153,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Fullscreen toggle
   const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) {
-      await containerRef.current?.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      await document.exitFullscreen()
-      setIsFullscreen(false)
-    }
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current?.requestFullscreen()
+      } else {
+        await document.exitFullscreen()
+      }
+    } catch { /* refusé par le navigateur */ }
   }
 
   // Cleanup au unmount

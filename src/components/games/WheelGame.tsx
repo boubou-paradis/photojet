@@ -50,14 +50,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const spinStartTimeRef = useRef<number>(0)
   const [windowHeight, setWindowHeight] = useState(800)
 
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
-    }
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen()
+      } else {
+        await document.exitFullscreen()
+      }
+    } catch { /* refusé par le navigateur */ }
   }, [])
 
   useEffect(() => {

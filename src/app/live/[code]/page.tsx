@@ -318,6 +318,7 @@ export default function LivePage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
   const [showUI, setShowUI] = useState(true)
   const [showNewPhotoNotification, setShowNewPhotoNotification] = useState(false)
   const previousPhotosCount = useRef(0)
@@ -757,20 +758,20 @@ export default function LivePage() {
     return () => clearTimeout(timeout)
   }, [currentIndex, currentItemType, itemsCount, session?.transition_duration, session?.messages_duration])
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen()
+      } else {
+        await document.exitFullscreen()
+      }
+    } catch {
+      // Fullscreen refusé par le navigateur (ex: fenêtre non active sur Mac)
     }
   }
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
@@ -1242,7 +1243,11 @@ export default function LivePage() {
         whileHover={{ scale: 1.1 }}
         transition={{ duration: 0.3 }}
         className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
-        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+        title={isFullscreen
+          ? 'Quitter le plein écran'
+          : isMac
+            ? 'Plein écran — Sur Mac : déplacez d\'abord la fenêtre sur votre écran TV, puis cliquez ici'
+            : 'Plein écran'}
       >
         {isFullscreen ? (
           <Minimize className="h-6 w-6 text-[#D4AF37]" />
