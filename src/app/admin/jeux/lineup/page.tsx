@@ -70,6 +70,8 @@ export default function LineupPage() {
   const team2NameRef = useRef(team2Name)
   const audioSettingsRef = useRef(audioSettings)
   const currentPointsRef = useRef(currentPoints)
+  const timeLeftRef = useRef(timeLeft)
+  const awardPointsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Keep refs in sync with state
   useEffect(() => { currentNumberRef.current = currentNumber }, [currentNumber])
@@ -79,6 +81,7 @@ export default function LineupPage() {
   useEffect(() => { team2NameRef.current = team2Name }, [team2Name])
   useEffect(() => { audioSettingsRef.current = audioSettings }, [audioSettings])
   useEffect(() => { currentPointsRef.current = currentPoints }, [currentPoints])
+  useEffect(() => { timeLeftRef.current = timeLeft }, [timeLeft])
 
   useEffect(() => {
     fetchSession()
@@ -96,6 +99,30 @@ export default function LineupPage() {
       channel.unsubscribe()
     }
   }, [session?.code, supabase])
+
+  // Cleanup: désactiver le jeu quand l'admin quitte la page
+  useEffect(() => {
+    if (!session?.id) return
+
+    const cleanup = async () => {
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'lineup_state',
+          payload: { gameActive: false, currentNumber: '', timeLeft: 0, isRunning: false, isPaused: false, isGameOver: false, currentPoints: 10, team1Score: 0, team2Score: 0, team1Name: 'Équipe 1', team2Name: 'Équipe 2', showWinner: false, clockDuration: 60 },
+        })
+      }
+      await supabase.from('sessions').update({ lineup_active: false }).eq('id', session.id)
+    }
+
+    window.addEventListener('beforeunload', cleanup)
+
+    return () => {
+      if (awardPointsTimeoutRef.current) { clearTimeout(awardPointsTimeoutRef.current); awardPointsTimeoutRef.current = null }
+      window.removeEventListener('beforeunload', cleanup)
+      cleanup()
+    }
+  }, [session?.id, supabase])
 
   // Broadcast game state to slideshow
   const broadcastGameState = useCallback((state: {
@@ -384,75 +411,60 @@ export default function LineupPage() {
     }
   }
 
-  // CHRONO GLOBAL - Timer effect
+  // CHRONO GLOBAL - Timer effect (side effects hors du state setter)
   useEffect(() => {
     if (!isRunning || isPaused || isGameOver || !session) return
 
-    const timer = setInterval(async () => {
-      setTimeLeft(prevTime => {
-        if (prevTime <= 0) return 0
+    const timer = setInterval(() => {
+      const prevTime = timeLeftRef.current
+      if (prevTime <= 0) return
 
-        const newTime = prevTime - 1
+      const newTime = prevTime - 1
 
-        // Calculate points based on time remaining
-        const thirdOfTime = clockDuration / 3
-        let newPoints = 10
-        if (newTime > thirdOfTime * 2) {
-          newPoints = 10
-        } else if (newTime > thirdOfTime) {
-          newPoints = 20
-        } else {
-          newPoints = 30
-        }
+      const thirdOfTime = clockDuration / 3
+      let newPoints = 10
+      if (newTime > thirdOfTime * 2) newPoints = 10
+      else if (newTime > thirdOfTime) newPoints = 20
+      else newPoints = 30
 
-        setCurrentPoints(newPoints)
+      setTimeLeft(newTime)
+      setCurrentPoints(newPoints)
+      currentPointsRef.current = newPoints
 
-        // Broadcast state update (use refs to get latest values, avoid stale closures)
-        broadcastGameState({
-          gameActive: true,
-          currentNumber: currentNumberRef.current,
-          timeLeft: newTime,
-          isRunning: true,
-          isPaused: false,
-          isGameOver: newTime <= 0,
-          currentPoints: newPoints,
-          team1Score: team1ScoreRef.current,
-          team2Score: team2ScoreRef.current,
-          team1Name: team1NameRef.current,
-          team2Name: team2NameRef.current,
-          showWinner: newTime <= 0,
-          clockDuration,
-          audioSettings: audioSettingsRef.current,
-        })
-
-        // Fin du jeu !
-        if (newTime <= 0) {
-          setIsRunning(false)
-          setIsGameOver(true)
-          setShowWinner(true)
-
-          supabase
-            .from('sessions')
-            .update({
-              lineup_time_left: 0,
-              lineup_is_running: false,
-              lineup_is_game_over: true,
-              lineup_show_winner: true,
-              lineup_current_points: newPoints,
-            })
-            .eq('id', session.id)
-        } else {
-          supabase
-            .from('sessions')
-            .update({
-              lineup_time_left: newTime,
-              lineup_current_points: newPoints,
-            })
-            .eq('id', session.id)
-        }
-
-        return newTime
+      broadcastGameState({
+        gameActive: true,
+        currentNumber: currentNumberRef.current,
+        timeLeft: newTime,
+        isRunning: true,
+        isPaused: false,
+        isGameOver: newTime <= 0,
+        currentPoints: newPoints,
+        team1Score: team1ScoreRef.current,
+        team2Score: team2ScoreRef.current,
+        team1Name: team1NameRef.current,
+        team2Name: team2NameRef.current,
+        showWinner: newTime <= 0,
+        clockDuration,
+        audioSettings: audioSettingsRef.current,
       })
+
+      if (newTime <= 0) {
+        setIsRunning(false)
+        setIsGameOver(true)
+        setShowWinner(true)
+        supabase.from('sessions').update({
+          lineup_time_left: 0,
+          lineup_is_running: false,
+          lineup_is_game_over: true,
+          lineup_show_winner: true,
+          lineup_current_points: newPoints,
+        }).eq('id', session.id)
+      } else {
+        supabase.from('sessions').update({
+          lineup_time_left: newTime,
+          lineup_current_points: newPoints,
+        }).eq('id', session.id)
+      }
     }, 1000)
 
     return () => clearInterval(timer)
@@ -697,53 +709,48 @@ export default function LineupPage() {
       })
       .eq('id', session.id)
 
-    // Broadcast empty number
     broadcastGameState({
       gameActive: true,
       currentNumber: '',
-      timeLeft,
+      timeLeft: timeLeftRef.current,
       isRunning,
       isPaused,
       isGameOver: false,
       currentPoints,
       team1Score: newTeam1Score,
       team2Score: newTeam2Score,
-      team1Name,
-      team2Name,
+      team1Name: team1NameRef.current,
+      team2Name: team2NameRef.current,
       showWinner: false,
       clockDuration,
-      audioSettings,
+      audioSettings: audioSettingsRef.current,
     })
 
     toast.success(`${team === 1 ? team1Name : team2Name} +${currentPoints} points!`)
 
-    // Générer automatiquement le prochain numéro SEULEMENT si le chrono tourne
-    if (timeLeft > 0 && !isGameOver && isRunning && !isPaused) {
-      setTimeout(async () => {
+    if (timeLeftRef.current > 0 && !isGameOver && isRunning && !isPaused) {
+      if (awardPointsTimeoutRef.current) clearTimeout(awardPointsTimeoutRef.current)
+      awardPointsTimeoutRef.current = setTimeout(async () => {
         const newNumber = generateNumber()
         setCurrentNumber(newNumber)
         currentNumberRef.current = newNumber
-        await supabase
-          .from('sessions')
-          .update({ lineup_current_number: newNumber })
-          .eq('id', session.id)
+        await supabase.from('sessions').update({ lineup_current_number: newNumber }).eq('id', session.id)
 
-        // Broadcast new number
         broadcastGameState({
           gameActive: true,
           currentNumber: newNumber,
-          timeLeft,
+          timeLeft: timeLeftRef.current,
           isRunning: true,
           isPaused: false,
           isGameOver: false,
-          currentPoints,
-          team1Score: newTeam1Score,
-          team2Score: newTeam2Score,
-          team1Name,
-          team2Name,
+          currentPoints: currentPointsRef.current,
+          team1Score: team1ScoreRef.current,
+          team2Score: team2ScoreRef.current,
+          team1Name: team1NameRef.current,
+          team2Name: team2NameRef.current,
           showWinner: false,
           clockDuration,
-          audioSettings,
+          audioSettings: audioSettingsRef.current,
         })
       }, 1500)
     }

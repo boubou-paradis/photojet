@@ -141,6 +141,16 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
 // Confetti colors
 const CONFETTI_COLORS = ['#D4AF37', '#F4D03F', '#FFFFFF', '#FFD700', '#FFA500']
 
+// Données confettis pré-générées (évite Math.random() dans le render → pas de clignotement)
+const WINNER_CONFETTI = Array.from({ length: 100 }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100,
+  rotate: Math.random() * 720,
+  duration: 3 + Math.random() * 2,
+  delay: Math.random() * 2,
+  isRound: Math.random() > 0.5,
+}))
+
 export default function LineupGame({
   currentNumber,
   timeLeft,
@@ -160,6 +170,7 @@ export default function LineupGame({
   const [isRolling, setIsRolling] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const prevNumberRef = useRef(currentNumber)
+  const rollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [windowHeight, setWindowHeight] = useState(800)
 
   // Fullscreen toggle
@@ -247,12 +258,9 @@ export default function LineupGame({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (fadeIntervalRef.current) {
-        clearInterval(fadeIntervalRef.current)
-      }
-      if (audioRef.current) {
-        audioRef.current.pause()
-      }
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
+      if (rollingTimeoutRef.current) clearTimeout(rollingTimeoutRef.current)
+      if (audioRef.current) audioRef.current.pause()
     }
   }, [])
 
@@ -267,15 +275,14 @@ export default function LineupGame({
   // Animate number changes with rolling effect
   useEffect(() => {
     if (currentNumber !== prevNumberRef.current && currentNumber !== '') {
-      // Start rolling animation
       setIsRolling(true)
-
-      // After 1.5 seconds, stop rolling and show final number
-      setTimeout(() => {
+      if (rollingTimeoutRef.current) clearTimeout(rollingTimeoutRef.current)
+      rollingTimeoutRef.current = setTimeout(() => {
         setDisplayNumber(currentNumber)
         setIsRolling(false)
       }, 1500)
     } else if (currentNumber === '') {
+      if (rollingTimeoutRef.current) clearTimeout(rollingTimeoutRef.current)
       setDisplayNumber('')
       setIsRolling(false)
     }
@@ -702,28 +709,19 @@ export default function LineupGame({
             </div>
 
             {/* Confettis dorés */}
-            {[...Array(100)].map((_, i) => (
+            {WINNER_CONFETTI.map((c) => (
               <motion.div
-                key={i}
+                key={c.id}
                 className="absolute w-4 h-4"
                 style={{
-                  left: `${Math.random() * 100}%`,
+                  left: `${c.left}%`,
                   top: '-20px',
-                  backgroundColor: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-                  borderRadius: Math.random() > 0.5 ? '50%' : '0%',
+                  backgroundColor: CONFETTI_COLORS[c.id % CONFETTI_COLORS.length],
+                  borderRadius: c.isRound ? '50%' : '0%',
                 }}
                 initial={{ y: -50, rotate: 0, opacity: 1 }}
-                animate={{
-                  y: windowHeight + 100,
-                  rotate: Math.random() * 720,
-                  opacity: [1, 1, 0],
-                }}
-                transition={{
-                  duration: 3 + Math.random() * 2,
-                  delay: Math.random() * 2,
-                  repeat: Infinity,
-                  ease: 'linear',
-                }}
+                animate={{ y: windowHeight + 100, rotate: c.rotate, opacity: [1, 1, 0] }}
+                transition={{ duration: c.duration, delay: c.delay, repeat: Infinity, ease: 'linear' }}
               />
             ))}
 
