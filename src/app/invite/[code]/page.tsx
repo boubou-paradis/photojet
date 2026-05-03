@@ -47,16 +47,21 @@ export default function InvitePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const previewUrlRef = useRef<string | null>(null)
   const supabase = createClient()
+
+  // Révoquer la blob URL au unmount pour éviter les fuites mémoire
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    }
+  }, [])
 
   const MAX_MESSAGE_LENGTH = 280
 
   useEffect(() => {
     async function fetchSession() {
       try {
-        console.log('Invite page: fetching session with code:', code)
-
-        // First check if there's a quiz lobby active (don't require is_active)
         const { data: quizSession } = await supabase
           .from('sessions')
           .select('quiz_lobby_visible, quiz_active')
@@ -64,20 +69,16 @@ export default function InvitePage() {
           .single()
 
         if (quizSession?.quiz_lobby_visible || quizSession?.quiz_active) {
-          console.log('Invite page: quiz active, redirecting to /join/' + code)
           router.push(`/join/${code}`)
           return
         }
 
-        // For regular photo sharing, require is_active
         const { data, error } = await supabase
           .from('sessions')
           .select('*')
           .eq('code', code)
           .eq('is_active', true)
           .single()
-
-        console.log('Invite page: Supabase response:', { data, error })
 
         if (error) throw error
 
@@ -90,8 +91,7 @@ export default function InvitePage() {
         }
 
         setSession(data)
-      } catch (err) {
-        console.error('Invite page: error fetching session:', err)
+      } catch {
         setError('Session introuvable')
       } finally {
         setLoading(false)
@@ -116,8 +116,11 @@ export default function InvitePage() {
       return
     }
 
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    const objectUrl = URL.createObjectURL(file)
+    previewUrlRef.current = objectUrl
     setSelectedFile(file)
-    setPreview(URL.createObjectURL(file))
+    setPreview(objectUrl)
     setError(null)
     setPhotoUploadStatus('idle')
   }
@@ -227,6 +230,7 @@ export default function InvitePage() {
   }
 
   const handleCancel = () => {
+    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
     setSelectedFile(null)
     setPreview(null)
     setPhotoUploadStatus('idle')
@@ -235,6 +239,7 @@ export default function InvitePage() {
   }
 
   const handleNewPhoto = () => {
+    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
     setPhotoUploadStatus('idle')
     setPreview(null)
     setUploaderName('')

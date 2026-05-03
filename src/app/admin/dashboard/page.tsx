@@ -218,20 +218,29 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (selectedSession) {
-      setCurrentPage(1) // Reset to page 1 when session changes
-      fetchPhotos(selectedSession.id)
-      fetchMessages(selectedSession.id)
-      fetchPrintRequests(selectedSession.id)
-      subscribeToPhotos(selectedSession.id)
-      subscribeToMessages(selectedSession.id)
-      subscribeToPrintRequests(selectedSession.id)
-      if (selectedSession.borne_enabled) {
-        fetchBorneConnection(selectedSession.id)
-        subscribeToBorneConnection(selectedSession.id)
-      }
+    if (!selectedSession) return
+
+    setCurrentPage(1)
+    fetchPhotos(selectedSession.id)
+    fetchMessages(selectedSession.id)
+    fetchPrintRequests(selectedSession.id)
+
+    const unsub1 = subscribeToPhotos(selectedSession.id)
+    const unsub2 = subscribeToMessages(selectedSession.id)
+    const unsub3 = subscribeToPrintRequests(selectedSession.id)
+    let unsub4: (() => void) | undefined
+    if (selectedSession.borne_enabled) {
+      fetchBorneConnection(selectedSession.id)
+      unsub4 = subscribeToBorneConnection(selectedSession.id)
     }
-  }, [selectedSession])
+
+    return () => {
+      unsub1()
+      unsub2()
+      unsub3()
+      unsub4?.()
+    }
+  }, [selectedSession?.id])
 
   // Fetch subscription and role on mount
   useEffect(() => {
@@ -267,15 +276,12 @@ export default function DashboardPage() {
           .select('*', { count: 'exact', head: true })
           .eq('session_id', selectedSession.id)
 
-        // Rafraîchir seulement si les compteurs ont changé
         if (photoCount !== null && photoCount !== lastPhotoCountRef.current) {
-          console.log(`[Fallback] Photos: ${lastPhotoCountRef.current} → ${photoCount}`)
           lastPhotoCountRef.current = photoCount
           fetchPhotos(selectedSession.id)
         }
 
         if (messageCount !== null && messageCount !== lastMessageCountRef.current) {
-          console.log(`[Fallback] Messages: ${lastMessageCountRef.current} → ${messageCount}`)
           lastMessageCountRef.current = messageCount
           fetchMessages(selectedSession.id)
         }
@@ -520,9 +526,13 @@ export default function DashboardPage() {
   }
 
   async function handleAutoPrint(request: PrintRequest) {
-    // Trouver la photo correspondante
-    const photo = photos.find((p) => p.id === request.photo_id)
-    if (!photo) return
+    let photo: Photo | undefined = photos.find((p) => p.id === request.photo_id)
+    if (!photo) {
+      // Photo pas encore dans l'état local (realtime print_request arrivé avant photos)
+      const { data } = await supabase.from('photos').select('*').eq('id', request.photo_id).single()
+      if (!data) return
+      photo = data as Photo
+    }
     await executePrint(getPhotoUrl(photo.storage_path), request.id)
   }
 
