@@ -63,6 +63,7 @@ export default function WheelPage() {
   const [spinMode, setSpinMode] = useState<'auto' | 'manual'>('auto')
   const pendingResultRef = useRef<{ segment: WheelSegment; index: number } | null>(null)
   const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const phase2TimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Audio state
   const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
@@ -484,37 +485,42 @@ export default function WheelPage() {
       })
       .eq('id', session.id)
 
-    // Broadcast spin start with target index (index in available segments)
-    // In manual mode, don't send spinToIndex so the wheel spins infinitely
-    broadcastGameState({
-      gameActive: true,
-      segments,
-      isSpinning: true,
-      result: null,
-      spinToIndex: spinMode === 'auto' ? randomIndex : undefined,
-      usedSegmentIds,
-      isGameFinished: false,
-      audioSettings,
-      spinMode,
-    })
-
-    // In auto mode, stop after 6.5s — laisse 1.5s de marge réseau avant la fin CSS (8s)
     if (spinMode === 'auto') {
+      // Phase 1 : rotation infinie (5s)
+      broadcastGameState({
+        gameActive: true, segments, isSpinning: true, result: null,
+        spinToIndex: undefined, usedSegmentIds, isGameFinished: false,
+        audioSettings, spinMode: 'auto',
+      })
+
+      // Phase 2 à 5s : décélération de 3s vers la cible
+      phase2TimeoutRef.current = setTimeout(() => {
+        broadcastGameState({
+          gameActive: true, segments, isSpinning: true, result: null,
+          spinToIndex: randomIndex, usedSegmentIds, isGameFinished: false,
+          audioSettings, spinMode: 'auto',
+        })
+      }, 5000)
+
+      // Fin à 8s (5s spin + 3s décel)
       spinTimeoutRef.current = setTimeout(() => {
         finishSpin(selectedSegment)
-      }, 6500)
+      }, 8000)
+    } else {
+      // Mode manuel : rotation infinie, attend stopWheel()
+      broadcastGameState({
+        gameActive: true, segments, isSpinning: true, result: null,
+        spinToIndex: undefined, usedSegmentIds, isGameFinished: false,
+        audioSettings, spinMode: 'manual',
+      })
     }
-    // In manual mode, wait for stopWheel() to be called
   }
 
   async function stopWheel() {
     if (!session || !isSpinning || !pendingResultRef.current) return
 
-    // Clear any pending auto timeout
-    if (spinTimeoutRef.current) {
-      clearTimeout(spinTimeoutRef.current)
-      spinTimeoutRef.current = null
-    }
+    if (spinTimeoutRef.current) { clearTimeout(spinTimeoutRef.current); spinTimeoutRef.current = null }
+    if (phase2TimeoutRef.current) { clearTimeout(phase2TimeoutRef.current); phase2TimeoutRef.current = null }
 
     const { segment: selectedSegment, index: randomIndex } = pendingResultRef.current
 
