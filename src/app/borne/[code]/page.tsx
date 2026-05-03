@@ -92,6 +92,7 @@ export default function BornePage() {
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isRocketLaunching, setIsRocketLaunching] = useState(false)
+  const [lastUploadModerated, setLastUploadModerated] = useState(false)
 
   // Lock modal state
   const [showUnlockModal, setShowUnlockModal] = useState(false)
@@ -101,7 +102,13 @@ export default function BornePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const capturedImageUrlRef = useRef<string | null>(null)
+  const captureRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const printReturnTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const sessionRef = useRef(session)
   const supabase = createClient()
+
+  useEffect(() => { sessionRef.current = session }, [session])
 
   // Generate or retrieve device ID
   useEffect(() => {
@@ -243,24 +250,27 @@ export default function BornePage() {
     }
   }, [state, session, startCamera])
 
-  // Separate cleanup effect that only runs on unmount or when going to non-camera states
+  // Cleanup au unmount
   useEffect(() => {
     return () => {
-      // Stop stream only on component unmount
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
-      }
+      if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop())
+      if (capturedImageUrlRef.current) URL.revokeObjectURL(capturedImageUrlRef.current)
+      if (captureRetryTimeoutRef.current) clearTimeout(captureRetryTimeoutRef.current)
+      if (printReturnTimeoutRef.current) clearTimeout(printReturnTimeoutRef.current)
     }
   }, [])
 
   // Reset to camera state
   const resetToCamera = useCallback(() => {
+    if (captureRetryTimeoutRef.current) { clearTimeout(captureRetryTimeoutRef.current); captureRetryTimeoutRef.current = null }
+    if (printReturnTimeoutRef.current) { clearTimeout(printReturnTimeoutRef.current); printReturnTimeoutRef.current = null }
+    if (capturedImageUrlRef.current) { URL.revokeObjectURL(capturedImageUrlRef.current); capturedImageUrlRef.current = null }
     setCapturedImage(null)
     setCapturedBlob(null)
-    setCountdown(session?.borne_countdown_duration || 3)
+    setCountdown(sessionRef.current?.borne_countdown_duration || 3)
     setIsRocketLaunching(false)
     setState('camera')
-  }, [session?.borne_countdown_duration])
+  }, [])
 
   // Capture photo with proper error handling
   const capturePhoto = useCallback((retryCount = 0) => {
@@ -283,11 +293,9 @@ export default function BornePage() {
 
       // Retry up to 10 times with longer delay
       if (retryCount < 10) {
-        setTimeout(() => {
-          capturePhoto(retryCount + 1)
-        }, 300)
+        captureRetryTimeoutRef.current = setTimeout(() => capturePhoto(retryCount + 1), 300)
       } else {
-        setTimeout(() => resetToCamera(), 2000)
+        captureRetryTimeoutRef.current = setTimeout(() => resetToCamera(), 2000)
       }
       return
     }
@@ -318,8 +326,11 @@ export default function BornePage() {
       canvas.toBlob(
         (blob) => {
           if (blob) {
+            if (capturedImageUrlRef.current) URL.revokeObjectURL(capturedImageUrlRef.current)
+            const objectUrl = URL.createObjectURL(blob)
+            capturedImageUrlRef.current = objectUrl
             setCapturedBlob(blob)
-            setCapturedImage(URL.createObjectURL(blob))
+            setCapturedImage(objectUrl)
             setState('preview')
           } else {
             setTimeout(() => resetToCamera(), 2000)
@@ -351,14 +362,11 @@ export default function BornePage() {
 
   // Auto return to camera after success
   useEffect(() => {
-    if (state !== 'success' || !session) return
-
-    const timer = setTimeout(() => {
-      resetToCamera()
-    }, session.borne_return_delay * 1000)
-
+    if (state !== 'success') return
+    const delay = (sessionRef.current?.borne_return_delay ?? 5) * 1000
+    const timer = setTimeout(() => resetToCamera(), delay)
     return () => clearTimeout(timer)
-  }, [state, session])
+  }, [state, resetToCamera])
 
   function startCountdown() {
     if (!session) return
@@ -374,6 +382,7 @@ export default function BornePage() {
   async function uploadPhoto() {
     if (!capturedBlob || !session) return
 
+    setError(null)
     setState('compressing')
 
     try {
@@ -417,7 +426,7 @@ export default function BornePage() {
 
       if (dbError) throw dbError
 
-      setSession({ ...session, moderation_enabled: moderationEnabled })
+      setLastUploadModerated(moderationEnabled)
       setState('success')
     } catch {
       setError('Erreur lors de l\'envoi')
@@ -496,10 +505,8 @@ export default function BornePage() {
       console.error('Error incrementing print count:', err)
     }
 
-    // Return to camera after delay
-    setTimeout(() => {
-      resetToCamera()
-    }, (session?.borne_return_delay || 5) * 1000)
+    if (printReturnTimeoutRef.current) clearTimeout(printReturnTimeoutRef.current)
+    printReturnTimeoutRef.current = setTimeout(() => resetToCamera(), (sessionRef.current?.borne_return_delay ?? 5) * 1000)
   }
 
   // Handle PIN keypress
@@ -787,7 +794,7 @@ export default function BornePage() {
               </motion.div>
               <h1 className="text-5xl font-bold mb-4 text-gold-gradient">Super !</h1>
               <p className="text-2xl text-[#B0B0B5]">
-                {session?.moderation_enabled
+                {lastUploadModerated
                   ? 'Photo envoyée pour validation'
                   : 'Photo ajoutée au diaporama !'}
               </p>

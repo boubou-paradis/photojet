@@ -42,11 +42,11 @@ export default function BornePage() {
   }, [])
 
   useEffect(() => {
-    if (selectedSession) {
-      fetchBorneConnection(selectedSession.id)
-      subscribeToBorneConnection(selectedSession.id)
-    }
-  }, [selectedSession])
+    if (!selectedSession) return
+    fetchBorneConnection(selectedSession.id)
+    const unsub = subscribeToBorneConnection(selectedSession.id)
+    return () => unsub()
+  }, [selectedSession?.id])
 
   async function fetchSessions() {
     try {
