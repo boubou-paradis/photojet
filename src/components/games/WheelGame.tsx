@@ -46,7 +46,10 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const infiniteRotationRef = useRef(0)
+  const spinStartTimeRef = useRef<number>(0)
   const [windowHeight, setWindowHeight] = useState(800)
+
+  const SPIN_CSS_DURATION_MS = 8000
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -112,6 +115,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
   useEffect(() => {
     if (isSpinning && !previousSpinning.current) {
+      spinStartTimeRef.current = Date.now()
       setShowResult(false)
       setShowConfetti(false)
       if (audioSettings?.enabled && audioSettings?.url && customAudioRef.current) {
@@ -136,7 +140,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
-      setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
+      if (spinMode === 'auto') {
+        // Attendre que l'animation CSS soit terminée avant d'afficher le gage
+        const elapsed = Date.now() - spinStartTimeRef.current
+        const remainingMs = Math.max(0, SPIN_CSS_DURATION_MS - elapsed)
+        setTimeout(() => { setShowResult(true); setShowConfetti(true) }, remainingMs + 50)
+      } else {
+        setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
+      }
     }
     previousSpinning.current = isSpinning
   }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio, spinMode])
@@ -314,7 +325,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               transition={
                 isInfiniteSpinning
                   ? { duration: 0.8, repeat: Infinity, ease: 'linear' }
-                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? [0.2, 0.8, 0.2, 1] : 'linear' }
+                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? [0.25, 1, 0.5, 1] : 'linear' }
               }
               className="relative">
               <svg width="550" height="550" viewBox="0 0 400 400" className="drop-shadow-2xl">

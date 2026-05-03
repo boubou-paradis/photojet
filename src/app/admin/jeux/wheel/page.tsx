@@ -498,11 +498,11 @@ export default function WheelPage() {
       spinMode,
     })
 
-    // In auto mode, stop after 8 seconds
+    // In auto mode, stop after 6.5s — laisse 1.5s de marge réseau avant la fin CSS (8s)
     if (spinMode === 'auto') {
       spinTimeoutRef.current = setTimeout(() => {
         finishSpin(selectedSegment)
-      }, 8000)
+      }, 6500)
     }
     // In manual mode, wait for stopWheel() to be called
   }
