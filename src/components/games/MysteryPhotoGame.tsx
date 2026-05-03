@@ -27,6 +27,25 @@ const SPEED_MAP: Record<MysteryPhotoSpeed, number> = {
 // Helper function for delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+// Données pré-générées pour éviter Math.random() dans le render (évite le clignotement)
+const WINNER_CONFETTI_DATA = Array.from({ length: 100 }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100,
+  width: 8 + Math.random() * 12,
+  height: 8 + Math.random() * 12,
+  isRound: Math.random() > 0.5,
+  xOffset: (Math.random() - 0.5) * 100,
+  duration: 3 + Math.random() * 2,
+  delay: Math.random() * 3,
+}))
+
+const WINNER_STARS_DATA = Array.from({ length: 30 }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100,
+  top: Math.random() * 100,
+  delay: Math.random() * 2,
+}))
+
 // Generate zigzag path for Pac-Man
 const generatePacmanPath = (rows: number, cols: number) => {
   const path: { row: number; col: number }[] = []
@@ -63,6 +82,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const gameAreaRef = useRef<HTMLDivElement>(null)
+
+  // Stabilité : guard unmount + refs timing
+  const isMountedRef = useRef(true)
+  const currentRoundRef = useRef(currentRound)
+  const roundTransitionT1Ref = useRef<NodeJS.Timeout | null>(null)
+  const roundTransitionT2Ref = useRef<NodeJS.Timeout | null>(null)
+  const fadeAudioIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // QR Code visibility (synced with session)
   const [showQR, setShowQR] = useState(session.show_qr_on_screen ?? false)
@@ -136,6 +162,20 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
   }
 
+  // Cleanup au unmount
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
+      if (roundTransitionT2Ref.current) clearTimeout(roundTransitionT2Ref.current)
+      if (fadeAudioIntervalRef.current) clearInterval(fadeAudioIntervalRef.current)
+    }
+  }, [])
+
+  // Sync currentRoundRef
+  useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
+
   // Listen for fullscreen change (ESC key exits fullscreen)
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -183,17 +223,18 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         const steps = fadeOutDuration / fadeInterval
         const volumeStep = revealAudioRef.current.volume / steps
 
-        const fadeOut = setInterval(() => {
+        if (fadeAudioIntervalRef.current) clearInterval(fadeAudioIntervalRef.current)
+        fadeAudioIntervalRef.current = setInterval(() => {
           if (revealAudioRef.current && revealAudioRef.current.volume > volumeStep) {
             revealAudioRef.current.volume -= volumeStep
           } else {
-            clearInterval(fadeOut)
+            if (fadeAudioIntervalRef.current) { clearInterval(fadeAudioIntervalRef.current); fadeAudioIntervalRef.current = null }
             if (revealAudioRef.current) {
               revealAudioRef.current.pause()
               revealAudioRef.current.volume = isMuted ? 0 : audioVolume
               revealAudioRef.current.loop = false
             }
-            setIsRevealAudioPlaying(false)
+            if (isMountedRef.current) setIsRevealAudioPlaying(false)
           }
         }, fadeInterval)
       }
@@ -208,9 +249,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
         if (photoAudioRef.current) {
           photoAudioRef.current.currentTime = 0
           photoAudioRef.current.loop = false
-          photoAudioRef.current.play().catch((err) => {
-            console.log('Photo audio play failed:', err)
-          })
+          photoAudioRef.current.play().catch(() => {})
           setIsPhotoAudioPlaying(true)
           setHasPlayedPhotoAudio(true)
         }
@@ -307,16 +346,15 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             return
           }
           const newRound = updated.mystery_current_round || 1
-          const prevRound = currentRound
+          const prevRound = currentRoundRef.current
           if (newRound !== prevRound && newRound > prevRound) {
             setShowRoundTransition(true)
-            setTimeout(() => {
-              // IMPORTANT: D'abord remettre toutes les cases (vider revealedTiles)
-              // AVANT de changer la photo (currentRound)
+            if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
+            roundTransitionT1Ref.current = setTimeout(() => {
               setRevealedTiles([])
-
-              // Petit délai pour que les cases soient bien en place
-              setTimeout(() => {
+              if (roundTransitionT2Ref.current) clearTimeout(roundTransitionT2Ref.current)
+              roundTransitionT2Ref.current = setTimeout(() => {
+                if (!isMountedRef.current) return
                 setCurrentRound(newRound)
                 setShowRoundTransition(false)
               }, 100)
@@ -344,14 +382,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [session.id, supabase, onExit, currentRound])
+  }, [session.id, supabase, onExit])
 
   // Listen for winner animation broadcast
   useEffect(() => {
     const winnerChannel = supabase
       .channel(`mystery-winner-${session.code}`)
       .on('broadcast', { event: 'mystery_winner' }, () => {
-        console.log('[MysteryPhoto] Winner animation triggered!')
         startWinnerSequence()
       })
       .subscribe()
@@ -363,24 +400,24 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Winner animation sequence
   const startWinnerSequence = async () => {
+    if (!isMountedRef.current) return
     setShowWinnerAnimation(true)
     setEatenTiles([])
     setPacmanPosition({ row: 0, col: 0 })
     setPacmanDirection('right')
 
-    // Phase 1: Reset all tiles (show them again)
     setAnimationPhase(1)
     await sleep(800)
+    if (!isMountedRef.current) return
 
-    // Phase 2: Pac-Man eats tiles
     setAnimationPhase(2)
     await pacmanEatAnimation()
+    if (!isMountedRef.current) return
 
-    // Phase 3: Victory explosion
     setAnimationPhase(3)
     await sleep(6000)
+    if (!isMountedRef.current) return
 
-    // End
     setShowWinnerAnimation(false)
     setAnimationPhase(0)
     setEatenTiles([])
@@ -391,10 +428,10 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     const path = generatePacmanPath(rows, cols)
 
     for (let i = 0; i < path.length; i++) {
+      if (!isMountedRef.current) return
       const { row, col } = path[i]
       const prevPos = i > 0 ? path[i - 1] : path[0]
 
-      // Determine direction
       if (col > prevPos.col) setPacmanDirection('right')
       else if (col < prevPos.col) setPacmanDirection('left')
       else if (row > prevPos.row) setPacmanDirection('down')
@@ -675,53 +712,33 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
                 {/* Confetti */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(100)].map((_, i) => (
+                  {WINNER_CONFETTI_DATA.map((c) => (
                     <motion.div
-                      key={`confetti-${i}`}
+                      key={`confetti-${c.id}`}
                       className="absolute"
                       style={{
-                        left: `${Math.random() * 100}%`,
-                        width: `${8 + Math.random() * 12}px`,
-                        height: `${8 + Math.random() * 12}px`,
-                        backgroundColor: ['#D4AF37', '#F4D03F', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'][i % 9],
-                        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                        left: `${c.left}%`,
+                        width: `${c.width}px`,
+                        height: `${c.height}px`,
+                        backgroundColor: ['#D4AF37', '#F4D03F', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'][c.id % 9],
+                        borderRadius: c.isRound ? '50%' : '2px',
                       }}
                       initial={{ top: '-5%', rotate: 0 }}
-                      animate={{
-                        top: '105%',
-                        rotate: 720,
-                        x: [0, (Math.random() - 0.5) * 100, 0],
-                      }}
-                      transition={{
-                        duration: 3 + Math.random() * 2,
-                        repeat: Infinity,
-                        delay: Math.random() * 3,
-                        ease: 'linear',
-                      }}
+                      animate={{ top: '105%', rotate: 720, x: [0, c.xOffset, 0] }}
+                      transition={{ duration: c.duration, repeat: Infinity, delay: c.delay, ease: 'linear' }}
                     />
                   ))}
                 </div>
 
                 {/* Stars */}
                 <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(30)].map((_, i) => (
+                  {WINNER_STARS_DATA.map((s) => (
                     <motion.div
-                      key={`star-${i}`}
+                      key={`star-${s.id}`}
                       className="absolute"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                      }}
-                      animate={{
-                        scale: [1, 1.5, 1],
-                        opacity: [0.5, 1, 0.5],
-                        rotate: [0, 180, 360],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                      }}
+                      style={{ left: `${s.left}%`, top: `${s.top}%` }}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5], rotate: [0, 180, 360] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: s.delay }}
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF">
                         <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />

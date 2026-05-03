@@ -78,6 +78,7 @@ export default function MysteryPage() {
 
   const router = useRouter()
   const supabase = createClient()
+  const winnerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   // Calculate total tiles
   const [cols, rows] = mysteryPhotoGrid.split('x').map(Number)
@@ -179,6 +180,26 @@ export default function MysteryPage() {
 
     return () => {
       supabase.removeChannel(channel)
+    }
+  }, [session?.id, supabase])
+
+  // Canal dédié à l'animation gagnant (stable, pas recréé à chaque appel)
+  useEffect(() => {
+    if (!session?.code) return
+    const channel = supabase.channel(`mystery-winner-${session.code}`)
+    winnerChannelRef.current = channel
+    channel.subscribe()
+    return () => {
+      channel.unsubscribe()
+      winnerChannelRef.current = null
+    }
+  }, [session?.code, supabase])
+
+  // Cleanup au unmount
+  useEffect(() => {
+    if (!session?.id) return
+    return () => {
+      supabase.from('sessions').update({ mystery_photo_active: false, mystery_is_playing: false }).eq('id', session.id)
     }
   }, [session?.id, supabase])
 
@@ -626,24 +647,15 @@ export default function MysteryPage() {
 
   // Trigger winner animation on slideshow
   async function triggerWinnerAnimation() {
-    if (!session) return
+    if (!session || !winnerChannelRef.current) return
 
-    // Broadcast winner event to slideshow
-    const channel = supabase.channel(`mystery-winner-${session.code}`)
-    await channel.subscribe()
-
-    await channel.send({
+    await winnerChannelRef.current.send({
       type: 'broadcast',
       event: 'mystery_winner',
-      payload: { startAnimation: true }
+      payload: { startAnimation: true },
     })
 
     toast.success('Animation de victoire lancée !')
-
-    // Cleanup channel after a short delay
-    setTimeout(() => {
-      supabase.removeChannel(channel)
-    }, 1000)
   }
 
   async function exitGame() {
