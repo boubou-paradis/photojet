@@ -93,6 +93,7 @@ export default function BornePage() {
   const [deviceId, setDeviceId] = useState<string>('')
   const [isRocketLaunching, setIsRocketLaunching] = useState(false)
   const [lastUploadModerated, setLastUploadModerated] = useState(false)
+  const [lastActionWasPrint, setLastActionWasPrint] = useState(false)
 
   // Lock modal state
   const [showUnlockModal, setShowUnlockModal] = useState(false)
@@ -269,6 +270,7 @@ export default function BornePage() {
     setCapturedBlob(null)
     setCountdown(sessionRef.current?.borne_countdown_duration || 3)
     setIsRocketLaunching(false)
+    setLastActionWasPrint(false)
     setState('camera')
   }, [])
 
@@ -451,67 +453,72 @@ export default function BornePage() {
     && (session?.print_count ?? 0) >= session.print_limit
 
   async function handlePrint() {
-    if (!capturedImage || !capturedBlob || !session) return
+    if (!capturedBlob || !session) return
     if (printLimitReached) return
 
-    setState('printing')
+    // La borne ne tente pas d'imprimer localement (elle n'est pas connectée à l'imprimante).
+    // Elle uploade la photo et crée une print_request → le dashboard admin (mode auto)
+    // reçoit la demande en realtime et déclenche l'impression sur le PC connecté à l'imprimante.
+    setState('compressing')
 
-    // Convertir en data URL (base64) — contrairement à une blob URL, une data URL
-    // est directement accessible par le renderer d'impression de Chrome (processus séparé)
-    // → résout le blocage "Préparation de l'aperçu en cours"
-    const printDataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(capturedBlob)
-    }).catch(() => null)
-
-    if (!printDataUrl) {
-      setState('preview')
-      return
-    }
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      setState('preview')
-      return
-    }
-    printWindow.focus()
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-<style>
-@page{margin:0}
-body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh}
-img{max-width:100%;max-height:100vh;object-fit:contain}
-</style>
-</head>
-<body>
-<img id="pi" src="${printDataUrl}" />
-<script>
-window.focus();
-var img=document.getElementById('pi');
-img.onload=function(){
-  window.focus();
-  setTimeout(function(){
-    window.print();
-    window.onafterprint=function(){window.close()};
-  },500);
-};
-img.onerror=function(){setTimeout(function(){window.close()},3000)};
-<\/script>
-</body>
-</html>`)
-    printWindow.document.close()
-
-    // Incrémenter le compteur uniquement si le popup s'est ouvert
     try {
-      const newCount = (session.print_count ?? 0) + 1
+      const { data: freshSession } = await supabase
+        .from('sessions')
+        .select('moderation_enabled, print_enabled, print_limit, print_count')
+        .eq('id', session.id)
+        .single()
+
+      if (!freshSession?.print_enabled) { setState('preview'); return }
+      if (freshSession.print_limit !== null && (freshSession.print_count ?? 0) >= freshSession.print_limit) {
+        setState('preview'); return
+      }
+
+      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const isApproved = !moderationEnabled
+
+      const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
+      const compressedFile = await compressImage(file, (progress) => {
+        if (progress.stage === 'done') setState('uploading')
+      })
+      setState('uploading')
+
+      const fileName = `${session.id}/borne-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+
+      const { data: photoData, error: dbError } = await supabase
+        .from('photos')
+        .insert({
+          session_id: session.id,
+          storage_path: fileName,
+          status: isApproved ? 'approved' : 'pending',
+          source: 'borne',
+          approved_at: isApproved ? new Date().toISOString() : null,
+        })
+        .select()
+        .single()
+      if (dbError) throw dbError
+
+      // Créer la demande d'impression → récupérée par le dashboard admin via realtime
+      await supabase.from('print_requests').insert({
+        session_id: session.id,
+        photo_id: photoData.id,
+        guest_name: null,
+        status: 'pending',
+        printed_at: null,
+      })
+
+      const newCount = (freshSession.print_count ?? 0) + 1
       await supabase.from('sessions').update({ print_count: newCount }).eq('id', session.id)
       setSession({ ...session, print_count: newCount })
-    } catch (err) {
-      console.error('Error incrementing print count:', err)
+
+      setLastActionWasPrint(true)
+      setLastUploadModerated(moderationEnabled)
+      setState('success')
+    } catch {
+      setState('preview')
     }
 
     if (printReturnTimeoutRef.current) clearTimeout(printReturnTimeoutRef.current)
@@ -803,7 +810,9 @@ img.onerror=function(){setTimeout(function(){window.close()},3000)};
               </motion.div>
               <h1 className="text-5xl font-bold mb-4 text-gold-gradient">Super !</h1>
               <p className="text-2xl text-[#B0B0B5]">
-                {lastUploadModerated
+                {lastActionWasPrint
+                  ? 'Impression en cours...'
+                  : lastUploadModerated
                   ? 'Photo envoyée pour validation'
                   : 'Photo ajoutée au diaporama !'}
               </p>
