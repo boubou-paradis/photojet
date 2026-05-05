@@ -1105,7 +1105,8 @@ export default function SettingsPage() {
                               Appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
                               À faire à chaque début de soirée.<br /><br />
                               <strong className="text-blue-300">Mac :</strong><br />
-                              Terminal → <span className="font-mono bg-blue-900/40 px-1 rounded text-[10px]">/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --kiosk-printing</span>
+                              Cmd+Espace → tape <span className="font-mono bg-blue-900/40 px-1 rounded">Terminal</span> → Entrée, puis :<br />
+                              <span className="font-mono bg-blue-900/40 px-1 rounded">open -a &quot;Google Chrome&quot; --args --kiosk-printing</span>
                             </p>
                           </div>
                         </div>
