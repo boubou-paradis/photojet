@@ -522,12 +522,25 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      const requests = data || []
 
-      // Enrich with photo data
-      const enriched = (data || []).map((pr) => {
-        const photo = photos.find((p) => p.id === pr.photo_id)
-        return { ...pr, photo }
-      })
+      // Charger les photos liées directement en DB (évite la dépendance au state local photos)
+      const photoIds = requests.map(r => r.photo_id).filter(Boolean) as string[]
+      let photosMap: Record<string, Photo> = {}
+      if (photoIds.length > 0) {
+        const { data: photosData } = await supabase
+          .from('photos')
+          .select('*')
+          .in('id', photoIds)
+        if (photosData) {
+          photosMap = Object.fromEntries(photosData.map(p => [p.id, p as Photo]))
+        }
+      }
+
+      const enriched = requests.map(pr => ({
+        ...pr,
+        photo: pr.photo_id ? photosMap[pr.photo_id] : undefined,
+      }))
       setPrintRequests(enriched)
     } catch (err) {
       console.error('Error fetching print requests:', err)
@@ -1353,17 +1366,6 @@ export default function DashboardPage() {
     return data.publicUrl
   }
 
-  // Re-enrich print requests when photos change
-  useEffect(() => {
-    if (printRequests.length > 0 && photos.length > 0) {
-      setPrintRequests((prev) =>
-        prev.map((pr) => ({
-          ...pr,
-          photo: photos.find((p) => p.id === pr.photo_id) || pr.photo,
-        }))
-      )
-    }
-  }, [photos])
 
   const pendingPrintCount = printRequests.filter((pr) => pr.status === 'pending').length
 
@@ -2137,6 +2139,18 @@ export default function DashboardPage() {
                                       }`}>
                                         {pr.status === 'printed' ? 'Imprimé' : 'Refusé'}
                                       </Badge>
+                                      {pr.photo && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handlePrintRequest(pr)}
+                                          disabled={actionLoading === pr.id}
+                                          className="h-7 w-7 p-0 text-gray-500 hover:text-[#4CAF50] hover:bg-[#4CAF50]/10"
+                                          title="Ré-imprimer"
+                                        >
+                                          <Printer className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
                                       <Button
                                         size="sm"
                                         variant="ghost"
