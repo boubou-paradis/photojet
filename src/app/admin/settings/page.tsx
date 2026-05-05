@@ -1098,12 +1098,18 @@ export default function SettingsPage() {
                             </p>
                           </div>
                           <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                            <p className="text-xs text-blue-400 font-medium">💡 Étape 2 — Supprimer la validation manuelle</p>
-                            <p className="text-xs text-blue-400/80 mt-1">
-                              Chrome affiche toujours une boîte "Imprimer" avant d&apos;envoyer à l&apos;imprimante.
-                              Pour imprimer sans confirmation, lancez Chrome avec ce flag :<br />
-                              <span className="font-mono text-blue-300">Windows : raccourci Chrome → Propriétés → Cible → ajouter <strong>--kiosk-printing</strong></span><br />
-                              <span className="font-mono text-blue-300">Mac : Terminal → <strong>/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --kiosk-printing</strong></span>
+                            <p className="text-xs text-blue-400 font-medium">💡 Étape 2 — Imprimer sans confirmation</p>
+                            <p className="text-xs text-blue-400/80 mt-1 leading-relaxed">
+                              Chrome affiche toujours une boîte &quot;Imprimer&quot; avant d&apos;envoyer. Pour l&apos;éviter :<br /><br />
+                              <strong className="text-blue-300">Windows :</strong><br />
+                              1. Ferme Chrome complètement<br />
+                              2. Clic droit sur le raccourci Chrome du bureau → <strong>Propriétés</strong><br />
+                              3. Dans le champ <strong>Cible</strong>, clique à la toute fin du texte<br />
+                              4. Ajoute (avec un espace) : <span className="font-mono bg-blue-900/40 px-1 rounded">--kiosk-printing</span><br />
+                              5. Clic <strong>OK</strong> → relance Chrome via ce raccourci<br /><br />
+                              <strong className="text-blue-300">Mac :</strong><br />
+                              Dans le Terminal :<br />
+                              <span className="font-mono bg-blue-900/40 px-1 rounded text-[10px]">/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --kiosk-printing</span>
                             </p>
                           </div>
                         </div>
