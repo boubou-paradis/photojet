@@ -462,11 +462,11 @@ export default function BornePage() {
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
-      // Popup bloqué → ne pas incrémenter le compteur, revenir en preview
       URL.revokeObjectURL(printBlobUrl)
       setState('preview')
       return
     }
+    printWindow.focus()
 
     printWindow.document.write(`
       <!DOCTYPE html>

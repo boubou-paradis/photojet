@@ -213,6 +213,42 @@ export default function DashboardPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Ref pour éviter les stale closures dans les listeners async
+  const selectedSessionRef = useRef<Session | null>(null)
+  useEffect(() => { selectedSessionRef.current = selectedSession }, [selectedSession])
+
+  // Listener postMessage : marque comme imprimé quand la fenêtre popup confirme via onafterprint
+  useEffect(() => {
+    const handler = async (e: MessageEvent) => {
+      if (typeof e.data !== 'string' || !e.data.startsWith('animajet-print-done:')) return
+      const requestId = e.data.slice('animajet-print-done:'.length)
+      if (!requestId) return
+
+      const sess = selectedSessionRef.current
+      try {
+        await supabase.from('print_requests')
+          .update({ status: 'printed', printed_at: new Date().toISOString() })
+          .eq('id', requestId)
+
+        if (sess) {
+          const newCount = (sess.print_count ?? 0) + 1
+          await supabase.from('sessions').update({ print_count: newCount }).eq('id', sess.id)
+          setSelectedSession(prev => prev ? { ...prev, print_count: newCount } : prev)
+          setSessions(prev => prev.map(s => s.id === sess.id ? { ...s, print_count: newCount } : s))
+        }
+
+        setPrintRequests(prev => prev.map(pr =>
+          pr.id === requestId ? { ...pr, status: 'printed', printed_at: new Date().toISOString() } : pr
+        ))
+        toast.success('Photo imprimée ✓')
+      } catch {
+        toast.error('Erreur de mise à jour après impression')
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, []) // Stable — utilise selectedSessionRef en interne
+
   useEffect(() => {
     fetchSessions()
   }, [])
@@ -513,7 +549,7 @@ export default function DashboardPage() {
           fetchPrintRequests(sessionId)
           // Mode auto : déclencher l'impression automatiquement
           // Délai 3s pour laisser le CDN Supabase synchroniser la photo
-          if (payload.eventType === 'INSERT' && selectedSession?.print_mode === 'auto') {
+          if (payload.eventType === 'INSERT' && selectedSessionRef.current?.print_mode === 'auto') {
             const newRequest = payload.new as PrintRequest
             setTimeout(() => handleAutoPrint(newRequest), 3000)
           }
@@ -596,13 +632,19 @@ export default function DashboardPage() {
                 if (img.naturalWidth > 0) {
                   window.focus();
                   window.print();
-                  window.onafterprint = function() { window.close(); };
+                  window.onafterprint = function() {
+                    try { if (window.opener) window.opener.postMessage('animajet-print-done:${requestId}', '*'); } catch(e){}
+                    window.close();
+                  };
                 } else if (tries < 25) {
                   setTimeout(doPrint, 200);
                 } else {
                   window.focus();
                   window.print();
-                  window.onafterprint = function() { window.close(); };
+                  window.onafterprint = function() {
+                    try { if (window.opener) window.opener.postMessage('animajet-print-done:${requestId}', '*'); } catch(e){}
+                    window.close();
+                  };
                 }
               }
               setTimeout(doPrint, 500);
@@ -617,38 +659,8 @@ export default function DashboardPage() {
       setTimeout(() => URL.revokeObjectURL(urlToRevoke), 120_000)
     }
 
-    // Marquer comme imprimé
-    try {
-      await supabase
-        .from('print_requests')
-        .update({ status: 'printed', printed_at: new Date().toISOString() })
-        .eq('id', requestId)
-
-      // Incrémenter le compteur
-      if (selectedSession) {
-        const newCount = (selectedSession.print_count ?? 0) + 1
-        await supabase
-          .from('sessions')
-          .update({ print_count: newCount })
-          .eq('id', selectedSession.id)
-
-        setSelectedSession({ ...selectedSession, print_count: newCount })
-        setSessions((prev) =>
-          prev.map((s) => s.id === selectedSession.id ? { ...s, print_count: newCount } : s)
-        )
-      }
-
-      // Mise à jour locale
-      setPrintRequests((prev) =>
-        prev.map((pr) =>
-          pr.id === requestId ? { ...pr, status: 'printed', printed_at: new Date().toISOString() } : pr
-        )
-      )
-      toast.success('Photo imprimée')
-    } catch (err) {
-      toast.error('Erreur lors de la mise à jour')
-      console.error(err)
-    }
+    // Le marquage comme "imprimé" est géré par le listener postMessage (onafterprint → postMessage → useEffect)
+    // Cela garantit que le statut n'est mis à jour que quand window.print() s'est réellement exécuté
   }
 
   async function handleRejectPrint(requestId: string) {
