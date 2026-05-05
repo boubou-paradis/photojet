@@ -1089,24 +1089,13 @@ export default function SettingsPage() {
                           : 'Les photos s\'impriment automatiquement'}
                       </p>
                       {formData.print_mode === 'auto' && (
-                        <div className="mt-2 space-y-2">
-                          <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                            <p className="text-xs text-amber-400 font-medium">⚠️ Étape 1 — Autoriser les popups</p>
-                            <p className="text-xs text-amber-400/80 mt-1">
-                              Chrome bloque les fenêtres automatiques par défaut.<br />
-                              <span className="font-mono">Paramètres Chrome → Confidentialité → Paramètres du site → Fenêtres pop-up → Autoriser animajet.fr</span>
-                            </p>
-                          </div>
+                        <div className="mt-2">
                           <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                            <p className="text-xs text-blue-400 font-medium">💡 Étape 2 — Imprimer sans confirmation</p>
+                            <p className="text-xs text-blue-400 font-medium">💡 Imprimer sans confirmation (boîte &quot;Imprimer&quot;)</p>
                             <p className="text-xs text-blue-400/80 mt-1 leading-relaxed">
-                              Chrome affiche toujours une boîte &quot;Imprimer&quot; avant d&apos;envoyer. Pour l&apos;éviter :<br /><br />
-                              <strong className="text-blue-300">Windows — méthode rapide :</strong><br />
-                              Appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
-                              À faire à chaque début de soirée.<br /><br />
-                              <strong className="text-blue-300">Mac :</strong><br />
-                              Cmd+Espace → tape <span className="font-mono bg-blue-900/40 px-1 rounded">Terminal</span> → Entrée, puis :<br />
-                              <span className="font-mono bg-blue-900/40 px-1 rounded">open -a &quot;Google Chrome&quot; --args --kiosk-printing</span>
+                              <strong className="text-blue-300">Windows :</strong> appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
+                              <strong className="text-blue-300">Mac :</strong> Terminal → <span className="font-mono bg-blue-900/40 px-1 rounded">open -a &quot;Google Chrome&quot; --args --kiosk-printing</span><br />
+                              À faire à chaque début de soirée.
                             </p>
                           </div>
                         </div>

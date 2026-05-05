@@ -217,10 +217,19 @@ export default function DashboardPage() {
   const selectedSessionRef = useRef<Session | null>(null)
   useEffect(() => { selectedSessionRef.current = selectedSession }, [selectedSession])
 
-  // Listener postMessage : marque comme imprimé quand la fenêtre popup confirme via onafterprint
+  // Listener postMessage : marque comme imprimé quand l'iframe confirme via onafterprint
   useEffect(() => {
     const handler = async (e: MessageEvent) => {
-      if (typeof e.data !== 'string' || !e.data.startsWith('animajet-print-done:')) return
+      if (typeof e.data !== 'string') return
+
+      // Erreur dans l'iframe (image indisponible, réseau, etc.)
+      if (e.data.startsWith('animajet-print-error:')) {
+        const msg = e.data.slice('animajet-print-error:'.length)
+        toast.error(msg || 'Erreur impression — réessayez')
+        return
+      }
+
+      if (!e.data.startsWith('animajet-print-done:')) return
       const requestId = e.data.slice('animajet-print-done:'.length)
       if (!requestId) return
 
@@ -587,68 +596,60 @@ export default function DashboardPage() {
   }
 
   function executePrint(imageUrl: string, requestId: string) {
-    // Ouvrir synchroniquement pour préserver le geste utilisateur
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
-      return
-    }
-    printWindow.focus()
+    // Iframe cachée : pas de nouvelle fenêtre/onglet visible.
+    // Le fetch + rendu + window.print() se font à l'intérieur de l'iframe.
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;top:-200px;left:-200px;'
+    document.body.appendChild(iframe)
 
-    // Tout le travail (fetch, blob, rendu, print) se fait dans le script du popup.
-    // Une seule écriture document → pas de document.open() qui casse window.onload.
-    // img.onload est utilisé (plus fiable que window.onload après une réécriture).
-    printWindow.document.write(`<!DOCTYPE html>
+    const cleanup = () => {
+      try { if (document.body.contains(iframe)) document.body.removeChild(iframe) } catch {}
+    }
+
+    const iframeDoc = iframe.contentDocument
+    if (!iframeDoc) { cleanup(); toast.error('Erreur impression'); return }
+
+    iframeDoc.open()
+    iframeDoc.write(`<!DOCTYPE html>
 <html>
 <head>
 <style>
 @page{margin:0}
-body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:sans-serif;color:#D4AF37;font-size:18px}
+body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh}
 img{max-width:100%;max-height:100vh;object-fit:contain}
 </style>
 </head>
 <body>
-<span id="msg">Chargement...</span>
 <script>
-window.focus();
 fetch(${JSON.stringify(imageUrl)})
   .then(function(r){return r.ok?r.blob():Promise.reject('http')})
   .then(function(blob){
-    if(blob.size<500){
-      document.getElementById('msg').textContent='Photo non disponible — réessayez dans quelques secondes';
-      setTimeout(function(){window.close()},3000);
-      return;
-    }
+    if(blob.size<500){parent.postMessage('animajet-print-error:Photo non disponible','*');return}
     var url=URL.createObjectURL(blob);
     var img=document.createElement('img');
     img.onload=function(){
       document.body.innerHTML='';
       document.body.appendChild(img);
-      window.focus();
       setTimeout(function(){
         window.print();
         window.onafterprint=function(){
           URL.revokeObjectURL(url);
-          try{if(window.opener)window.opener.postMessage('animajet-print-done:${requestId}','*')}catch(e){}
-          window.close();
+          parent.postMessage('animajet-print-done:${requestId}','*');
         };
       },500);
     };
-    img.onerror=function(){
-      document.getElementById('msg').textContent='Erreur de chargement';
-      setTimeout(function(){window.close()},3000);
-    };
+    img.onerror=function(){parent.postMessage('animajet-print-error:Erreur image','*')};
     img.src=url;
   })
-  .catch(function(){
-    document.getElementById('msg').textContent='Erreur réseau';
-    setTimeout(function(){window.close()},3000);
-  });
+  .catch(function(){parent.postMessage('animajet-print-error:Erreur réseau','*')});
 <\/script>
 </body>
 </html>`)
-    printWindow.document.close()
-    // Le marquage "imprimé" est géré par le listener postMessage (onafterprint → postMessage → useEffect)
+    iframeDoc.close()
+
+    // Nettoyer l'iframe après 2 minutes (failsafe si onafterprint ne tire pas)
+    setTimeout(cleanup, 120_000)
+    // Le marquage "imprimé" est géré par le listener postMessage
   }
 
   async function handleRejectPrint(requestId: string) {
