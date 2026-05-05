@@ -451,55 +451,55 @@ export default function BornePage() {
     && (session?.print_count ?? 0) >= session.print_limit
 
   async function handlePrint() {
-    if (!capturedImage || !session) return
-
-    // Vérifier la limite avant d'imprimer
+    if (!capturedImage || !capturedBlob || !session) return
     if (printLimitReached) return
 
     setState('printing')
 
-    // Create a print window with the captured image
+    // Blob URL dédiée à l'impression, indépendante de capturedImageUrlRef
+    // (évite que resetToCamera() révoque l'URL pendant que l'impression est en cours)
+    const printBlobUrl = URL.createObjectURL(capturedBlob)
+
     const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>AnimaJet - Impression</title>
-            <style>
-              @page { margin: 0; }
-              body {
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                background: #000;
-              }
-              img {
-                max-width: 100%;
-                max-height: 100vh;
-                object-fit: contain;
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${capturedImage}" onload="window.print(); window.close();" />
-          </body>
-        </html>
-      `)
-      printWindow.document.close()
+    if (!printWindow) {
+      // Popup bloqué → ne pas incrémenter le compteur, revenir en preview
+      URL.revokeObjectURL(printBlobUrl)
+      setState('preview')
+      return
     }
 
-    // Incrémenter le compteur d'impression partagé
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>AnimaJet - Impression</title>
+          <style>
+            @page { margin: 0; }
+            body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
+            img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+          </style>
+        </head>
+        <body>
+          <img src="${printBlobUrl}" />
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+              }, 300);
+            };
+          <\/script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    // Révoquer après 2 minutes — laisse largement le temps à l'impression de se terminer
+    setTimeout(() => URL.revokeObjectURL(printBlobUrl), 120_000)
+
+    // Incrémenter le compteur uniquement si le popup s'est ouvert
     try {
       const newCount = (session.print_count ?? 0) + 1
-      await supabase
-        .from('sessions')
-        .update({ print_count: newCount })
-        .eq('id', session.id)
-
-      // Mettre à jour l'état local
+      await supabase.from('sessions').update({ print_count: newCount }).eq('id', session.id)
       setSession({ ...session, print_count: newCount })
     } catch (err) {
       console.error('Error incrementing print count:', err)

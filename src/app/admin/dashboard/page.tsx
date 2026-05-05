@@ -552,39 +552,41 @@ export default function DashboardPage() {
     }
 
     const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>AnimaJet - Impression</title>
-            <style>
-              @page { margin: 0; }
-              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: black; }
-              img { max-width: 100%; max-height: 100vh; object-fit: contain; }
-            </style>
-          </head>
-          <body>
-            <img src="${printSrc}" />
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  window.onafterprint = function() { window.close(); };
-                }, 300);
-              };
-            <\/script>
-          </body>
-        </html>
-      `)
-      printWindow.document.close()
-      // Révoquer la blob URL après que l'impression ait eu le temps de se faire
-      if (blobUrl) {
-        const urlToRevoke = blobUrl
-        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60000)
-      }
-    } else {
+    if (!printWindow) {
+      // Popup bloqué par le navigateur (fréquent en mode auto car pas de clic direct)
       if (blobUrl) URL.revokeObjectURL(blobUrl)
+      toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
+      return // Ne pas marquer comme imprimé
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>AnimaJet - Impression</title>
+          <style>
+            @page { margin: 0; }
+            body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: black; }
+            img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+          </style>
+        </head>
+        <body>
+          <img src="${printSrc}" />
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+              }, 300);
+            };
+          <\/script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    if (blobUrl) {
+      const urlToRevoke = blobUrl
+      setTimeout(() => URL.revokeObjectURL(urlToRevoke), 120_000)
     }
 
     // Marquer comme imprimé

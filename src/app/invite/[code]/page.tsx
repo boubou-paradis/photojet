@@ -318,7 +318,7 @@ export default function InvitePage() {
       if (dbError) throw dbError
 
       // Insérer la demande d'impression
-      await supabase
+      const { error: printReqError } = await supabase
         .from('print_requests')
         .insert({
           session_id: session.id,
@@ -327,6 +327,7 @@ export default function InvitePage() {
           status: 'pending',
           printed_at: null,
         })
+      if (printReqError) throw new Error('Demande d\'impression non envoyée : ' + printReqError.message)
 
       // Incrémenter le compteur
       await supabase
