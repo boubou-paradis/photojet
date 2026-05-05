@@ -652,6 +652,31 @@ export default function DashboardPage() {
     setActionLoading(null)
   }
 
+  async function handleDeletePrintRequest(pr: PrintRequest & { photo?: Photo }) {
+    setActionLoading(pr.id)
+    try {
+      // Supprimer le fichier storage si la photo est liée
+      if (pr.photo?.storage_path) {
+        await supabase.storage.from('photos').remove([pr.photo.storage_path])
+      }
+      // Supprimer la photo en DB
+      if (pr.photo_id) {
+        await supabase.from('photos').delete().eq('id', pr.photo_id)
+      }
+      // Supprimer la demande d'impression
+      await supabase.from('print_requests').delete().eq('id', pr.id)
+
+      setPrintRequests((prev) => prev.filter((p) => p.id !== pr.id))
+      setPhotos((prev) => prev.filter((p) => p.id !== pr.photo_id))
+      toast.success('Photo supprimée')
+    } catch (err) {
+      toast.error('Erreur lors de la suppression')
+      console.error(err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   async function handleDelete(photo: Photo) {
     setActionLoading(photo.id)
     try {
@@ -2007,6 +2032,16 @@ export default function DashboardPage() {
                                         <XCircle className="h-4 w-4 mr-1" />
                                         Refuser
                                       </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDeletePrintRequest(pr)}
+                                        disabled={actionLoading === pr.id}
+                                        className="h-9 px-3 text-gray-500 hover:text-[#E53935] hover:bg-[#E53935]/10"
+                                        title="Supprimer la photo"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   </motion.div>
                                 ))}
@@ -2054,13 +2089,28 @@ export default function DashboardPage() {
                                         })}
                                       </p>
                                     </div>
-                                    <Badge className={`text-[10px] px-1.5 py-0.5 ${
-                                      pr.status === 'printed'
-                                        ? 'bg-[#4CAF50]/20 text-[#4CAF50] border-[#4CAF50]/30'
-                                        : 'bg-[#E53935]/20 text-[#E53935] border-[#E53935]/30'
-                                    }`}>
-                                      {pr.status === 'printed' ? 'Imprimé' : 'Refusé'}
-                                    </Badge>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      <Badge className={`text-[10px] px-1.5 py-0.5 ${
+                                        pr.status === 'printed'
+                                          ? 'bg-[#4CAF50]/20 text-[#4CAF50] border-[#4CAF50]/30'
+                                          : 'bg-[#E53935]/20 text-[#E53935] border-[#E53935]/30'
+                                      }`}>
+                                        {pr.status === 'printed' ? 'Imprimé' : 'Refusé'}
+                                      </Badge>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDeletePrintRequest(pr)}
+                                        disabled={actionLoading === pr.id}
+                                        className="h-7 w-7 p-0 text-gray-600 hover:text-[#E53935] hover:bg-[#E53935]/10"
+                                        title="Supprimer la photo"
+                                      >
+                                        {actionLoading === pr.id
+                                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          : <Trash2 className="h-3.5 w-3.5" />
+                                        }
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
                             </div>
