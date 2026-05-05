@@ -1088,6 +1088,16 @@ export default function SettingsPage() {
                           ? 'Vous validez chaque demande avant impression'
                           : 'Les photos s\'impriment automatiquement'}
                       </p>
+                      {formData.print_mode === 'auto' && (
+                        <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                          <p className="text-xs text-amber-400 font-medium">⚠️ Mode automatique — action requise</p>
+                          <p className="text-xs text-amber-400/80 mt-1">
+                            Chrome bloque les fenêtres d&apos;impression automatiques par défaut.
+                            Pour activer le mode auto, autorisez les popups pour ce site :<br />
+                            <span className="font-mono">Paramètres Chrome → Confidentialité → Paramètres du site → Fenêtres pop-up → Autoriser animajet.fr</span>
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-1.5">
