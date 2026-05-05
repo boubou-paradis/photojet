@@ -482,22 +482,25 @@ export default function BornePage() {
         <body>
           <img id="pi" src="${printBlobUrl}" />
           <script>
+            window.focus();
             window.onload = function() {
               var img = document.getElementById('pi');
               var tries = 0;
               function doPrint() {
                 tries++;
                 if (img.naturalWidth > 0) {
+                  window.focus();
                   window.print();
                   window.onafterprint = function() { window.close(); };
                 } else if (tries < 25) {
                   setTimeout(doPrint, 200);
                 } else {
+                  window.focus();
                   window.print();
                   window.onafterprint = function() { window.close(); };
                 }
               }
-              setTimeout(doPrint, 300);
+              setTimeout(doPrint, 500);
             };
           <\/script>
         </body>

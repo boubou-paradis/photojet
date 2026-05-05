@@ -538,38 +538,41 @@ export default function DashboardPage() {
   }
 
   async function executePrint(imageUrl: string, requestId: string) {
-    // Pré-charger l'image en blob
+    // Ouvrir la fenêtre IMMÉDIATEMENT (synchrone) pour préserver le geste utilisateur.
+    // Si on fait le fetch() d'abord, le navigateur considère le geste expiré
+    // et window.print() est silencieusement supprimé dans le popup.
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
+      return
+    }
+    printWindow.focus()
+    printWindow.document.write(`<html><body style="background:#000;color:#D4AF37;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:20px;margin:0;">Chargement de la photo...</body></html>`)
+
+    // Maintenant charger l'image en blob (async, popup déjà ouvert)
     let printSrc = imageUrl
     let blobUrl: string | null = null
     let imageReady = false
-
     try {
       const resp = await fetch(imageUrl)
       if (resp.ok) {
         const blob = await resp.blob()
-        if (blob.size > 500) { // Vérifie que l'image a du contenu (pas un 404 vide)
+        if (blob.size > 500) {
           blobUrl = URL.createObjectURL(blob)
           printSrc = blobUrl
           imageReady = true
         }
       }
-    } catch {
-      // Fallback : tenter avec l'URL directe
-    }
+    } catch { /* fallback URL directe */ }
 
     if (!imageReady) {
-      // Image pas encore disponible (CDN pas encore synchronisé après upload)
+      printWindow.close()
       toast.error('Photo non disponible — réessayez dans quelques secondes', { duration: 5000 })
-      return // Ne pas marquer comme imprimé
-    }
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      if (blobUrl) URL.revokeObjectURL(blobUrl)
-      toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
       return
     }
 
+    // Écrire le contenu d'impression final dans la fenêtre déjà ouverte
+    printWindow.document.open()
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -584,22 +587,25 @@ export default function DashboardPage() {
         <body>
           <img id="pi" src="${printSrc}" />
           <script>
+            window.focus();
             window.onload = function() {
               var img = document.getElementById('pi');
               var tries = 0;
               function doPrint() {
                 tries++;
                 if (img.naturalWidth > 0) {
+                  window.focus();
                   window.print();
                   window.onafterprint = function() { window.close(); };
                 } else if (tries < 25) {
                   setTimeout(doPrint, 200);
                 } else {
+                  window.focus();
                   window.print();
                   window.onafterprint = function() { window.close(); };
                 }
               }
-              setTimeout(doPrint, 300);
+              setTimeout(doPrint, 500);
             };
           <\/script>
         </body>
