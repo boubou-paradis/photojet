@@ -582,13 +582,24 @@ export default function DashboardPage() {
           </style>
         </head>
         <body>
-          <img src="${printSrc}" />
+          <img id="pi" src="${printSrc}" />
           <script>
             window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.onafterprint = function() { window.close(); };
-              }, 300);
+              var img = document.getElementById('pi');
+              var tries = 0;
+              function doPrint() {
+                tries++;
+                if (img.naturalWidth > 0) {
+                  window.print();
+                  window.onafterprint = function() { window.close(); };
+                } else if (tries < 25) {
+                  setTimeout(doPrint, 200);
+                } else {
+                  window.print();
+                  window.onafterprint = function() { window.close(); };
+                }
+              }
+              setTimeout(doPrint, 300);
             };
           <\/script>
         </body>
