@@ -586,94 +586,69 @@ export default function DashboardPage() {
     await executePrint(getPhotoUrl(photo.storage_path), request.id)
   }
 
-  async function executePrint(imageUrl: string, requestId: string) {
-    // Ouvrir la fenêtre IMMÉDIATEMENT (synchrone) pour préserver le geste utilisateur.
-    // Si on fait le fetch() d'abord, le navigateur considère le geste expiré
-    // et window.print() est silencieusement supprimé dans le popup.
+  function executePrint(imageUrl: string, requestId: string) {
+    // Ouvrir synchroniquement pour préserver le geste utilisateur
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
       return
     }
     printWindow.focus()
-    printWindow.document.write(`<html><body style="background:#000;color:#D4AF37;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:20px;margin:0;">Chargement de la photo...</body></html>`)
 
-    // Maintenant charger l'image en blob (async, popup déjà ouvert)
-    let printSrc = imageUrl
-    let blobUrl: string | null = null
-    let imageReady = false
-    try {
-      const resp = await fetch(imageUrl)
-      if (resp.ok) {
-        const blob = await resp.blob()
-        if (blob.size > 500) {
-          blobUrl = URL.createObjectURL(blob)
-          printSrc = blobUrl
-          imageReady = true
-        }
-      }
-    } catch { /* fallback URL directe */ }
-
-    if (!imageReady) {
-      printWindow.close()
-      toast.error('Photo non disponible — réessayez dans quelques secondes', { duration: 5000 })
-      return
+    // Tout le travail (fetch, blob, rendu, print) se fait dans le script du popup.
+    // Une seule écriture document → pas de document.open() qui casse window.onload.
+    // img.onload est utilisé (plus fiable que window.onload après une réécriture).
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<style>
+@page{margin:0}
+body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:sans-serif;color:#D4AF37;font-size:18px}
+img{max-width:100%;max-height:100vh;object-fit:contain}
+</style>
+</head>
+<body>
+<span id="msg">Chargement...</span>
+<script>
+window.focus();
+fetch(${JSON.stringify(imageUrl)})
+  .then(function(r){return r.ok?r.blob():Promise.reject('http')})
+  .then(function(blob){
+    if(blob.size<500){
+      document.getElementById('msg').textContent='Photo non disponible — réessayez dans quelques secondes';
+      setTimeout(function(){window.close()},3000);
+      return;
     }
-
-    // Écrire le contenu d'impression final dans la fenêtre déjà ouverte
-    printWindow.document.open()
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>AnimaJet - Impression</title>
-          <style>
-            @page { margin: 0; }
-            body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: black; }
-            img { max-width: 100%; max-height: 100vh; object-fit: contain; }
-          </style>
-        </head>
-        <body>
-          <img id="pi" src="${printSrc}" />
-          <script>
-            window.focus();
-            window.onload = function() {
-              var img = document.getElementById('pi');
-              var tries = 0;
-              function doPrint() {
-                tries++;
-                if (img.naturalWidth > 0) {
-                  window.focus();
-                  window.print();
-                  window.onafterprint = function() {
-                    try { if (window.opener) window.opener.postMessage('animajet-print-done:${requestId}', '*'); } catch(e){}
-                    window.close();
-                  };
-                } else if (tries < 25) {
-                  setTimeout(doPrint, 200);
-                } else {
-                  window.focus();
-                  window.print();
-                  window.onafterprint = function() {
-                    try { if (window.opener) window.opener.postMessage('animajet-print-done:${requestId}', '*'); } catch(e){}
-                    window.close();
-                  };
-                }
-              }
-              setTimeout(doPrint, 500);
-            };
-          <\/script>
-        </body>
-      </html>
-    `)
+    var url=URL.createObjectURL(blob);
+    var img=document.createElement('img');
+    img.onload=function(){
+      document.body.innerHTML='';
+      document.body.appendChild(img);
+      window.focus();
+      setTimeout(function(){
+        window.print();
+        window.onafterprint=function(){
+          URL.revokeObjectURL(url);
+          try{if(window.opener)window.opener.postMessage('animajet-print-done:${requestId}','*')}catch(e){}
+          window.close();
+        };
+      },500);
+    };
+    img.onerror=function(){
+      document.getElementById('msg').textContent='Erreur de chargement';
+      setTimeout(function(){window.close()},3000);
+    };
+    img.src=url;
+  })
+  .catch(function(){
+    document.getElementById('msg').textContent='Erreur réseau';
+    setTimeout(function(){window.close()},3000);
+  });
+<\/script>
+</body>
+</html>`)
     printWindow.document.close()
-    if (blobUrl) {
-      const urlToRevoke = blobUrl
-      setTimeout(() => URL.revokeObjectURL(urlToRevoke), 120_000)
-    }
-
-    // Le marquage comme "imprimé" est géré par le listener postMessage (onafterprint → postMessage → useEffect)
-    // Cela garantit que le statut n'est mis à jour que quand window.print() s'est réellement exécuté
+    // Le marquage "imprimé" est géré par le listener postMessage (onafterprint → postMessage → useEffect)
   }
 
   async function handleRejectPrint(requestId: string) {

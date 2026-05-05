@@ -468,44 +468,31 @@ export default function BornePage() {
     }
     printWindow.focus()
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>AnimaJet - Impression</title>
-          <style>
-            @page { margin: 0; }
-            body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
-            img { max-width: 100%; max-height: 100vh; object-fit: contain; }
-          </style>
-        </head>
-        <body>
-          <img id="pi" src="${printBlobUrl}" />
-          <script>
-            window.focus();
-            window.onload = function() {
-              var img = document.getElementById('pi');
-              var tries = 0;
-              function doPrint() {
-                tries++;
-                if (img.naturalWidth > 0) {
-                  window.focus();
-                  window.print();
-                  window.onafterprint = function() { window.close(); };
-                } else if (tries < 25) {
-                  setTimeout(doPrint, 200);
-                } else {
-                  window.focus();
-                  window.print();
-                  window.onafterprint = function() { window.close(); };
-                }
-              }
-              setTimeout(doPrint, 500);
-            };
-          <\/script>
-        </body>
-      </html>
-    `)
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<style>
+@page{margin:0}
+body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh}
+img{max-width:100%;max-height:100vh;object-fit:contain}
+</style>
+</head>
+<body>
+<img id="pi" src="${printBlobUrl}" />
+<script>
+window.focus();
+var img=document.getElementById('pi');
+img.onload=function(){
+  window.focus();
+  setTimeout(function(){
+    window.print();
+    window.onafterprint=function(){window.close()};
+  },500);
+};
+img.onerror=function(){setTimeout(function(){window.close()},3000)};
+<\/script>
+</body>
+</html>`)
     printWindow.document.close()
     // Révoquer après 2 minutes — laisse largement le temps à l'impression de se terminer
     setTimeout(() => URL.revokeObjectURL(printBlobUrl), 120_000)
