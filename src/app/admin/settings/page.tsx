@@ -1101,15 +1101,11 @@ export default function SettingsPage() {
                             <p className="text-xs text-blue-400 font-medium">💡 Étape 2 — Imprimer sans confirmation</p>
                             <p className="text-xs text-blue-400/80 mt-1 leading-relaxed">
                               Chrome affiche toujours une boîte &quot;Imprimer&quot; avant d&apos;envoyer. Pour l&apos;éviter :<br /><br />
-                              <strong className="text-blue-300">Windows :</strong><br />
-                              1. Ferme Chrome complètement<br />
-                              2. Clic droit sur le raccourci Chrome du bureau → <strong>Propriétés</strong><br />
-                              3. Dans le champ <strong>Cible</strong>, clique à la toute fin du texte<br />
-                              4. Ajoute (avec un espace) : <span className="font-mono bg-blue-900/40 px-1 rounded">--kiosk-printing</span><br />
-                              5. Clic <strong>OK</strong> → relance Chrome via ce raccourci<br /><br />
+                              <strong className="text-blue-300">Windows — méthode rapide :</strong><br />
+                              Appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
+                              À faire à chaque début de soirée.<br /><br />
                               <strong className="text-blue-300">Mac :</strong><br />
-                              Dans le Terminal :<br />
-                              <span className="font-mono bg-blue-900/40 px-1 rounded text-[10px]">/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --kiosk-printing</span>
+                              Terminal → <span className="font-mono bg-blue-900/40 px-1 rounded text-[10px]">/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --kiosk-printing</span>
                             </p>
                           </div>
                         </div>
