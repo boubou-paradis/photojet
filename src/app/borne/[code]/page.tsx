@@ -456,13 +456,23 @@ export default function BornePage() {
 
     setState('printing')
 
-    // Blob URL dédiée à l'impression, indépendante de capturedImageUrlRef
-    // (évite que resetToCamera() révoque l'URL pendant que l'impression est en cours)
-    const printBlobUrl = URL.createObjectURL(capturedBlob)
+    // Convertir en data URL (base64) — contrairement à une blob URL, une data URL
+    // est directement accessible par le renderer d'impression de Chrome (processus séparé)
+    // → résout le blocage "Préparation de l'aperçu en cours"
+    const printDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(capturedBlob)
+    }).catch(() => null)
+
+    if (!printDataUrl) {
+      setState('preview')
+      return
+    }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
-      URL.revokeObjectURL(printBlobUrl)
       setState('preview')
       return
     }
@@ -478,7 +488,7 @@ img{max-width:100%;max-height:100vh;object-fit:contain}
 </style>
 </head>
 <body>
-<img id="pi" src="${printBlobUrl}" />
+<img id="pi" src="${printDataUrl}" />
 <script>
 window.focus();
 var img=document.getElementById('pi');
@@ -494,8 +504,6 @@ img.onerror=function(){setTimeout(function(){window.close()},3000)};
 </body>
 </html>`)
     printWindow.document.close()
-    // Révoquer après 2 minutes — laisse largement le temps à l'impression de se terminer
-    setTimeout(() => URL.revokeObjectURL(printBlobUrl), 120_000)
 
     // Incrémenter le compteur uniquement si le popup s'est ouvert
     try {
