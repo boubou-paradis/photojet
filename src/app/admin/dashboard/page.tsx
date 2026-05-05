@@ -1665,10 +1665,10 @@ export default function DashboardPage() {
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Impressions</p>
                           <div className="flex items-center gap-2">
                             <span className="text-2xl font-black text-pink-500">
-                              {selectedSession?.print_count ?? 0}
+                              {pendingPrintCount}
                             </span>
                             {selectedSession?.print_limit && (
-                              <span className="text-xs text-gray-500">/ {selectedSession.print_limit}</span>
+                              <span className="text-xs text-gray-500">/ {selectedSession.print_limit} total</span>
                             )}
                             {pendingPrintCount > 0 && (
                               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
