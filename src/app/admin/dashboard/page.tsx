@@ -537,7 +537,20 @@ export default function DashboardPage() {
   }
 
   async function executePrint(imageUrl: string, requestId: string) {
-    // Ouvrir fenêtre d'impression (même pattern que la borne)
+    // Pré-charger l'image en blob → évite tous les problèmes CORS dans la fenêtre d'impression
+    let printSrc = imageUrl
+    let blobUrl: string | null = null
+    try {
+      const resp = await fetch(imageUrl)
+      if (resp.ok) {
+        const blob = await resp.blob()
+        blobUrl = URL.createObjectURL(blob)
+        printSrc = blobUrl
+      }
+    } catch {
+      // Fallback : utiliser l'URL directe
+    }
+
     const printWindow = window.open('', '_blank')
     if (printWindow) {
       printWindow.document.write(`
@@ -552,11 +565,26 @@ export default function DashboardPage() {
             </style>
           </head>
           <body>
-            <img src="${imageUrl}" onload="window.print(); setTimeout(() => window.close(), 1000);" />
+            <img src="${printSrc}" />
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.onafterprint = function() { window.close(); };
+                }, 300);
+              };
+            <\/script>
           </body>
         </html>
       `)
       printWindow.document.close()
+      // Révoquer la blob URL après que l'impression ait eu le temps de se faire
+      if (blobUrl) {
+        const urlToRevoke = blobUrl
+        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60000)
+      }
+    } else {
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
     }
 
     // Marquer comme imprimé
