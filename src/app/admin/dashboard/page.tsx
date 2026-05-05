@@ -512,9 +512,10 @@ export default function DashboardPage() {
         (payload) => {
           fetchPrintRequests(sessionId)
           // Mode auto : déclencher l'impression automatiquement
+          // Délai 3s pour laisser le CDN Supabase synchroniser la photo
           if (payload.eventType === 'INSERT' && selectedSession?.print_mode === 'auto') {
             const newRequest = payload.new as PrintRequest
-            handleAutoPrint(newRequest)
+            setTimeout(() => handleAutoPrint(newRequest), 3000)
           }
         }
       )
@@ -537,26 +538,36 @@ export default function DashboardPage() {
   }
 
   async function executePrint(imageUrl: string, requestId: string) {
-    // Pré-charger l'image en blob → évite tous les problèmes CORS dans la fenêtre d'impression
+    // Pré-charger l'image en blob
     let printSrc = imageUrl
     let blobUrl: string | null = null
+    let imageReady = false
+
     try {
       const resp = await fetch(imageUrl)
       if (resp.ok) {
         const blob = await resp.blob()
-        blobUrl = URL.createObjectURL(blob)
-        printSrc = blobUrl
+        if (blob.size > 500) { // Vérifie que l'image a du contenu (pas un 404 vide)
+          blobUrl = URL.createObjectURL(blob)
+          printSrc = blobUrl
+          imageReady = true
+        }
       }
     } catch {
-      // Fallback : utiliser l'URL directe
+      // Fallback : tenter avec l'URL directe
+    }
+
+    if (!imageReady) {
+      // Image pas encore disponible (CDN pas encore synchronisé après upload)
+      toast.error('Photo non disponible — réessayez dans quelques secondes', { duration: 5000 })
+      return // Ne pas marquer comme imprimé
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
-      // Popup bloqué par le navigateur (fréquent en mode auto car pas de clic direct)
       if (blobUrl) URL.revokeObjectURL(blobUrl)
       toast.error('Impression bloquée — autorisez les popups pour ce site dans votre navigateur', { duration: 6000 })
-      return // Ne pas marquer comme imprimé
+      return
     }
 
     printWindow.document.write(`
