@@ -101,12 +101,27 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[Cron] check-expiring: ${expiredUsers.length} auto-expired, ${trialExpiredUsers.length} trial-expired`, { expiredUsers, trialExpiredUsers })
+  // Expirer les passes week-end dont pass_validity_until est dépassé
+  const { data: staleWeekendPass } = await supabase
+    .from('subscriptions')
+    .select('id, user_id')
+    .eq('status', 'weekend_pass')
+    .lt('pass_validity_until', now.toISOString())
+
+  let weekendPassExpired = 0
+  if (staleWeekendPass && staleWeekendPass.length > 0) {
+    for (const sub of staleWeekendPass) {
+      await supabase.from('subscriptions').update({ status: 'expired' }).eq('id', sub.id)
+      await supabase.from('sessions').update({ is_active: false }).eq('user_id', sub.user_id)
+      weekendPassExpired++
+    }
+  }
 
   return NextResponse.json({
     success: true,
     autoExpired: expiredUsers.length,
     trialExpired: trialExpiredUsers.length,
+    weekendPassExpired,
     details: { expired: expiredUsers, trialExpired: trialExpiredUsers },
   })
 }

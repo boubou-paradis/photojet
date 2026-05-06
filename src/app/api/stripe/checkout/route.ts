@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe, STRIPE_PRICE_ID } from '@/lib/stripe'
+import { stripe, STRIPE_PRICE_ID, STRIPE_PRICE_ID_WEEKEND_PASS } from '@/lib/stripe'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 import { createClient } from '@supabase/supabase-js'
 
 // Lazy initialization to avoid build-time errors
@@ -23,12 +24,36 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { email, promoCode } = body
+    const { email, promoCode, productType } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email requis' }, { status: 400 })
     }
 
+    // ---- PASS WEEK-END (one-time payment) ----
+    if (productType === 'weekend_pass') {
+      if (!isWeekendPassAvailable()) {
+        return NextResponse.json(
+          { error: 'Le pass week-end est disponible uniquement du vendredi 12h au lundi 12h.' },
+          { status: 400 }
+        )
+      }
+      if (!STRIPE_PRICE_ID_WEEKEND_PASS) {
+        return NextResponse.json({ error: 'Pass week-end non configuré' }, { status: 500 })
+      }
+      const passSession = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        customer_email: email,
+        line_items: [{ price: STRIPE_PRICE_ID_WEEKEND_PASS, quantity: 1 }],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
+        metadata: { email, productType: 'weekend_pass' },
+      })
+      return NextResponse.json({ url: passSession.url })
+    }
+
+    // ---- ABONNEMENT MENSUEL (subscription) ----
     if (!STRIPE_PRICE_ID) {
       return NextResponse.json({ error: 'Stripe non configure' }, { status: 500 })
     }

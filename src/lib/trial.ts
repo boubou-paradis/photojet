@@ -172,6 +172,24 @@ export function checkAccess(
     }
   }
 
+  // Pass week-end actif
+  if (subscription?.status === 'weekend_pass') {
+    const passUntil = subscription.pass_validity_until
+    if (passUntil && new Date() < new Date(passUntil)) {
+      return {
+        canAccess: true,
+        status: 'active_subscription',
+        message: 'Pass week-end actif',
+        isTrialUser: false
+      }
+    }
+    return {
+      canAccess: false,
+      status: 'no_access',
+      message: 'Votre pass week-end a expiré'
+    }
+  }
+
   // Abonnement actif = accès total
   if (subscription?.status === 'active') {
     return {

@@ -31,23 +31,28 @@ const PUBLIC_ROUTES = [
   '/gestion-',
 ]
 
-function isSubscriptionValid(status: string, currentPeriodEnd: string | null, trialEnd: string | null): boolean {
+function isSubscriptionValid(
+  status: string,
+  currentPeriodEnd: string | null,
+  trialEnd: string | null,
+  passValidityUntil?: string | null
+): boolean {
   const now = new Date()
 
-  // Only 'active' and 'trialing' can possibly be valid
-  if (status !== 'active' && status !== 'trialing') {
-    return false
+  if (status === 'weekend_pass') {
+    if (!passValidityUntil) return false
+    return now < new Date(passValidityUntil)
   }
 
-  // For trialing: check trial_end date
+  if (status !== 'active' && status !== 'trialing') return false
+
   if (status === 'trialing') {
     if (!trialEnd) return false
     return now < new Date(trialEnd)
   }
 
-  // For active: check current_period_end date
   if (status === 'active') {
-    if (!currentPeriodEnd) return true // No end date = unlimited (safety fallback)
+    if (!currentPeriodEnd) return true
     return now < new Date(currentPeriodEnd)
   }
 
@@ -158,7 +163,7 @@ export async function middleware(request: NextRequest) {
   // Check subscription - get status AND dates
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end, trial_end')
+    .select('status, current_period_end, trial_end, pass_validity_until')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -171,11 +176,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Check BOTH status AND date
   const valid = isSubscriptionValid(
     subscription.status,
     subscription.current_period_end,
-    subscription.trial_end
+    subscription.trial_end,
+    subscription.pass_validity_until
   )
 
   if (!valid) {

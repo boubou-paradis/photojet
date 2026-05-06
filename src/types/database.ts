@@ -3,7 +3,7 @@
 // ===========================================
 
 export type UserRole = 'owner' | 'admin' | 'user'
-export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due'
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'expired' | 'past_due' | 'weekend_pass'
 export type PromoType = 'trial' | 'percent' | 'fixed'
 
 export interface UserProfile {
@@ -33,6 +33,8 @@ export interface Subscription {
   // Essai gratuit 24h
   trial_started_at: string | null
   trial_used: boolean
+  // Pass événement week-end (vendredi 12h → lundi 12h)
+  pass_validity_until: string | null
 }
 
 export interface PromoCode {

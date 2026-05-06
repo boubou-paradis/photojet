@@ -1282,3 +1282,205 @@ export async function sendDataDeletionWarningEmail(params: { to: string; daysLef
     return { success: false, error }
   }
 }
+
+export async function sendWeekendPassEmail(params: {
+  to: string
+  password: string
+  sessionCode: string
+  validUntil: Date
+}) {
+  if (!resend) return { success: false, error: 'Resend not configured' }
+
+  const { to, password, sessionCode, validUntil } = params
+
+  const validUntilStr = validUntil.toLocaleString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      replyTo: REPLY_TO,
+      subject: '🎉 Votre Pass Week-end AnimaJet est activé !',
+      html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre Pass Week-end AnimaJet</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
+
+          <!-- Golden Top -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #D4AF37 20%, #F4D03F 50%, #D4AF37 80%, transparent 100%); border-radius: 20px 20px 0 0;"></td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 50px 40px 40px; border-radius: 20px 20px 0 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 15px; background: radial-gradient(circle at center, rgba(212,175,55,0.15) 0%, transparent 70%); border-radius: 50%;">
+                    <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="160" height="160" style="display: block; width: 160px; height: 160px; border: 0; border-radius: 20px;" />
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin: 30px 0 0 0; color: #D4AF37; font-size: 30px; font-weight: 700;">
+                Votre Pass Week-end est activé !
+              </h1>
+              <p style="margin: 12px 0 0 0; color: #9A9AA0; font-size: 16px; line-height: 1.5;">
+                Profitez d'AnimaJet pour votre événement ce week-end
+              </p>
+            </td>
+          </tr>
+
+          <!-- Validity Banner -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.08) 100%); border: 2px solid #D4AF37; border-radius: 14px;">
+                <tr>
+                  <td style="padding: 20px 25px; text-align: center;">
+                    <p style="margin: 0 0 6px; color: #D4AF37; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">⏰ Accès valable jusqu'au</p>
+                    <p style="margin: 0; color: #FFFFFF; font-size: 20px; font-weight: 700;">${validUntilStr}</p>
+                    <p style="margin: 10px 0 0; color: #E53935; font-size: 13px; font-weight: 600;">⚠️ Pensez à récupérer vos photos avant lundi 12h !</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Credentials -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 35px;">
+              <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
+                Voici vos identifiants de connexion :
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(145deg, #242428 0%, #1E1E22 100%); border: 2px solid #D4AF37; border-radius: 16px;">
+                <tr>
+                  <td style="padding: 30px;">
+
+                    <!-- Email -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                      <tr>
+                        <td width="50" valign="top">
+                          <td style="width: 42px; height: 42px; background: rgba(212,175,55,0.15); border-radius: 10px; text-align: center; vertical-align: middle; display: block; line-height: 42px; font-size: 20px;">&#9993;</td>
+                        </td>
+                        <td style="padding-left: 15px;">
+                          <p style="margin: 0 0 5px; color: #6B6B70; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Votre email</p>
+                          <p style="margin: 0; color: #FFFFFF; font-size: 15px; font-weight: 600;">${to}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;"><tr><td style="border-bottom: 1px solid rgba(212,175,55,0.2);"></td></tr></table>
+
+                    <!-- Password -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                      <tr>
+                        <td width="50" valign="top">
+                          <td style="width: 42px; height: 42px; background: rgba(212,175,55,0.15); border-radius: 10px; text-align: center; vertical-align: middle; display: block; line-height: 42px; font-size: 20px;">&#128274;</td>
+                        </td>
+                        <td style="padding-left: 15px;">
+                          <p style="margin: 0 0 5px; color: #6B6B70; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Mot de passe</p>
+                          <p style="margin: 0; color: #D4AF37; font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 2px;">${password}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;"><tr><td style="border-bottom: 1px solid rgba(212,175,55,0.2);"></td></tr></table>
+
+                    <!-- Session Code -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="50" valign="top">
+                          <td style="width: 42px; height: 42px; background: rgba(212,175,55,0.15); border-radius: 10px; text-align: center; vertical-align: middle; display: block; line-height: 42px; font-size: 20px;">&#127919;</td>
+                        </td>
+                        <td style="padding-left: 15px;">
+                          <p style="margin: 0 0 5px; color: #6B6B70; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Code de votre session</p>
+                          <p style="margin: 0; color: #D4AF37; font-size: 36px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 6px;">${sessionCode}</p>
+                          <p style="margin: 8px 0 0; color: #6B6B70; font-size: 13px;">Partagez ce code avec vos invités !</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="background-color: #1A1A1E; padding: 0 40px 35px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 50%, #D4AF37 100%); border-radius: 14px; box-shadow: 0 4px 20px rgba(212,175,55,0.4);">
+                    <a href="${APP_URL}/login" target="_blank" style="display: inline-block; padding: 20px 55px; color: #1A1A1E; font-size: 16px; font-weight: 700; text-decoration: none;">
+                      Accéder à mon dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Download reminder -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 0 40px 35px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: rgba(229,57,53,0.08); border: 1px solid rgba(229,57,53,0.3); border-radius: 12px;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 6px; color: #E53935; font-size: 14px; font-weight: 700;">📥 Important — Téléchargez vos photos avant lundi 12h</p>
+                    <p style="margin: 0; color: #9A9AA0; font-size: 13px; line-height: 1.6;">
+                      Dans votre dashboard → onglet Photos → bouton "Télécharger l'album ZIP". Votre accès se termine automatiquement lundi à 12h00.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
+              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 14px; text-align: center;">
+                Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
+              </p>
+              <p style="margin: 0; color: #4A4A4F; font-size: 12px; text-align: center; line-height: 1.8;">
+                &copy; 2025 AnimaJet - Tous droits réservés<br>
+                <span style="color: #6B6B70;">Créé par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Golden Bottom -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #D4AF37 20%, #F4D03F 50%, #D4AF37 80%, transparent 100%); border-radius: 0 0 20px 20px;"></td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
+    })
+    return { success: true, data: result }
+  } catch (error: unknown) {
+    console.error('[Email] Weekend pass email error:', error instanceof Error ? error.message : error)
+    return { success: false, error }
+  }
+}

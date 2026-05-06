@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe, generatePassword, generateSessionCode } from '@/lib/stripe'
-import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail, sendRenewalConfirmationEmail } from '@/lib/resend'
+import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail, sendRenewalConfirmationEmail, sendWeekendPassEmail } from '@/lib/resend'
+import { computePassValidityUntil } from '@/lib/weekend-pass'
 import { createClient } from '@supabase/supabase-js'
 import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
 
@@ -154,6 +155,12 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  // Pass week-end (mode: 'payment', pas de subscription)
+  if (session.mode === 'payment' && session.metadata?.productType === 'weekend_pass') {
+    await handleWeekendPassCompleted(session)
+    return
+  }
+
   const email = session.customer_details?.email || session.customer_email || session.metadata?.email
   const promoCode = session.metadata?.promoCode
 
@@ -405,6 +412,102 @@ async function updateExistingUser(
     // Send email with invoice attached
     await sendWelcomeEmail({ to: email, password: newPassword, sessionCode: userSessionCode, invoice: invoiceData })
   }
+}
+
+async function handleWeekendPassCompleted(session: Stripe.Checkout.Session) {
+  const email = session.customer_details?.email || session.customer_email || session.metadata?.email
+  if (!email) throw new Error('No email in weekend pass checkout session')
+
+  const supabase = getSupabaseAdmin()
+  const passValidityUntil = computePassValidityUntil(new Date())
+
+  // Trouver user existant ou créer un nouveau
+  const { data: listData } = await supabase.auth.admin.listUsers()
+  const existingUser = listData?.users?.find(u => u.email === email)
+
+  let userId: string
+  const password = generatePassword()
+  let sessionCode: string
+
+  if (existingUser) {
+    userId = existingUser.id
+    await supabase.auth.admin.updateUserById(userId, { password })
+
+    // Réutiliser la session existante ou en créer une
+    const { data: existingSession } = await supabase
+      .from('sessions')
+      .select('code')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (existingSession) {
+      sessionCode = existingSession.code
+      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+    } else {
+      sessionCode = await generateUniqueSessionCode()
+      await supabase.from('sessions').insert({
+        code: sessionCode,
+        name: 'Mon evenement',
+        expires_at: passValidityUntil.toISOString(),
+        user_id: userId,
+        moderation_enabled: true,
+        is_active: true,
+      })
+    }
+  } else {
+    // Nouveau user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email, password, email_confirm: true,
+    })
+    if (authError || !authData) throw authError || new Error('User creation failed')
+    userId = authData.user.id
+
+    await supabase.from('user_profiles').insert({ id: userId, email, role: 'user' })
+
+    sessionCode = await generateUniqueSessionCode()
+    await supabase.from('sessions').insert({
+      code: sessionCode,
+      name: 'Mon evenement',
+      expires_at: passValidityUntil.toISOString(),
+      user_id: userId,
+      moderation_enabled: true,
+      is_active: true,
+    })
+  }
+
+  // Créer ou mettre à jour la subscription
+  const { data: existingSub } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const subData = {
+    user_id: userId,
+    stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
+    stripe_subscription_id: null as null,
+    stripe_price_id: process.env.STRIPE_PRICE_ID_WEEKEND_PASS || null,
+    status: 'weekend_pass' as const,
+    current_period_start: new Date().toISOString(),
+    current_period_end: passValidityUntil.toISOString(),
+    pass_validity_until: passValidityUntil.toISOString(),
+    cancel_at_period_end: false,
+  }
+
+  if (existingSub) {
+    await supabase.from('subscriptions').update(subData).eq('id', existingSub.id)
+  } else {
+    await supabase.from('subscriptions').insert(subData)
+  }
+
+  await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+
+  console.log(`[Webhook] Weekend pass activated for ${email}, valid until ${passValidityUntil.toISOString()}`)
+  await sendWeekendPassEmail({ to: email, password, sessionCode, validUntil: passValidityUntil })
 }
 
 async function isOwner(userId: string): Promise<boolean> {

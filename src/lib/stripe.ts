@@ -27,9 +27,11 @@ export const stripe = new Proxy({} as Stripe, {
 })
 
 export const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ''
+export const STRIPE_PRICE_ID_WEEKEND_PASS = process.env.STRIPE_PRICE_ID_WEEKEND_PASS || ''
 
-// Price in cents (29.90 EUR = 2990 cents)
-export const SUBSCRIPTION_PRICE = 2990
+// Price in cents
+export const SUBSCRIPTION_PRICE = 2990      // 29,90€/mois
+export const WEEKEND_PASS_PRICE = 1490      // 14,90€ one-time
 
 // Generate a random password
 export function generatePassword(length = 12): string {

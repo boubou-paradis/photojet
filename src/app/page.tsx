@@ -23,6 +23,7 @@ import HeroV5 from '@/components/marketing/HeroV5'
 import { toast } from 'sonner'
 
 const PRICE = 29.90
+const WEEKEND_PASS_PRICE = 14.90
 
 // JSON-LD Structured Data for SEO
 const jsonLd = {
@@ -161,6 +162,34 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false)
   const searchParams = useSearchParams()
 
+  // Pass week-end
+  const [weekendPassEmail, setWeekendPassEmail] = useState('')
+  const [weekendPassLoading, setWeekendPassLoading] = useState(false)
+  const [showWeekendPassForm, setShowWeekendPassForm] = useState(false)
+  const [weekendPassAvailable, setWeekendPassAvailable] = useState(false)
+  const [nextPassStart, setNextPassStart] = useState('')
+
+  useEffect(() => {
+    // Vérifier la fenêtre week-end côté client (même logique que lib/weekend-pass.ts)
+    const paris = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }))
+    const dow = paris.getDay()
+    const h = paris.getHours()
+    const available = (dow === 5 && h >= 12) || dow === 6 || dow === 0 || (dow === 1 && h < 12)
+    setWeekendPassAvailable(available)
+
+    if (!available) {
+      // Calculer prochain vendredi 12h pour affichage
+      let daysToFriday = (5 - dow + 7) % 7 || 7
+      if (dow === 5 && h < 12) daysToFriday = 0
+      const targetParis = new Date(paris)
+      targetParis.setDate(targetParis.getDate() + daysToFriday)
+      targetParis.setHours(12, 0, 0, 0)
+      setNextPassStart(targetParis.toLocaleDateString('fr-FR', {
+        weekday: 'long', day: 'numeric', month: 'long',
+      }) + ' à 12h00')
+    }
+  }, [])
+
   // Check admin status on mount
   useEffect(() => {
     fetch('/api/auth/is-admin')
@@ -203,6 +232,29 @@ export default function Home() {
       setError('Erreur de connexion')
     } finally {
       setCheckoutLoading(false)
+    }
+  }
+
+  const handleWeekendPassCheckout = async () => {
+    if (!weekendPassEmail) { setError('Entrez votre email'); return }
+    setWeekendPassLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: weekendPassEmail, productType: 'weekend_pass' }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error || 'Erreur lors du paiement')
+      }
+    } catch {
+      setError('Erreur de connexion')
+    } finally {
+      setWeekendPassLoading(false)
     }
   }
 
@@ -428,7 +480,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="flex justify-center">
+            <div className="flex flex-col lg:flex-row justify-center gap-6 items-stretch">
               {/* Subscription Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -536,6 +588,106 @@ export default function Home() {
                   </p>
                 </div>
               </motion.div>
+
+              {/* Pass Week-end Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-white/10 w-full max-w-md"
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-violet-500" />
+                <div className="absolute top-0 right-0 bg-violet-500 text-white px-4 py-1.5 rounded-bl-xl font-bold text-sm">
+                  PONCTUEL
+                </div>
+
+                <div className="mb-6 pt-4">
+                  <h3 className="text-2xl font-bold text-white mb-1">Pass Événement</h3>
+                  <p className="text-sm text-gray-500 mb-3">Vendredi 12h → Lundi 12h</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-white">{WEEKEND_PASS_PRICE.toFixed(2).replace('.', ',')}€</span>
+                    <span className="text-gray-500">one-shot</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  {[
+                    'Accès complet 1 week-end',
+                    'Photos et messages illimités',
+                    'Tous les jeux interactifs',
+                    'Borne photo intégrée',
+                    'Sans abonnement, sans engagement',
+                    'Album ZIP téléchargeable',
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3 text-gray-400 text-sm">
+                      <Check className="h-4 w-4 text-violet-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                {weekendPassAvailable ? (
+                  <div className="space-y-3">
+                    {showWeekendPassForm ? (
+                      <>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                          <Input
+                            type="email"
+                            placeholder="votre@email.com"
+                            value={weekendPassEmail}
+                            onChange={(e) => setWeekendPassEmail(e.target.value)}
+                            autoFocus
+                            className="pl-10 h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-violet-500 text-white placeholder:text-gray-500"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleWeekendPassCheckout}
+                          disabled={weekendPassLoading || !weekendPassEmail}
+                          className="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold text-lg border-0 hover:opacity-90"
+                        >
+                          {weekendPassLoading ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <>
+                              <Sparkles className="h-5 w-5 mr-2" />
+                              Payer {WEEKEND_PASS_PRICE.toFixed(2).replace('.', ',')}€
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-gray-600 text-center">Paiement sécurisé par Stripe. Accès immédiat.</p>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={() => setShowWeekendPassForm(true)}
+                        className="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold text-lg border-0 hover:opacity-90"
+                      >
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Obtenir le pass week-end
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Button disabled className="w-full h-12 bg-[#2A2A2E] text-gray-500 font-semibold text-base border border-white/5 cursor-not-allowed">
+                      Disponible vendredi 12h00
+                    </Button>
+                    {nextPassStart && (
+                      <p className="text-xs text-gray-600 text-center">
+                        Prochain accès : {nextPassStart}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-6 pt-6 border-t border-white/5">
+                  <p className="text-center text-xs text-gray-600">
+                    Idéal pour un événement ponctuel sans abonnement mensuel
+                  </p>
+                </div>
+              </motion.div>
+
             </div>
           </div>
         </section>
