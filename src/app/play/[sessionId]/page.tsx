@@ -113,6 +113,7 @@ export default function PlayQuizPage() {
   const answerTimeRef = useRef<number>(0)
   const lastQuestionNonceRef = useRef<string | null>(null)
   const quizStateRef = useRef<QuizBroadcastState | null>(null)
+  const timeLeftMsRef = useRef<number>(0)  // évite timeLeftMs dans les deps de handleAnswer
 
   // Calculate progressive points based on response time
   const calculateProgressivePoints = useCallback((basePoints: number, timeUsedMs: number, totalTimeMs: number): { points: number; bonus: string } => {
@@ -169,8 +170,9 @@ export default function PlayQuizPage() {
     }
   }, [sessionCode, supabase, playerId, playerName])
 
-  // Sync quizState vers ref (pour handleAnswer sans dépendance instable)
+  // Sync refs
   useEffect(() => { quizStateRef.current = quizState }, [quizState])
+  useEffect(() => { timeLeftMsRef.current = timeLeftMs }, [timeLeftMs])
 
   // Handle quiz state changes from Supabase
   useEffect(() => {
@@ -433,7 +435,7 @@ export default function PlayQuizPage() {
       const currentQ = quizStateRef.current?.questions[currentQuestion.index]
       const isCorrect = currentQ && answerIndex === currentQ.correctAnswer
 
-      const timeUsedMs = totalTimeMs - timeLeftMs
+      const timeUsedMs = totalTimeMs - timeLeftMsRef.current
       answerTimeRef.current = timeUsedMs
 
       const basePoints = currentQ?.points || 10
@@ -492,7 +494,7 @@ export default function PlayQuizPage() {
         nonce: currentQuestion.nonce,
       })
     },
-    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, sessionId, playerName, calculateProgressivePoints, totalTimeMs, timeLeftMs]
+    [canAnswer, selectedAnswer, currentQuestion, playerId, offsetMs, sessionId, playerName, calculateProgressivePoints, totalTimeMs]
   )
 
   // Render based on state
@@ -525,8 +527,11 @@ export default function PlayQuizPage() {
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
             </div>
           ) : (
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 border border-red-500/40">
-              <WifiOff className="h-4 w-4 text-red-400 animate-pulse" />
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 border border-red-500/40">
+                <WifiOff className="h-4 w-4 text-red-400 animate-pulse" />
+              </div>
+              <span className="text-red-400 text-xs font-medium animate-pulse">Reconnexion...</span>
             </div>
           )}
           <span className="text-white font-bold text-lg tracking-wide">{safeDecode(playerName)}</span>
@@ -911,8 +916,25 @@ export default function PlayQuizPage() {
             </motion.div>
           )}
 
+          {/* FINISHED - Joueur non classé (inscription échouée ou pas de réponse) */}
+          {playerState === 'FINISHED' && myRank === null && (
+            <motion.div
+              key="finished-unranked"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full max-w-sm text-center"
+            >
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-500/20 border-2 border-gray-500/40 flex items-center justify-center">
+                <Trophy className="w-12 h-12 text-gray-400" />
+              </div>
+              <h2 className="text-3xl font-black text-white mb-4">Quiz terminé !</h2>
+              <p className="text-gray-400">Merci d&apos;avoir participé !</p>
+            </motion.div>
+          )}
+
           {/* FINISHED - Écran normal pour les autres */}
-          {playerState === 'FINISHED' && myRank !== 1 && (
+          {playerState === 'FINISHED' && myRank !== null && myRank !== 1 && (
             <motion.div
               key="finished"
               initial={{ opacity: 0, scale: 0.9 }}

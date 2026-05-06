@@ -294,60 +294,52 @@ export default function QuizPage() {
     }
   }
 
-  // Timer effect
+  // Timer effect — side effects hors du state setter (pas de supabase/broadcast dans setTimeLeft)
+  const timeLeftRef = useRef(timeLeft)
+  useEffect(() => { timeLeftRef.current = timeLeft }, [timeLeft])
+
   useEffect(() => {
     if (!isAnswering || timeLeft === null || timeLeft <= 0 || !session) return
 
-    const timer = setInterval(async () => {
-      setTimeLeft(prev => {
-        if (prev === null || prev <= 0) return 0
-        const newTime = prev - 1
+    const timer = setInterval(() => {
+      const prev = timeLeftRef.current
+      if (prev === null || prev <= 0) return
+      const newTime = prev - 1
+      setTimeLeft(newTime)
 
-        if (newTime <= 0) {
-          // Time's up - reveal answer
-          setIsAnswering(false)
-          setShowResults(true)
-          pauseAudio()
-          playAnswerAudio()
-          supabase
-            .from('sessions')
-            .update({
-              quiz_is_answering: false,
-              quiz_show_results: true,
-              quiz_time_left: 0,
-            })
-            .eq('id', session.id)
-
-          broadcastGameState({
-            gameActive: true,
-            questions: questionsRef.current,
-            currentQuestionIndex: currentQuestionIndexRef.current,
-            isAnswering: false,
-            showResults: true,
-            timeLeft: 0,
-            participants: participantsRef.current,
-            answerStats: answerStatsRef.current,
-          })
-        } else {
-          supabase
-            .from('sessions')
-            .update({ quiz_time_left: newTime })
-            .eq('id', session.id)
-
-          broadcastGameState({
-            gameActive: true,
-            questions: questionsRef.current,
-            currentQuestionIndex: currentQuestionIndexRef.current,
-            isAnswering: true,
-            showResults: false,
-            timeLeft: newTime,
-            participants: participantsRef.current,
-            answerStats: answerStatsRef.current,
-          })
-        }
-
-        return newTime
-      })
+      if (newTime <= 0) {
+        setIsAnswering(false)
+        setShowResults(true)
+        pauseAudio()
+        playAnswerAudio()
+        supabase.from('sessions').update({
+          quiz_is_answering: false,
+          quiz_show_results: true,
+          quiz_time_left: 0,
+        }).eq('id', session.id)
+        broadcastGameState({
+          gameActive: true,
+          questions: questionsRef.current,
+          currentQuestionIndex: currentQuestionIndexRef.current,
+          isAnswering: false,
+          showResults: true,
+          timeLeft: 0,
+          participants: participantsRef.current,
+          answerStats: answerStatsRef.current,
+        })
+      } else {
+        supabase.from('sessions').update({ quiz_time_left: newTime }).eq('id', session.id)
+        broadcastGameState({
+          gameActive: true,
+          questions: questionsRef.current,
+          currentQuestionIndex: currentQuestionIndexRef.current,
+          isAnswering: true,
+          showResults: false,
+          timeLeft: newTime,
+          participants: participantsRef.current,
+          answerStats: answerStatsRef.current,
+        })
+      }
     }, 1000)
 
     return () => clearInterval(timer)

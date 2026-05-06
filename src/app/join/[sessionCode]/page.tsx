@@ -32,8 +32,14 @@ export default function JoinQuizPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // Generate player ID on mount
-    const id = generatePlayerId()
+    // Persistance du playerId dans sessionStorage (survit aux rechargements de page)
+    // → évite les doublons dans le classement si le joueur mobile quitte l'onglet et revient
+    const storageKey = `quiz-player-id-${sessionCode}`
+    let id = sessionStorage.getItem(storageKey)
+    if (!id) {
+      id = generatePlayerId()
+      sessionStorage.setItem(storageKey, id)
+    }
     setPlayerId(id)
 
     // Try to restore name from localStorage
@@ -47,15 +53,11 @@ export default function JoinQuizPage() {
       let foundSession = false
 
       try {
-        console.log('Fetching session with code:', sessionCode)
-        // Don't require is_active for quiz - quiz can run on "inactive" sessions
         const { data, error: fetchError } = await supabase
           .from('sessions')
           .select('id, quiz_lobby_visible, quiz_active, code')
           .eq('code', sessionCode)
           .single()
-
-        console.log('Supabase response:', { data, error: fetchError })
 
         if (fetchError) throw fetchError
 
@@ -69,7 +71,8 @@ export default function JoinQuizPage() {
           }
         }
       } catch (err) {
-        console.log('Supabase error, trying localStorage:', err)
+        // Supabase inaccessible — pas de fallback localStorage en production
+        void err
         // Fallback to localStorage for demo mode
         const keys = Object.keys(localStorage)
         for (const key of keys) {
@@ -116,14 +119,18 @@ export default function JoinQuizPage() {
       return
     }
 
+    if (!sessionId) {
+      setError('Session introuvable. Rechargez la page.')
+      return
+    }
+
     setJoining(true)
     setError('')
 
     // Save name for next time
     localStorage.setItem('quiz-player-name', playerName.trim())
 
-    // Use session ID from Supabase or fallback to code
-    const targetSessionId = sessionId || sessionCode
+    const targetSessionId = sessionId
 
     // Store player info
     localStorage.setItem(
