@@ -476,7 +476,7 @@ export default function Home() {
                 Un prix simple, tout inclus
               </h2>
               <p className="text-gray-400 text-lg">
-                Abonnement mensuel résiliable à tout moment
+                Choisissez la formule adaptée à votre événement
               </p>
             </motion.div>
 

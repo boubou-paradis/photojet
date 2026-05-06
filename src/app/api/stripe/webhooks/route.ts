@@ -421,16 +421,20 @@ async function handleWeekendPassCompleted(session: Stripe.Checkout.Session) {
   const supabase = getSupabaseAdmin()
   const passValidityUntil = computePassValidityUntil(new Date())
 
-  // Trouver user existant ou créer un nouveau
-  const { data: listData } = await supabase.auth.admin.listUsers()
-  const existingUser = listData?.users?.find(u => u.email === email)
+  // Chercher d'abord dans user_profiles (plus fiable que listUsers qui est limité à 1000)
+  const { data: existingProfile } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
+  const existingUserId = existingProfile?.id || null
 
   let userId: string
   const password = generatePassword()
   let sessionCode: string
 
-  if (existingUser) {
-    userId = existingUser.id
+  if (existingUserId) {
+    userId = existingUserId
     await supabase.auth.admin.updateUserById(userId, { password })
 
     // Réutiliser la session existante ou en créer une
