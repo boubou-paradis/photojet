@@ -81,6 +81,14 @@ export default function QuizPage() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null)
 
+  // Pénalité en cas de mauvaise réponse (0 = désactivé)
+  const [penaltyPoints, setPenaltyPoints] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return parseInt(localStorage.getItem('quiz-penalty-points') || '0', 10) || 0
+    }
+    return 0
+  })
+
   // Game state
   const [lobbyVisible, setLobbyVisible] = useState(false) // Lobby affiché mais quiz pas encore lancé
   const [gameActive, setGameActive] = useState(false)
@@ -130,12 +138,14 @@ export default function QuizPage() {
   const questionsRef = useRef<QuizQuestion[]>([])
   const participantsRef = useRef<QuizParticipant[]>([])
   const answerStatsRef = useRef<number[]>([0, 0, 0, 0])
+  const penaltyPointsRef = useRef(penaltyPoints)
 
   // Sync refs — valeurs toujours fraîches sans re-monter les useEffect qui les utilisent
   useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex }, [currentQuestionIndex])
   useEffect(() => { questionsRef.current = questions }, [questions])
   useEffect(() => { participantsRef.current = participants }, [participants])
   useEffect(() => { answerStatsRef.current = answerStats }, [answerStats])
+  useEffect(() => { penaltyPointsRef.current = penaltyPoints }, [penaltyPoints])
 
   useEffect(() => {
     fetchSession()
@@ -231,6 +241,7 @@ export default function QuizPage() {
     participants: QuizParticipant[]
     answerStats: number[]
     isFinished?: boolean
+    penaltyPoints?: number
   }) => {
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
@@ -326,6 +337,7 @@ export default function QuizPage() {
           timeLeft: 0,
           participants: participantsRef.current,
           answerStats: answerStatsRef.current,
+          penaltyPoints: penaltyPointsRef.current,
         })
       } else {
         supabase.from('sessions').update({ quiz_time_left: newTime }).eq('id', session.id)
@@ -338,6 +350,7 @@ export default function QuizPage() {
           timeLeft: newTime,
           participants: participantsRef.current,
           answerStats: answerStatsRef.current,
+          penaltyPoints: penaltyPointsRef.current,
         })
       }
     }, 1000)
@@ -788,6 +801,7 @@ export default function QuizPage() {
         timeLeft: null,
         participants: [],
         answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
       })
 
       // Lancer la musique de fond automatiquement
@@ -847,6 +861,7 @@ export default function QuizPage() {
         timeLeft: null,
         participants,
         answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
       })
 
       toast.success('Quiz lancé!')
@@ -893,6 +908,7 @@ export default function QuizPage() {
       timeLeft: currentQ.timeLimit,
       participants,
       answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
     })
 
     toast.success('Question lancée!')
@@ -969,6 +985,7 @@ export default function QuizPage() {
       timeLeft: null,
       participants,
       answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
     })
   }
 
@@ -1049,6 +1066,7 @@ export default function QuizPage() {
       timeLeft: null,
       participants: [],
       answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
     })
 
     toast.success('Jeu arrêté - Configuration conservée')
@@ -1399,6 +1417,7 @@ export default function QuizPage() {
                     timeLeft: null,
                     participants: [],
                     answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
                   })
                   await supabase
                     .from('sessions')
@@ -1878,6 +1897,29 @@ export default function QuizPage() {
               )}
             </motion.div>
 
+            {/* Pénalité mauvaise réponse */}
+            <div className="flex items-center justify-between bg-[#1A1A1E] rounded-xl p-3">
+              <div>
+                <p className="text-white text-sm font-medium">Pénalité mauvaise réponse</p>
+                <p className="text-gray-500 text-xs mt-0.5">Points retirés si le joueur se trompe</p>
+              </div>
+              <select
+                value={penaltyPoints}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value)
+                  setPenaltyPoints(v)
+                  localStorage.setItem('quiz-penalty-points', String(v))
+                }}
+                className="bg-[#2E2E33] text-white rounded-lg px-3 py-1.5 text-sm border border-white/10 focus:border-[#D4AF37] focus:outline-none"
+              >
+                <option value="0">Aucune</option>
+                <option value="1">-1 pt</option>
+                <option value="2">-2 pts</option>
+                <option value="5">-5 pts</option>
+                <option value="10">-10 pts</option>
+              </select>
+            </div>
+
             {/* Action buttons */}
             {!lobbyVisible ? (
               /* Step 1: Show Lobby button */
@@ -1966,6 +2008,7 @@ export default function QuizPage() {
                       timeLeft: null,
                       participants: [],
                       answerStats: [0, 0, 0, 0],
+          penaltyPoints: penaltyPointsRef.current,
                     })
                     // IMPORTANT: reset en DB pour que le diaporama reprenne
                     await supabase

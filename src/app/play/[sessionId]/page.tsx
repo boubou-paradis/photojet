@@ -56,6 +56,7 @@ interface QuizBroadcastState {
   }>
   answerStats: number[]
   isFinished?: boolean
+  penaltyPoints?: number
 }
 
 export default function PlayQuizPage() {
@@ -446,6 +447,10 @@ export default function PlayQuizPage() {
         const result = calculateProgressivePoints(basePoints, timeUsedMs, totalTimeMs)
         pointsEarned = result.points
         speedBonus = result.bonus
+      } else {
+        // Pénalité si activée par l'admin
+        const penalty = quizStateRef.current?.penaltyPoints || 0
+        if (penalty > 0) pointsEarned = -penalty
       }
 
       setLastPointsEarned(pointsEarned)
@@ -479,7 +484,7 @@ export default function PlayQuizPage() {
           }
         })()
 
-        if (isCorrect) setMyScore(prev => prev + pointsEarned)
+        if (isCorrect || pointsEarned < 0) setMyScore(prev => prev + pointsEarned)
       }
 
       // BroadcastChannel pour mode démo (même navigateur)
@@ -771,6 +776,16 @@ export default function PlayQuizPage() {
                       <XCircle className="w-10 h-10 text-red-400" />
                     </motion.div>
                     <div className="text-2xl font-black text-red-400 tracking-wide">Raté !</div>
+                    {lastPointsEarned < 0 && (
+                      <motion.div
+                        className="text-red-400 text-xl font-bold mt-2"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 400 }}
+                      >
+                        {lastPointsEarned} pts
+                      </motion.div>
+                    )}
                   </div>
                 ) : (
                   <div className="inline-flex flex-col items-center">
