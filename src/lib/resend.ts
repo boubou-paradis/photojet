@@ -393,7 +393,7 @@ export async function sendTrialEmail(params: { to: string; token: string }) {
       from: FROM_EMAIL,
       to,
       replyTo: REPLY_TO,
-      subject: '🎁 Votre accès AnimaJet 7 jours est prêt !',
+      subject: '🎁 Votre accès AnimaJet 24h est prêt !',
       html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -461,7 +461,7 @@ export async function sendTrialEmail(params: { to: string; token: string }) {
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px; font-size: 14px; color: #D4AF37; font-weight: bold;">
-                      ⏰ Votre essai est valide 7 jours
+                      ⏰ Votre essai est valide 24 heures
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
                       Testez AnimaJet sur vos événements, week-end inclus.
@@ -729,7 +729,7 @@ export async function sendTrialWelcomeEmail(params: {
       from: FROM_EMAIL,
       to,
       replyTo: REPLY_TO,
-      subject: '🎁 Votre compte AnimaJet (Essai 7 jours) est prêt !',
+      subject: '🎁 Votre compte AnimaJet (Essai 24h) est prêt !',
       html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -772,7 +772,7 @@ export async function sendTrialWelcomeEmail(params: {
                 Votre essai gratuit est active !
               </h1>
               <p style="margin: 12px 0 0 0; color: #9A9AA0; font-size: 16px; line-height: 1.5;">
-                Profitez de toutes les fonctionnalites pendant 7 jours
+                Profitez de toutes les fonctionnalites pendant 24 heures
               </p>
             </td>
           </tr>
@@ -1013,7 +1013,7 @@ export async function sendTrialExpiredEmail(params: { to: string }) {
           <tr>
             <td style="background-color: #1A1A1E; padding: 40px;">
               <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
-                Votre essai gratuit de 7 jours sur AnimaJet est termine. Nous esperons que vous avez apprecie l'experience !
+                Votre essai gratuit de 24 heures sur AnimaJet est termine. Nous esperons que vous avez apprecie l'experience !
               </p>
               <p style="margin: 0 0 35px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
                 Pour continuer a utiliser AnimaJet et animer vos evenements, abonnez-vous des maintenant :

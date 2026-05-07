@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 
 // Routes that require an active subscription
 const PROTECTED_ROUTES = ['/admin']
@@ -48,6 +49,8 @@ function isSubscriptionValid(
 
   if (status === 'trialing') {
     if (!trialEnd) return false
+    // Bloquer les essais le week-end (vendredi 12h → lundi 12h)
+    if (isWeekendPassAvailable()) return false
     return now < new Date(trialEnd)
   }
 

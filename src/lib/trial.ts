@@ -3,6 +3,7 @@
 
 import { Subscription } from '@/types/database'
 import crypto from 'crypto'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 
 // ============================================
 // Types pour le système d'essai Magic Link
@@ -61,11 +62,11 @@ export function generateTrialToken(): string {
 }
 
 /**
- * Calcule la date d'expiration (7 jours après création)
+ * Calcule la date d'expiration (24 heures après création)
  */
 export function calculateExpirationDate(): Date {
   const expires = new Date()
-  expires.setDate(expires.getDate() + 7)
+  expires.setHours(expires.getHours() + 24)
   return expires
 }
 
@@ -205,12 +206,22 @@ export function checkAccess(
     const trialEnd = subscription.trial_end ? new Date(subscription.trial_end) : null
     const now = new Date()
 
+    // Blocage week-end (vendredi 12h → lundi 12h) — même fenêtre que le pass
+    if (isWeekendPassAvailable()) {
+      return {
+        canAccess: false,
+        status: 'weekend_blocked',
+        message: "L'essai gratuit n'est pas disponible le week-end. Pour travailler ce week-end, activez un Pass Événement (14,90€).",
+        isTrialUser: true
+      }
+    }
+
     // Vérifier si l'essai est expiré
     if (trialEnd && now > trialEnd) {
       return {
         canAccess: false,
         status: 'trial_expired',
-        message: 'Votre essai gratuit de 7 jours a expiré. Abonnez-vous pour continuer !',
+        message: 'Votre essai gratuit de 24 heures a expiré. Abonnez-vous pour continuer !',
         isTrialUser: true
       }
     }
