@@ -9,6 +9,7 @@ import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import AdminLayoutClient from './admin-layout-client'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 
 function createAdminClient() {
   return createClient(
@@ -120,10 +121,14 @@ export default async function AdminLayout({
     )
   }
 
-  // Trialing subscription: check trial_end date + weekend
+  // Trialing subscription: check trial_end date + weekend block
   if (status === 'trialing') {
     if (trial_end && now > new Date(trial_end)) {
       redirect('/?access=expired')
+    }
+
+    if (isWeekendPassAvailable()) {
+      redirect('/?access=weekend_blocked')
     }
 
     return (

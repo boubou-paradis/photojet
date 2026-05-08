@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendTrialWelcomeEmail } from '@/lib/resend'
 import { generatePassword, generateSessionCode } from '@/lib/stripe'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 import crypto from 'crypto'
 
 // Admin client for database operations
@@ -66,6 +67,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Format d\'email invalide' },
         { status: 400 }
+      )
+    }
+
+    // Block trial creation during weekend (vendredi 12h → lundi 12h)
+    if (isWeekendPassAvailable()) {
+      return NextResponse.json(
+        { error: "L'essai gratuit n'est pas disponible le week-end. Revenez lundi après 12h ou activez un Pass Événement (14,90€)." },
+        { status: 403 }
       )
     }
 
