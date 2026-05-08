@@ -94,7 +94,7 @@ export default async function AdminLayout({
   // ============================================================
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end, trial_end')
+    .select('status, current_period_end, trial_end, pass_validity_until')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -105,7 +105,19 @@ export default async function AdminLayout({
   }
 
   const now = new Date()
-  const { status, current_period_end, trial_end } = subscription
+  const { status, current_period_end, trial_end, pass_validity_until } = subscription
+
+  // Weekend pass: check pass_validity_until
+  if (status === 'weekend_pass') {
+    if (!pass_validity_until || now > new Date(pass_validity_until)) {
+      redirect('/?access=expired')
+    }
+    return (
+      <AdminLayoutClient>
+        {children}
+      </AdminLayoutClient>
+    )
+  }
 
   // Active subscription: check date hasn't passed
   if (status === 'active') {
