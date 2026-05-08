@@ -47,7 +47,7 @@ export default function AdminLayoutClient({
   // Show welcome toast for trial users
   useEffect(() => {
     if (searchParams.get('trial') === 'active') {
-      toast.success('Bienvenue ! Votre essai gratuit de 7 jours est actif.')
+      toast.success('Bienvenue ! Votre essai gratuit de 24 heures est actif.')
     }
   }, [searchParams])
 

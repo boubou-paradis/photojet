@@ -2,6 +2,7 @@
 // Code propriétaire - Reproduction interdite.
 
 import { createClient } from '@supabase/supabase-js'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -54,10 +55,13 @@ export async function checkUserSubscription(userId: string): Promise<{
     return { valid: false, reason: `subscription_${status}` }
   }
 
-  // trialing: check trial_end date
+  // trialing: check trial_end date + weekend block
   if (status === 'trialing') {
     if (!trial_end || now > new Date(trial_end)) {
       return { valid: false, reason: 'trial_expired' }
+    }
+    if (isWeekendPassAvailable()) {
+      return { valid: false, reason: 'weekend_blocked' }
     }
     return { valid: true }
   }

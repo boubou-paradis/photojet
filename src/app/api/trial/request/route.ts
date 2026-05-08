@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Create trial subscription
-    const { data: subscriptionData } = await supabaseAdmin
+    const { data: subscriptionData, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         user_id: userId,
@@ -161,6 +161,16 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single()
+
+    if (subError || !subscriptionData) {
+      console.error('[Trial Request] Subscription insert error:', subError)
+      // Clean up the created auth user to avoid orphaned accounts
+      await supabaseAdmin.auth.admin.deleteUser(userId)
+      return NextResponse.json(
+        { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
+        { status: 500 }
+      )
+    }
 
     // Create session
     await supabaseAdmin
