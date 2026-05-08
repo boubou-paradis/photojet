@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (existingTrial) {
       return NextResponse.json(
         {
-          error: 'Vous avez déjà bénéficié de votre essai gratuit 7 jours.',
+          error: 'Vous avez déjà bénéficié de votre essai gratuit 24 heures.',
           alreadyUsed: true
         },
         { status: 400 }
@@ -95,9 +95,9 @@ export async function POST(request: NextRequest) {
     const sessionCode = await generateUniqueSessionCode()
     const token = crypto.randomBytes(32).toString('hex')
 
-    // Calculate expiration (7 days from now)
+    // Calculate expiration (24 hours from now)
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
+    expiresAt.setHours(expiresAt.getHours() + 24)
 
     // Get IP and user agent for tracking
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] ||

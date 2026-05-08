@@ -119,7 +119,7 @@ export function checkTrialAccess(token: TrialToken | null): TrialAccessResult {
     return {
       canAccess: false,
       status: 'expired',
-      message: 'Votre essai gratuit de 7 jours a expiré. Abonnez-vous pour continuer !',
+      message: 'Votre essai gratuit de 24 heures a expiré. Abonnez-vous pour continuer !',
       token,
       timeRemaining: 0
     }
@@ -290,7 +290,7 @@ export function checkAccess(
 export function getTrialEmailTemplate(token: string, appUrl: string): { subject: string; html: string } {
   const verifyUrl = `${appUrl}/api/trial/verify?token=${token}`
 
-  const subject = "🎁 Votre accès AnimaJet 7 jours est prêt !"
+  const subject = "🎁 Votre accès AnimaJet 24h est prêt !"
 
   const html = `
 <!DOCTYPE html>
@@ -359,10 +359,10 @@ export function getTrialEmailTemplate(token: string, appUrl: string): { subject:
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px; font-size: 14px; color: #D4AF37; font-weight: bold;">
-                      ⏰ Votre essai est valide 7 jours
+                      ⏰ Votre essai est valide 24 heures
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #B0B0B5;">
-                      Testez AnimaJet sur vos événements, week-end inclus.
+                      Testez AnimaJet sur vos événements en semaine.
                     </p>
                   </td>
                 </tr>
