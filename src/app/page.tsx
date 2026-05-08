@@ -198,10 +198,13 @@ export default function Home() {
       .catch(() => {})
   }, [])
 
-  // Show toast if redirected with access=expired
+  // Show toast if redirected with access=expired or weekend_blocked
   useEffect(() => {
-    if (searchParams.get('access') === 'expired') {
+    const access = searchParams.get('access')
+    if (access === 'expired') {
       toast.error('Votre essai gratuit a expiré. Abonnez-vous pour continuer !')
+    } else if (access === 'weekend_blocked') {
+      toast.error("L'essai gratuit est bloqué le week-end. Revenez lundi après 12h ou activez un Pass Événement.")
     }
   }, [searchParams])
 

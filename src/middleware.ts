@@ -189,7 +189,8 @@ export async function middleware(request: NextRequest) {
   if (!valid) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    url.searchParams.set('access', 'expired')
+    const isWeekendBlock = subscription.status === 'trialing' && isWeekendPassAvailable()
+    url.searchParams.set('access', isWeekendBlock ? 'weekend_blocked' : 'expired')
     return NextResponse.redirect(url)
   }
 
