@@ -759,6 +759,10 @@ export default function LivePage() {
   }, [currentIndex, currentItemType, itemsCount, session?.transition_duration, session?.messages_duration])
 
   const toggleFullscreen = async () => {
+    if (isMac) {
+      setIsFullscreen(prev => !prev)
+      return
+    }
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen()
@@ -766,7 +770,7 @@ export default function LivePage() {
         await document.exitFullscreen()
       }
     } catch {
-      // Fullscreen refusé par le navigateur (ex: fenêtre non active sur Mac)
+      // Fullscreen refusé par le navigateur
     }
   }
 
@@ -1228,7 +1232,13 @@ export default function LivePage() {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden relative cursor-none" style={{ cursor: showUI ? 'auto' : 'none' }}>
+    <div
+      className="min-h-screen overflow-hidden relative cursor-none"
+      style={{
+        cursor: showUI ? 'auto' : 'none',
+        ...(isMac && isFullscreen ? { position: 'fixed', inset: 0, zIndex: 9999 } : {}),
+      }}
+    >
       {/* Background */}
       {renderBackground()}
 
