@@ -318,7 +318,7 @@ export default function LivePage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
+  const [isMac, setIsMac] = useState(false)
   const [showUI, setShowUI] = useState(true)
   const [showNewPhotoNotification, setShowNewPhotoNotification] = useState(false)
   const previousPhotosCount = useRef(0)
@@ -773,6 +773,10 @@ export default function LivePage() {
       // Fullscreen refusé par le navigateur
     }
   }
+
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
+  }, [])
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
