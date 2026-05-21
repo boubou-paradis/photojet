@@ -356,9 +356,8 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-            <span>🇫🇷</span>
-            <span className="text-xs text-gray-400 font-medium">Made in France</span>
+          <div className="flex items-center gap-2">
+            <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-16 w-auto object-contain opacity-90" />
           </div>
         </div>
       </div>
