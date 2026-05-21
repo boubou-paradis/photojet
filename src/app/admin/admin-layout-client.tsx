@@ -138,7 +138,8 @@ export default function AdminLayoutClient({
             </nav>
 
             {/* Trial banner + Logout button */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-14 w-auto object-contain opacity-95" />
               {/* Trial status banner */}
               {isTrialUser && trialTimeRemaining && (
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">

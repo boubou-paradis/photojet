@@ -1444,67 +1444,64 @@ fetch(${JSON.stringify(imageUrl)})
               </div>
             ))}
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-10 w-auto object-contain opacity-90" />
-            <div className="flex items-center gap-2">
-              <a
-                href="https://www.facebook.com/profile.php?id=61585844578617"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1877F2] hover:bg-[#166FE5] text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                <Facebook className="h-4 w-4" />
-                <span className="hidden sm:inline">Facebook</span>
-              </a>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={createNewSession}
-                className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle session
-              </Button>
-              {selectedSession && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/borne`)}
-                    className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                  >
-                    <Tablet className="h-4 w-4 mr-2" />
-                    Borne
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/jeux`)}
-                    className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                  >
-                    <Gamepad2 className="h-4 w-4 mr-2" />
-                    Jeux
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/settings`)}
-                    className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Paramètres
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => window.open(`/live/${selectedSession.code}`, 'photojet-live')}
-                    className="bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
-                  >
-                    <Monitor className="h-4 w-4 mr-2" />
-                    Diaporama
-                  </Button>
-                </>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://www.facebook.com/profile.php?id=61585844578617"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1877F2] hover:bg-[#166FE5] text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Facebook className="h-4 w-4" />
+              <span className="hidden sm:inline">Facebook</span>
+            </a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={createNewSession}
+              className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle session
+            </Button>
+            {selectedSession && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/borne`)}
+                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                >
+                  <Tablet className="h-4 w-4 mr-2" />
+                  Borne
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/jeux`)}
+                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                >
+                  <Gamepad2 className="h-4 w-4 mr-2" />
+                  Jeux
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/settings`)}
+                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Paramètres
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => window.open(`/live/${selectedSession.code}`, 'photojet-live')}
+                  className="bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
+                >
+                  <Monitor className="h-4 w-4 mr-2" />
+                  Diaporama
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
