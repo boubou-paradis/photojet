@@ -117,10 +117,10 @@ export default function HeroV5({
             {/* Login link */}
             <a
               href="/login"
-              className="flex items-center justify-center gap-2 font-bold transition-all px-6 py-3 text-sm text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 rounded-xl border border-[#D4AF37]/30 backdrop-blur-sm"
+              className="flex items-center justify-center gap-2 font-bold transition-all px-8 py-4 text-base text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 rounded-xl border-2 border-[#D4AF37]/60 hover:border-[#D4AF37] backdrop-blur-sm shadow-[0_0_20px_rgba(212,175,55,0.15)]"
             >
               Déjà abonné ? Se connecter
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </a>
 
             {/* Form card — visible to all */}
