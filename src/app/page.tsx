@@ -356,9 +356,6 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <div className="flex items-center gap-2">
-            <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-16 w-auto object-contain opacity-90" />
-          </div>
         </div>
       </div>
 

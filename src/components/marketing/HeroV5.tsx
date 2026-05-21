@@ -198,6 +198,11 @@ export default function HeroV5({
 
         </div>
       </div>
+
+      {/* Logo Bretagne — coin bas droit */}
+      <div className="absolute bottom-6 right-6 z-20">
+        <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-24 w-auto object-contain opacity-95" />
+      </div>
     </section>
   )
 }
