@@ -117,7 +117,13 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // ── 4. Generate magic link so user can set their password ─────
+  // ── 4. Réactiver toutes les sessions de l'utilisateur ───────────
+  await supabase
+    .from('sessions')
+    .update({ is_active: true })
+    .eq('user_id', userId)
+
+  // ── 5. Generate magic link so user can set their password ─────
   let magicLink: string | null = null
   try {
     const { data: linkData } = await supabase.auth.admin.generateLink({

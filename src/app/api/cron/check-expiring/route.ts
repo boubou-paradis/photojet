@@ -12,6 +12,20 @@ const getSupabaseAdmin = () => {
   )
 }
 
+// Returns true if the user has another valid active subscription (lifetime or future period)
+async function userHasActiveSubscription(supabase: ReturnType<typeof getSupabaseAdmin>, userId: string, excludeSubId: string): Promise<boolean> {
+  const now = new Date()
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('id, status, current_period_end')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .neq('id', excludeSubId)
+
+  if (!data || data.length === 0) return false
+  return data.some(s => !s.current_period_end || new Date(s.current_period_end) > now)
+}
+
 // Called by Vercel Cron Job daily
 // Configure in vercel.json: { "crons": [{ "path": "/api/cron/check-expiring", "schedule": "0 9 * * *" }] }
 export async function GET(request: NextRequest) {
@@ -45,6 +59,10 @@ export async function GET(request: NextRequest) {
         .from('subscriptions')
         .update({ status: 'expired' })
         .eq('id', sub.id)
+
+      // Ne pas désactiver les sessions si l'user a une autre sub active (ex: lifetime)
+      const hasOtherActiveSub = await userHasActiveSubscription(supabase, sub.user_id, sub.id)
+      if (hasOtherActiveSub) continue
 
       // Deactivate all sessions for this user
       await supabase
@@ -82,6 +100,10 @@ export async function GET(request: NextRequest) {
         .update({ status: 'expired' })
         .eq('id', sub.id)
 
+      // Ne pas désactiver les sessions si l'user a une autre sub active (ex: lifetime)
+      const hasOtherActiveSub = await userHasActiveSubscription(supabase, sub.user_id, sub.id)
+      if (hasOtherActiveSub) continue
+
       await supabase
         .from('sessions')
         .update({ is_active: false })
@@ -112,7 +134,12 @@ export async function GET(request: NextRequest) {
   if (staleWeekendPass && staleWeekendPass.length > 0) {
     for (const sub of staleWeekendPass) {
       await supabase.from('subscriptions').update({ status: 'expired' }).eq('id', sub.id)
-      await supabase.from('sessions').update({ is_active: false }).eq('user_id', sub.user_id)
+
+      // Ne pas désactiver les sessions si l'user a une autre sub active (ex: lifetime)
+      const hasOtherActiveSub = await userHasActiveSubscription(supabase, sub.user_id, sub.id)
+      if (!hasOtherActiveSub) {
+        await supabase.from('sessions').update({ is_active: false }).eq('user_id', sub.user_id)
+      }
       weekendPassExpired++
     }
   }

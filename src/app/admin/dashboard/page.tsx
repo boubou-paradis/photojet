@@ -432,11 +432,25 @@ export default function DashboardPage() {
 
   async function fetchSubscription() {
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Récupérer l'abonnement le plus récent de l'utilisateur (actif ou non)
+      // Priorité : sub active (lifetime ou abonnement en cours)
+      const { data: activeSub } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('current_period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (activeSub) {
+        setSubscription(activeSub)
+        return
+      }
+
+      // Fallback : sub la plus récente (weekend_pass, trialing, expired...)
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
