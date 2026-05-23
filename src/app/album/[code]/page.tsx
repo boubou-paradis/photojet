@@ -117,13 +117,9 @@ export default function AlbumPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('code', code)
-          .single()
-
-        if (sessionError) throw sessionError
+        const response = await fetch(`/api/album/session/${code}`)
+        if (!response.ok) throw new Error('not found')
+        const sessionData = await response.json()
 
         // Check if album is enabled
         if (sessionData.album_enabled === false) {
@@ -148,7 +144,7 @@ export default function AlbumPage() {
     if (code) {
       fetchData()
     }
-  }, [code, supabase])
+  }, [code])
 
   async function fetchPhotos(sessionId: string) {
     const { data: photosData, error: photosError } = await supabase
