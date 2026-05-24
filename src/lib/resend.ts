@@ -1283,6 +1283,183 @@ export async function sendDataDeletionWarningEmail(params: { to: string; daysLef
   }
 }
 
+export async function sendWeekendPassReminderEmail(params: {
+  to: string
+  validUntil: Date
+}) {
+  if (!resend) return { success: false, error: 'Resend not configured' }
+
+  const { to, validUntil } = params
+
+  const validUntilStr = validUntil.toLocaleString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      replyTo: REPLY_TO,
+      subject: '⏰ Rappel : récupérez vos photos avant lundi 12h !',
+      html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rappel - Récupérez vos photos</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
+
+          <!-- Amber warning top -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #F59E0B 20%, #FCD34D 50%, #F59E0B 80%, transparent 100%); border-radius: 20px 20px 0 0;"></td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 50px 40px 35px; border-radius: 20px 20px 0 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 15px; background: radial-gradient(circle at center, rgba(212,175,55,0.15) 0%, transparent 70%); border-radius: 50%;">
+                    <img src="${APP_URL}/logo.png" alt="AnimaJet" width="140" height="140" style="display: block; width: 140px; height: 140px; border: 0; border-radius: 20px;" />
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin: 25px 0 0 0; color: #F59E0B; font-size: 28px; font-weight: 700;">
+                Pensez a recuperer vos photos !
+              </h1>
+              <p style="margin: 10px 0 0 0; color: #9A9AA0; font-size: 15px; line-height: 1.5;">
+                Votre Pass Week-end expire bientot
+              </p>
+            </td>
+          </tr>
+
+          <!-- Deadline banner -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 30px 40px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, rgba(229,57,53,0.15) 0%, rgba(229,57,53,0.05) 100%); border: 2px solid rgba(229,57,53,0.5); border-radius: 14px;">
+                <tr>
+                  <td style="padding: 20px 25px; text-align: center;">
+                    <p style="margin: 0 0 6px; color: #E53935; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">⏰ Acces ferme le</p>
+                    <p style="margin: 0; color: #FFFFFF; font-size: 22px; font-weight: 700;">${validUntilStr}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="background-color: #1A1A1E; padding: 30px 40px;">
+              <p style="margin: 0 0 25px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
+                Votre Pass Evenement week-end expire ce soir a minuit / demain matin. Pensez a <strong style="color: #D4AF37;">telecharger vos photos</strong> avant la fermeture de votre acces.
+              </p>
+
+              <!-- Steps -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(145deg, #242428 0%, #1E1E22 100%); border: 1px solid rgba(212,175,55,0.2); border-radius: 14px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px 30px;">
+                    <p style="margin: 0 0 18px; color: #D4AF37; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                      📥 Comment telecharger vos photos
+                    </p>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding: 0 0 12px 0;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="width: 28px; height: 28px; background: rgba(212,175,55,0.15); border-radius: 50%; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 700; color: #D4AF37; line-height: 28px;">1</td>
+                              <td style="padding-left: 12px; color: #E5E5E7; font-size: 14px;">Connectez-vous a votre dashboard</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 0 0 12px 0;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="width: 28px; height: 28px; background: rgba(212,175,55,0.15); border-radius: 50%; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 700; color: #D4AF37; line-height: 28px;">2</td>
+                              <td style="padding-left: 12px; color: #E5E5E7; font-size: 14px;">Allez dans l'onglet <strong style="color: #D4AF37;">Photos</strong></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="width: 28px; height: 28px; background: rgba(212,175,55,0.15); border-radius: 50%; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 700; color: #D4AF37; line-height: 28px;">3</td>
+                              <td style="padding-left: 12px; color: #E5E5E7; font-size: 14px;">Cliquez sur <strong style="color: #D4AF37;">"Telecharger l'album ZIP"</strong></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 50%, #D4AF37 100%); border-radius: 14px; box-shadow: 0 4px 20px rgba(212,175,55,0.4);">
+                          <a href="${APP_URL}/login" target="_blank" style="display: inline-block; padding: 20px 55px; color: #1A1A1E; font-size: 16px; font-weight: 700; text-decoration: none;">
+                            Telecharger mes photos
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
+              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 14px; text-align: center;">
+                Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
+              </p>
+              <p style="margin: 0; color: #4A4A4F; font-size: 12px; text-align: center; line-height: 1.8;">
+                &copy; 2025 AnimaJet - Tous droits reserves<br>
+                <span style="color: #6B6B70;">Cree par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Amber bottom -->
+          <tr>
+            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #F59E0B 20%, #FCD34D 50%, #F59E0B 80%, transparent 100%); border-radius: 0 0 20px 20px;"></td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
+    })
+    return { success: true, data: result }
+  } catch (error: unknown) {
+    console.error('[Email] Weekend pass reminder error:', error instanceof Error ? error.message : error)
+    return { success: false, error }
+  }
+}
+
 export async function sendWeekendPassEmail(params: {
   to: string
   password: string
