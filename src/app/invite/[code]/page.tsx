@@ -15,6 +15,16 @@ import { Session } from '@/types/database'
 type TabType = 'photo' | 'message'
 type UploadStatus = 'idle' | 'success' | 'pending'
 
+function getUploadErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase()
+    if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed')) {
+      return 'Connexion instable. Vérifiez votre réseau et réessayez.'
+    }
+  }
+  return 'Envoi échoué. Vérifiez votre connexion et réessayez.'
+}
+
 export default function InvitePage() {
   const params = useParams()
   const router = useRouter()
@@ -43,6 +53,7 @@ export default function InvitePage() {
   const [printRequesting, setPrintRequesting] = useState(false)
   const [printRequested, setPrintRequested] = useState(false)
 
+  const [uploadAttempt, setUploadAttempt] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -154,28 +165,37 @@ export default function InvitePage() {
       })
       setCompressing(false)
 
-      const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+      let lastError: unknown = null
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        if (attempt > 0) {
+          setUploadAttempt(attempt)
+          await new Promise(r => setTimeout(r, 1000 * attempt))
+        }
+        try {
+          const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+          const { error: uploadError } = await supabase.storage
+            .from('photos')
+            .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
+          if (uploadError) throw uploadError
 
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(fileName, compressedFile, {
-          contentType: 'image/jpeg',
-        })
-
-      if (uploadError) throw uploadError
-
-      const { error: dbError } = await supabase
-        .from('photos')
-        .insert({
-          session_id: session.id,
-          storage_path: fileName,
-          status: isApproved ? 'approved' : 'pending',
-          uploader_name: uploaderName || null,
-          approved_at: isApproved ? new Date().toISOString() : null,
-          source: 'invite',
-        })
-
-      if (dbError) throw dbError
+          const { error: dbError } = await supabase
+            .from('photos')
+            .insert({
+              session_id: session.id,
+              storage_path: fileName,
+              status: isApproved ? 'approved' : 'pending',
+              uploader_name: uploaderName || null,
+              approved_at: isApproved ? new Date().toISOString() : null,
+              source: 'invite',
+            })
+          if (dbError) throw dbError
+          lastError = null
+          break
+        } catch (err) {
+          lastError = err
+        }
+      }
+      if (lastError) throw lastError
 
       setPhotoUploadStatus(isApproved ? 'success' : 'pending')
       setSelectedFile(null)
@@ -184,9 +204,10 @@ export default function InvitePage() {
       if (cameraInputRef.current) cameraInputRef.current.value = ''
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi')
+      setError(getUploadErrorMessage(err))
     } finally {
       setUploading(false)
+      setUploadAttempt(0)
     }
   }
 
@@ -291,31 +312,42 @@ export default function InvitePage() {
         }
       })
 
-      const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+      let photoData: { id: string } | null = null
+      let lastPrintError: unknown = null
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        if (attempt > 0) {
+          setUploadAttempt(attempt)
+          await new Promise(r => setTimeout(r, 1000 * attempt))
+        }
+        try {
+          const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+          const { error: uploadError } = await supabase.storage
+            .from('photos')
+            .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
+          if (uploadError) throw uploadError
 
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(fileName, compressedFile, {
-          contentType: 'image/jpeg',
-        })
+          const { data: insertedPhoto, error: dbError } = await supabase
+            .from('photos')
+            .insert({
+              session_id: session.id,
+              storage_path: fileName,
+              status: isApproved ? 'approved' : 'pending',
+              uploader_name: uploaderName || null,
+              approved_at: isApproved ? new Date().toISOString() : null,
+              source: 'invite',
+            })
+            .select()
+            .single()
+          if (dbError) throw dbError
 
-      if (uploadError) throw uploadError
-
-      // Insérer la photo
-      const { data: photoData, error: dbError } = await supabase
-        .from('photos')
-        .insert({
-          session_id: session.id,
-          storage_path: fileName,
-          status: isApproved ? 'approved' : 'pending',
-          uploader_name: uploaderName || null,
-          approved_at: isApproved ? new Date().toISOString() : null,
-          source: 'invite',
-        })
-        .select()
-        .single()
-
-      if (dbError) throw dbError
+          photoData = insertedPhoto
+          lastPrintError = null
+          break
+        } catch (err) {
+          lastPrintError = err
+        }
+      }
+      if (lastPrintError || !photoData) throw lastPrintError ?? new Error('Upload échoué')
 
       // Insérer la demande d'impression
       const { error: printReqError } = await supabase
@@ -343,9 +375,10 @@ export default function InvitePage() {
       if (cameraInputRef.current) cameraInputRef.current.value = ''
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la demande d\'impression')
+      setError(getUploadErrorMessage(err))
     } finally {
       setPrintRequesting(false)
+      setUploadAttempt(0)
     }
   }
 
@@ -577,7 +610,7 @@ export default function InvitePage() {
                         {uploading ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {compressing ? `Optimisation... ${compressionProgress}%` : 'Envoi en cours...'}
+                            {compressing ? `Optimisation... ${compressionProgress}%` : uploadAttempt > 0 ? `Nouvelle tentative (${uploadAttempt + 1}/3)...` : 'Envoi en cours...'}
                           </>
                         ) : (
                           <>
@@ -596,7 +629,7 @@ export default function InvitePage() {
                           {printRequesting ? (
                             <>
                               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              Envoi + impression...
+                              {uploadAttempt > 0 ? `Nouvelle tentative (${uploadAttempt + 1}/3)...` : 'Envoi + impression...'}
                             </>
                           ) : printLimitReached ? (
                             <>

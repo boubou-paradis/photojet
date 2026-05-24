@@ -11,7 +11,6 @@ const IMAGE_SIGNATURES: { type: string; bytes: number[] }[] = [
   { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] },
   { type: 'image/gif', bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF87a ou GIF89a
   { type: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF header (WebP)
-  { type: 'image/heic', bytes: [0x00, 0x00, 0x00] }, // HEIC/HEIF (ftyp box)
 ]
 
 // Taille maximale en octets (25 Mo - les photos sont compressées à 1 Mo avant upload)
@@ -67,10 +66,22 @@ export async function validateImageFile(file: File): Promise<ImageValidationResu
       }
     }
 
+    // Vérification HEIC/HEIF : 'ftyp' aux octets 4-7, marque connue aux octets 8-11
+    if (bytes.length >= 12) {
+      const ftyp = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7])
+      if (ftyp === 'ftyp') {
+        const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11])
+        const heicBrands = ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1']
+        if (heicBrands.some(b => brand.startsWith(b))) {
+          return { valid: true, detectedType: 'image/heic' }
+        }
+      }
+    }
+
     // Aucune signature reconnue
     return {
       valid: false,
-      error: 'Format d\'image non supporté. Utilisez JPG, PNG, GIF ou WebP'
+      error: 'Format non supporté. Utilisez JPG, PNG, WebP ou HEIC'
     }
   } catch {
     return {
