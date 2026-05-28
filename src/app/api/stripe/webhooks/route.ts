@@ -187,10 +187,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   })
 
   if (authError) {
-    // Check if user exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(u => u.email === email)
+    // user_profiles lookup first — more reliable than listUsers which is paginated
+    const { data: existingProfile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
 
+    if (existingProfile?.id) {
+      await updateExistingUser(existingProfile.id, stripeSubscription, session, sessionCode, promoCode)
+      return
+    }
+
+    // Fallback: listUsers with explicit perPage to avoid pagination cutoff
+    const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    const existingUser = existingUsers?.users?.find(u => u.email === email)
     if (existingUser) {
       await updateExistingUser(existingUser.id, stripeSubscription, session, sessionCode, promoCode)
       return
@@ -375,6 +386,23 @@ async function updateExistingUser(
   if (existingSession) {
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', userId)
     userSessionCode = existingSession.code
+  } else {
+    // No existing session — create one with the generated code
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + 1)
+    const { error: sessionError } = await getSupabaseAdmin()
+      .from('sessions')
+      .insert({
+        code: sessionCode,
+        name: 'Mon evenement',
+        expires_at: expiresAt.toISOString(),
+        user_id: userId,
+        moderation_enabled: true,
+        is_active: true,
+      })
+    if (sessionError) {
+      console.error('[Webhook] Session insert failed for existing user:', sessionError.message)
+    }
   }
 
   // Generate invoice for existing user
