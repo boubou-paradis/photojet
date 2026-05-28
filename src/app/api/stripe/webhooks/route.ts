@@ -211,8 +211,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const userId = authData.user.id
 
-  // Create profile
-  await getSupabaseAdmin().from('user_profiles').insert({
+  // Create profile (upsert — safe on Stripe retries)
+  await getSupabaseAdmin().from('user_profiles').upsert({
     id: userId,
     email,
     role: 'user',
@@ -245,9 +245,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const trialStart = stripeSubscription.trial_start ? safeTimestampToISO(stripeSubscription.trial_start) : null
   const trialEnd = stripeSubscription.trial_end ? safeTimestampToISO(stripeSubscription.trial_end) : null
 
+  // upsert on stripe_subscription_id — idempotent on Stripe retries
   const { data: subscriptionData, error: subError } = await getSupabaseAdmin()
     .from('subscriptions')
-    .insert({
+    .upsert({
       user_id: userId,
       stripe_customer_id: session.customer as string,
       stripe_subscription_id: stripeSubscription.id,
@@ -258,12 +259,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       trial_start: trialStart,
       trial_end: trialEnd,
       promo_code_id: promoCodeId,
-    })
+    }, { onConflict: 'stripe_subscription_id' })
     .select()
     .single()
 
   if (subError) {
-    console.error('[Webhook] Subscription insert failed:', subError.message)
+    console.error('[Webhook] Subscription upsert failed:', subError.message)
     throw subError
   }
 
@@ -346,12 +347,14 @@ async function updateExistingUser(
   // Update password
   await getSupabaseAdmin().auth.admin.updateUserById(userId, { password: newPassword })
 
-  // Update or create subscription
+  // Update or create subscription (most recent — avoids .single() failure with multiple rows)
   const { data: existingSub } = await getSupabaseAdmin()
     .from('subscriptions')
     .select('id')
     .eq('user_id', userId)
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   const now = new Date()
   const defaultEnd = getDefaultPeriodEnd()
@@ -375,12 +378,14 @@ async function updateExistingUser(
     await getSupabaseAdmin().from('subscriptions').insert(subscriptionData)
   }
 
-  // Reactivate existing session or use new code
+  // Reactivate existing session or use new code (most recent, avoids .single() failure with multiple sessions)
   const { data: existingSession } = await getSupabaseAdmin()
     .from('sessions')
     .select('code')
     .eq('user_id', userId)
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   let userSessionCode = sessionCode
   if (existingSession) {
@@ -402,6 +407,7 @@ async function updateExistingUser(
       })
     if (sessionError) {
       console.error('[Webhook] Session insert failed for existing user:', sessionError.message)
+      throw sessionError
     }
   }
 
@@ -700,21 +706,11 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   console.log(`[Webhook] payment_succeeded: billing_reason=${billingReason}, subscription=${subscriptionId}, customer=${customerId}`)
 
-  // For brand-new users (first checkout), skip - handled by checkout.session.completed
+  // subscription_create (new sub or re-sub) — fully handled by checkout.session.completed
+  // which sends the welcome email with credentials. Skip here to avoid double email.
   if (billingReason === 'subscription_create') {
-    // Check if this customer already has a subscription record (re-subscription)
-    if (!customerId) return
-    const { data: existingSub } = await getSupabaseAdmin()
-      .from('subscriptions')
-      .select('id, status')
-      .eq('stripe_customer_id', customerId)
-      .single()
-    if (!existingSub) {
-      console.log(`[Webhook] payment_succeeded: new user, skipping (handled by checkout.session.completed)`)
-      return
-    }
-    // Existing user re-subscribing → continue to reactivate
-    console.log(`[Webhook] payment_succeeded: re-subscription for existing customer ${customerId} (current db status: ${existingSub.status})`)
+    console.log(`[Webhook] payment_succeeded: subscription_create — skipping, handled by checkout.session.completed`)
+    return
   }
 
   // Find subscription record: by stripe_subscription_id, then by stripe_customer_id
@@ -731,7 +727,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       .eq('stripe_customer_id', customerId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
     data = result.data
     if (data) {
       console.log(`[Webhook] payment_succeeded: found by customer_id ${customerId}`)
