@@ -772,7 +772,7 @@ export async function sendTrialWelcomeEmail(params: {
                 Votre essai gratuit est active !
               </h1>
               <p style="margin: 12px 0 0 0; color: #9A9AA0; font-size: 16px; line-height: 1.5;">
-                Profitez de toutes les fonctionnalites pendant 24 heures
+                Profitez de toutes les fonctionnalites du lundi au vendredi avant 12h
               </p>
             </td>
           </tr>
@@ -784,7 +784,10 @@ export async function sendTrialWelcomeEmail(params: {
                 <tr>
                   <td style="padding: 15px 20px; text-align: center;">
                     <p style="margin: 0; color: #D4AF37; font-size: 14px; font-weight: 600;">
-                      ⏰ Votre essai expire le ${expiresFormatted}
+                      ⏰ Votre essai est actif jusqu'au ${expiresFormatted}
+                    </p>
+                    <p style="margin: 8px 0 0; color: #9A9AA0; font-size: 13px;">
+                      Acces disponible en semaine uniquement (bloque vendredi 12h &rarr; lundi 12h)
                     </p>
                   </td>
                 </tr>
