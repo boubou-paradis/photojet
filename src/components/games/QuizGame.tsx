@@ -179,7 +179,7 @@ export default function QuizGame({
         animate={{ opacity: 1 }}
         whileHover={{ scale: 1.1 }}
         transition={{ duration: 0.3 }}
-        className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
+        className="absolute bottom-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 border border-[#D4AF37]/30 rounded-full transition-colors backdrop-blur-sm"
         title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
       >
         {isFullscreen ? (
