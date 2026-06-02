@@ -9,17 +9,22 @@ interface WheelPreviewProps {
   size?: number
 }
 
-// Brand — luxe nocturne (cohérent avec WheelGame)
-const NOIR = '#0a0a14'
+// 6 pierres précieuses — cohérent avec WheelGame
+const GEMS = [
+  { light: '#ef4d66', base: '#b3122e', dark: '#69091b' }, // 1 — Rubis
+  { light: '#ffb24d', base: '#e07b1a', dark: '#964907' }, // 2 — Ambre
+  { light: '#5fe0a6', base: '#1f9d63', dark: '#0c5c39' }, // 3 — Émeraude
+  { light: '#5fb2f0', base: '#1f74bd', dark: '#0d4170' }, // 4 — Saphir
+  { light: '#6a73d6', base: '#2b2f86', dark: '#161a47' }, // 5 — Bleu nuit
+  { light: '#cd62e6', base: '#86209c', dark: '#4d0e63' }, // 6 — Améthyste
+]
 
 export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps) {
   const [bulbPhase, setBulbPhase] = useState(0)
 
   // Scintillement des ampoules
   useEffect(() => {
-    const interval = setInterval(() => {
-      setBulbPhase(prev => (prev + 1) % 2)
-    }, 600)
+    const interval = setInterval(() => setBulbPhase(prev => (prev + 1) % 2), 600)
     return () => clearInterval(interval)
   }, [])
 
@@ -39,9 +44,8 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
       const textRadius = r * 0.66
       const textX = cx + textRadius * Math.cos(midAngle)
       const textY = cy + textRadius * Math.sin(midAngle)
-      const isGold = index % 2 === 1
       const dividerX = cx + r * Math.cos(startAngle), dividerY = cy + r * Math.sin(startAngle)
-      return { id: segment.id, pathData, isGold, textX, textY, dividerX, dividerY }
+      return { id: segment.id, pathData, idx: index, textX, textY, dividerX, dividerY }
     })
   }, [segments])
 
@@ -63,7 +67,7 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
         style={{
           width: size,
           height: size,
-          background: `radial-gradient(circle, #15151f 0%, ${NOIR} 100%)`,
+          background: 'radial-gradient(circle, #221b2e 0%, #0c0a12 100%)',
           border: '3px solid rgba(212,175,55,0.55)',
           boxShadow: '0 0 24px rgba(212,175,55,0.2), inset 0 0 30px rgba(0,0,0,0.7)',
         }}
@@ -79,7 +83,7 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       {/* Lueur dorée d'ambiance */}
       <div className="absolute inset-0 rounded-full blur-2xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.22) 0%, transparent 65%)' }} />
+        style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.28) 0%, transparent 65%)' }} />
 
       {/* CADRE DORÉ FIXE + AMPOULES */}
       <svg width={size} height={size} viewBox="0 0 400 400" className="absolute inset-0 pointer-events-none">
@@ -97,109 +101,88 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
 
         {/* Anneau doré */}
         <circle cx="200" cy="200" r="196" fill="url(#prevFrame)" />
-        <circle cx="200" cy="200" r="196" fill="none" stroke="#f0dca0" strokeWidth="1.5" strokeOpacity="0.45" />
+        <circle cx="200" cy="200" r="196" fill="none" stroke="#f6e6a8" strokeWidth="1.5" strokeOpacity="0.5" />
         {/* Gorge sombre */}
-        <circle cx="200" cy="200" r="168" fill={NOIR} />
+        <circle cx="200" cy="200" r="168" fill="#0c0a12" />
 
         {/* Ampoules */}
         {bulbs.map((bulb) => (
-          <circle
-            key={bulb.id}
-            cx={bulb.x}
-            cy={bulb.y}
-            r="5"
+          <circle key={bulb.id} cx={bulb.x} cy={bulb.y} r="5"
             fill={bulb.isLit ? '#ffe49b' : '#6b5210'}
-            filter={bulb.isLit ? 'url(#prevBulbGlow)' : undefined}
-          />
+            filter={bulb.isLit ? 'url(#prevBulbGlow)' : undefined} />
         ))}
       </svg>
 
       {/* ROUE TOURNANTE */}
       <motion.svg
-        width={size}
-        height={size}
-        viewBox="0 0 400 400"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: 360 }}
+        width={size} height={size} viewBox="0 0 400 400"
+        initial={{ rotate: 0 }} animate={{ rotate: 360 }}
         transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
         className="relative"
       >
         <defs>
-          <radialGradient id="prevGoldSeg" cx="50%" cy="42%" r="62%">
-            <stop offset="0%" stopColor="#f7e6ad" />
-            <stop offset="45%" stopColor="#e0c172" />
-            <stop offset="100%" stopColor="#b8941f" />
+          {GEMS.map((gem, i) => (
+            <radialGradient key={i} id={`pgem-${i}`} cx="200" cy="200" r="150" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={gem.light} />
+              <stop offset="58%" stopColor={gem.base} />
+              <stop offset="100%" stopColor={gem.dark} />
+            </radialGradient>
+          ))}
+          <radialGradient id="pgloss" cx="200" cy="78" r="156" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.42)" />
+            <stop offset="34%" stopColor="rgba(255,255,255,0.10)" />
+            <stop offset="60%" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
-          <radialGradient id="prevNoirSeg" cx="50%" cy="40%" r="70%">
-            <stop offset="0%" stopColor="#15151f" />
-            <stop offset="100%" stopColor="#0b0b16" />
-          </radialGradient>
-          <radialGradient id="prevHub" cx="38%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#fbf0c8" />
-            <stop offset="45%" stopColor="#d4af37" />
-            <stop offset="100%" stopColor="#8a6a14" />
-          </radialGradient>
-          <filter id="prevLineGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.2" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
         </defs>
 
         {/* Disque de fond */}
-        <circle cx={cx} cy={cy} r={r + 2} fill={NOIR} />
+        <circle cx={cx} cy={cy} r={r + 2} fill="#0c0a12" />
 
-        {/* Segments noir/or alternés */}
+        {/* Segments pierres précieuses */}
         {wheelSegments.map((seg) => (
-          <path key={`seg-${seg.id}`} d={seg.pathData}
-            fill={seg.isGold ? 'url(#prevGoldSeg)' : 'url(#prevNoirSeg)'} />
+          <path key={`seg-${seg.id}`} d={seg.pathData} fill={`url(#pgem-${seg.idx % GEMS.length})`} />
         ))}
 
-        {/* Traits dorés lumineux */}
-        <g filter="url(#prevLineGlow)">
-          {wheelSegments.map((seg) => (
-            <line key={`div-${seg.id}`} x1={cx} y1={cy} x2={seg.dividerX} y2={seg.dividerY}
-              stroke="#f4e3a6" strokeWidth="1" strokeOpacity="0.85" />
-          ))}
-        </g>
+        {/* Reflet glossy global */}
+        <circle cx={cx} cy={cy} r={r} fill="url(#pgloss)" pointerEvents="none" />
+
+        {/* Traits dorés de séparation */}
+        {wheelSegments.map((seg) => (
+          <line key={`div-${seg.id}`} x1={cx} y1={cy} x2={seg.dividerX} y2={seg.dividerY}
+            stroke="#f6e6a8" strokeWidth="1.4" strokeOpacity="0.9" />
+        ))}
 
         {/* Anneau intérieur fin */}
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f4e3a6" strokeWidth="1.2" strokeOpacity="0.5" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f6e6a8" strokeWidth="1.5" strokeOpacity="0.5" />
 
-        {/* Chiffres — Playfair, à l'endroit, or sur noir / noir sur or */}
+        {/* Numéros blancs */}
         {wheelSegments.map((seg, i) => (
           <text key={`txt-${seg.id}`}
             x={seg.textX} y={seg.textY}
-            fill={seg.isGold ? NOIR : '#e9cf86'}
-            fontSize="28"
-            textAnchor="middle"
-            dominantBaseline="central"
-            style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 700 }}
-          >
+            fill="#ffffff" fontSize="30" textAnchor="middle" dominantBaseline="central"
+            style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}>
             {i + 1}
           </text>
         ))}
-
-        {/* Moyeu central doré */}
-        <circle cx={cx} cy={cy} r="34" fill={NOIR} />
-        <circle cx={cx} cy={cy} r="29" fill="url(#prevHub)" />
-        <circle cx={cx} cy={cy} r="29" fill="none" stroke="#8a6a14" strokeWidth="1" />
-        <ellipse cx="192" cy="190" rx="13" ry="8" fill="rgba(255,255,255,0.35)" />
-        <circle cx={cx} cy={cy} r="12" fill={NOIR} />
-        <circle cx={cx} cy={cy} r="8" fill="url(#prevHub)" />
-        <circle cx={cx} cy={cy} r="3" fill="#fbf0c8" />
       </motion.svg>
 
-      {/* Flèche dorée (fixe) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10" style={{ marginTop: '-2px' }}>
-        <div
-          style={{
-            width: '18px',
-            height: '24px',
-            background: 'linear-gradient(135deg, #fbf0c8 0%, #d4af37 50%, #8a6a14 100%)',
-            clipPath: 'polygon(50% 100%, 0 0, 100% 0)',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))'
-          }}
-        />
+      {/* MOYEU CENTRAL FIXE — noir bordé d'or + étoile */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-full flex items-center justify-center pointer-events-none"
+        style={{
+          width: '24%', height: '24%',
+          background: 'radial-gradient(circle at 50% 38%, #1a1626 0%, #0b0913 78%, #060409 100%)',
+          boxShadow: '0 0 0 2.5px rgba(212,175,55,0.95), 0 0 0 5px rgba(0,0,0,0.6), 0 0 0 6.5px rgba(212,175,55,0.5), inset 0 0 14px rgba(0,0,0,0.8), 0 0 16px rgba(212,175,55,0.3)',
+        }}>
+        <span style={{ color: '#e7cd7e', fontSize: `${size * 0.07}px`, lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(212,175,55,0.6))' }}>✦</span>
+      </div>
+
+      {/* POINTEUR goutte blanche bordée d'or */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-20" style={{ top: '-2%', width: '8%' }}>
+        <svg viewBox="0 0 40 56" className="w-full h-auto" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))' }}>
+          <path d="M20 55 C 8 38 2 30 2 18 A 18 18 0 1 1 38 18 C 38 30 32 38 20 55 Z"
+            fill="#ffffff" stroke="#d4af37" strokeWidth="3.5" />
+          <ellipse cx="14" cy="14" rx="6" ry="8" fill="rgba(255,255,255,0.7)" />
+        </svg>
       </div>
     </div>
   )
