@@ -37,6 +37,7 @@ import {
   FileSpreadsheet,
   AlertTriangle,
   Package,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
@@ -114,8 +115,11 @@ export default function QuizPage() {
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const questionAudioInputRef = useRef<HTMLInputElement>(null)
 
-  // Audio de la bonne réponse (lecture en jeu)
-  const [isAnswerAudioPlaying, setIsAnswerAudioPlaying] = useState(false)
+  // Photo de la bonne réponse (affichée sur l'écran public au reveal)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const questionPhotoInputRef = useRef<HTMLInputElement>(null)
+
+  // Audio de la bonne réponse (preview dans l'éditeur ; la diffusion en jeu se fait sur l'écran public /live)
   const [answerAudioVolume, setAnswerAudioVolume] = useState(0.7)
   const answerAudioRef = useRef<HTMLAudioElement | null>(null)
   // Cache local des blobs audio pour éviter de re-télécharger depuis Supabase
@@ -322,7 +326,7 @@ export default function QuizPage() {
         setIsAnswering(false)
         setShowResults(true)
         pauseAudio()
-        playAnswerAudio()
+        // L'audio de la bonne réponse est diffusé sur l'écran public (/live), pas ici
         supabase.from('sessions').update({
           quiz_is_answering: false,
           quiz_show_results: true,
@@ -696,6 +700,82 @@ export default function QuizPage() {
     if (questionAudioInputRef.current) questionAudioInputRef.current.value = ''
   }
 
+  // Upload photo pour une question spécifique (affichée au reveal sur l'écran public)
+  async function handleQuestionPhotoUpload(e: React.ChangeEvent<HTMLInputElement>, questionId: string) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seuls les fichiers image sont acceptés')
+      return
+    }
+
+    // Limite de taille pour ne pas ralentir l'écran public
+    const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast.error('Image trop lourde (max 5 Mo)')
+      return
+    }
+
+    // 1. Preview locale instantanée
+    const localBlobUrl = URL.createObjectURL(file)
+    const tempUpdated = { ...editingQuestion!, photoUrl: localBlobUrl } as QuizQuestion
+    setEditingQuestion(tempUpdated)
+
+    toast.success('Photo prête ! Upload en cours...')
+    setPhotoUploading(true)
+
+    // 2. Upload en arrière-plan vers Supabase
+    try {
+      const fileName = `quiz-photos/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, file, { contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName)
+      const supabaseUrl = urlData.publicUrl
+
+      const finalUpdated = { ...editingQuestion!, photoUrl: supabaseUrl } as QuizQuestion
+      setEditingQuestion(finalUpdated)
+      updateQuestion(finalUpdated)
+
+      // Libérer le blob local de preview
+      URL.revokeObjectURL(localBlobUrl)
+
+      toast.success('Photo sauvegardée !')
+    } catch (err) {
+      console.error('Error uploading photo:', err)
+      toast.error('Erreur upload - La photo s\'affiche localement mais ne sera pas sauvegardée')
+      updateQuestion(tempUpdated)
+    } finally {
+      setPhotoUploading(false)
+    }
+
+    // Reset input
+    if (questionPhotoInputRef.current) questionPhotoInputRef.current.value = ''
+  }
+
+  async function removeQuestionPhoto(questionId: string) {
+    if (!editingQuestion) return
+
+    // Supprimer le fichier du storage si possible
+    if (editingQuestion.photoUrl) {
+      const path = editingQuestion.photoUrl.match(/photos\/(.+)/)
+      if (path?.[1]) {
+        try {
+          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
+        } catch { /* chemin photo invalide, ignoré */ }
+      }
+    }
+
+    const updated = { ...editingQuestion, photoUrl: null }
+    setEditingQuestion(updated)
+    updateQuestion(updated)
+    toast.success('Photo supprimée')
+  }
+
   async function removeQuestionAudio(questionId: string) {
     if (!editingQuestion) return
 
@@ -887,9 +967,6 @@ export default function QuizPage() {
     // Play background audio if available
     playAudio()
 
-    // Précharger l'audio de la réponse pendant que les joueurs répondent
-    preloadAnswerAudio()
-
     await supabase
       .from('sessions')
       .update({
@@ -920,9 +997,8 @@ export default function QuizPage() {
     setIsAnswering(false)
     setShowResults(true)
 
-    // Pause background audio & play answer audio
+    // Pause background audio (l'audio de la bonne réponse est diffusé sur l'écran public /live)
     pauseAudio()
-    playAnswerAudio()
 
     await supabase
       .from('sessions')
@@ -1030,7 +1106,7 @@ export default function QuizPage() {
     setQuizAudio(null)
     setQuizAudioName(null)
     setIsAudioPlaying(false)
-    setIsAnswerAudioPlaying(false)
+    stopAnswerAudio()
 
     // On garde les questions dans la DB, on reset juste l'état du jeu
     setGameActive(false)
@@ -1115,7 +1191,7 @@ export default function QuizPage() {
       URL.revokeObjectURL(quizAudio)
     }
     setIsAudioPlaying(false)
-    setIsAnswerAudioPlaying(false)
+    stopAnswerAudio()
     setQuizAudio(null)
     setQuizAudioName(null)
 
@@ -1257,105 +1333,21 @@ export default function QuizPage() {
     setIsAudioPlaying(false)
   }
 
-  // Précharger l'audio de la réponse en arrière-plan
-  function preloadAnswerAudio() {
-    const currentQ = questions[currentQuestionIndex]
-    if (!currentQ?.audioUrl) return
-
-    // Nettoyer un éventuel préchargement précédent
-    if (answerAudioRef.current) {
-      answerAudioRef.current.pause()
-      answerAudioRef.current = null
-    }
-
-    const audioUrl = currentQ.audioUrl
-    const cachedBlobUrl = audioLocalCacheRef.current.get(audioUrl)
-
-    function createAudioElement(src: string) {
-      const audio = new Audio()
-      audio.preload = 'auto'
-      audio.volume = answerAudioVolume
-      audio.onplay = () => setIsAnswerAudioPlaying(true)
-      audio.onpause = () => setIsAnswerAudioPlaying(false)
-      audio.onended = () => {
-        setIsAnswerAudioPlaying(false)
-        answerAudioRef.current = null
-      }
-      audio.src = src
-      answerAudioRef.current = audio
-    }
-
-    if (cachedBlobUrl) {
-      // Blob local disponible → lecture instantanée
-      createAudioElement(cachedBlobUrl)
-    } else {
-      // Pas de cache local → télécharger en blob pour lecture rapide
-      fetch(audioUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const blobUrl = URL.createObjectURL(blob)
-          audioLocalCacheRef.current.set(audioUrl, blobUrl)
-          // Ne créer l'élément que si on est toujours sur la même question
-          if (questions[currentQuestionIndex]?.audioUrl === audioUrl) {
-            createAudioElement(blobUrl)
-          }
-        })
-        .catch(() => {
-          // Fallback : utiliser l'URL directe
-          createAudioElement(audioUrl)
-        })
-    }
-  }
-
-  // Jouer l'audio de la bonne réponse (déjà préchargé)
-  function playAnswerAudio() {
-    if (!answerAudioRef.current) {
-      // Fallback si pas préchargé
-      const currentQ = questions[currentQuestionIndex]
-      if (!currentQ?.audioUrl) return
-      preloadAnswerAudio()
-    }
-
-    if (answerAudioRef.current) {
-      answerAudioRef.current.currentTime = 0
-      answerAudioRef.current.play().then(() => {
-        setIsAnswerAudioPlaying(true)
-      }).catch(err => {
-        console.error('Answer audio play failed:', err)
-      })
-    }
-  }
-
-  // Arrêter l'audio de la bonne réponse
+  // Arrêter l'audio de la bonne réponse (nettoyage entre questions)
   function stopAnswerAudio() {
     if (answerAudioRef.current) {
       answerAudioRef.current.pause()
       answerAudioRef.current.currentTime = 0
       answerAudioRef.current = null
-      setIsAnswerAudioPlaying(false)
     }
   }
 
-  // Changer le volume de l'audio réponse (preview + jeu)
+  // Changer le volume de l'audio réponse (preview dans l'éditeur)
   function changeAnswerAudioVolume(newVolume: number) {
     const clamped = Math.max(0, Math.min(1, newVolume))
     setAnswerAudioVolume(clamped)
-    if (answerAudioRef.current) {
-      answerAudioRef.current.volume = clamped
-    }
     if (previewAudioRef.current) {
       previewAudioRef.current.volume = clamped
-    }
-  }
-
-  // Toggle play/pause de l'audio de la bonne réponse
-  function toggleAnswerAudio() {
-    if (!answerAudioRef.current) return
-    if (answerAudioRef.current.paused) {
-      answerAudioRef.current.play().then(() => setIsAnswerAudioPlaying(true))
-    } else {
-      answerAudioRef.current.pause()
-      setIsAnswerAudioPlaying(false)
     }
   }
 
@@ -1786,6 +1778,100 @@ export default function QuizPage() {
                       Se joue automatiquement quand la bonne réponse est révélée
                     </p>
                   </div>
+
+                  {/* Photo de la bonne réponse */}
+                  <div className="mt-2 p-3 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ImageIcon className="h-4 w-4 text-[#3B82F6]" />
+                      <label className="text-gray-400 text-xs font-medium">Photo (bonne réponse)</label>
+                    </div>
+                    <input
+                      ref={questionPhotoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleQuestionPhotoUpload(e, editingQuestion.id)}
+                      className="hidden"
+                    />
+                    {editingQuestion.photoUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={editingQuestion.photoUrl}
+                            alt="Photo de la bonne réponse"
+                            className="w-full max-h-40 object-contain rounded-lg bg-black/30"
+                          />
+                          {photoUploading && (
+                            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/70 px-2 py-1 rounded text-xs text-yellow-400">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Sauvegarde...
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => questionPhotoInputRef.current?.click()}
+                            className="px-2 py-1.5 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
+                          >
+                            Changer
+                          </button>
+                          <button
+                            onClick={() => removeQuestionPhoto(editingQuestion.id)}
+                            className="shrink-0 p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => questionPhotoInputRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-gray-300 rounded-lg text-sm transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Ajouter une photo
+                      </button>
+                    )}
+                    <p className="text-gray-600 text-[10px] mt-1.5">
+                      S&apos;affiche sur l&apos;écran public quand la bonne réponse est révélée
+                    </p>
+                  </div>
+
+                  {/* Durée d'affichage du reveal (photo + audio) */}
+                  {(editingQuestion.photoUrl || editingQuestion.audioUrl) && (
+                    <div className="mt-2 p-3 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Timer className="h-4 w-4 text-[#D4AF37]" />
+                        <label className="text-gray-400 text-xs font-medium">Durée d&apos;affichage de la réponse</label>
+                      </div>
+                      <div className="flex gap-2">
+                        {[5, 10, 15, 20].map((s) => {
+                          const current = editingQuestion.revealDuration ?? 10
+                          const active = current === s
+                          return (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                const updated = { ...editingQuestion, revealDuration: s }
+                                setEditingQuestion(updated)
+                                updateQuestion(updated)
+                              }}
+                              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                                active
+                                  ? 'bg-[#D4AF37] text-black'
+                                  : 'bg-[#2E2E33] text-gray-300 hover:bg-[#3E3E43]'
+                              }`}
+                            >
+                              {s}s
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <p className="text-gray-600 text-[10px] mt-1.5">
+                        Temps pendant lequel la photo reste affichée et l&apos;audio joue (par défaut 10s)
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -2095,57 +2181,18 @@ export default function QuizPage() {
                 </div>
               )}
 
-              {/* Mini-player audio bonne réponse */}
-              {showResults && currentQuestion?.audioUrl && (
-                <div className="p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4">
-                  <div className="flex items-center gap-2">
-                    <Music className="h-4 w-4 text-[#E91E63] flex-shrink-0" />
-                    <span className="text-[#E91E63] text-sm font-medium flex-1 truncate">
-                      {(currentQuestion as QuizQuestion & { audioFileName?: string }).audioFileName || 'Piste audio'}
-                      {isAnswerAudioPlaying && <span className="animate-pulse ml-1">&#9835;</span>}
-                    </span>
-                    <button
-                      onClick={toggleAnswerAudio}
-                      className={`shrink-0 p-2 rounded-lg transition-colors ${
-                        isAnswerAudioPlaying
-                          ? 'bg-[#E91E63] text-white'
-                          : 'bg-[#E91E63]/20 text-[#E91E63] hover:bg-[#E91E63]/30'
-                      }`}
-                    >
-                      {isAnswerAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </button>
-                    <button
-                      onClick={stopAnswerAudio}
-                      className="shrink-0 p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 transition-colors"
-                    >
-                      <Square className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {/* Volume */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      onClick={() => changeAnswerAudioVolume(0)}
-                      className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
-                    >
-                      <VolumeX className="h-3.5 w-3.5" />
-                    </button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={answerAudioVolume}
-                      onChange={(e) => changeAnswerAudioVolume(parseFloat(e.target.value))}
-                      className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#E91E63]"
-                    />
-                    <button
-                      onClick={() => changeAnswerAudioVolume(1)}
-                      className="shrink-0 p-1 text-gray-400 hover:text-[#E91E63] transition-colors"
-                    >
-                      <Volume2 className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(answerAudioVolume * 100)}%</span>
-                  </div>
+              {/* Médias de la bonne réponse — diffusés sur l'écran public (/live) au reveal */}
+              {showResults && (currentQuestion?.audioUrl || currentQuestion?.photoUrl) && (
+                <div className="p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4 flex items-center gap-2">
+                  {currentQuestion?.photoUrl && <ImageIcon className="h-4 w-4 text-[#3B82F6] flex-shrink-0" />}
+                  {currentQuestion?.audioUrl && <Music className="h-4 w-4 text-[#E91E63] flex-shrink-0" />}
+                  <span className="text-[#E91E63] text-sm font-medium">
+                    {currentQuestion?.photoUrl && currentQuestion?.audioUrl
+                      ? 'Photo + audio diffusés sur l\'écran public'
+                      : currentQuestion?.photoUrl
+                      ? 'Photo diffusée sur l\'écran public'
+                      : 'Audio diffusé sur l\'écran public'}
+                  </span>
                 </div>
               )}
 

@@ -238,6 +238,8 @@ export interface QuizQuestion {
   timeLimit: number // Seconds
   points: number
   audioUrl?: string | null // Audio played on correct answer reveal
+  photoUrl?: string | null // Photo displayed on correct answer reveal
+  revealDuration?: number | null // How long the reveal media shows/plays: 5 | 10 | 15 | 20 (seconds, default 10)
 }
 
 export interface QuizAnswer {

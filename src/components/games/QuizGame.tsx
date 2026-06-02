@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle, Volume2 } from 'lucide-react'
 import { QuizQuestion, QuizParticipant } from '@/types/database'
 import QuizPodiumPremium from './QuizPodiumPremium'
 
@@ -79,7 +79,16 @@ export default function QuizGame({
   const [windowHeight, setWindowHeight] = useState(800)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
 
+  // Médias de la bonne réponse (photo + audio) affichés/joués au reveal
+  const [revealMediaVisible, setRevealMediaVisible] = useState(false)
+  const [needsSoundUnlock, setNeedsSoundUnlock] = useState(false)
+  const answerAudioRef = useRef<HTMLAudioElement | null>(null)
+
   const currentQuestion = questions[currentQuestionIndex]
+  const revealPhotoUrl = currentQuestion?.photoUrl ?? null
+  const revealAudioUrl = currentQuestion?.audioUrl ?? null
+  const revealDuration = currentQuestion?.revealDuration ?? 10
+  const hasRevealMedia = !!(revealPhotoUrl || revealAudioUrl)
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
   const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
 
@@ -114,15 +123,67 @@ export default function QuizGame({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Afficher le leaderboard quand on révèle les résultats
+  // Afficher le leaderboard quand on révèle les résultats.
+  // Si des médias sont attachés, on attend la fin de leur durée pour ne pas les masquer.
   useEffect(() => {
     if (showResults && participants.length > 0) {
-      const timer = setTimeout(() => setShowLeaderboard(true), 2000)
+      const delay = hasRevealMedia ? revealDuration * 1000 : 2000
+      const timer = setTimeout(() => setShowLeaderboard(true), delay)
       return () => clearTimeout(timer)
     } else {
       setShowLeaderboard(false)
     }
-  }, [showResults, participants.length])
+  }, [showResults, participants.length, hasRevealMedia, revealDuration])
+
+  // Lecture audio + affichage photo de la bonne réponse au reveal
+  useEffect(() => {
+    const stopAudio = () => {
+      if (answerAudioRef.current) {
+        answerAudioRef.current.pause()
+        answerAudioRef.current = null
+      }
+    }
+
+    if (showResults && hasRevealMedia) {
+      setRevealMediaVisible(true)
+      setNeedsSoundUnlock(false)
+
+      // Lancer l'audio (peut être bloqué par la politique d'autoplay du navigateur)
+      if (revealAudioUrl) {
+        const audio = new Audio(revealAudioUrl)
+        audio.volume = 1
+        answerAudioRef.current = audio
+        audio.play().catch(() => setNeedsSoundUnlock(true))
+      }
+
+      // Masquer la photo et arrêter l'audio à la fin de la durée choisie
+      const timer = setTimeout(() => {
+        setRevealMediaVisible(false)
+        stopAudio()
+      }, revealDuration * 1000)
+
+      return () => {
+        clearTimeout(timer)
+        stopAudio()
+        setNeedsSoundUnlock(false)
+      }
+    }
+
+    // Pas de reveal / pas de média → nettoyage
+    setRevealMediaVisible(false)
+    stopAudio()
+    setNeedsSoundUnlock(false)
+  }, [showResults, currentQuestionIndex, hasRevealMedia, revealAudioUrl, revealDuration])
+
+  // Réactiver le son manuellement si l'autoplay a été bloqué
+  const unlockSound = useCallback(() => {
+    if (!revealAudioUrl) return
+    if (answerAudioRef.current) answerAudioRef.current.pause()
+    const audio = new Audio(revealAudioUrl)
+    audio.volume = 1
+    answerAudioRef.current = audio
+    audio.play().then(() => setNeedsSoundUnlock(false)).catch(() => {})
+  }, [revealAudioUrl])
 
   // Écran d'attente si pas de question
   if (!currentQuestion) {
@@ -387,6 +448,52 @@ export default function QuizGame({
           </motion.div>
         )}
       </div>
+
+      {/* PHOTO DE LA BONNE RÉPONSE */}
+      <AnimatePresence>
+        {revealMediaVisible && revealPhotoUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+              className="relative max-w-3xl w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={revealPhotoUrl}
+                alt="Bonne réponse"
+                className="w-full max-h-[75vh] object-contain rounded-3xl border-2 border-[#D4AF37] shadow-[0_0_60px_rgba(212,175,55,0.35)] bg-black"
+              />
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white font-bold px-5 py-1.5 rounded-full text-sm shadow-lg whitespace-nowrap">
+                ✓ {currentQuestion?.answers[currentQuestion.correctAnswer]}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* BOUTON ACTIVER LE SON (si l'autoplay est bloqué par le navigateur) */}
+      <AnimatePresence>
+        {needsSoundUnlock && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={unlockSound}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 bg-[#D4AF37] text-black rounded-full font-bold shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:scale-105 transition-transform"
+          >
+            <Volume2 className="h-5 w-5" />
+            Activer le son
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* LEADERBOARD OVERLAY */}
       <AnimatePresence>
