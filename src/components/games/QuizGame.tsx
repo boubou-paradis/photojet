@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle, Volume2 } from 'lucide-react'
+import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { QuizQuestion, QuizParticipant } from '@/types/database'
 import QuizPodiumPremium from './QuizPodiumPremium'
 
@@ -79,16 +79,13 @@ export default function QuizGame({
   const [windowHeight, setWindowHeight] = useState(800)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
 
-  // Médias de la bonne réponse (photo + audio) affichés/joués au reveal
+  // Photo de la bonne réponse affichée au reveal (l'audio, lui, est joué sur le PC animateur)
   const [revealMediaVisible, setRevealMediaVisible] = useState(false)
-  const [needsSoundUnlock, setNeedsSoundUnlock] = useState(false)
-  const answerAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const currentQuestion = questions[currentQuestionIndex]
   const revealPhotoUrl = currentQuestion?.photoUrl ?? null
-  const revealAudioUrl = currentQuestion?.audioUrl ?? null
   const revealDuration = currentQuestion?.revealDuration ?? 10
-  const hasRevealMedia = !!(revealPhotoUrl || revealAudioUrl)
+  const hasRevealPhoto = !!revealPhotoUrl
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
   const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
 
@@ -124,66 +121,26 @@ export default function QuizGame({
   }, [])
 
   // Afficher le leaderboard quand on révèle les résultats.
-  // Si des médias sont attachés, on attend la fin de leur durée pour ne pas les masquer.
+  // Si une photo est attachée, on attend la fin de sa durée pour ne pas la masquer.
   useEffect(() => {
     if (showResults && participants.length > 0) {
-      const delay = hasRevealMedia ? revealDuration * 1000 : 2000
+      const delay = hasRevealPhoto ? revealDuration * 1000 : 2000
       const timer = setTimeout(() => setShowLeaderboard(true), delay)
       return () => clearTimeout(timer)
     } else {
       setShowLeaderboard(false)
     }
-  }, [showResults, participants.length, hasRevealMedia, revealDuration])
+  }, [showResults, participants.length, hasRevealPhoto, revealDuration])
 
-  // Lecture audio + affichage photo de la bonne réponse au reveal
+  // Affichage de la photo de la bonne réponse au reveal, pendant la durée choisie
   useEffect(() => {
-    const stopAudio = () => {
-      if (answerAudioRef.current) {
-        answerAudioRef.current.pause()
-        answerAudioRef.current = null
-      }
-    }
-
-    if (showResults && hasRevealMedia) {
+    if (showResults && hasRevealPhoto) {
       setRevealMediaVisible(true)
-      setNeedsSoundUnlock(false)
-
-      // Lancer l'audio (peut être bloqué par la politique d'autoplay du navigateur)
-      if (revealAudioUrl) {
-        const audio = new Audio(revealAudioUrl)
-        audio.volume = 1
-        answerAudioRef.current = audio
-        audio.play().catch(() => setNeedsSoundUnlock(true))
-      }
-
-      // Masquer la photo et arrêter l'audio à la fin de la durée choisie
-      const timer = setTimeout(() => {
-        setRevealMediaVisible(false)
-        stopAudio()
-      }, revealDuration * 1000)
-
-      return () => {
-        clearTimeout(timer)
-        stopAudio()
-        setNeedsSoundUnlock(false)
-      }
+      const timer = setTimeout(() => setRevealMediaVisible(false), revealDuration * 1000)
+      return () => clearTimeout(timer)
     }
-
-    // Pas de reveal / pas de média → nettoyage
     setRevealMediaVisible(false)
-    stopAudio()
-    setNeedsSoundUnlock(false)
-  }, [showResults, currentQuestionIndex, hasRevealMedia, revealAudioUrl, revealDuration])
-
-  // Réactiver le son manuellement si l'autoplay a été bloqué
-  const unlockSound = useCallback(() => {
-    if (!revealAudioUrl) return
-    if (answerAudioRef.current) answerAudioRef.current.pause()
-    const audio = new Audio(revealAudioUrl)
-    audio.volume = 1
-    answerAudioRef.current = audio
-    audio.play().then(() => setNeedsSoundUnlock(false)).catch(() => {})
-  }, [revealAudioUrl])
+  }, [showResults, currentQuestionIndex, hasRevealPhoto, revealDuration])
 
   // Écran d'attente si pas de question
   if (!currentQuestion) {
@@ -476,22 +433,6 @@ export default function QuizGame({
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* BOUTON ACTIVER LE SON (si l'autoplay est bloqué par le navigateur) */}
-      <AnimatePresence>
-        {needsSoundUnlock && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            onClick={unlockSound}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 bg-[#D4AF37] text-black rounded-full font-bold shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:scale-105 transition-transform"
-          >
-            <Volume2 className="h-5 w-5" />
-            Activer le son
-          </motion.button>
         )}
       </AnimatePresence>
 
