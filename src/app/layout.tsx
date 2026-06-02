@@ -2,7 +2,7 @@
 // Code propriétaire - Reproduction interdite.
 
 import type { Metadata, Viewport } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Poppins, Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -18,6 +18,13 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -125,7 +132,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${poppins.variable} ${inter.variable} font-sans antialiased`}
+        className={`${poppins.variable} ${inter.variable} ${playfair.variable} font-sans antialiased`}
       >
         {children}
         <Toaster position="top-center" richColors />
