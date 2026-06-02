@@ -376,9 +376,11 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
           {/* MOYEU CENTRAL FIXE — titre + ornement */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-            <div className="rounded-full flex flex-col items-center justify-center text-center"
+            <div className="rounded-full flex flex-col items-center justify-start text-center"
               style={{
+                position: 'relative',
                 width: '31%', height: '31%',
+                paddingTop: '13%',
                 background: 'radial-gradient(circle at 50% 38%, #1a1626 0%, #0b0913 75%, #060409 100%)',
                 border: '3px solid transparent',
                 backgroundClip: 'padding-box',
@@ -390,13 +392,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 background: 'linear-gradient(180deg, #fbf3d6 0%, #e7cd7e 48%, #c9a227 100%)',
                 WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
               }}>Destinée</span>
-              <span style={{ color: '#d4af37', fontSize: 'clamp(10px, 3vmin, 20px)', marginTop: '6%', filter: 'drop-shadow(0 0 5px rgba(212,175,55,0.6))' }}>✦</span>
+              {/* Ornement étoile — sous le pivot, dans la zone basse libre */}
+              <span style={{ position: 'absolute', left: '50%', top: '70%', transform: 'translateX(-50%)', color: '#d4af37', fontSize: 'clamp(10px, 3vmin, 20px)', lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(212,175,55,0.6))' }}>✦</span>
             </div>
           </div>
 
-          {/* Pivot central doré */}
+          {/* Pivot central doré (axe de rotation, géométriquement centré, sous le texte) */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 rounded-full pointer-events-none"
-            style={{ width: '3%', height: '3%', background: 'radial-gradient(circle at 38% 30%, #fbf0c8 0%, #d4af37 55%, #8a6a14 100%)', boxShadow: '0 0 8px rgba(212,175,55,0.8)' }} />
+            style={{ width: '2.6%', height: '2.6%', background: 'radial-gradient(circle at 38% 30%, #fbf0c8 0%, #d4af37 55%, #8a6a14 100%)', boxShadow: '0 0 8px rgba(212,175,55,0.8)' }} />
         </div>
       </div>
 
