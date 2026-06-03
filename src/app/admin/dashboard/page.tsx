@@ -92,9 +92,11 @@ function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subsc
   const progressPercent = isLifetime ? 100 : Math.max(0, Math.min(100, (elapsed / totalDuration) * 100))
 
   // Determine status color
-  const isExpired = diff <= 0
-  const isCritical = days < 1 && !isExpired
-  const isWarning = days < 7 && days >= 1
+  // Un compte owner (accès à vie) n'est jamais expiré/critique/en alerte,
+  // même si sa subscription Stripe sous-jacente est expirée.
+  const isExpired = !isLifetime && diff <= 0
+  const isCritical = !isLifetime && days < 1 && !isExpired
+  const isWarning = !isLifetime && days < 7 && days >= 1
 
   const statusColor = isExpired
     ? 'text-red-500'
