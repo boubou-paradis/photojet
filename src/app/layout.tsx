@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     default: "AnimaJet - Animation interactive pour événements professionnels",
     template: "%s | AnimaJet",
   },
-  description: "Plateforme d'animation interactive pour professionnels : DJ, entreprises, bars, restaurants, campings, mariages. Photos en direct, 7 jeux interactifs, QR codes. Essai gratuit 24h, 29,90€/mois.",
+  description: "La plateforme d'animations interactives pour les pros de l'événementiel. Vos invités participent depuis leur téléphone : quiz, roue de la destinée, partage photo en direct sur écran géant. Sans application. Essai gratuit 24h, 29,90€/mois.",
   keywords: [
     "animation événement",
     "animation entreprise",
@@ -84,8 +84,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "AnimaJet - Animation interactive pour événements professionnels",
-    description: "Plateforme d'animation interactive : photos en direct, 7 jeux interactifs, QR codes personnalisés. Pour DJ, entreprises, bars, restaurants, campings, mariages. Essai gratuit 24h.",
+    title: "AnimaJet - La plateforme d'animations interactives pour l'événementiel",
+    description: "Faites participer tous vos invités depuis leur téléphone : quiz, roue de la destinée, photo mystère, partage photo en direct sur écran géant. Sans application. Développé par un DJ animateur pour les pros. Essai gratuit 24h.",
     images: [
       {
         url: "/images/animajet_logo_principal.png",
@@ -101,8 +101,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AnimaJet - Animation interactive pour événements",
-    description: "Photos en direct, 7 jeux interactifs, QR codes. Essai gratuit 24h, 29,90€/mois.",
+    title: "AnimaJet - Animations interactives pour l'événementiel",
+    description: "Vos invités participent depuis leur téléphone. Quiz, roue, partage photo en direct sur écran géant. Sans appli. Essai gratuit, 29,90€/mois.",
     images: ["/images/animajet_logo_principal.png"],
     creator: "@animajet",
   },

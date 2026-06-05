@@ -36,7 +36,7 @@ const securityHeaders = [
       "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://unesekcovbxeapevuqmc.supabase.co https://animajet.fr https://*.supabase.co",
       "connect-src 'self' https://unesekcovbxeapevuqmc.supabase.co wss://unesekcovbxeapevuqmc.supabase.co https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.resend.com https://va.vercel-scripts.com https://*.vercel-analytics.com https://vercel.live wss://vercel.live",
-      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://vercel.live",
+      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://vercel.live https://www.youtube-nocookie.com https://www.youtube.com",
       "media-src 'self' blob: https://unesekcovbxeapevuqmc.supabase.co",
       "worker-src 'self' blob:",
       "object-src 'none'",

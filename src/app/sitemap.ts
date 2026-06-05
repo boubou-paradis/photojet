@@ -3,6 +3,29 @@ import { MetadataRoute } from 'next'
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://animajet.fr'
 
+  // Page pilier SEO
+  const pillarPage = {
+    url: `${baseUrl}/animations-interactives-evenementielles`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.9,
+  }
+
+  // Pages par animation (cluster SEO)
+  const animationPages = [
+    'quiz-interactif',
+    'roue-de-la-destinee',
+    'photo-mystere',
+    'le-bon-ordre',
+    'partage-photo-evenement',
+    'borne-photo',
+  ].map((slug) => ({
+    url: `${baseUrl}/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }))
+
   // Pages statiques principales
   const staticPages = [
     {
@@ -36,6 +59,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/animation-camping-interactive`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/animation-bar-restaurant-interactive`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/login`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
@@ -61,5 +96,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]
 
-  return staticPages
+  return [...staticPages, pillarPage, ...animationPages]
 }

@@ -34,7 +34,7 @@ export default function LoginPage() {
 
     switch (message) {
       case 'trial_activated':
-        setSuccessMessage('Votre compte essai 7 jours a ete cree ! Vos identifiants vous ont ete envoyes par email. Connectez-vous pour commencer.')
+        setSuccessMessage('Votre compte essai 24h a ete cree ! Vos identifiants vous ont ete envoyes par email. Connectez-vous pour commencer.')
         toast.success('Compte cree avec succes !')
         break
       case 'trial_already_activated':

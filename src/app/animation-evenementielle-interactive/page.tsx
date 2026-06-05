@@ -3,7 +3,7 @@ import SEOLandingPage from '@/components/marketing/SEOLandingPage'
 
 export const metadata: Metadata = {
   title: 'Animation Événementielle Interactive | Photos & Jeux en Direct',
-  description: 'Solution d\'animation événementielle interactive : photos en direct sur écran géant, 7 jeux interactifs, QR codes personnalisés. Idéal pour tous types d\'événements. Essai gratuit 24h.',
+  description: 'Solution d\'animation événementielle interactive : photos en direct sur écran géant, 4 jeux interactifs (quiz, roue de la destinée, photo mystère, le bon ordre), QR codes personnalisés. Idéal pour tous types d\'événements. Essai gratuit 24h.',
   keywords: [
     'animation événementielle',
     'animation interactive',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Animation Événementielle Interactive | AnimaJet',
-    description: 'Photos en direct, 7 jeux interactifs, QR codes personnalisés. La solution complète pour animer tous vos événements.',
+    description: 'Photos en direct, 4 jeux interactifs, QR codes personnalisés. La solution complète pour animer tous vos événements.',
     url: 'https://animajet.fr/animation-evenementielle-interactive',
     type: 'website',
     locale: 'fr_FR',

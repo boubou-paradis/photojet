@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Loader2, ArrowRight, Check, Mail } from 'lucide-react'
+import { Loader2, ArrowRight, Check, Mail, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -44,17 +44,25 @@ export default function HeroV5({
       {/* Background image */}
       <div className="absolute inset-0">
         <Image
-          src="/images/hero-animajet.png"
-          alt="AnimaJet hero"
+          src="/hero-animajet-1.jpg"
+          alt="AnimaJet — animations interactives pour DJ et professionnels de l'événementiel"
           fill
           className="object-cover object-center"
           priority
         />
-        {/* Gradient overlay: dark on left for readability, lighter on right */}
+        {/* Overlay sombre uniforme : transforme le visuel en ambiance dorée premium
+            et garantit la lisibilité du titre, du formulaire et du lien de connexion */}
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to right, rgba(10,10,20,0.88) 0%, rgba(10,10,20,0.65) 55%, rgba(10,10,20,0.35) 100%)',
+            background: 'linear-gradient(to right, rgba(8,8,14,0.93) 0%, rgba(8,8,14,0.82) 55%, rgba(8,8,14,0.78) 100%)',
+          }}
+        />
+        {/* Vignette douce pour le contraste des bords */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 90% 80% at 50% 50%, transparent 40%, rgba(8,8,14,0.55) 100%)',
           }}
         />
       </div>
@@ -80,26 +88,39 @@ export default function HeroV5({
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#D4AF37]/60 bg-[#D4AF37]/10 backdrop-blur-sm">
               <span className="text-[#D4AF37] text-sm font-semibold tracking-wide">
-                ⚡ L&apos;arme ultime des DJ &amp; animateurs
+                🎧 Développé par un DJ animateur, pour les pros
               </span>
             </div>
 
             {/* Title */}
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
-              En 2 minutes,<br />
-              vos invités participent.
+              Transformez n&apos;importe quel événement en{' '}
+              <span className="text-gold-gradient">expérience interactive.</span>
             </h1>
 
-            {/* Subtitle in gold */}
-            <p className="text-2xl lg:text-3xl font-bold text-[#D4AF37]">
-              Vous animez. Ils s&apos;en souviennent.
+            {/* Description */}
+            <p className="text-lg lg:text-xl text-gray-300 leading-relaxed max-w-[500px]">
+              Vos invités participent depuis leur téléphone. Tout s&apos;affiche en direct sur écran géant.{' '}
+              <span className="text-white font-medium">Sans application.</span>
             </p>
 
-            {/* Description */}
-            <p className="text-lg text-gray-300 leading-relaxed max-w-[480px]">
-              QR code instantané, écran géant, jeux interactifs.{' '}
-              <span className="text-white font-medium">Sans appli.</span>
-            </p>
+            {/* CTAs principaux */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <a
+                href="#essai"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] text-[#0D0D0F] font-bold text-base hover:brightness-110 shadow-[0_4px_24px_rgba(212,175,55,0.3)] transition-all"
+              >
+                Essayer gratuitement
+                <ArrowRight className="h-5 w-5" />
+              </a>
+              <a
+                href="/#video"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/25 bg-white/5 text-white font-semibold text-base hover:bg-white/10 hover:border-white/40 backdrop-blur-sm transition-all"
+              >
+                <Play className="h-5 w-5 fill-current" />
+                Voir la démo
+              </a>
+            </div>
 
             {/* Target audience */}
             <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#9A9A9F]">
@@ -113,16 +134,7 @@ export default function HeroV5({
           </div>
 
           {/* Right column — login + form */}
-          <div className="w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto space-y-3">
-            {/* Login link */}
-            <a
-              href="/login"
-              className="flex items-center justify-center gap-2 font-bold transition-all px-8 py-4 text-base text-[#D4AF37] hover:text-[#F4D03F] bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 rounded-xl border-2 border-[#D4AF37]/60 hover:border-[#D4AF37] backdrop-blur-sm shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-            >
-              Déjà abonné ? Se connecter
-              <ArrowRight className="h-5 w-5" />
-            </a>
-
+          <div id="essai" className="w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto space-y-3 scroll-mt-24">
             {/* Form card — visible to all */}
             <div
               className="rounded-2xl p-6 border border-[#2A2A2E]"
@@ -194,6 +206,14 @@ export default function HeroV5({
                   </div>
                 )}
             </div>
+
+            {/* Login link — discret */}
+            <p className="text-center text-sm text-gray-400">
+              Déjà abonné ?{' '}
+              <a href="/login" className="text-[#D4AF37] hover:text-[#F4D03F] font-medium transition-colors">
+                Se connecter
+              </a>
+            </p>
           </div>
 
         </div>

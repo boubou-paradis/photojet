@@ -47,7 +47,7 @@ export default function TrialExpiredPage() {
 
             {/* Title */}
             <h1 className="text-2xl font-bold text-white mb-4">
-              Votre essai de 7 jours est terminé
+              Votre essai gratuit est terminé
             </h1>
 
             {/* Description */}

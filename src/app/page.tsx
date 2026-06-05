@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
+import Link from 'next/link'
 import {
   Loader2,
   Check,
@@ -15,15 +17,106 @@ import {
   Palette,
   ImageIcon,
   Target,
+  ArrowRight,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import Footer from '@/components/Footer'
+import SiteHeader from '@/components/marketing/SiteHeader'
+import SiteFooter from '@/components/marketing/SiteFooter'
+import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
 import { toast } from 'sonner'
 
+// LES ANIMATIONS DISPONIBLES — uniquement les fonctionnalités réelles
+const animations = [
+  {
+    name: 'Quiz interactif',
+    img: '/images/games/quiz.png',
+    href: '/quiz-interactif',
+    desc: 'Questions à choix multiples, buzzer, classement en direct. Photo et audio à la révélation de la bonne réponse.',
+  },
+  {
+    name: 'Roue de la Destinée',
+    img: '/images/games/roue-de-la-destinee.png',
+    href: '/roue-de-la-destinee',
+    desc: 'La roue jackpot premium : gages, lots, défis. Le suspense monte sur l\'écran géant.',
+  },
+  {
+    name: 'Photo Mystère',
+    img: '/images/games/photo-mystere.png',
+    href: '/photo-mystere',
+    desc: 'Une photo se dévoile peu à peu. Le premier qui devine remporte la manche.',
+  },
+  {
+    name: 'Le Bon Ordre',
+    img: '/images/games/le-bon-ordre.png',
+    href: '/le-bon-ordre',
+    desc: 'Remettez les éléments dans le bon ordre. Réflexion et rapidité pour tous.',
+  },
+  {
+    name: 'Partage photo en direct',
+    img: '/photo-qr-partage.png',
+    href: '/partage-photo-evenement',
+    desc: 'Vos invités envoient leurs photos depuis leur téléphone : elles s\'affichent en direct sur écran géant.',
+  },
+  {
+    name: 'Borne photo',
+    img: '/images/borne-photo.png',
+    href: '/borne-photo',
+    desc: 'Une borne photo connectée avec impression instantanée et album partagé téléchargeable.',
+  },
+]
+
+// POUR QUI ? — segments avec page dédiée
+const segments = [
+  { emoji: '🎧', label: 'DJ & animateurs', desc: 'Démarquez-vous, fidélisez vos clients, animez sans effort.', href: '/animation-dj-interactive' },
+  { emoji: '💍', label: 'Mariages', desc: 'Faites participer tous les invités et créez des souvenirs.', href: '/animation-mariage-interactive' },
+  { emoji: '🏢', label: 'Entreprises', desc: 'Team building, séminaires et soirées d\'entreprise.', href: '/animation-entreprise-interactive' },
+  { emoji: '⛺', label: 'Campings', desc: 'Des soirées vacanciers qui rassemblent les familles.', href: '/animation-camping-interactive' },
+  { emoji: '🍸', label: 'Bars & restaurants', desc: 'Remplissez votre salle en semaine et fidélisez vos clients.', href: '/animation-bar-restaurant-interactive' },
+  { emoji: '🎉', label: 'Événementiel', desc: 'Tous vos événements transformés en expérience interactive.', href: '/animation-evenementielle-interactive' },
+]
+
+// GALERIE — photos réelles d'événements en priorité (ajoute tes photos dans public/images/gallery/ pour enrichir)
+const galleryPhotos = [
+  { src: '/photo-qr-partage.png', alt: 'Partage photo en direct sur écran géant lors d\'une soirée AnimaJet', featured: true },
+  { src: '/images/games/quiz.png', alt: 'Quiz interactif AnimaJet affiché sur écran géant' },
+  { src: '/images/games/roue-de-la-destinee.png', alt: 'Roue de la Destinée AnimaJet en soirée' },
+  { src: '/images/borne-photo.png', alt: 'Borne photo connectée AnimaJet' },
+  { src: '/images/games/photo-mystere.png', alt: 'Jeu Photo Mystère AnimaJet sur écran géant' },
+]
+
 const PRICE = 29.90
 const WEEKEND_PASS_PRICE = 14.90
+
+// FAQ — source unique : alimente le JSON-LD ET la section visible (toujours synchronisés)
+const faqs = [
+  {
+    q: 'Comment fonctionne AnimaJet ?',
+    a: "Créez votre événement en 2 minutes, partagez le QR code à vos invités, et tout s'affiche en direct sur votre écran géant. Vos invités participent aux jeux et envoient leurs photos depuis leur téléphone.",
+  },
+  {
+    q: 'Faut-il télécharger une application ?',
+    a: "Non. Vos invités scannent simplement le QR code avec l'appareil photo de leur téléphone. Aucune application à installer, ni pour vous ni pour eux.",
+  },
+  {
+    q: 'Combien coûte AnimaJet ?',
+    a: "L'abonnement est à 29,90€/mois, sans engagement et résiliable à tout moment. Un Pass Événement à 14,90€ existe pour un week-end ponctuel. Vous pouvez aussi tester gratuitement pendant 24h en semaine, sans carte bancaire.",
+  },
+  {
+    q: 'De quoi mes invités ont-ils besoin ?',
+    a: "Uniquement d'un smartphone avec une connexion internet. Ils scannent le QR code et participent immédiatement, sans compte à créer.",
+  },
+  {
+    q: 'Puis-je personnaliser AnimaJet à mon image ?',
+    a: "Oui. Affichez votre logo, votre arrière-plan et vos couleurs sur tous les écrans et QR codes. Vos invités voient votre identité, pas la nôtre.",
+  },
+  {
+    q: 'AnimaJet convient-il à mon type d\'événement ?',
+    a: "Oui : mariages, soirées d'entreprise, campings, bars, restaurants, événements DJ... AnimaJet s'adapte à tous les événements où vous voulez faire participer votre public.",
+  },
+]
 
 // JSON-LD Structured Data for SEO
 const jsonLd = {
@@ -41,11 +134,6 @@ const jsonLd = {
         priceCurrency: 'EUR',
         priceValidUntil: '2026-12-31',
         availability: 'https://schema.org/InStock',
-      },
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.9',
-        ratingCount: '47',
       },
       featureList: [
         'Photos et messages en direct',
@@ -83,32 +171,14 @@ const jsonLd = {
     },
     {
       '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: "Comment fonctionne AnimaJet ?",
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: "Créez votre événement en 2 minutes, partagez le QR code aux participants, et les photos s'affichent en direct sur votre écran. Lancez ensuite les jeux interactifs pour animer votre soirée.",
-          },
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: f.a,
         },
-        {
-          '@type': 'Question',
-          name: "Combien coûte AnimaJet ?",
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: "AnimaJet propose un abonnement mensuel à 29,90€/mois, résiliable à tout moment. Vous avez accès à toutes les fonctionnalités : photos en direct, jeux interactifs, borne photo, personnalisation complète.",
-          },
-        },
-        {
-          '@type': 'Question',
-          name: "AnimaJet fonctionne-t-il sans application à télécharger ?",
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: "Oui, les participants scannent simplement le QR code avec leur téléphone. Aucune application à installer.",
-          },
-        },
-      ],
+      })),
     },
   ],
 }
@@ -312,8 +382,11 @@ export default function Home() {
       />
 
       <div className="min-h-screen relative overflow-hidden landing-bg">
-      {/* Social buttons - Fixed top right */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 items-end">
+      {/* Header sticky */}
+      <SiteHeader />
+
+      {/* Social buttons - Fixed bottom left (n'entre pas en conflit avec le header) */}
+      <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 items-start">
         <motion.a
           href="https://www.facebook.com/profile.php?id=61585844578617"
           target="_blank"
@@ -377,6 +450,36 @@ export default function Home() {
 
       {/* Rest of the page */}
       <div className="relative z-10 content-layer">
+        {/* Vidéo démo — emplacement premium (remplacer le poster + lien par l'embed vidéo final) */}
+        <section id="video" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-10"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                EN ACTION
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Voyez l&apos;ambiance, pas l&apos;interface
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                Quelques secondes pour comprendre ce que vivent vos invités avec AnimaJet.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+            >
+              <DemoVideo />
+            </motion.div>
+          </div>
+        </section>
+
         {/* How it works Section */}
         <section id="how-it-works" className="py-20 px-4 section-glow">
           <div className="max-w-5xl mx-auto">
@@ -418,6 +521,121 @@ export default function Home() {
                     <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
                     <p className="text-gray-400 text-sm">{item.description}</p>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Les animations disponibles */}
+        <section id="animations" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-14"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                LES ANIMATIONS
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Une animation pour chaque moment
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                Vos invités participent depuis leur téléphone, tout s&apos;affiche en direct sur écran géant. Sans application à installer.
+              </p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {animations.map((a, i) => (
+                <motion.div
+                  key={a.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 3) * 0.1 }}
+                >
+                  <Link
+                    href={a.href}
+                    className="card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full"
+                  >
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <Image
+                        src={a.img}
+                        alt={`Animation ${a.name} AnimaJet sur écran géant`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/20 to-transparent" />
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                      <h3 className="text-lg font-bold text-white mb-2">{a.name}</h3>
+                      <p className="text-gray-400 text-sm leading-relaxed flex-1">{a.desc}</p>
+                      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                        En savoir plus
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="text-center mt-12">
+              <Link
+                href="/#essai"
+                className="inline-flex items-center gap-2 px-7 py-4 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] text-[#0D0D0F] font-bold hover:brightness-110 shadow-[0_4px_24px_rgba(212,175,55,0.25)] transition-all"
+              >
+                Tester gratuitement toutes les animations
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Pour qui ? */}
+        <section id="pour-qui" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-14"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                POUR QUI ?
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Pensé pour les pros de l&apos;événementiel
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                Quel que soit votre métier, AnimaJet transforme votre événement en expérience interactive.
+              </p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {segments.map((s, i) => (
+                <motion.div
+                  key={s.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 3) * 0.08 }}
+                >
+                  <Link
+                    href={s.href}
+                    className="card-float rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
+                  >
+                    <div className="text-3xl mb-3">{s.emoji}</div>
+                    <h3 className="text-lg font-bold text-white mb-1.5">{s.label}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{s.desc}</p>
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                      Découvrir
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </Link>
                 </motion.div>
               ))}
             </div>
@@ -478,8 +696,103 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Galerie */}
+        <section id="galerie" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                GALERIE
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                AnimaJet en images
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                Des soirées qui prennent vie : vos invités participent, l&apos;ambiance monte, les souvenirs s&apos;affichent en grand.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[140px] md:auto-rows-[190px]">
+              {galleryPhotos.map((p, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 5) * 0.07 }}
+                  className={`relative overflow-hidden rounded-2xl border border-white/10 group ${
+                    p.featured ? 'col-span-2 row-span-2' : ''
+                  }`}
+                >
+                  <Image
+                    src={p.src}
+                    alt={p.alt}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes={p.featured ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 50vw, 25vw'}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Développé par un DJ animateur */}
+        <section id="histoire" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="card-float rounded-3xl p-8 md:p-12 border-[#D4AF37]/20"
+            >
+              <div className="grid md:grid-cols-[1fr_1.4fr] gap-8 md:gap-12 items-center">
+                {/* Visuel — à remplacer par une photo du fondateur en prestation */}
+                <div className="relative aspect-square rounded-2xl overflow-hidden border border-[#D4AF37]/20">
+                  <Image
+                    src="/images/hero-animajet.png"
+                    alt="Fondateur d'AnimaJet, DJ animateur en prestation"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 40vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/60 to-transparent" />
+                </div>
+
+                <div>
+                  <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                    L&apos;HISTOIRE
+                  </span>
+                  <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-5 leading-tight">
+                    Développé par un DJ animateur,<br className="hidden md:block" /> pour les DJ animateurs
+                  </h2>
+                  <div className="space-y-4 text-gray-300 leading-relaxed">
+                    <p>
+                      AnimaJet n&apos;est pas né dans un bureau. Il est né derrière les platines.
+                    </p>
+                    <p>
+                      Après des années à animer des soirées, mariages et événements, le fondateur a vécu les mêmes galères que vous : des invités scotchés à leur chaise, des animations qui retombent, du matériel compliqué à transporter et à installer.
+                    </p>
+                    <p>
+                      Il a donc créé l&apos;outil qu&apos;il aurait rêvé d&apos;avoir : une plateforme simple qui fait participer toute la salle depuis un téléphone, et qui affiche tout en direct sur écran géant. Chaque animation a été pensée et <span className="text-white font-medium">testée sur le terrain, en conditions réelles</span>, soirée après soirée.
+                    </p>
+                  </div>
+                  <p className="mt-6 text-[#D4AF37] font-semibold italic text-lg">
+                    « L&apos;expérience d&apos;un animateur, transformée en logiciel. »
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 px-4 section-glow">
+        <section id="pricing" className="py-20 px-4 section-glow scroll-mt-20">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -707,12 +1020,45 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="mt-auto pb-4">
-          <div className="text-center text-xs text-gray-600">
-            <Footer />
+        {/* FAQ */}
+        <section id="faq" className="py-20 px-4 section-glow scroll-mt-20">
+          <div className="max-w-3xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                FAQ
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Questions fréquentes
+              </h2>
+              <p className="text-gray-400 text-lg">
+                Tout ce qu&apos;il faut savoir avant de vous lancer.
+              </p>
+            </motion.div>
+
+            <div className="space-y-3">
+              {faqs.map((f, i) => (
+                <details
+                  key={i}
+                  className="group card-float rounded-xl border-[#D4AF37]/15 px-5 [&[open]]:border-[#D4AF37]/40"
+                >
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer py-4 list-none [&::-webkit-details-marker]:hidden text-white font-semibold">
+                    {f.q}
+                    <ChevronDown className="h-5 w-5 text-[#D4AF37] flex-shrink-0 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="pb-4 text-gray-400 leading-relaxed">{f.a}</p>
+                </details>
+              ))}
+            </div>
           </div>
-        </footer>
+        </section>
+
+        {/* Footer */}
+        <SiteFooter />
       </div>
       </div>
     </>
