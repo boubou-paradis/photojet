@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import { createClient } from '@supabase/supabase-js'
 
+// Génération du ZIP : laisser plus de temps pour les gros albums
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+// Nombre de photos téléchargées en parallèle (compromis vitesse / mémoire)
+const DOWNLOAD_CONCURRENCY = 8
+
 export async function POST(request: NextRequest) {
   try {
     const { sessionCode, photoIds } = await request.json()
@@ -52,37 +59,56 @@ export async function POST(request: NextRequest) {
     // Create ZIP file
     const zip = new JSZip()
 
-    // Download and add each photo to ZIP
-    for (let i = 0; i < photos.length; i++) {
-      const photo = photos[i]
+    // Capture non-null local (le garde ci-dessus a déjà écarté le cas null/vide)
+    const items = photos
 
-      try {
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('photos')
-          .download(photo.storage_path)
+    // Télécharger les photos en parallèle (par lots) plutôt qu'une par une :
+    // gros gain de vitesse. On conserve l'ordre d'origine pour le nommage.
+    const buffers: (ArrayBuffer | null)[] = new Array(items.length).fill(null)
+    let cursor = 0
 
-        if (downloadError || !fileData) {
-          console.error(`Failed to download photo ${photo.id}:`, downloadError)
-          continue
+    async function worker() {
+      while (true) {
+        const i = cursor++
+        if (i >= items.length) break
+        const photo = items[i]
+
+        try {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('photos')
+            .download(photo.storage_path)
+
+          if (downloadError || !fileData) {
+            console.error(`Failed to download photo ${photo.id}:`, downloadError)
+            continue
+          }
+
+          buffers[i] = await fileData.arrayBuffer()
+        } catch (err) {
+          console.error(`Error processing photo ${photo.id}:`, err)
         }
-
-        const arrayBuffer = await fileData.arrayBuffer()
-        const extension = photo.storage_path.split('.').pop() || 'jpg'
-        zip.file(`photo_${String(i + 1).padStart(3, '0')}.${extension}`, arrayBuffer)
-      } catch (err) {
-        console.error(`Error processing photo ${photo.id}:`, err)
       }
     }
 
-    // Generate ZIP blob
-    const zipBlob = await zip.generateAsync({
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    })
+    await Promise.all(
+      Array.from({ length: Math.min(DOWNLOAD_CONCURRENCY, items.length) }, worker)
+    )
 
-    // Convert blob to array buffer for response
-    const arrayBuffer = await zipBlob.arrayBuffer()
+    // Ajouter au ZIP dans l'ordre d'origine (nommage photo_001, photo_002, ...)
+    for (let i = 0; i < items.length; i++) {
+      const buffer = buffers[i]
+      if (!buffer) continue
+      const extension = items[i].storage_path.split('.').pop() || 'jpg'
+      zip.file(`photo_${String(i + 1).padStart(3, '0')}.${extension}`, buffer)
+    }
+
+    // Generate ZIP buffer — STORE (pas de recompression) : les JPEG/PNG sont
+    // déjà compressés, DEFLATE ne gagne ~rien et coûte beaucoup de CPU.
+    const arrayBuffer = await zip.generateAsync({
+      type: 'arraybuffer',
+      compression: 'STORE',
+      streamFiles: true,
+    })
 
     // Create safe filename
     const safeEventName = session.name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)

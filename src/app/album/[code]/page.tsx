@@ -490,8 +490,7 @@ export default function AlbumPage() {
                     ? 'ring-4 ring-[#D4AF37] scale-[0.98]'
                     : 'hover:scale-[1.02]'
                 }`}
-                onClick={() => toggleSelect(photo.id)}
-                onDoubleClick={() => openLightbox(index)}
+                onClick={() => openLightbox(index)}
               >
                 {/* Image with loading/error handling */}
                 <GalleryImage
@@ -503,8 +502,15 @@ export default function AlbumPage() {
                 {/* Gradient overlay on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-20" />
 
-                {/* Selection checkbox */}
-                <div
+                {/* Selection checkbox (clic = sélectionner, sans ouvrir la lightbox) */}
+                <button
+                  type="button"
+                  aria-label={selectedPhotos.includes(photo.id) ? 'Désélectionner' : 'Sélectionner'}
+                  title={selectedPhotos.includes(photo.id) ? 'Désélectionner' : 'Sélectionner'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleSelect(photo.id)
+                  }}
                   className={`absolute top-3 left-3 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 z-30 ${
                     selectedPhotos.includes(photo.id)
                       ? 'bg-[#D4AF37] border-[#D4AF37] scale-110'
@@ -514,7 +520,7 @@ export default function AlbumPage() {
                   {selectedPhotos.includes(photo.id) && (
                     <Check className="h-4 w-4 text-[#0D0D0F]" />
                   )}
-                </div>
+                </button>
 
                 {/* Download button on hover */}
                 <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-30">
@@ -586,6 +592,21 @@ export default function AlbumPage() {
               <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
                 {currentPhotoIndex + 1} / {photos.length}
               </span>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleSelect(photos[currentPhotoIndex].id)
+                }}
+                variant="outline"
+                className={`font-semibold transition-colors ${
+                  selectedPhotos.includes(photos[currentPhotoIndex].id)
+                    ? 'bg-[#D4AF37] text-[#0D0D0F] border-[#D4AF37] hover:bg-[#F4D03F]'
+                    : 'border-white/30 text-white hover:bg-white/10'
+                }`}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                {selectedPhotos.includes(photos[currentPhotoIndex].id) ? 'Sélectionnée' : 'Sélectionner'}
+              </Button>
               <Button
                 onClick={(e) => {
                   e.stopPropagation()
