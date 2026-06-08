@@ -14,6 +14,10 @@ import { Session } from '@/types/database'
 
 type TabType = 'photo' | 'message'
 type UploadStatus = 'idle' | 'success' | 'pending'
+type SelectionSource = 'camera' | 'gallery'
+
+// Nombre maximum de photos sélectionnables en une fois depuis la galerie
+const MAX_PHOTOS = 3
 
 function getUploadErrorMessage(err: unknown): string {
   if (err instanceof Error) {
@@ -38,8 +42,12 @@ export default function InvitePage() {
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
   const [compressionProgress, setCompressionProgress] = useState(0)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
+  const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(null)
+  const [uploadIndex, setUploadIndex] = useState(0)
+  const [uploadTotal, setUploadTotal] = useState(0)
+  const [partialNotice, setPartialNotice] = useState<string | null>(null)
   const [photoUploadStatus, setPhotoUploadStatus] = useState<UploadStatus>('idle')
   const [uploaderName, setUploaderName] = useState('')
 
@@ -58,13 +66,13 @@ export default function InvitePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
-  const previewUrlRef = useRef<string | null>(null)
+  const previewUrlsRef = useRef<string[]>([])
   const supabase = createClient()
 
-  // Révoquer la blob URL au unmount pour éviter les fuites mémoire
+  // Révoquer les blob URLs au unmount pour éviter les fuites mémoire
   useEffect(() => {
     return () => {
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [])
 
@@ -114,35 +122,79 @@ export default function InvitePage() {
     }
   }, [code, router, supabase])
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const resetInputs = () => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+  }
 
-    // Validation sécurisée avec vérification des magic bytes
-    const validation = await validateImageFile(file)
-    if (!validation.valid) {
-      setError(validation.error || 'Fichier invalide')
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      if (cameraInputRef.current) cameraInputRef.current.value = ''
+  const handleFileSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    source: SelectionSource
+  ) => {
+    const picked = Array.from(e.target.files ?? [])
+    if (picked.length === 0) return
+
+    // Le selfie (caméra) reste toujours sur une seule photo.
+    // La galerie autorise jusqu'à MAX_PHOTOS ; au-delà on tronque + message.
+    const limit = source === 'camera' ? 1 : MAX_PHOTOS
+    const capped = picked.length > limit
+    const toValidate = picked.slice(0, limit)
+
+    // Validation sécurisée (magic bytes) de chaque fichier
+    const validFiles: File[] = []
+    for (const file of toValidate) {
+      const validation = await validateImageFile(file)
+      if (validation.valid) validFiles.push(file)
+    }
+
+    if (validFiles.length === 0) {
+      setError('Format non supporté. Utilisez JPG, PNG, WebP ou HEIC')
+      resetInputs()
       return
     }
 
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
-    const objectUrl = URL.createObjectURL(file)
-    previewUrlRef.current = objectUrl
-    setSelectedFile(file)
-    setPreview(objectUrl)
-    setError(null)
+    // Révoquer les anciennes previews avant d'en créer de nouvelles
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    const urls = validFiles.map((file) => URL.createObjectURL(file))
+    previewUrlsRef.current = urls
+
+    setSelectedFiles(validFiles)
+    setPreviews(urls)
+    setSelectionSource(source)
+    setPartialNotice(null)
     setPhotoUploadStatus('idle')
+
+    if (capped) {
+      setError(`Maximum ${MAX_PHOTOS} photos`)
+    } else if (validFiles.length < toValidate.length) {
+      setError('Certaines photos ont été ignorées (format non supporté)')
+    } else {
+      setError(null)
+    }
+
+    resetInputs()
+  }
+
+  const handleRemovePhoto = (index: number) => {
+    const url = previewUrlsRef.current[index]
+    if (url) URL.revokeObjectURL(url)
+    previewUrlsRef.current = previewUrlsRef.current.filter((_, i) => i !== index)
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setPreviews((prev) => prev.filter((_, i) => i !== index))
+    setError(null)
   }
 
   const handlePhotoUpload = async () => {
-    if (!selectedFile || !session) return
+    const files = selectedFiles
+    if (files.length === 0 || !session) return
 
     setUploading(true)
     setCompressing(true)
     setCompressionProgress(0)
     setError(null)
+    setPartialNotice(null)
+    setUploadTotal(files.length)
+    setUploadIndex(0)
 
     try {
       const { data: freshSession } = await supabase
@@ -154,54 +206,84 @@ export default function InvitePage() {
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
-      // Compress image with progress callback
-      const compressedFile = await compressImage(selectedFile, (progress) => {
-        if (progress.progress !== undefined) {
-          setCompressionProgress(Math.round(progress.progress * 100))
-        }
-        if (progress.stage === 'done') {
-          setCompressing(false)
-        }
-      })
-      setCompressing(false)
-
+      let succeeded = 0
       let lastError: unknown = null
-      for (let attempt = 0; attempt <= 2; attempt++) {
-        if (attempt > 0) {
-          setUploadAttempt(attempt)
-          await new Promise(r => setTimeout(r, 1000 * attempt))
-        }
-        try {
-          const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
-          const { error: uploadError } = await supabase.storage
-            .from('photos')
-            .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
-          if (uploadError) throw uploadError
 
-          const { error: dbError } = await supabase
-            .from('photos')
-            .insert({
-              session_id: session.id,
-              storage_path: fileName,
-              status: isApproved ? 'approved' : 'pending',
-              uploader_name: uploaderName || null,
-              approved_at: isApproved ? new Date().toISOString() : null,
-              source: 'invite',
-            })
-          if (dbError) throw dbError
-          lastError = null
-          break
-        } catch (err) {
-          lastError = err
+      // Traitement SÉQUENTIEL : une seule photo décodée/compressée à la fois
+      // (évite le pic mémoire qui crashe les téléphones bas de gamme).
+      for (let i = 0; i < files.length; i++) {
+        setUploadIndex(i)
+        setUploadAttempt(0)
+        setCompressing(true)
+        setCompressionProgress(0)
+
+        const compressedFile = await compressImage(files[i], (progress) => {
+          if (progress.progress !== undefined) {
+            setCompressionProgress(Math.round(progress.progress * 100))
+          }
+          if (progress.stage === 'done') {
+            setCompressing(false)
+          }
+        })
+        setCompressing(false)
+
+        let photoError: unknown = null
+        for (let attempt = 0; attempt <= 2; attempt++) {
+          if (attempt > 0) {
+            setUploadAttempt(attempt)
+            await new Promise(r => setTimeout(r, 1000 * attempt))
+          }
+          try {
+            const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+            const { error: uploadError } = await supabase.storage
+              .from('photos')
+              .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
+            if (uploadError) throw uploadError
+
+            const { error: dbError } = await supabase
+              .from('photos')
+              .insert({
+                session_id: session.id,
+                storage_path: fileName,
+                status: isApproved ? 'approved' : 'pending',
+                uploader_name: uploaderName || null,
+                approved_at: isApproved ? new Date().toISOString() : null,
+                source: 'invite',
+              })
+            if (dbError) throw dbError
+            photoError = null
+            break
+          } catch (err) {
+            photoError = err
+          }
+        }
+
+        if (photoError) {
+          lastError = photoError
+        } else {
+          succeeded++
         }
       }
-      if (lastError) throw lastError
+
+      // Aucune photo passée → on reste sur l'écran de sélection avec l'erreur.
+      if (succeeded === 0) throw lastError ?? new Error('Upload échoué')
+
+      // Échec partiel : on garde les réussies et on signale les échecs.
+      if (succeeded < files.length) {
+        const failed = files.length - succeeded
+        setPartialNotice(
+          `${succeeded} photo${succeeded > 1 ? 's' : ''} envoyée${succeeded > 1 ? 's' : ''}, ` +
+          `${failed} échouée${failed > 1 ? 's' : ''} — réessayez.`
+        )
+      }
 
       setPhotoUploadStatus(isApproved ? 'success' : 'pending')
-      setSelectedFile(null)
-
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+      previewUrlsRef.current = []
+      setSelectedFiles([])
+      setPreviews([])
+      setSelectionSource(null)
+      resetInputs()
 
     } catch (err) {
       setError(getUploadErrorMessage(err))
@@ -251,18 +333,24 @@ export default function InvitePage() {
   }
 
   const handleCancel = () => {
-    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
-    setSelectedFile(null)
-    setPreview(null)
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    previewUrlsRef.current = []
+    setSelectedFiles([])
+    setPreviews([])
+    setSelectionSource(null)
     setPhotoUploadStatus('idle')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-    if (cameraInputRef.current) cameraInputRef.current.value = ''
+    setError(null)
+    resetInputs()
   }
 
   const handleNewPhoto = () => {
-    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    previewUrlsRef.current = []
     setPhotoUploadStatus('idle')
-    setPreview(null)
+    setPreviews([])
+    setSelectedFiles([])
+    setSelectionSource(null)
+    setPartialNotice(null)
     setUploaderName('')
     setPrintRequested(false)
   }
@@ -273,7 +361,9 @@ export default function InvitePage() {
   }
 
   const handlePrintRequest = async () => {
-    if (!selectedFile || !session) return
+    // L'impression reste sur UNE seule photo (cf. décision produit).
+    const printFile = selectedFiles.length === 1 ? selectedFiles[0] : null
+    if (!printFile || !session) return
 
     setPrintRequesting(true)
     setError(null)
@@ -306,7 +396,7 @@ export default function InvitePage() {
       const moderationEnabled = modSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
-      const compressedFile = await compressImage(selectedFile, (progress) => {
+      const compressedFile = await compressImage(printFile, (progress) => {
         if (progress.progress !== undefined) {
           setCompressionProgress(Math.round(progress.progress * 100))
         }
@@ -369,10 +459,12 @@ export default function InvitePage() {
 
       setPrintRequested(true)
       setPhotoUploadStatus(isApproved ? 'success' : 'pending')
-      setSelectedFile(null)
-
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+      previewUrlsRef.current = []
+      setSelectedFiles([])
+      setPreviews([])
+      setSelectionSource(null)
+      resetInputs()
 
     } catch (err) {
       setError(getUploadErrorMessage(err))
@@ -533,8 +625,11 @@ export default function InvitePage() {
                           >
                             <CheckCircle className="h-12 w-12 text-emerald-500" />
                           </motion.div>
-                          <h2 className="text-2xl font-bold text-white mb-2">Photo envoyée !</h2>
-                          <p className="text-gray-400 mb-2">Votre photo est en ligne !</p>
+                          <h2 className="text-2xl font-bold text-white mb-2">Photo{uploadTotal > 1 ? 's' : ''} envoyée{uploadTotal > 1 ? 's' : ''} !</h2>
+                          <p className="text-gray-400 mb-2">{uploadTotal > 1 ? 'Vos photos sont en ligne !' : 'Votre photo est en ligne !'}</p>
+                          {partialNotice && (
+                            <p className="text-amber-400 text-sm mb-2">{partialNotice}</p>
+                          )}
                           {printRequested && (
                             <p className="text-[#E91E63] text-sm mb-4 flex items-center justify-center gap-1">
                               <Printer className="h-4 w-4" />
@@ -554,8 +649,11 @@ export default function InvitePage() {
                           >
                             <Clock className="h-12 w-12 text-[#D4AF37]" />
                           </motion.div>
-                          <h2 className="text-2xl font-bold text-white mb-2">Photo envoyée !</h2>
+                          <h2 className="text-2xl font-bold text-white mb-2">Photo{uploadTotal > 1 ? 's' : ''} envoyée{uploadTotal > 1 ? 's' : ''} !</h2>
                           <p className="text-gray-400 mb-2">En attente de validation</p>
+                          {partialNotice && (
+                            <p className="text-amber-400 text-sm mb-2">{partialNotice}</p>
+                          )}
                           {printRequested && (
                             <p className="text-[#E91E63] text-sm mb-4 flex items-center justify-center gap-1">
                               <Printer className="h-4 w-4" />
@@ -577,21 +675,43 @@ export default function InvitePage() {
                     </div>
                   </div>
                 </div>
-              ) : preview ? (
+              ) : previews.length > 0 ? (
                 <div className="relative">
                   <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-3xl blur-xl" />
                   <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/20 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
                     <div className="p-6">
-                      <div className="relative aspect-square rounded-xl overflow-hidden mb-4 border-2 border-[#D4AF37]/30 shadow-lg shadow-black/50">
-                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                        <button
-                          onClick={handleCancel}
-                          className="absolute top-3 right-3 p-2.5 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-black/90 transition-all hover:scale-110"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
+                      {previews.length === 1 ? (
+                        <div className="relative aspect-square rounded-xl overflow-hidden mb-4 border-2 border-[#D4AF37]/30 shadow-lg shadow-black/50">
+                          <img src={previews[0]} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            onClick={handleCancel}
+                            className="absolute top-3 right-3 p-2.5 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-black/90 transition-all hover:scale-110"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                          {previews.map((url, i) => (
+                            <div key={url} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#D4AF37]/30 shadow-lg shadow-black/50">
+                              <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
+                              <button
+                                onClick={() => handleRemovePhoto(i)}
+                                className="absolute top-1.5 right-1.5 p-1.5 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-black/90 transition-all hover:scale-110"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {selectionSource === 'gallery' && (
+                        <p className="text-center text-sm text-[#D4AF37] font-semibold mb-4">
+                          {previews.length}/{MAX_PHOTOS} photo{previews.length > 1 ? 's' : ''} sélectionnée{previews.length > 1 ? 's' : ''}
+                        </p>
+                      )}
 
                       <Input
                         placeholder="Votre prénom (optionnel)"
@@ -610,17 +730,18 @@ export default function InvitePage() {
                         {uploading ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {compressing ? `Optimisation... ${compressionProgress}%` : uploadAttempt > 0 ? `Nouvelle tentative (${uploadAttempt + 1}/3)...` : 'Envoi en cours...'}
+                            {uploadTotal > 1 && <span className="mr-1">Photo {uploadIndex + 1}/{uploadTotal} ·</span>}
+                            {compressing ? `Optimisation ${compressionProgress}%` : uploadAttempt > 0 ? `Nouvelle tentative (${uploadAttempt + 1}/3)...` : 'Envoi...'}
                           </>
                         ) : (
                           <>
                             <Send className="mr-2 h-5 w-5" />
-                            Envoyer la photo
+                            {selectedFiles.length > 1 ? `Envoyer les ${selectedFiles.length} photos` : 'Envoyer la photo'}
                           </>
                         )}
                       </Button>
 
-                      {printEnabled && (
+                      {printEnabled && selectedFiles.length === 1 && (
                         <Button
                           onClick={handlePrintRequest}
                           disabled={uploading || printRequesting || printLimitReached}
@@ -662,14 +783,15 @@ export default function InvitePage() {
                         type="file"
                         accept="image/*"
                         capture="environment"
-                        onChange={handleFileSelect}
+                        onChange={(e) => handleFileSelect(e, 'camera')}
                         className="hidden"
                       />
                       <input
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={handleFileSelect}
+                        multiple
+                        onChange={(e) => handleFileSelect(e, 'gallery')}
                         className="hidden"
                       />
 
@@ -687,7 +809,7 @@ export default function InvitePage() {
                         className="w-full h-16 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 rounded-xl text-lg font-semibold"
                       >
                         <ImagePlus className="mr-3 h-6 w-6" />
-                        Choisir dans ma galerie
+                        Choisir dans ma galerie (jusqu&apos;à {MAX_PHOTOS})
                       </Button>
 
                       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
