@@ -113,6 +113,8 @@ export default function SettingsPage() {
     print_enabled: false,
     print_mode: 'manual' as PrintMode,
     print_limit: null as number | null,
+    print_paid: false,
+    print_price: '' as string, // saisi en euros (string pour l'input), parsé au save
   })
 
   useEffect(() => {
@@ -157,6 +159,8 @@ export default function SettingsPage() {
         print_enabled: selectedSession.print_enabled ?? false,
         print_mode: selectedSession.print_mode ?? 'manual',
         print_limit: selectedSession.print_limit ?? null,
+        print_paid: selectedSession.print_paid ?? false,
+        print_price: selectedSession.print_price != null ? String(Number(selectedSession.print_price)) : '',
       })
     }
   }, [selectedSession])
@@ -306,6 +310,11 @@ export default function SettingsPage() {
           print_enabled: formData.print_enabled,
           print_mode: formData.print_mode,
           print_limit: formData.print_limit,
+          print_paid: formData.print_paid,
+          // Prix : parse en nombre (ou null si vide/invalide)
+          print_price: formData.print_paid && formData.print_price.trim() !== ''
+            ? (Number.isFinite(parseFloat(formData.print_price)) ? parseFloat(formData.print_price) : null)
+            : null,
         })
         .eq('id', selectedSession.id)
 
@@ -1339,6 +1348,50 @@ export default function SettingsPage() {
                   </>
                 )}
               </div>
+
+              {/* Impression payante */}
+              {formData.print_enabled && (
+                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-white text-sm">Impression payante</Label>
+                      <p className="text-xs text-[#6B6B70]">
+                        Afficher un prix indicatif à l&apos;invité avant impression (paiement sur place, pas en ligne)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.print_paid}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, print_paid: checked }))
+                      }
+                    />
+                  </div>
+
+                  {formData.print_paid && (
+                    <div className="mt-3 space-y-1.5 max-w-[200px]">
+                      <Label className="text-[#B0B0B5] text-sm">Prix de l&apos;impression</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.50"
+                          placeholder="2.00"
+                          value={formData.print_price}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, print_price: e.target.value }))
+                          }
+                          className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white pr-8"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0B0B5] text-sm pointer-events-none">€</span>
+                      </div>
+                      <p className="text-xs text-[#6B6B70]">
+                        Prix indicatif affiché à l&apos;invité (paiement physique avec l&apos;établissement)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Statut imprimante */}
               {formData.print_enabled && (

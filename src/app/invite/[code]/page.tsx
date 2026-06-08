@@ -60,6 +60,7 @@ export default function InvitePage() {
   // Print states
   const [printRequesting, setPrintRequesting] = useState(false)
   const [printRequested, setPrintRequested] = useState(false)
+  const [showPaidPrintModal, setShowPaidPrintModal] = useState(false)
 
   const [uploadAttempt, setUploadAttempt] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -478,6 +479,24 @@ export default function InvitePage() {
   const printLimitReached = printEnabled && session?.print_limit !== null && session?.print_limit !== undefined
     && (session?.print_count ?? 0) >= session.print_limit
 
+  // Impression payante : prix indicatif affiché avant impression (paiement physique)
+  const printPaid = (session?.print_paid ?? false) && session?.print_price != null
+  const printPrice = printPaid ? Number(session?.print_price) : null
+
+  // Si impression payante → modale de confirmation, sinon impression directe (inchangé)
+  const handlePrintClick = () => {
+    if (printPaid && printPrice != null && !Number.isNaN(printPrice)) {
+      setShowPaidPrintModal(true)
+    } else {
+      handlePrintRequest()
+    }
+  }
+
+  const handleConfirmPaidPrint = () => {
+    setShowPaidPrintModal(false)
+    handlePrintRequest()
+  }
+
   const messagesEnabled = session?.messages_enabled ?? true
 
   if (loading) {
@@ -743,7 +762,7 @@ export default function InvitePage() {
 
                       {printEnabled && selectedFiles.length === 1 && (
                         <Button
-                          onClick={handlePrintRequest}
+                          onClick={handlePrintClick}
                           disabled={uploading || printRequesting || printLimitReached}
                           className="w-full h-12 mt-2 bg-gradient-to-r from-[#E91E63] to-[#F06292] text-white font-semibold text-base rounded-xl shadow-lg shadow-[#E91E63]/25 disabled:opacity-50"
                         >
@@ -933,6 +952,57 @@ export default function InvitePage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Modale de confirmation — Impression payante */}
+      <AnimatePresence>
+        {showPaidPrintModal && printPrice != null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowPaidPrintModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-sm bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#E91E63]/30 overflow-hidden shadow-2xl"
+            >
+              <div className="h-1 bg-gradient-to-r from-transparent via-[#E91E63] to-transparent" />
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E91E63]/10 flex items-center justify-center border-2 border-[#E91E63]/30">
+                  <Printer className="h-8 w-8 text-[#E91E63]" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Impression payante</h2>
+                <p className="text-gray-300 mb-1">
+                  L&apos;impression de votre photo est au prix de{' '}
+                  <span className="font-bold text-[#E91E63]">{printPrice.toFixed(2)}€</span>
+                </p>
+                <p className="text-xs text-gray-500 mb-6">
+                  Le paiement se fait sur place auprès de l&apos;établissement.
+                </p>
+
+                <Button
+                  onClick={handleConfirmPaidPrint}
+                  className="w-full h-14 bg-gradient-to-r from-[#E91E63] to-[#F06292] text-white font-bold text-base rounded-xl shadow-lg shadow-[#E91E63]/25"
+                >
+                  <Printer className="mr-2 h-5 w-5" />
+                  Confirmer et imprimer
+                </Button>
+                <button
+                  onClick={() => setShowPaidPrintModal(false)}
+                  className="w-full mt-2 py-3 text-gray-400 hover:text-white font-medium text-sm transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

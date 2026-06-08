@@ -179,6 +179,9 @@ export interface Session {
   print_mode: PrintMode
   print_limit: number | null
   print_count: number
+  // Impression payante (avertissement informatif côté guest, paiement physique)
+  print_paid: boolean
+  print_price: number | null // Prix en euros, ex. 2.00
 }
 
 // Mystery Photo types
