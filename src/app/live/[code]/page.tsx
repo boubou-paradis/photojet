@@ -12,7 +12,7 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
-import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users } from 'lucide-react'
+import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users, Megaphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo, Message, LogoPosition } from '@/types/database'
 import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
@@ -26,6 +26,7 @@ import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 type SlideshowItem =
   | { type: 'photo'; data: Photo }
   | { type: 'message'; data: Message }
+  | { type: 'promo'; data: { path: string; index: number } }
 
 // Rocket Animation Component
 interface RocketProps {
@@ -405,6 +406,14 @@ export default function LivePage() {
     const slideshowMode = session?.slideshow_mode || 'all'
     const approvedMessages = messages.filter(m => m.status === 'approved')
 
+    // Affiches promotionnelles : actives uniquement si activées ET au moins 1 affiche.
+    // L'ordre du tableau = ordre de défilement cyclique. Index dérivé de la position
+    // des photos (donc déterministe et stable après rechargement).
+    const promoEnabled = session?.promo_enabled === true
+    const promoFrequency = session?.promo_frequency || 10
+    const promoAffiches: string[] = promoEnabled ? parseJsonArray<string>(session?.promo_affiches) : []
+    const promoActive = promoEnabled && promoAffiches.length > 0
+
     // Filter photos based on slideshow mode
     let filteredPhotos = [...photos]
     if (slideshowMode === 'last30' && photos.length > 30) {
@@ -419,36 +428,46 @@ export default function LivePage() {
     }
 
     // If only messages (no photos), show all messages
+    // (les affiches ne s'intercalent que dans le flux de photos)
     if (filteredPhotos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
       return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
     }
 
-    // If messages disabled or no messages, show only photos
-    if (!messagesEnabled || approvedMessages.length === 0) {
+    // If messages disabled or no messages AND no promo → show only photos (comportement historique)
+    if ((!messagesEnabled || approvedMessages.length === 0) && !promoActive) {
       return filteredPhotos.map(photo => ({ type: 'photo' as const, data: photo }))
     }
 
-    // Interleave photos and messages
+    // Interleave photos with messages and/or promo affiches
     const items: SlideshowItem[] = []
     let msgIdx = 0
+    let promoSlot = 0
+    const hasMessages = messagesEnabled && approvedMessages.length > 0
 
     filteredPhotos.forEach((photo, idx) => {
       items.push({ type: 'photo', data: photo })
 
       // Insert a message after every 'frequency' photos
-      if ((idx + 1) % frequency === 0 && approvedMessages.length > 0) {
+      if (hasMessages && (idx + 1) % frequency === 0) {
         items.push({ type: 'message', data: approvedMessages[msgIdx % approvedMessages.length] })
         msgIdx++
+      }
+
+      // Insert une affiche promo après chaque bloc de 'promoFrequency' photos
+      if (promoActive && (idx + 1) % promoFrequency === 0) {
+        const afficheIndex = promoSlot % promoAffiches.length
+        items.push({ type: 'promo', data: { path: promoAffiches[afficheIndex], index: afficheIndex } })
+        promoSlot++
       }
     })
 
     // If we have messages but none were inserted (less photos than frequency), add one at the end
-    if (approvedMessages.length > 0 && msgIdx === 0) {
+    if (hasMessages && msgIdx === 0) {
       items.push({ type: 'message', data: approvedMessages[0] })
     }
 
     return items
-  }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode])
+  }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode, session?.promo_enabled, session?.promo_frequency, session?.promo_affiches])
 
   // Get current item duration
   const getCurrentDuration = useCallback(() => {
@@ -1325,10 +1344,37 @@ export default function LivePage() {
         </>
       ) : (
         <>
-          {/* Photo/Message slideshow */}
+          {/* Photo/Message/Affiche slideshow */}
           <AnimatePresence mode="wait">
             {currentItem?.type === 'message' ? (
               <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} />
+            ) : currentItem?.type === 'promo' ? (
+              <motion.div
+                key={`promo-${currentIndex}-${currentItem.data.index}`}
+                variants={transitions[transitionType]}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                className="absolute inset-0 flex items-center justify-center p-6 z-10"
+              >
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="relative"
+                >
+                  <img
+                    src={getStorageUrl(currentItem.data.path) || ''}
+                    alt="Affiche promotionnelle"
+                    className="max-w-full max-h-[90vh] object-contain"
+                    style={{
+                      borderRadius: '12px',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.2)',
+                    }}
+                  />
+                </motion.div>
+              </motion.div>
             ) : currentItem?.type === 'photo' ? (
               <motion.div
                 key={`photo-${currentItem.data.id}`}
@@ -1412,6 +1458,12 @@ export default function LivePage() {
                         <span className="text-[#D4AF37]/80 text-sm flex items-center gap-1">
                           <MessageCircle className="h-3 w-3" />
                           Message
+                        </span>
+                      )}
+                      {currentItem?.type === 'promo' && (
+                        <span className="text-[#D4AF37]/80 text-sm flex items-center gap-1">
+                          <Megaphone className="h-3 w-3" />
+                          Affiche promotionnelle
                         </span>
                       )}
                     </div>

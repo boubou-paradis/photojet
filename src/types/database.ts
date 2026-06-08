@@ -120,6 +120,10 @@ export interface Session {
   messages_enabled: boolean
   messages_frequency: number // Show message every X photos
   messages_duration: number // Duration in seconds
+  // Affiches promotionnelles settings
+  promo_enabled: boolean
+  promo_frequency: number // Show une affiche toutes les X photos
+  promo_affiches: string | null // JSON array de chemins storage (ordonné, max 5)
   // Mystery Photo Game settings
   mystery_photo_enabled: boolean
   mystery_photo_url: string | null // Legacy single photo (kept for backwards compatibility)

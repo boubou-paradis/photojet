@@ -20,6 +20,8 @@ import {
   CheckCircle,
   XCircle,
   FileText,
+  Megaphone,
+  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +48,17 @@ import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosi
 import { generateSessionCode } from '@/lib/image-utils'
 import { toast } from 'sonner'
 
+// Parse la colonne JSON promo_affiches (chemins storage ordonnés) en tableau
+function parsePromoAffiches(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr.filter((p): p is string => typeof p === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 export default function SettingsPage() {
   const [, setSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -56,8 +69,11 @@ export default function SettingsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingPromo, setUploadingPromo] = useState(false)
   const bgInputRef = useRef<HTMLInputElement>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
+  const promoInputRef = useRef<HTMLInputElement>(null)
+  const MAX_PROMO_AFFICHES = 5
   const router = useRouter()
   const supabase = createClient()
 
@@ -89,6 +105,10 @@ export default function SettingsPage() {
     messages_enabled: true,
     messages_frequency: 4,
     messages_duration: 8,
+    // Affiches promotionnelles settings
+    promo_enabled: false,
+    promo_frequency: 10,
+    promo_affiches: [] as string[],
     // Print settings
     print_enabled: false,
     print_mode: 'manual' as PrintMode,
@@ -129,6 +149,10 @@ export default function SettingsPage() {
         messages_enabled: selectedSession.messages_enabled ?? true,
         messages_frequency: selectedSession.messages_frequency ?? 4,
         messages_duration: selectedSession.messages_duration ?? 8,
+        // Affiches promotionnelles settings
+        promo_enabled: selectedSession.promo_enabled ?? false,
+        promo_frequency: selectedSession.promo_frequency ?? 10,
+        promo_affiches: parsePromoAffiches(selectedSession.promo_affiches),
         // Print settings
         print_enabled: selectedSession.print_enabled ?? false,
         print_mode: selectedSession.print_mode ?? 'manual',
@@ -274,6 +298,10 @@ export default function SettingsPage() {
           messages_enabled: formData.messages_enabled,
           messages_frequency: formData.messages_frequency,
           messages_duration: formData.messages_duration,
+          // Affiches promotionnelles settings
+          promo_enabled: formData.promo_enabled,
+          promo_frequency: formData.promo_frequency,
+          promo_affiches: JSON.stringify(formData.promo_affiches),
           // Print settings
           print_enabled: formData.print_enabled,
           print_mode: formData.print_mode,
@@ -372,6 +400,58 @@ export default function SettingsPage() {
       await supabase.storage.from('photos').remove([formData.custom_logo])
     }
     setFormData((prev) => ({ ...prev, custom_logo: null }))
+  }
+
+  async function handleUploadPromo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !selectedSession) return
+
+    // Validation : JPG/PNG, max 5 Mo
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      toast.error('Format non supporté : utilisez JPG ou PNG')
+      if (promoInputRef.current) promoInputRef.current.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Affiche trop lourde (max 5 Mo)')
+      if (promoInputRef.current) promoInputRef.current.value = ''
+      return
+    }
+    if (formData.promo_affiches.length >= MAX_PROMO_AFFICHES) {
+      toast.error(`Maximum ${MAX_PROMO_AFFICHES} affiches`)
+      if (promoInputRef.current) promoInputRef.current.value = ''
+      return
+    }
+
+    setUploadingPromo(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const filePath = `promos/${selectedSession.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      // Append à la fin → préserve l'ordre d'upload (défilement cyclique ordonné)
+      setFormData((prev) => ({ ...prev, promo_affiches: [...prev.promo_affiches, filePath] }))
+      toast.success('Affiche promotionnelle ajoutée')
+    } catch (err) {
+      toast.error('Erreur lors de l\'upload')
+      console.error(err)
+    } finally {
+      setUploadingPromo(false)
+      if (promoInputRef.current) promoInputRef.current.value = ''
+    }
+  }
+
+  async function handleRemovePromo(path: string) {
+    await supabase.storage.from('photos').remove([path])
+    setFormData((prev) => ({
+      ...prev,
+      promo_affiches: prev.promo_affiches.filter((p) => p !== path),
+    }))
   }
 
   async function handleDelete() {
@@ -1021,6 +1101,132 @@ export default function SettingsPage() {
                   </>
                 )}
               </div>
+            </div>
+          </motion.div>
+
+          {/* Affiches promotionnelles - pleine largeur */}
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                  <Megaphone className="h-4 w-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">Affiches promotionnelles</h3>
+                    {/* BADGE-NOUVEAU : retirer ce span pour supprimer le badge */}
+                    <span className="px-1.5 py-0.5 rounded-md bg-[#D4AF37] text-[#1A1A1E] text-[10px] font-bold uppercase tracking-wide">
+                      Nouveau
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#6B6B70]">Afficher une affiche toutes les X photos dans le diaporama</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-white text-sm">Activer les affiches promotionnelles</Label>
+                  <p className="text-xs text-[#6B6B70]">
+                    Intercale vos affiches entre les photos des invités
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.promo_enabled}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, promo_enabled: checked }))
+                  }
+                />
+              </div>
+
+              {formData.promo_enabled && (
+                <>
+                  <div className="space-y-1.5 max-w-xs">
+                    <Label className="text-[#B0B0B5] text-sm">Fréquence d&apos;affichage</Label>
+                    <Select
+                      value={String(formData.promo_frequency)}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, promo_frequency: Number(value) }))
+                      }
+                    >
+                      <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                        <SelectItem value="5">Toutes les 5 photos</SelectItem>
+                        <SelectItem value="10">Toutes les 10 photos</SelectItem>
+                        <SelectItem value="15">Toutes les 15 photos</SelectItem>
+                        <SelectItem value="20">Toutes les 20 photos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-[#6B6B70]">
+                      Les affiches défilent en boucle, dans l&apos;ordre d&apos;ajout
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[#B0B0B5] text-sm">
+                        Affiches ({formData.promo_affiches.length}/{MAX_PROMO_AFFICHES})
+                      </Label>
+                      <input
+                        ref={promoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={handleUploadPromo}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={uploadingPromo || formData.promo_affiches.length >= MAX_PROMO_AFFICHES}
+                        onClick={() => promoInputRef.current?.click()}
+                        className="text-[#D4AF37] hover:text-amber-300 border border-[#D4AF37]/30 hover:border-[#D4AF37] disabled:opacity-40"
+                      >
+                        {uploadingPromo ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4 mr-1" />
+                        )}
+                        Ajouter une affiche
+                      </Button>
+                    </div>
+
+                    {formData.promo_affiches.length === 0 ? (
+                      <p className="text-xs text-[#6B6B70] py-4 text-center border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
+                        Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max 5 Mo).
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {formData.promo_affiches.map((path, i) => (
+                          <div key={path} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-[#D4AF37]/20 bg-[#2E2E33]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={getStorageUrl(path) || ''}
+                              alt={`Affiche ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-semibold">
+                              {i + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePromo(path)}
+                              className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white hover:bg-red-500/80 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
 
