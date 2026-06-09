@@ -6,7 +6,7 @@ const URL = 'https://animajet.fr/partage-photo-evenement'
 export const metadata: Metadata = {
   title: 'Partage Photo en Direct | Mur Photo sur Écran Géant pour Événements',
   description: 'Vos invités envoient leurs photos depuis leur téléphone, elles s\'affichent en direct sur écran géant. Mur photo interactif et album partagé téléchargeable. Sans application. Essai gratuit 24h.',
-  keywords: ['partage photo événement', 'mur photo interactif', 'photo en direct écran géant', 'diaporama mariage', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
+  keywords: ['partage photo événement', 'partage photos événement', 'animation photos en direct', 'animation photo direct', 'mur photo interactif', 'photo en direct écran géant', 'diaporama mariage', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Partage Photo en Direct | AnimaJet',

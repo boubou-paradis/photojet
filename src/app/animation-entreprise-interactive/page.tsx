@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: 'Animation entreprise interactive : séminaires, team building, soirées corporate. Photos en direct, quiz personnalisés, jeux d\'équipe. Renforcez la cohésion. Essai gratuit 24h.',
   keywords: [
     'animation entreprise',
+    'animation soirée entreprise',
     'animation team building',
     'animation séminaire',
     'animation corporate',

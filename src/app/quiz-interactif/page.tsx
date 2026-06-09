@@ -5,8 +5,8 @@ const URL = 'https://animajet.fr/quiz-interactif'
 
 export const metadata: Metadata = {
   title: 'Quiz Interactif sur Écran Géant | Animation Quiz pour Événements',
-  description: 'Lancez un quiz interactif où vos invités répondent depuis leur téléphone. Buzzer, classement en direct, photo et audio à la révélation. Sans application. Essai gratuit 24h.',
-  keywords: ['quiz interactif', 'quiz événement', 'quiz soirée', 'animation quiz', 'quiz écran géant', 'quiz smartphone', 'blind test quiz', 'quiz mariage'],
+  description: 'Lancez un quiz interactif ou un blind test musical où vos invités répondent depuis leur téléphone. Buzzer, classement en direct, photo et audio à la révélation. Sans application. Essai gratuit 24h.',
+  keywords: ['quiz interactif', 'quiz événement interactif', 'quiz événement', 'quiz soirée', 'animation quiz', 'quiz écran géant', 'quiz smartphone', 'blind test', 'blind test interactif', 'blind test musical', 'quiz mariage'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Quiz Interactif sur Écran Géant | AnimaJet',

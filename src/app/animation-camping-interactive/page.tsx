@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: 'Animez vos soirées camping : quiz, roue de la destinée, photo mystère et partage photo en direct sur écran géant. Vos vacanciers participent depuis leur téléphone, sans application. Essai gratuit 24h.',
   keywords: [
     'animation camping',
+    'animation camping interactive',
     'soirée camping',
     'animation vacanciers',
     'jeux camping',

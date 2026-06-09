@@ -76,6 +76,50 @@ export function buildAnimationJsonLd({
   }
 }
 
+/** Construit le graphe JSON-LD (SoftwareApplication + FAQPage) d'une page fonctionnalité. */
+export function buildSoftwareAppJsonLd({
+  name,
+  description,
+  url,
+  featureList,
+  faq,
+}: {
+  name: string
+  description: string
+  url: string
+  featureList: string[]
+  faq: { q: string; a: string }[]
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'SoftwareApplication',
+        name,
+        description,
+        url,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        featureList,
+        offers: {
+          '@type': 'Offer',
+          price: '29.90',
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: faq.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+    ],
+  }
+}
+
 export default function AnimationDetailPage({
   content,
   jsonLd,

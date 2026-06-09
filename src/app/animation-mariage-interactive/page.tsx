@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: 'Animation mariage interactive : photos des invités en direct sur écran géant, quiz musical, jeux interactifs. Vos invités participent, votre soirée décolle. Essai gratuit 24h.',
   keywords: [
     'animation mariage',
+    'animation de mariage',
     'photo booth mariage',
     'animation soirée mariage',
     'jeux mariage',

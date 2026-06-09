@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   keywords: [
     'animation bar',
     'animation restaurant',
+    'animation bar restaurant',
     'soirée quiz bar',
     'blind test bar',
     'quiz restaurant',

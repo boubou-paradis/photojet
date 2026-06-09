@@ -16,6 +16,8 @@ const animations = [
   { label: 'Photo Mystère', href: '/photo-mystere' },
   { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
   { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
+  { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
+  { label: 'Diaporama live', href: '/diaporama-live-evenement' },
   { label: 'Borne photo', href: '/borne-photo' },
 ]
 
@@ -29,6 +31,7 @@ const segments = [
 ]
 
 const resources = [
+  { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   { label: 'Guide des animations', href: '/animations-interactives-evenementielles' },
   { label: 'Comment ça marche', href: '/#how-it-works' },
   { label: 'Tarifs', href: '/#pricing' },
