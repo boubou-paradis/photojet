@@ -245,6 +245,8 @@ export interface QuizQuestion {
   timeLimit: number // Seconds
   points: number
   audioUrl?: string | null // Audio played on correct answer reveal
+  questionAudioUrl?: string | null // Audio joué PENDANT la question (coupe la musique d'ambiance) — distinct de audioUrl (révélation)
+  questionAudioName?: string | null // Nom du fichier audio de la question (affichage éditeur)
   photoUrl?: string | null // Photo displayed on correct answer reveal
   revealDuration?: number | null // How long the reveal media shows/plays: 5 | 10 | 15 | 20 (seconds, default 10)
 }

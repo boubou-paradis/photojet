@@ -115,6 +115,16 @@ export default function QuizPage() {
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   const questionAudioInputRef = useRef<HTMLInputElement>(null)
 
+  // Audio de la QUESTION (joué PENDANT la question sur le PC animateur ; coupe l'ambiance)
+  const [questionAudioUploading, setQuestionAudioUploading] = useState(false)
+  const [questionAudioVolume, setQuestionAudioVolume] = useState(0.7)
+  const [isQuestionAudioPlaying, setIsQuestionAudioPlaying] = useState(false)
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null) // lecture pendant le jeu
+  const questionAudioFileInputRef = useRef<HTMLInputElement>(null) // input upload
+  // Preview éditeur de l'audio de question (séparée de la preview de révélation)
+  const [previewQuestionAudioPlaying, setPreviewQuestionAudioPlaying] = useState(false)
+  const previewQuestionAudioRef = useRef<HTMLAudioElement | null>(null)
+
   // Photo de la bonne réponse (affichée sur l'écran public au reveal)
   const [photoUploading, setPhotoUploading] = useState(false)
   const questionPhotoInputRef = useRef<HTMLInputElement>(null)
@@ -125,6 +135,13 @@ export default function QuizPage() {
   const answerAudioRef = useRef<HTMLAudioElement | null>(null)
   // Cache local des blobs audio pour éviter de re-télécharger depuis Supabase
   const audioLocalCacheRef = useRef<Map<string, string>>(new Map())
+  // Préchargement de TOUS les audios au lancement (fiabilité connexion en soirée)
+  const [audioPreload, setAudioPreload] = useState<{
+    total: number
+    done: number
+    failed: number
+    status: 'idle' | 'loading' | 'ready'
+  }>({ total: 0, done: 0, failed: 0, status: 'idle' })
 
   // Import CSV
   const [showCsvImportModal, setShowCsvImportModal] = useState(false)
@@ -203,6 +220,25 @@ export default function QuizPage() {
         previewAudioRef.current.load()
         previewAudioRef.current = null
       }
+      if (questionAudioRef.current) {
+        questionAudioRef.current.pause()
+        questionAudioRef.current.onended = null
+        questionAudioRef.current.onerror = null
+        questionAudioRef.current.src = ''
+        questionAudioRef.current = null
+      }
+      if (previewQuestionAudioRef.current) {
+        previewQuestionAudioRef.current.pause()
+        previewQuestionAudioRef.current.onended = null
+        previewQuestionAudioRef.current.onerror = null
+        previewQuestionAudioRef.current.src = ''
+        previewQuestionAudioRef.current = null
+      }
+      // Libérer les blobs audio mis en cache (préchargement + preview)
+      audioLocalCacheRef.current.forEach((blobUrl) => {
+        if (blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl)
+      })
+      audioLocalCacheRef.current.clear()
     }
   }, [])
 
@@ -326,8 +362,8 @@ export default function QuizPage() {
       if (newTime <= 0) {
         setIsAnswering(false)
         setShowResults(true)
-        pauseAudio()
-        playAnswerAudio()
+        // Stoppe l'audio de question puis joue le reveal / reprend l'ambiance
+        handleRevealAudio()
         supabase.from('sessions').update({
           quiz_is_answering: false,
           quiz_show_results: true,
@@ -841,6 +877,127 @@ export default function QuizPage() {
     }
   }
 
+  // === Audio de la QUESTION (≠ audio de révélation) ===
+
+  // Upload de l'audio joué PENDANT la question
+  async function handleQuestionPromptAudioUpload(e: React.ChangeEvent<HTMLInputElement>, questionId: string) {
+    const file = e.target.files?.[0]
+    if (!file || !session) return
+
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Seuls les fichiers audio sont acceptés')
+      return
+    }
+
+    // 1. Blob local immédiat pour preview instantanée
+    const localBlobUrl = URL.createObjectURL(file)
+    const questionAudioName = file.name.replace(/\.[^.]+$/, '')
+
+    const tempUpdated = {
+      ...editingQuestion!,
+      questionAudioUrl: localBlobUrl,
+      questionAudioName,
+    } as QuizQuestion
+    setEditingQuestion(tempUpdated)
+    audioLocalCacheRef.current.set(localBlobUrl, localBlobUrl)
+
+    toast.success('Audio de la question prêt ! Upload en cours...')
+    setQuestionAudioUploading(true)
+
+    // 2. Upload en arrière-plan vers Supabase (préfixe distinct du reveal)
+    try {
+      const fileName = `quiz-question-audio/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, file, { contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName)
+      const supabaseUrl = urlData.publicUrl
+
+      audioLocalCacheRef.current.set(supabaseUrl, localBlobUrl)
+
+      const finalUpdated = {
+        ...editingQuestion!,
+        questionAudioUrl: supabaseUrl,
+        questionAudioName,
+      } as QuizQuestion
+      setEditingQuestion(finalUpdated)
+      updateQuestion(finalUpdated)
+
+      toast.success('Audio de la question sauvegardé !')
+    } catch (err) {
+      console.error('Error uploading question audio:', err)
+      toast.error('Erreur upload - L\'audio fonctionne localement mais ne sera pas sauvegardé')
+      updateQuestion(tempUpdated)
+    } finally {
+      setQuestionAudioUploading(false)
+    }
+
+    if (questionAudioFileInputRef.current) questionAudioFileInputRef.current.value = ''
+  }
+
+  async function removeQuestionPromptAudio(_questionId: string) {
+    if (!editingQuestion) return
+
+    if (editingQuestion.questionAudioUrl) {
+      const path = editingQuestion.questionAudioUrl.match(/photos\/(.+)/)
+      if (path?.[1]) {
+        try {
+          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
+        } catch { /* chemin invalide, ignoré */ }
+      }
+    }
+
+    const updated = { ...editingQuestion, questionAudioUrl: null, questionAudioName: null }
+    setEditingQuestion(updated)
+    updateQuestion(updated)
+    stopQuestionPreviewAudio()
+    toast.success('Audio de la question supprimé')
+  }
+
+  function toggleQuestionPreviewAudio(url: string) {
+    if (previewQuestionAudioRef.current) {
+      previewQuestionAudioRef.current.pause()
+      previewQuestionAudioRef.current = null
+      if (previewQuestionAudioPlaying) {
+        setPreviewQuestionAudioPlaying(false)
+        return
+      }
+    }
+
+    setPreviewQuestionAudioPlaying(false)
+    const cachedUrl = audioLocalCacheRef.current.get(url) || url
+    const audio = new Audio(cachedUrl)
+    audio.volume = questionAudioVolume
+    audio.onended = () => {
+      setPreviewQuestionAudioPlaying(false)
+      previewQuestionAudioRef.current = null
+    }
+    audio.onerror = () => {
+      setPreviewQuestionAudioPlaying(false)
+      previewQuestionAudioRef.current = null
+      toast.error('Impossible de lire l\'audio')
+    }
+    previewQuestionAudioRef.current = audio
+    audio.play().then(() => {
+      setPreviewQuestionAudioPlaying(true)
+    }).catch(() => {
+      setPreviewQuestionAudioPlaying(false)
+      previewQuestionAudioRef.current = null
+      toast.error('Impossible de lire l\'audio')
+    })
+  }
+
+  function stopQuestionPreviewAudio() {
+    if (previewQuestionAudioRef.current) {
+      previewQuestionAudioRef.current.pause()
+      previewQuestionAudioRef.current = null
+      setPreviewQuestionAudioPlaying(false)
+    }
+  }
+
   // Afficher le lobby (sans lancer le quiz)
   async function showLobby() {
     if (!session || questions.length === 0) {
@@ -933,6 +1090,10 @@ export default function QuizPage() {
       setTimeLeft(null)
       setAnswerStats([0, 0, 0, 0])
 
+      // Précharger tous les audios en local dès le lancement (sans bloquer) pour
+      // une lecture fiable au reveal même si le réseau devient instable.
+      void preloadAllAnswerAudio()
+
       broadcastGameState({
         gameActive: true,
         questions,
@@ -965,8 +1126,13 @@ export default function QuizPage() {
     setTimeLeft(currentQ.timeLimit)
     setAnswerStats([0, 0, 0, 0])
 
-    // Play background audio if available
-    playAudio()
+    // Audio de la question : si présent, il coupe l'ambiance et prend le relais.
+    // Sinon, comportement actuel = musique d'ambiance pendant la question.
+    if (currentQ.questionAudioUrl) {
+      playQuestionAudio()
+    } else {
+      playAudio()
+    }
 
     // Précharger l'audio de la réponse pendant que les joueurs répondent
     preloadAnswerAudio()
@@ -1001,9 +1167,9 @@ export default function QuizPage() {
     setIsAnswering(false)
     setShowResults(true)
 
-    // Pause background audio & play answer audio (sur le PC animateur)
-    pauseAudio()
-    playAnswerAudio()
+    // Stoppe l'audio de question (si présent), puis joue le son de révélation
+    // ou reprend l'ambiance — jamais 2 sources en même temps.
+    handleRevealAudio()
 
     await supabase
       .from('sessions')
@@ -1029,8 +1195,9 @@ export default function QuizPage() {
   async function nextQuestion() {
     if (!session) return
 
-    // Stopper l'audio de la réponse précédente & relancer la musique de fond
+    // Stopper les audios de la question précédente & relancer la musique de fond
     stopAnswerAudio()
+    stopQuestionAudio()
     if (audioRef.current) {
       audioRef.current.play().then(() => setIsAudioPlaying(true)).catch(() => {})
     }
@@ -1104,6 +1271,22 @@ export default function QuizPage() {
       previewAudioRef.current.load()
       previewAudioRef.current = null
     }
+    // Audios de la question (lecture en jeu + preview éditeur)
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause()
+      questionAudioRef.current.onended = null
+      questionAudioRef.current.onerror = null
+      questionAudioRef.current.src = ''
+      questionAudioRef.current = null
+    }
+    if (previewQuestionAudioRef.current) {
+      previewQuestionAudioRef.current.pause()
+      previewQuestionAudioRef.current.onended = null
+      previewQuestionAudioRef.current.onerror = null
+      previewQuestionAudioRef.current.src = ''
+      previewQuestionAudioRef.current = null
+    }
+    setIsQuestionAudioPlaying(false)
     // Révoquer les URLs blob
     if (quizAudio && quizAudio.startsWith('blob:')) {
       URL.revokeObjectURL(quizAudio)
@@ -1191,6 +1374,22 @@ export default function QuizPage() {
       previewAudioRef.current.load()
       previewAudioRef.current = null
     }
+    // Audios de la question (lecture en jeu + preview éditeur)
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause()
+      questionAudioRef.current.onended = null
+      questionAudioRef.current.onerror = null
+      questionAudioRef.current.src = ''
+      questionAudioRef.current = null
+    }
+    if (previewQuestionAudioRef.current) {
+      previewQuestionAudioRef.current.pause()
+      previewQuestionAudioRef.current.onended = null
+      previewQuestionAudioRef.current.onerror = null
+      previewQuestionAudioRef.current.src = ''
+      previewQuestionAudioRef.current = null
+    }
+    setIsQuestionAudioPlaying(false)
     // Révoquer les URLs blob
     if (quizAudio && quizAudio.startsWith('blob:')) {
       URL.revokeObjectURL(quizAudio)
@@ -1336,6 +1535,150 @@ export default function QuizPage() {
     if (!audioRef.current) return
     audioRef.current.pause()
     setIsAudioPlaying(false)
+  }
+
+  // Reprendre la musique d'ambiance (si une piste est chargée)
+  function resumeAmbiance() {
+    if (!audioRef.current) return
+    audioRef.current.play().then(() => setIsAudioPlaying(true)).catch(() => {})
+  }
+
+  // === Lecture de l'audio de la QUESTION (PC animateur) ===
+
+  function changeQuestionAudioVolume(newVolume: number) {
+    const clamped = Math.max(0, Math.min(1, newVolume))
+    setQuestionAudioVolume(clamped)
+    if (questionAudioRef.current) questionAudioRef.current.volume = clamped
+    if (previewQuestionAudioRef.current) previewQuestionAudioRef.current.volume = clamped
+  }
+
+  // Couper l'ambiance et lancer l'audio de la question (depuis le cache si préchargé)
+  function playQuestionAudio() {
+    const currentQ = questions[currentQuestionIndex]
+    if (!currentQ?.questionAudioUrl) return
+
+    // Couper la musique d'ambiance (l'audio question prend le relais)
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause()
+      setIsAudioPlaying(false)
+    }
+
+    // Nettoyer un éventuel élément précédent
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause()
+      questionAudioRef.current.onended = null
+      questionAudioRef.current.onerror = null
+      questionAudioRef.current.src = ''
+      questionAudioRef.current = null
+    }
+
+    const src = audioLocalCacheRef.current.get(currentQ.questionAudioUrl) || currentQ.questionAudioUrl
+    const audio = new Audio(src)
+    audio.volume = questionAudioVolume
+    audio.onended = () => setIsQuestionAudioPlaying(false)
+    audio.onerror = () => setIsQuestionAudioPlaying(false)
+    questionAudioRef.current = audio
+    audio.play().then(() => {
+      setIsQuestionAudioPlaying(true)
+    }).catch((err) => {
+      // Autoplay refusé (rare sur le PC animateur car déclenché par un clic) :
+      // le mini-player « Activer le son » permet de relancer manuellement.
+      console.error('Question audio play failed:', err)
+      setIsQuestionAudioPlaying(false)
+    })
+  }
+
+  // Relancer/mettre en pause manuellement (mini-player + secours autoplay)
+  function toggleQuestionAudio() {
+    if (questionAudioRef.current) {
+      if (questionAudioRef.current.paused) {
+        questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => {})
+      } else {
+        questionAudioRef.current.pause()
+        setIsQuestionAudioPlaying(false)
+      }
+    } else {
+      // Pas encore d'élément (autoplay initial échoué) → (re)lancer
+      playQuestionAudio()
+    }
+  }
+
+  function stopQuestionAudio() {
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause()
+      questionAudioRef.current.onended = null
+      questionAudioRef.current.onerror = null
+      questionAudioRef.current.src = ''
+      questionAudioRef.current = null
+    }
+    setIsQuestionAudioPlaying(false)
+  }
+
+  // Gère le son au moment de la révélation, sans jamais superposer 2 sources.
+  // Utilise les refs (sûr depuis le timer auto-reveal ET le clic manuel).
+  function handleRevealAudio() {
+    const q = questionsRef.current[currentQuestionIndexRef.current]
+    // Toujours stopper l'audio de la question d'abord
+    stopQuestionAudio()
+
+    if (q?.audioUrl) {
+      // Audio de révélation présent → comportement existant inchangé
+      pauseAudio()
+      playAnswerAudio()
+    } else if (q?.questionAudioUrl) {
+      // La question avait un audio de question mais PAS d'audio de révélation
+      // → on reprend la musique d'ambiance (si une piste est chargée)
+      resumeAmbiance()
+    } else {
+      // Ni audio question ni audio révélation → comportement existant strict
+      pauseAudio()
+      playAnswerAudio()
+    }
+  }
+
+  // Précharger TOUS les audios de réponse en local (cache mémoire) au lancement
+  // du quiz. Objectif : la lecture au reveal ne dépend plus du réseau pendant la
+  // soirée — un Wi-Fi instable ne coupe plus le son sur le PC animateur.
+  async function preloadAllAnswerAudio() {
+    // URLs distantes uniques restant à télécharger (reveal + audio de question),
+    // on ignore les blobs locaux et ce qui est déjà en cache.
+    const urls = Array.from(
+      new Set(
+        questions
+          .flatMap((q) => [q.audioUrl, q.questionAudioUrl])
+          .filter(
+            (u): u is string =>
+              !!u && !u.startsWith('blob:') && !audioLocalCacheRef.current.has(u)
+          )
+      )
+    )
+
+    if (urls.length === 0) {
+      setAudioPreload({ total: 0, done: 0, failed: 0, status: 'ready' })
+      return
+    }
+
+    setAudioPreload({ total: urls.length, done: 0, failed: 0, status: 'loading' })
+
+    let done = 0
+    let failed = 0
+    // Téléchargements en parallèle, progression mise à jour au fil de l'eau
+    await Promise.all(
+      urls.map(async (url) => {
+        try {
+          const res = await fetch(url)
+          const blob = await res.blob()
+          const blobUrl = URL.createObjectURL(blob)
+          audioLocalCacheRef.current.set(url, blobUrl)
+          done++
+        } catch {
+          failed++
+        }
+        setAudioPreload({ total: urls.length, done, failed, status: 'loading' })
+      })
+    )
+
+    setAudioPreload({ total: urls.length, done, failed, status: 'ready' })
   }
 
   // Précharger l'audio de la réponse en arrière-plan
@@ -1762,11 +2105,114 @@ export default function QuizPage() {
                     </div>
                   </div>
 
-                  {/* Audio de la bonne réponse */}
+                  {/* Audio de la QUESTION (joué pendant la question) */}
+                  <div className="mt-2 p-3 bg-[#1A1A1E] rounded-lg border border-[#14B8A6]/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Music className="h-4 w-4 text-[#14B8A6]" />
+                      <label className="text-gray-300 text-xs font-medium">Audio de la question</label>
+                    </div>
+                    <input
+                      ref={questionAudioFileInputRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleQuestionPromptAudioUpload(e, editingQuestion.id)}
+                      className="hidden"
+                    />
+                    {editingQuestion.questionAudioUrl ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[#14B8A6]">
+                          <Music className="h-3 w-3 shrink-0" />
+                          <span className="text-xs font-medium truncate flex-1">
+                            {editingQuestion.questionAudioName || 'Audio de la question'}
+                          </span>
+                          {questionAudioUploading && (
+                            <span className="text-xs text-yellow-400 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Sauvegarde...
+                            </span>
+                          )}
+                          {previewQuestionAudioPlaying && <span className="text-xs animate-pulse">&#9835; Lecture...</span>}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleQuestionPreviewAudio(editingQuestion.questionAudioUrl!)}
+                            className={`shrink-0 p-2 rounded-lg transition-colors ${
+                              previewQuestionAudioPlaying
+                                ? 'bg-green-500 text-white'
+                                : 'bg-[#14B8A6]/20 text-[#14B8A6] hover:bg-[#14B8A6]/30'
+                            }`}
+                          >
+                            {previewQuestionAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </button>
+                          <button
+                            onClick={stopQuestionPreviewAudio}
+                            className={`shrink-0 p-2 rounded-lg transition-colors ${
+                              previewQuestionAudioPlaying
+                                ? 'bg-red-500/30 text-red-400 hover:bg-red-500/50'
+                                : 'bg-gray-600/20 text-gray-500'
+                            }`}
+                          >
+                            <Square className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => questionAudioFileInputRef.current?.click()}
+                            className="px-2 py-1.5 text-xs bg-[#2E2E33] text-gray-300 rounded hover:bg-[#3E3E43]"
+                          >
+                            Changer
+                          </button>
+                          <button
+                            onClick={() => removeQuestionPromptAudio(editingQuestion.id)}
+                            className="shrink-0 p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => changeQuestionAudioVolume(0)}
+                            className="shrink-0 p-1 text-gray-400 hover:text-[#14B8A6] transition-colors"
+                          >
+                            <VolumeX className="h-3.5 w-3.5" />
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={questionAudioVolume}
+                            onChange={(e) => changeQuestionAudioVolume(parseFloat(e.target.value))}
+                            className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#14B8A6]"
+                          />
+                          <button
+                            onClick={() => changeQuestionAudioVolume(1)}
+                            className="shrink-0 p-1 text-gray-400 hover:text-[#14B8A6] transition-colors"
+                          >
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(questionAudioVolume * 100)}%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => questionAudioFileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-2 bg-[#2E2E33] hover:bg-[#3E3E43] text-gray-300 rounded-lg text-sm transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Ajouter un fichier audio
+                      </button>
+                    )}
+                    <p className="text-gray-600 text-[10px] mt-1.5">
+                      Se joue PENDANT la question (coupe la musique d&apos;ambiance, qui reprend ensuite). Distinct de l&apos;audio de la réponse.
+                    </p>
+                  </div>
+
+                  {/* Audio de la réponse (révélation) */}
                   <div className="mt-2 p-3 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
                     <div className="flex items-center gap-2 mb-2">
                       <Music className="h-4 w-4 text-[#E91E63]" />
-                      <label className="text-gray-400 text-xs font-medium">Piste audio (bonne réponse)</label>
+                      <label className="text-gray-400 text-xs font-medium">Audio de la réponse (révélation)</label>
                     </div>
                     <input
                       ref={questionAudioInputRef}
@@ -2270,6 +2716,70 @@ export default function QuizPage() {
                 </div>
               )}
 
+              {/* Mini-player audio de la QUESTION (pendant la question, sur le PC animateur) */}
+              {isAnswering && currentQuestion?.questionAudioUrl && (
+                <div className="p-3 bg-[#14B8A6]/10 border border-[#14B8A6]/30 rounded-lg mb-4">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-[#14B8A6] flex-shrink-0" />
+                    <span className="text-[#14B8A6] text-sm font-medium flex-1 truncate">
+                      {currentQuestion.questionAudioName || 'Audio de la question'}
+                      {isQuestionAudioPlaying && <span className="animate-pulse ml-1">&#9835;</span>}
+                    </span>
+                    <button
+                      onClick={toggleQuestionAudio}
+                      className={`shrink-0 p-2 rounded-lg transition-colors ${
+                        isQuestionAudioPlaying
+                          ? 'bg-[#14B8A6] text-white'
+                          : 'bg-[#14B8A6]/20 text-[#14B8A6] hover:bg-[#14B8A6]/30'
+                      }`}
+                    >
+                      {isQuestionAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={stopQuestionAudio}
+                      className="shrink-0 p-2 rounded-lg bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 transition-colors"
+                    >
+                      <Square className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {/* Secours autoplay : si le son n'est pas parti tout seul */}
+                  {!isQuestionAudioPlaying && (
+                    <button
+                      onClick={toggleQuestionAudio}
+                      className="mt-2 w-full py-2 rounded-lg bg-[#14B8A6]/20 text-[#14B8A6] text-sm font-medium hover:bg-[#14B8A6]/30 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Volume2 className="h-4 w-4" />
+                      🔊 Activer le son
+                    </button>
+                  )}
+                  {/* Volume */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => changeQuestionAudioVolume(0)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-[#14B8A6] transition-colors"
+                    >
+                      <VolumeX className="h-3.5 w-3.5" />
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={questionAudioVolume}
+                      onChange={(e) => changeQuestionAudioVolume(parseFloat(e.target.value))}
+                      className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#14B8A6]"
+                    />
+                    <button
+                      onClick={() => changeQuestionAudioVolume(1)}
+                      className="shrink-0 p-1 text-gray-400 hover:text-[#14B8A6] transition-colors"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(questionAudioVolume * 100)}%</span>
+                  </div>
+                </div>
+              )}
+
               {/* Mini-player audio bonne réponse (lecture sur le PC animateur) */}
               {showResults && currentQuestion?.audioUrl && (
                 <div className="p-3 bg-[#E91E63]/10 border border-[#E91E63]/30 rounded-lg mb-4">
@@ -2330,6 +2840,32 @@ export default function QuizPage() {
                   <ImageIcon className="h-4 w-4 text-[#3B82F6] flex-shrink-0" />
                   <span className="text-[#3B82F6] text-sm font-medium">Photo affichée sur l&apos;écran public</span>
                 </div>
+              )}
+
+              {/* Indicateur de préchargement audio (fiabilité connexion en soirée) */}
+              {audioPreload.total > 0 && (
+                audioPreload.status === 'loading' ? (
+                  <div className="p-2.5 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg mb-4 flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 text-[#D4AF37] flex-shrink-0 animate-spin" />
+                    <span className="text-[#D4AF37] text-sm font-medium">
+                      Préchargement audio… {audioPreload.done}/{audioPreload.total}
+                    </span>
+                  </div>
+                ) : audioPreload.failed > 0 ? (
+                  <div className="p-2.5 bg-orange-500/10 border border-orange-500/30 rounded-lg mb-4 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-400 flex-shrink-0" />
+                    <span className="text-orange-300 text-sm font-medium">
+                      {audioPreload.done}/{audioPreload.total} audios préchargés ({audioPreload.failed} échec{audioPreload.failed > 1 ? 's' : ''} — relecture réseau au besoin)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-green-500/10 border border-green-500/30 rounded-lg mb-4 flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                    <span className="text-green-300 text-sm font-medium">
+                      ✓ Audios prêts ({audioPreload.done}/{audioPreload.total}) — lecture garantie sans réseau
+                    </span>
+                  </div>
+                )
               )}
 
               {/* Controls */}
