@@ -251,6 +251,16 @@ export interface QuizQuestion {
   revealDuration?: number | null // How long the reveal media shows/plays: 5 | 10 | 15 | 20 (seconds, default 10)
 }
 
+// Quiz sauvegardé dans la bibliothèque personnelle de l'utilisateur (réutilisable d'une session à l'autre)
+export interface SavedQuiz {
+  id: string
+  user_id: string
+  name: string
+  questions: QuizQuestion[] // même structure que sessions.quiz_questions
+  created_at: string
+  updated_at: string
+}
+
 export interface QuizAnswer {
   odientId: string
   odientName: string

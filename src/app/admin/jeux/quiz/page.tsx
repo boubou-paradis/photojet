@@ -41,7 +41,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
-import { Session, QuizQuestion, QuizParticipant } from '@/types/database'
+import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 
@@ -152,6 +152,14 @@ export default function QuizPage() {
   // Quiz pré-packagés
   const [showPrepackagedModal, setShowPrepackagedModal] = useState(false)
   const [addedQuizIds, setAddedQuizIds] = useState<Set<string>>(new Set())
+
+  // Bibliothèque personnelle de quiz (saved_quizzes)
+  const [showSaveQuizModal, setShowSaveQuizModal] = useState(false)
+  const [showLoadQuizModal, setShowLoadQuizModal] = useState(false)
+  const [saveQuizName, setSaveQuizName] = useState('')
+  const [savingQuiz, setSavingQuiz] = useState(false)
+  const [savedQuizzes, setSavedQuizzes] = useState<SavedQuiz[]>([])
+  const [loadingSavedQuizzes, setLoadingSavedQuizzes] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -641,6 +649,106 @@ export default function QuizPage() {
       return `"${field.replace(/"/g, '""')}"`
     }
     return field
+  }
+
+  // === Bibliothèque personnelle de quiz (saved_quizzes) ===
+
+  // Sauvegarder le quiz courant dans la bibliothèque de l'utilisateur
+  async function handleSaveQuiz() {
+    const name = saveQuizName.trim()
+    if (!name) {
+      toast.error('Donnez un nom à votre quiz')
+      return
+    }
+    if (questions.length === 0) {
+      toast.error('Ajoutez au moins une question avant de sauvegarder')
+      return
+    }
+    // Garde-fou : refuser tant qu'un média n'est pas uploadé (URL blob locale non réutilisable)
+    if (audioUploading || photoUploading || questionAudioUploading) {
+      toast.error('Patientez la fin de l\'upload des médias avant de sauvegarder')
+      return
+    }
+    const hasBlob = questions.some(q =>
+      [q.audioUrl, q.questionAudioUrl, q.photoUrl].some(u => typeof u === 'string' && u.startsWith('blob:'))
+    )
+    if (hasBlob) {
+      toast.error('Un média est encore en cours d\'upload. Réessayez dans un instant.')
+      return
+    }
+
+    setSavingQuiz(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Session expirée, reconnectez-vous')
+        return
+      }
+      const { error } = await supabase
+        .from('saved_quizzes')
+        .insert({ user_id: user.id, name, questions })
+
+      if (error) throw error
+
+      toast.success('Quiz sauvegardé dans votre bibliothèque ✅')
+      setShowSaveQuizModal(false)
+      setSaveQuizName('')
+    } catch (err) {
+      console.error('Error saving quiz:', err)
+      toast.error('Erreur lors de la sauvegarde du quiz')
+    } finally {
+      setSavingQuiz(false)
+    }
+  }
+
+  // Charger la liste des quiz sauvegardés de l'utilisateur (RLS = seulement les siens)
+  async function loadSavedQuizzes() {
+    setShowLoadQuizModal(true)
+    setLoadingSavedQuizzes(true)
+    try {
+      const { data, error } = await supabase
+        .from('saved_quizzes')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setSavedQuizzes((data as SavedQuiz[]) || [])
+    } catch (err) {
+      console.error('Error loading saved quizzes:', err)
+      toast.error('Erreur lors du chargement de la bibliothèque')
+      setSavedQuizzes([])
+    } finally {
+      setLoadingSavedQuizzes(false)
+    }
+  }
+
+  // Charger un quiz sauvegardé dans l'éditeur (remplace les questions actuelles)
+  function handleLoadQuiz(quiz: SavedQuiz) {
+    if (!window.confirm('Charger ce quiz remplacera les questions actuelles. Continuer ?')) return
+
+    // Régénérer les ids pour éviter toute collision sur la session courante
+    const loaded: QuizQuestion[] = (quiz.questions || []).map((q, i) => ({
+      ...q,
+      id: `${Date.now()}_${i}`,
+    }))
+
+    setQuestions(loaded)
+    saveQuestionsToDatabase(loaded)
+    setShowLoadQuizModal(false)
+    toast.success(`Quiz « ${quiz.name} » chargé (${loaded.length} question${loaded.length > 1 ? 's' : ''})`)
+  }
+
+  // Supprimer un quiz de la bibliothèque
+  async function handleDeleteSavedQuiz(quizId: string) {
+    if (!window.confirm('Supprimer définitivement ce quiz de votre bibliothèque ?')) return
+    try {
+      const { error } = await supabase.from('saved_quizzes').delete().eq('id', quizId)
+      if (error) throw error
+      setSavedQuizzes(prev => prev.filter(q => q.id !== quizId))
+      toast.success('Quiz supprimé de la bibliothèque')
+    } catch (err) {
+      console.error('Error deleting saved quiz:', err)
+      toast.error('Erreur lors de la suppression')
+    }
   }
 
   // Ajouter un quiz pré-packagé
@@ -1934,6 +2042,22 @@ export default function QuizPage() {
                     Exporter
                   </button>
                   <button
+                    onClick={() => setShowSaveQuizModal(true)}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+                    title="Sauvegarder ce quiz dans votre bibliothèque"
+                  >
+                    <span aria-hidden>💾</span>
+                    Sauvegarder
+                  </button>
+                  <button
+                    onClick={loadSavedQuizzes}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+                    title="Charger un quiz de votre bibliothèque"
+                  >
+                    <span aria-hidden>📂</span>
+                    Charger
+                  </button>
+                  <button
                     onClick={() => setShowPrepackagedModal(true)}
                     className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
                     title="Quiz prêts à l'emploi"
@@ -3203,6 +3327,143 @@ export default function QuizPage() {
             <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
               <button
                 onClick={() => setShowPrepackagedModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modale : Sauvegarder le quiz dans la bibliothèque */}
+      {showSaveQuizModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-md w-full overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">💾</div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Sauvegarder ce quiz</h3>
+                  <p className="text-sm text-gray-400">{questions.length} question{questions.length > 1 ? 's' : ''} dans votre bibliothèque</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSaveQuizModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <label className="text-gray-400 text-xs">Nom du quiz</label>
+              <input
+                type="text"
+                value={saveQuizName}
+                onChange={(e) => setSaveQuizName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !savingQuiz) handleSaveQuiz() }}
+                autoFocus
+                placeholder="Ex : Blind Test Années 80, Quiz Mariage 2025"
+                className="w-full bg-[#2E2E33] text-white rounded-lg px-3 py-2.5 border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none mt-1"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => setShowSaveQuizModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveQuiz}
+                disabled={savingQuiz}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-xl font-bold hover:from-[#F4D03F] hover:to-[#D4AF37] flex items-center gap-2 transition-all duration-200 disabled:opacity-60"
+              >
+                {savingQuiz ? <Loader2 className="h-4 w-4 animate-spin" /> : <span aria-hidden>💾</span>}
+                Sauvegarder
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modale : Charger un quiz sauvegardé */}
+      {showLoadQuizModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">📂</div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Votre bibliothèque de quiz</h3>
+                  <p className="text-sm text-gray-400">Charger remplace les questions actuelles</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLoadQuizModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {loadingSavedQuizzes ? (
+                <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Chargement…
+                </div>
+              ) : savedQuizzes.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-4xl mb-3">📂</div>
+                  <p>Aucun quiz sauvegardé pour l&apos;instant.</p>
+                  <p className="text-sm text-gray-500 mt-1">Créez un quiz puis cliquez sur « 💾 Sauvegarder ».</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {savedQuizzes.map((quiz) => (
+                    <div
+                      key={quiz.id}
+                      className="card-gold rounded-xl p-4 flex items-center justify-between gap-3 hover:border-[#D4AF37]/50 transition-all duration-200"
+                    >
+                      <button
+                        onClick={() => handleLoadQuiz(quiz)}
+                        className="flex-1 text-left group"
+                      >
+                        <h4 className="text-white font-bold group-hover:text-[#D4AF37] transition-colors">{quiz.name}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {(quiz.questions?.length ?? 0)} question{(quiz.questions?.length ?? 0) > 1 ? 's' : ''}
+                          {' · '}
+                          {new Date(quiz.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => handleLoadQuiz(quiz)}
+                        className="shrink-0 px-3 py-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-lg font-bold text-sm hover:from-[#F4D03F] hover:to-[#D4AF37] transition-all duration-200"
+                      >
+                        Charger
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSavedQuiz(quiz.id)}
+                        className="shrink-0 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        title="Supprimer de la bibliothèque"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => setShowLoadQuizModal(false)}
                 className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
               >
                 Fermer

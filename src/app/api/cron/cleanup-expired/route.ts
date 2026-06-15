@@ -409,6 +409,12 @@ async function deleteUserData(
     .delete()
     .eq('user_id', userId)
 
+  // 10b. Delete saved quizzes (bibliothèque personnelle) — cascade auth aussi en filet
+  await supabase
+    .from('saved_quizzes')
+    .delete()
+    .eq('user_id', userId)
+
   // 11. Delete subscription record
   await supabase
     .from('subscriptions')
