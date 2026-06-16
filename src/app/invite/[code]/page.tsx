@@ -102,14 +102,6 @@ export default function InvitePage() {
 
         if (error) throw error
 
-        const now = new Date()
-        const expiresAt = new Date(data.expires_at)
-        if (expiresAt < now) {
-          setError('Cette session a expiré')
-          setLoading(false)
-          return
-        }
-
         setSession(data)
       } catch {
         setError('Session introuvable')

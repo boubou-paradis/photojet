@@ -844,8 +844,10 @@ fetch(${JSON.stringify(imageUrl)})
       }
 
       const code = await generateUniqueCode()
+      // Champ neutre : l'accès est gouverné par l'abonnement (is_active), pas par une durée.
+      // Date lointaine (+10 ans) pour qu'expires_at ne bloque jamais un abonné actif.
       const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 7)
+      expiresAt.setDate(expiresAt.getDate() + 3650)
 
       const { data, error } = await supabase
         .from('sessions')
