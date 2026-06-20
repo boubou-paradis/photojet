@@ -12,6 +12,7 @@ const WHATSAPP_URL = 'https://chat.whatsapp.com/J8SuTrkzsAS0YFMxFhLdC4'
 
 const animations = [
   { label: 'Quiz interactif', href: '/quiz-interactif' },
+  { label: 'Blind test musical', href: '/blind-test-musical' },
   { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
   { label: 'Photo Mystère', href: '/photo-mystere' },
   { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
@@ -33,6 +34,7 @@ const segments = [
 
 const events = [
   { label: 'Mariage', href: '/animation-mariage-interactive' },
+  { label: 'Quiz de mariage', href: '/quiz-mariage' },
   { label: 'Anniversaire', href: '/animation-anniversaire' },
   { label: 'Soirée privée', href: '/animation-soiree-privee' },
   { label: 'Centres de vacances', href: '/animation-centre-vacances' },
@@ -41,6 +43,7 @@ const events = [
 const resources = [
   { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   { label: 'Guide des animations', href: '/animations-interactives-evenementielles' },
+  { label: 'Alternative à Kahoot', href: '/alternative-kahoot-evenement' },
   { label: 'Comment ça marche', href: '/#how-it-works' },
   { label: 'Tarifs', href: '/#pricing' },
   { label: 'Essai gratuit 24h', href: '/#essai' },

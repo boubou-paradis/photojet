@@ -25,6 +25,7 @@ export const SEO_PAGES: SeoPage[] = [
 
   // — Animations (jeux) —
   { slug: 'quiz-interactif', label: 'Quiz interactif', blurb: 'Quiz et blind test musical sur écran géant, réponses au téléphone.', category: 'animation', priority: 0.8 },
+  { slug: 'blind-test-musical', label: 'Blind test musical', blurb: 'Diffusez les extraits, les invités buzzent au téléphone, classement en direct.', category: 'animation', priority: 0.8 },
   { slug: 'roue-de-la-destinee', label: 'Roue de la Destinée', blurb: 'La roue de la fortune qui désigne le sort de vos invités.', category: 'animation', priority: 0.8 },
   { slug: 'photo-mystere', label: 'Photo Mystère', blurb: 'Une photo se dévoile case par case, à qui devinera le premier.', category: 'animation', priority: 0.8 },
   { slug: 'le-bon-ordre', label: 'Le Bon Ordre', blurb: 'Le jeu de classement qui oppose deux équipes en direct.', category: 'animation', priority: 0.8 },
@@ -43,9 +44,11 @@ export const SEO_PAGES: SeoPage[] = [
   { slug: 'animation-camping-interactive', label: 'Campings & vacances', blurb: 'Animez les soirées de vos vacanciers sans matériel.', category: 'cible', priority: 0.9 },
   { slug: 'animation-entreprise-interactive', label: 'Soirées d’entreprise', blurb: 'Team building et soirées de CE qui fédèrent.', category: 'cible', priority: 0.9 },
   { slug: 'animation-evenementielle-interactive', label: 'Agences événementielles', blurb: 'La plateforme des pros de l’événementiel.', category: 'cible', priority: 0.9 },
+  { slug: 'alternative-kahoot-evenement', label: 'Alternative à Kahoot', blurb: 'AnimaJet pour l’événementiel festif : la différence d’usage avec Kahoot.', category: 'cible', priority: 0.7 },
 
   // — Types d’événement —
   { slug: 'animation-mariage-interactive', label: 'Mariage', blurb: 'Faites participer tous vos invités le jour J.', category: 'evenement', priority: 0.9 },
+  { slug: 'quiz-mariage', label: 'Quiz de mariage', blurb: 'Le quiz des mariés sur écran géant, réponses au téléphone.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-anniversaire', label: 'Anniversaire', blurb: 'Une animation mémorable pour souffler les bougies.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-soiree-privee', label: 'Soirée privée', blurb: 'Transformez votre soirée entre amis en moment fort.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-centre-vacances', label: 'Centres de vacances', blurb: 'Des veillées interactives pour colos et clubs.', category: 'evenement', priority: 0.8 },
