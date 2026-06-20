@@ -23,11 +23,19 @@ const animations = [
 
 const segments = [
   { label: 'DJ & animateurs', href: '/animation-dj-interactive' },
-  { label: 'Mariages', href: '/animation-mariage-interactive' },
+  { label: 'Logiciel DJ mariage', href: '/logiciel-dj-mariage' },
+  { label: 'Logiciel animateur', href: '/logiciel-animateur-evenement' },
   { label: 'Entreprises', href: '/animation-entreprise-interactive' },
   { label: 'Campings', href: '/animation-camping-interactive' },
   { label: 'Bars & restaurants', href: '/animation-bar-restaurant-interactive' },
   { label: 'Événementiel', href: '/animation-evenementielle-interactive' },
+]
+
+const events = [
+  { label: 'Mariage', href: '/animation-mariage-interactive' },
+  { label: 'Anniversaire', href: '/animation-anniversaire' },
+  { label: 'Soirée privée', href: '/animation-soiree-privee' },
+  { label: 'Centres de vacances', href: '/animation-centre-vacances' },
 ]
 
 const resources = [
@@ -66,7 +74,7 @@ export default function SiteFooter() {
   return (
     <footer className="relative z-10 border-t border-white/10 bg-[#0A0A0D]/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Image
@@ -108,6 +116,7 @@ export default function SiteFooter() {
 
           <Column title="Animations" links={animations} />
           <Column title="Pour qui ?" links={segments} />
+          <Column title="Par événement" links={events} />
           <Column title="Ressources" links={resources} />
           <Column title="Légal" links={legal} />
         </div>

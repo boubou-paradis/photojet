@@ -14,11 +14,6 @@ interface HeroV5Props {
   setError: (error: string | null) => void
   onTrialRequest: (email: string) => void
   isAdmin?: boolean
-  // Optional props kept for compatibility with SEOLandingPage
-  headline?: string
-  highlightedText?: string
-  subtitle?: string
-  targets?: string[]
 }
 
 const targets = [
