@@ -66,6 +66,18 @@ const animations = [
     href: '/borne-photo',
     desc: 'Une borne photo connectée avec impression instantanée et album partagé téléchargeable.',
   },
+  {
+    name: 'Diaporama live',
+    img: '/photo-qr-partage.png',
+    href: '/diaporama-live-evenement',
+    desc: 'Le diaporama géant qui anime l\'écran toute la soirée : photos et messages des invités s\'enchaînent en direct.',
+  },
+  {
+    name: 'Impression photo sur place',
+    img: '/images/borne-photo.png',
+    href: '/impression-photo-evenement',
+    desc: 'Vos invités repartent avec leurs souvenirs imprimés, directement pendant l\'événement.',
+  },
 ]
 
 // POUR QUI ? — segments avec page dédiée
@@ -638,6 +650,71 @@ export default function Home() {
                   </Link>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Tout explorer — hub & guide */}
+        <section className="py-20 px-4 section-glow">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                TOUT EXPLORER
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Explorez AnimaJet en profondeur
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                Le panorama complet des fonctionnalités et le guide des animations interactives.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <Link
+                  href="/fonctionnalites"
+                  className="card-float rounded-2xl p-8 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full"
+                >
+                  <h3 className="text-xl font-bold text-white mb-2">Toutes les fonctionnalités</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed flex-1">
+                    Quiz, photos en direct, impression sur place, diaporama, jeux interactifs… le panorama complet d&apos;AnimaJet, fonctionnalité par fonctionnalité.
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                    Voir les fonctionnalités
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+              >
+                <Link
+                  href="/animations-interactives-evenementielles"
+                  className="card-float rounded-2xl p-8 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full"
+                >
+                  <h3 className="text-xl font-bold text-white mb-2">Le guide des animations interactives</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed flex-1">
+                    Comprendre les animations interactives événementielles : principes, intérêt pour les pros et mise en place, sans application.
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                    Lire le guide
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Link>
+              </motion.div>
             </div>
           </div>
         </section>

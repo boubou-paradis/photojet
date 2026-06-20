@@ -10,7 +10,7 @@ import { Menu, X, ArrowRight } from 'lucide-react'
 
 // Liens d'ancre absolus (préfixés "/") pour fonctionner depuis n'importe quelle page.
 const NAV_LINKS = [
-  { label: 'Animations', href: '/#animations' },
+  { label: 'Fonctionnalités', href: '/fonctionnalites' },
   { label: 'Comment ça marche', href: '/#how-it-works' },
   { label: 'Pour qui ?', href: '/#pour-qui' },
   { label: 'Tarifs', href: '/#pricing' },
