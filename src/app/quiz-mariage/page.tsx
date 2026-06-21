@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
-import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import { buildAnimationJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import QuizMariageLanding from '@/components/marketing/quiz-mariage/QuizMariageLanding'
 
 const URL = 'https://animajet.fr/quiz-mariage'
 
@@ -66,5 +67,5 @@ const jsonLd = buildAnimationJsonLd({
 })
 
 export default function QuizMariagePage() {
-  return <AnimationDetailPage content={content} jsonLd={jsonLd} />
+  return <QuizMariageLanding content={content} jsonLd={jsonLd} />
 }
