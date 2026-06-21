@@ -1,9 +1,71 @@
 // © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
 // Code propriétaire - Reproduction interdite.
 
+import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronDown } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Smartphone,
+  Camera,
+  Music,
+  Tag,
+  Tv,
+  Heart,
+  Trophy,
+  ShieldCheck,
+  Printer,
+  Download,
+  FerrisWheel,
+  Zap,
+  Luggage,
+  Wrench,
+  Handshake,
+  PartyPopper,
+  Image as ImageIcon,
+  Monitor,
+  Repeat,
+  Users,
+  Building2,
+  Target,
+  Headphones,
+  SlidersHorizontal,
+  Sliders,
+  Gift,
+  Armchair,
+  Puzzle,
+  Brain,
+  EyeOff,
+  Rocket,
+  Smile,
+  Flame,
+  Hash,
+  Link as LinkIcon,
+  Package,
+  BarChart3,
+  TrendingUp,
+  Euro,
+  MessageCircle,
+  Tent,
+  Dices,
+  Gamepad2,
+  Drama,
+  Clapperboard,
+  Palette,
+  Backpack,
+  Cake,
+  Beer,
+  Martini,
+  Settings,
+  CheckCircle2,
+  Pencil,
+  PencilLine,
+  Timer,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
 import SiteHeader from '@/components/marketing/SiteHeader'
 import SiteFooter from '@/components/marketing/SiteFooter'
 
@@ -30,6 +92,82 @@ export interface AnimationDetailContent {
   faq: { q: string; a: string }[]
   /** maillage interne */
   related: { label: string; href: string }[]
+}
+
+/**
+ * Mapping emoji → icône filaire (lucide). Les emojis du contenu sont conservés
+ * dans les données (pour le SEO/JSON-LD inchangé) mais ne sont jamais rendus :
+ * on affiche une icône homogène à la place. Le sélecteur de variante U+FE0F est
+ * neutralisé pour fiabiliser la correspondance. Fallback : Sparkles.
+ */
+const EMOJI_ICON: Record<string, LucideIcon> = {
+  '📱': Smartphone,
+  '📸': Camera,
+  '🎵': Music,
+  '🏷': Tag,
+  '📺': Tv,
+  '💍': Heart,
+  '🏆': Trophy,
+  '🛡': ShieldCheck,
+  '🖨': Printer,
+  '📥': Download,
+  '🎡': FerrisWheel,
+  '⚡': Zap,
+  '🧳': Luggage,
+  '🧰': Wrench,
+  '🤝': Handshake,
+  '🙌': PartyPopper,
+  '🖼': ImageIcon,
+  '🖥': Monitor,
+  '🔁': Repeat,
+  '👵': Users,
+  '🏢': Building2,
+  '🎯': Target,
+  '🎧': Headphones,
+  '🎛': SlidersHorizontal,
+  '🎚': Sliders,
+  '🎁': Gift,
+  '🪑': Armchair,
+  '🧩': Puzzle,
+  '🧠': Brain,
+  '🤫': EyeOff,
+  '🚀': Rocket,
+  '😄': Smile,
+  '🔥': Flame,
+  '🔢': Hash,
+  '🔗': LinkIcon,
+  '📦': Package,
+  '📊': BarChart3,
+  '📈': TrendingUp,
+  '💶': Euro,
+  '💬': MessageCircle,
+  '👨‍👩‍👧‍👦': Users,
+  '👨‍👩‍👧': Users,
+  '👥': Users,
+  '🏕': Tent,
+  '🎲': Dices,
+  '🎰': Dices,
+  '🎮': Gamepad2,
+  '🎭': Drama,
+  '🎬': Clapperboard,
+  '🎨': Palette,
+  '🎒': Backpack,
+  '🎉': PartyPopper,
+  '🎂': Cake,
+  '🎀': Gift,
+  '🍻': Beer,
+  '🍸': Martini,
+  '⛺': Tent,
+  '⚙': Settings,
+  '✅': CheckCircle2,
+  '✏': Pencil,
+  '✍': PencilLine,
+  '⏱': Timer,
+}
+
+function iconForEmoji(emoji: string): LucideIcon {
+  const key = emoji.replace(/️/g, '')
+  return EMOJI_ICON[key] ?? Sparkles
 }
 
 /** Construit le graphe JSON-LD (Service + FAQPage) d'une page animation. */
@@ -123,188 +261,246 @@ export function buildSoftwareAppJsonLd({
 export default function AnimationDetailPage({
   content,
   jsonLd,
+  hero,
 }: {
   content: AnimationDetailContent
   jsonLd: object
+  /** Hero visuel custom (ex. mockups d'appareils). Par défaut : image stylisée. */
+  hero?: ReactNode
 }) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="min-h-screen relative overflow-hidden landing-bg">
+      <div className="landing-bg relative min-h-screen overflow-hidden">
         <SiteHeader />
 
-        {/* HERO */}
-        <section className="relative pt-28 lg:pt-32 pb-16 px-4">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-5">
+        {/* ───────────────── HERO ───────────────── */}
+        <section className="relative px-4 pt-28 pb-12 lg:pt-32 lg:pb-16">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-12 lg:gap-8">
+            <div className="lg:col-span-5">
+              <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#E5C349]">
                 {content.eyebrow}
               </span>
-              <h1 className="font-heading text-4xl lg:text-5xl font-black text-white leading-[1.1] mb-5">
-                {content.title}{' '}
-                <span className="text-gold-gradient">{content.highlight}</span>
+              <h1
+                className="mb-6 text-balance text-[clamp(2.4rem,5.2vw,3.9rem)] font-bold leading-[1.04] tracking-[-0.02em] text-white"
+                style={{ fontFamily: 'var(--font-playfair)' }}
+              >
+                {content.title} <span className="text-[#E5C349]">{content.highlight}</span>
               </h1>
-              <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-xl">{content.intro}</p>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <p className="mb-9 max-w-xl text-pretty text-lg leading-relaxed text-gray-300">
+                {content.intro}
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/#essai"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] text-[#0D0D0F] font-bold hover:brightness-110 shadow-[0_4px_24px_rgba(212,175,55,0.3)] transition-all"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-7 py-4 font-bold text-[#0D0D0F] shadow-[0_6px_24px_rgba(212,175,55,0.28)] transition-[filter,transform] hover:brightness-110 active:scale-[0.99]"
                 >
                   Essayer gratuitement
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   href="/#video"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/25 bg-white/5 text-white font-semibold hover:bg-white/10 transition-all"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-7 py-4 font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/5"
                 >
                   Voir la démo
                 </Link>
               </div>
             </div>
 
-            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-[#D4AF37]/25 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-              <Image
-                src={content.image}
-                alt={`${content.title} ${content.highlight} — AnimaJet`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/50 to-transparent" />
+            <div className="lg:col-span-7">
+              {hero ?? (
+                <div className="relative mx-auto w-full max-w-[560px]">
+                  <div
+                    aria-hidden
+                    className="absolute -inset-6 -z-10"
+                    style={{
+                      background:
+                        'radial-gradient(ellipse 70% 60% at 60% 40%, rgba(212,175,55,0.16), transparent 70%)',
+                      filter: 'blur(8px)',
+                    }}
+                  />
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+                    <Image
+                      src={content.image}
+                      alt={`${content.title} ${content.highlight} — AnimaJet`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/55 to-transparent" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        <div className="relative z-10 content-layer">
-          {/* Qu'est-ce que c'est */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="font-heading text-3xl font-bold text-white mb-6">
-                {content.title} {content.highlight}, comment ça marche ?
-              </h2>
-              <div className="space-y-4 text-gray-300 leading-relaxed text-left">
-                {content.what.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </div>
+        {/* ──────────── Comment ça marche (prose) ──────────── */}
+        <section className="border-y border-white/5 bg-white/[0.015] px-4 py-14 lg:py-16">
+          <div className="mx-auto max-w-2xl">
+            <h2
+              className="mb-6 text-center text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold leading-tight tracking-[-0.01em] text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              {content.title} {content.highlight}, comment ça marche&nbsp;?
+            </h2>
+            <div className="space-y-4 text-[1.02rem] leading-[1.6] text-gray-300 [&>p]:text-pretty">
+              {content.what.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Étapes */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-5xl mx-auto">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {content.steps.map((s, i) => (
-                  <div key={i} className="card-float rounded-2xl p-6 border-[#D4AF37]/15 h-full">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4D03F] flex items-center justify-center mb-4 shadow-lg shadow-[#D4AF37]/30">
-                      <span className="text-xl font-bold text-[#0D0D0F]">{i + 1}</span>
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">{s.desc}</p>
+        {/* ──────────── Étapes : flux connecté ──────────── */}
+        <section className="px-4 py-14 lg:py-16">
+          <div className="mx-auto max-w-5xl">
+            <h2
+              className="mb-12 text-center text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold tracking-[-0.01em] text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              Comment ça se déroule
+            </h2>
+            <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Ligne de liaison (desktop) */}
+              {content.steps.length > 1 && (
+                <div
+                  aria-hidden
+                  className="absolute left-0 right-0 top-6 hidden h-px lg:block"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent, rgba(212,175,55,0.35) 12%, rgba(212,175,55,0.35) 88%, transparent)',
+                  }}
+                />
+              )}
+              {content.steps.map((s, i) => (
+                <div key={i} className="relative flex flex-col">
+                  <div className="relative z-10 mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#D4AF37] text-lg font-bold text-[#0D0D0F] ring-4 ring-[#0D0D0F]">
+                    {i + 1}
                   </div>
-                ))}
-              </div>
+                  <h3 className="mb-2 text-lg font-bold text-white">{s.title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-400">{s.desc}</p>
+                </div>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Bénéfices */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-5xl mx-auto">
-              <h2 className="font-heading text-3xl font-bold text-white text-center mb-12">
-                Pourquoi les pros l&apos;adoptent
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {content.benefits.map((b, i) => (
-                  <div key={i} className="card-float rounded-2xl p-6 border-[#D4AF37]/15">
-                    <div className="text-3xl mb-3">{b.emoji}</div>
-                    <h3 className="text-lg font-bold text-white mb-2">{b.title}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">{b.desc}</p>
+        {/* ──────────── Bénéfices : icônes filaires ──────────── */}
+        <section className="border-t border-white/5 bg-white/[0.015] px-4 pt-14 pb-12 lg:pt-16 lg:pb-14">
+          <div className="mx-auto max-w-5xl">
+            <h2
+              className="mb-12 text-center text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold tracking-[-0.01em] text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              Pourquoi les pros l&apos;adoptent
+            </h2>
+            <div className="grid gap-px overflow-hidden rounded-2xl border border-white/8 bg-white/8 sm:grid-cols-2 lg:grid-cols-3">
+              {content.benefits.map((b, i) => {
+                const Icon = iconForEmoji(b.emoji)
+                return (
+                  <div key={i} className="group bg-[#0D0D0F] p-7 transition-colors hover:bg-white/[0.02]">
+                    <span className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#E5C349]">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mb-2 text-lg font-bold text-white">{b.title}</h3>
+                    <p className="text-sm leading-relaxed text-gray-400">{b.desc}</p>
                   </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Idéal pour */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="font-heading text-2xl font-bold text-white mb-6">Idéal pour</h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                {content.idealFor.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-gray-200 text-sm"
-                  >
-                    <Check className="h-4 w-4 text-[#D4AF37]" />
-                    {item}
-                  </span>
-                ))}
-              </div>
+        {/* ──────────── Idéal pour (même bande que les bénéfices) ──────────── */}
+        <section className="border-b border-white/5 bg-white/[0.015] px-4 pt-2 pb-14 lg:pb-16">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="mb-6 text-xl font-bold tracking-[-0.01em] text-white">Idéal pour</h2>
+            <div className="flex flex-wrap justify-center gap-2.5">
+              {content.idealFor.map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200"
+                >
+                  <Check className="h-4 w-4 text-[#E5C349]" />
+                  {item}
+                </span>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* FAQ */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="font-heading text-3xl font-bold text-white text-center mb-10">Questions fréquentes</h2>
-              <div className="space-y-3">
-                {content.faq.map((f, i) => (
-                  <details key={i} className="group card-float rounded-xl border-[#D4AF37]/15 px-5 [&[open]]:border-[#D4AF37]/40">
-                    <summary className="flex items-center justify-between gap-4 cursor-pointer py-4 list-none [&::-webkit-details-marker]:hidden text-white font-semibold">
-                      {f.q}
-                      <ChevronDown className="h-5 w-5 text-[#D4AF37] flex-shrink-0 transition-transform group-open:rotate-180" />
-                    </summary>
-                    <p className="pb-4 text-gray-400 leading-relaxed">{f.a}</p>
-                  </details>
-                ))}
-              </div>
+        {/* ──────────── FAQ ──────────── */}
+        <section className="px-4 py-14 lg:py-16">
+          <div className="mx-auto max-w-3xl">
+            <h2
+              className="mb-10 text-center text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold tracking-[-0.01em] text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              Questions fréquentes
+            </h2>
+            <div className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/8">
+              {content.faq.map((f, i) => (
+                <details key={i} className="group bg-white/[0.02] px-5 open:bg-white/[0.035]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-white [&::-webkit-details-marker]:hidden">
+                    {f.q}
+                    <ChevronDown className="h-5 w-5 flex-shrink-0 text-[#E5C349] transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="pb-5 leading-relaxed text-gray-400">{f.a}</p>
+                </details>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* CTA final */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-3xl mx-auto text-center card-float rounded-3xl p-10 border-[#D4AF37]/25">
-              <h2 className="font-heading text-3xl font-bold text-white mb-4">
-                Prêt à faire participer votre public ?
-              </h2>
-              <p className="text-gray-400 mb-7">
-                Testez AnimaJet gratuitement pendant 24h, sans carte bancaire.
-              </p>
-              <Link
-                href="/#essai"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] text-[#0D0D0F] font-bold hover:brightness-110 shadow-[0_4px_24px_rgba(212,175,55,0.3)] transition-all"
-              >
-                Commencer mon essai gratuit
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+        {/* ──────────── CTA final ──────────── */}
+        <section className="px-4 pb-14 lg:pb-16">
+          <div
+            className="mx-auto max-w-3xl rounded-3xl border border-[#D4AF37]/25 px-8 py-10 text-center"
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 120% at 50% -10%, rgba(212,175,55,0.12), transparent 70%), rgba(255,255,255,0.02)',
+            }}
+          >
+            <h2
+              className="mb-4 text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold tracking-[-0.01em] text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              Prêt à faire participer votre public&nbsp;?
+            </h2>
+            <p className="mb-8 text-gray-400">Testez AnimaJet gratuitement pendant 24h, sans carte bancaire.</p>
+            <Link
+              href="/#essai"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-8 py-4 font-bold text-[#0D0D0F] shadow-[0_6px_24px_rgba(212,175,55,0.28)] transition-[filter,transform] hover:brightness-110 active:scale-[0.99]"
+            >
+              Commencer mon essai gratuit
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ──────────── Maillage interne ──────────── */}
+        <section className="border-t border-white/5 px-4 py-12 lg:py-14">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="mb-8 text-center text-xl font-bold tracking-[-0.01em] text-white">À découvrir aussi</h2>
+            <div className="flex flex-wrap justify-center gap-3">
+              {content.related.map((r) => (
+                <Link
+                  key={r.href}
+                  href={r.href}
+                  className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-gray-200 transition-colors hover:border-[#D4AF37]/40 hover:text-white"
+                >
+                  {r.label}
+                  <ArrowRight className="h-4 w-4 text-[#E5C349] transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Maillage interne */}
-          <section className="py-16 px-4 section-glow">
-            <div className="max-w-5xl mx-auto">
-              <h2 className="font-heading text-2xl font-bold text-white text-center mb-8">
-                À découvrir aussi
-              </h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                {content.related.map((r) => (
-                  <Link
-                    key={r.href}
-                    href={r.href}
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl card-float border-[#D4AF37]/15 hover:border-[#D4AF37]/40 text-gray-200 text-sm font-medium transition-colors"
-                  >
-                    {r.label}
-                    <ArrowRight className="h-4 w-4 text-[#D4AF37]" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <SiteFooter />
-        </div>
+        <SiteFooter />
       </div>
     </>
   )
