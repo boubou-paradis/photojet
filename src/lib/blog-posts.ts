@@ -22,6 +22,16 @@ export interface BlogPostMeta {
 
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: 'animer-repas-mariage',
+    title: 'Comment animer un repas de mariage sans casser le rythme du service',
+    excerpt:
+      "Les erreurs qui plombent la soirée, la durée idéale des animations et le minutage plat par plat. Du vrai retour terrain, vu depuis la régie.",
+    category: 'Mariage',
+    date: '2026-06-23',
+    readingTime: '8 min',
+    image: '/images/games/quiz.png',
+  },
+  {
     slug: 'idees-animation-mariage',
     title: "Idées d'animation pour mariage : 25 jeux pour faire participer vos invités",
     excerpt:
