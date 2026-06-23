@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     default: "AnimaJet - Animation interactive pour événements professionnels",
     template: "%s | AnimaJet",
   },
-  description: "La plateforme d'animations interactives pour les pros de l'événementiel. Vos invités participent depuis leur téléphone : quiz, roue de la destinée, partage photo en direct sur écran géant. Sans application. Essai gratuit 24h, 29,90€/mois.",
+  description: "Animations interactives pour l'événementiel : vos invités jouent et partagent leurs photos depuis leur téléphone, en direct sur écran géant. Sans application.",
   keywords: [
     "animation événement",
     "animation entreprise",

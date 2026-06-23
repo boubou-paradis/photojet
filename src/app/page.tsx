@@ -3,8 +3,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -26,6 +25,7 @@ import SiteHeader from '@/components/marketing/SiteHeader'
 import SiteFooter from '@/components/marketing/SiteFooter'
 import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
+import AccessToast from '@/components/marketing/AccessToast'
 import { toast } from 'sonner'
 
 // LES ANIMATIONS DISPONIBLES — uniquement les fonctionnalités réelles
@@ -242,7 +242,6 @@ export default function Home() {
   const [showPromo, setShowPromo] = useState(false)
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  const searchParams = useSearchParams()
 
   // Pass week-end
   const [weekendPassEmail, setWeekendPassEmail] = useState('')
@@ -279,16 +278,6 @@ export default function Home() {
       .then((data) => { if (data.isAdmin) setIsAdmin(true) })
       .catch(() => {})
   }, [])
-
-  // Show toast if redirected with access=expired or weekend_blocked
-  useEffect(() => {
-    const access = searchParams.get('access')
-    if (access === 'expired') {
-      toast.error('Votre essai gratuit a expiré. Abonnez-vous pour continuer !')
-    } else if (access === 'weekend_blocked') {
-      toast.error("L'essai gratuit est bloqué le week-end. Revenez lundi après 12h ou activez un Pass Événement.")
-    }
-  }, [searchParams])
 
   const handleCheckout = async () => {
     if (!email) {
@@ -392,6 +381,11 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {/* Toast de redirection (?access=…) isolé sous Suspense : voir AccessToast pour le pourquoi SEO */}
+      <Suspense fallback={null}>
+        <AccessToast />
+      </Suspense>
 
       <div className="min-h-screen relative overflow-hidden landing-bg">
       {/* Header sticky */}

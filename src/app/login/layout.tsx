@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     canonical: 'https://animajet.fr/login',
   },
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
 }

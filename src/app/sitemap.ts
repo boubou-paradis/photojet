@@ -16,7 +16,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Pages statiques principales (hors cluster SEO)
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified, changeFrequency: 'weekly', priority: 1 },
-    { url: `${baseUrl}/login`, lastModified, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/cgv`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${baseUrl}/confidentialite`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${baseUrl}/mentions-legales`, lastModified, changeFrequency: 'yearly', priority: 0.3 },

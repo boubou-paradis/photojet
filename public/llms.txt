@@ -1,0 +1,43 @@
+# AnimaJet
+
+> Plateforme SaaS française d'animations interactives pour les pros de l'événementiel (DJ, animateurs, mariages, entreprises, bars, campings). Les invités participent depuis leur téléphone — quiz, blind test, roue de la destinée, photo mystère, partage et impression photo — et tout s'affiche en direct sur écran géant. Sans application à installer. Abonnement 29,90 €/mois (sans engagement), Pass Événement 14,90 € le week-end, essai gratuit 24h en semaine. Éditeur : MG Events Animation. Site en français.
+
+## Fonctionnalités & animations
+
+- [Toutes les fonctionnalités](https://animajet.fr/fonctionnalites): panorama complet des animations et fonctions AnimaJet.
+- [Animations interactives événementielles (guide pilier)](https://animajet.fr/animations-interactives-evenementielles): principes, intérêt pour les pros, mise en place sans application.
+- [Quiz interactif](https://animajet.fr/quiz-interactif): quiz et blind test sur écran géant, réponses au téléphone, buzzer et classement en direct.
+- [Blind test musical](https://animajet.fr/blind-test-musical): extraits diffusés, les invités buzzent depuis leur téléphone.
+- [Roue de la Destinée](https://animajet.fr/roue-de-la-destinee): roue jackpot premium (gages, lots, défis) sur écran géant.
+- [Photo Mystère](https://animajet.fr/photo-mystere): une photo se dévoile peu à peu, le premier qui devine gagne.
+- [Le Bon Ordre](https://animajet.fr/le-bon-ordre): jeu de classement qui oppose deux équipes en direct.
+- [Partage photo en direct](https://animajet.fr/partage-photo-evenement): les invités envoient leurs photos, affichées en direct sur écran géant.
+- [Borne photo](https://animajet.fr/borne-photo): borne photo virtuelle, sans matériel à louer.
+- [Impression photo sur place](https://animajet.fr/impression-photo-evenement): les invités impriment leurs souvenirs pendant l'événement.
+- [Diaporama live](https://animajet.fr/diaporama-live-evenement): diaporama géant qui anime l'écran toute la soirée.
+
+## Pour qui (métiers)
+
+- [Pour les DJ & animateurs](https://animajet.fr/animation-dj-interactive): la boîte à outils interactive des DJ.
+- [Logiciel DJ mariage](https://animajet.fr/logiciel-dj-mariage): logiciel d'animation pensé pour les DJ de mariage.
+- [Logiciel animateur d'événement](https://animajet.fr/logiciel-animateur-evenement): l'outil tout-en-un des animateurs.
+- [Bars & restaurants](https://animajet.fr/animation-bar-restaurant-interactive): animations pour les soirées à thème.
+- [Campings & vacances](https://animajet.fr/animation-camping-interactive): animer les soirées des vacanciers sans matériel.
+- [Soirées d'entreprise](https://animajet.fr/animation-entreprise-interactive): team building et soirées de CE.
+- [Agences événementielles](https://animajet.fr/animation-evenementielle-interactive): la plateforme des pros de l'événementiel.
+- [Alternative à Kahoot pour l'événementiel](https://animajet.fr/alternative-kahoot-evenement): la différence d'usage avec Kahoot pour l'événementiel festif.
+
+## Types d'événement
+
+- [Mariage](https://animajet.fr/animation-mariage-interactive): faire participer tous les invités le jour J.
+- [Quiz de mariage](https://animajet.fr/quiz-mariage): le quiz des mariés sur écran géant.
+- [Anniversaire](https://animajet.fr/animation-anniversaire): une animation mémorable.
+- [Soirée privée](https://animajet.fr/animation-soiree-privee): transformer une soirée entre amis en moment fort.
+- [Centres de vacances](https://animajet.fr/animation-centre-vacances): veillées interactives pour colos et clubs.
+
+## Infos pratiques
+
+- Tarifs : abonnement 29,90 €/mois sans engagement ; Pass Événement 14,90 € (vendredi 12h → lundi 12h) ; essai gratuit 24h en semaine, sans carte bancaire.
+- Aucune application requise : les invités scannent un QR code avec l'appareil photo de leur téléphone.
+- Personnalisation : logo, arrière-plan et couleurs de l'organisateur sur tous les écrans et QR codes.
+- Éditeur : MG Events Animation. Conçu par un DJ animateur, testé en conditions réelles.
