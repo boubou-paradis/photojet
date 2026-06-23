@@ -41,6 +41,7 @@ const events = [
 ]
 
 const resources = [
+  { label: 'Blog', href: '/blog' },
   { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   { label: 'Guide des animations', href: '/animations-interactives-evenementielles' },
   { label: 'Alternative à Kahoot', href: '/alternative-kahoot-evenement' },

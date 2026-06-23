@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: 'Pour qui ?', href: '/#pour-qui' },
   { label: 'Tarifs', href: '/#pricing' },
   { label: 'Histoire', href: '/#histoire' },
+  { label: 'Blog', href: '/blog' },
 ]
 
 export default function SiteHeader() {
