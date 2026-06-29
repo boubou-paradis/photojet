@@ -12,8 +12,6 @@ import {
   X,
   Gift,
   Sparkles,
-  AlertTriangle,
-  FileText,
 } from 'lucide-react'
 import AnimaJetLogo from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
@@ -45,22 +43,6 @@ export default function AdminLayoutClient({
   const [loggingOut, setLoggingOut] = useState(false)
   const [isTrialUser] = useState(serverIsTrialUser)
   const [trialExpiresAt] = useState(serverTrialExpiresAt)
-  const [isMac, setIsMac] = useState(false)
-  const [showMacNotice, setShowMacNotice] = useState(false)
-
-  // Detect Mac and check if notice was dismissed
-  useEffect(() => {
-    const mac = /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
-    setIsMac(mac)
-    if (mac && localStorage.getItem('mac_notice_dismissed') !== '1') {
-      setShowMacNotice(true)
-    }
-  }, [])
-
-  const dismissMacNotice = () => {
-    localStorage.setItem('mac_notice_dismissed', '1')
-    setShowMacNotice(false)
-  }
 
   // Show welcome toast for trial users
   useEffect(() => {
@@ -214,42 +196,6 @@ export default function AdminLayoutClient({
           )}
         </nav>
       </header>
-
-      {/* Mac fullscreen notice */}
-      <AnimatePresence>
-        {isMac && showMacNotice && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="w-full bg-red-600 border-b border-red-500"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-white shrink-0" />
-              <p className="flex-1 text-sm font-semibold text-white">
-                <span className="uppercase tracking-wide mr-2">Utilisateurs Mac :</span>
-                Le plein écran fonctionne différemment sur Mac. Consultez le guide avant votre premier événement.
-              </p>
-              <a
-                href="/guide_mac_animajet_v4.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Voir le guide PDF
-              </a>
-              <button
-                onClick={dismissMacNotice}
-                className="shrink-0 p-1 text-white/80 hover:text-white hover:bg-red-500 rounded-lg transition-colors"
-                aria-label="Fermer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Main Content - always rendered (server already verified access) */}
       <main className="w-full">

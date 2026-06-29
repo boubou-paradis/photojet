@@ -22,6 +22,7 @@ import {
   FileText,
   Megaphone,
   Plus,
+  Monitor,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1025,6 +1026,68 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Affichage écran secondaire - pleine largeur (info, lecture seule) */}
+          <motion.div
+            whileHover={{ scale: 1.001 }}
+            className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+          >
+            <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                  <Monitor className="h-4 w-4 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Affichage écran secondaire</h3>
+                  <p className="text-xs text-[#6B6B70]">Projeter le diaporama et les jeux sur un écran ou une TV</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 space-y-3 text-sm text-[#B0B0B5] leading-relaxed">
+              {/* Brancher le second écran */}
+              <div>
+                <p className="text-white font-semibold mb-1">Brancher le second écran</p>
+                <p>
+                  Reliez votre écran ou téléviseur (HDMI). Dans les réglages d&apos;affichage de votre
+                  ordinateur, choisissez le mode <span className="text-white font-medium">« Bureau étendu »</span>{' '}
+                  (et non « Recopie » / « Duplication »). Glissez ensuite la fenêtre AnimaJet sur ce
+                  second écran, puis activez le plein écran avec le bouton{' '}
+                  <span className="text-[#D4AF37]">⛶</span> en haut à droite.
+                </p>
+              </div>
+
+              {/* Sur Mac */}
+              <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
+                <p className="text-white font-semibold mb-1.5">🍎 Sur Mac</p>
+                <ul className="space-y-1.5 list-disc list-inside marker:text-[#D4AF37]">
+                  <li>
+                    En plein écran, une <span className="text-white font-medium">fine barre du
+                    navigateur peut rester visible</span> en haut de l&apos;écran secondaire :
+                    c&apos;est normal, lié à une limitation du web sur Mac —
+                    <span className="text-white font-medium"> ce n&apos;est pas un bug</span>.
+                  </li>
+                  <li>
+                    Astuce pour la réduire au minimum : agrandissez la fenêtre du navigateur sur
+                    l&apos;écran TV avant de passer en plein écran.
+                  </li>
+                  <li>
+                    Appuyez sur la touche{' '}
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Échap</kbd>{' '}
+                    pour quitter le plein écran.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Sur Windows */}
+              <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
+                <p className="text-white font-semibold mb-1.5">🪟 Sur Windows</p>
+                <p>
+                  Rien de particulier : le plein écran fonctionne{' '}
+                  <span className="text-white font-medium">nativement</span>, sans limitation.
+                </p>
               </div>
             </div>
           </motion.div>
