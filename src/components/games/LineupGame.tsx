@@ -169,12 +169,19 @@ export default function LineupGame({
   const [displayNumber, setDisplayNumber] = useState(currentNumber)
   const [isRolling, setIsRolling] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMac, setIsMac] = useState(false)
   const prevNumberRef = useRef(currentNumber)
   const rollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [windowHeight, setWindowHeight] = useState(800)
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(async () => {
+    // Mac : faux plein écran (le conteneur est déjà fixed inset-0). On n'appelle
+    // JAMAIS l'API native qui crée un Space macOS → écran principal noir.
+    if (isMac) {
+      setIsFullscreen(prev => !prev)
+      return
+    }
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen()
@@ -182,6 +189,11 @@ export default function LineupGame({
         await document.exitFullscreen()
       }
     } catch { /* refusé par le navigateur */ }
+  }, [isMac])
+
+  // Détection Mac côté client (navigator absent en SSR)
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
   }, [])
 
   // Listen for fullscreen changes
@@ -190,6 +202,16 @@ export default function LineupGame({
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Mac : Échap quitte le faux plein écran
+  useEffect(() => {
+    if (!isMac) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMac])
 
   // Audio refs
   const audioRef = useRef<HTMLAudioElement | null>(null)

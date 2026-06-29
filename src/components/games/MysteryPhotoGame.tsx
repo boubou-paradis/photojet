@@ -80,6 +80,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMac, setIsMac] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const gameAreaRef = useRef<HTMLDivElement>(null)
 
@@ -153,6 +154,12 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Fullscreen toggle
   const toggleFullscreen = async () => {
+    // Mac : faux plein écran (le conteneur est déjà fixed inset-0). On n'appelle
+    // JAMAIS l'API native qui crée un Space macOS → écran principal noir.
+    if (isMac) {
+      setIsFullscreen(prev => !prev)
+      return
+    }
     try {
       if (!document.fullscreenElement) {
         await containerRef.current?.requestFullscreen()
@@ -176,6 +183,11 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // Sync currentRoundRef
   useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
 
+  // Détection Mac côté client (navigator absent en SSR)
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
+  }, [])
+
   // Listen for fullscreen change (ESC key exits fullscreen)
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -184,6 +196,16 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Mac : Échap quitte le faux plein écran
+  useEffect(() => {
+    if (!isMac) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMac])
 
 
   // Load global reveal audio URL from session

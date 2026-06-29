@@ -44,6 +44,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const [showFinished, setShowFinished] = useState(false)
   const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMac, setIsMac] = useState(false)
   const previousSpinning = useRef(false)
   const previousSpinToIndex = useRef<number | undefined>(undefined)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -53,6 +54,12 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const spinStartTimeRef = useRef<number>(0)
 
   const toggleFullscreen = useCallback(async () => {
+    // Mac : faux plein écran (le conteneur est déjà fixed inset-0). On n'appelle
+    // JAMAIS l'API native qui crée un Space macOS → écran principal noir.
+    if (isMac) {
+      setIsFullscreen(prev => !prev)
+      return
+    }
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen()
@@ -60,6 +67,11 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         await document.exitFullscreen()
       }
     } catch { /* refusé par le navigateur */ }
+  }, [isMac])
+
+  // Détection Mac côté client (useEffect : navigator absent en SSR)
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
   }, [])
 
   useEffect(() => {
@@ -67,6 +79,16 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Mac : Échap quitte le faux plein écran (pas de fullscreenchange natif à écouter)
+  useEffect(() => {
+    if (!isMac) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMac])
 
   const fadeOutAudio = useCallback((audio: HTMLAudioElement, duration: number = 500) => {
     if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)

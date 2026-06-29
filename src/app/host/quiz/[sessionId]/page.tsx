@@ -66,6 +66,7 @@ export default function HostQuizPage() {
 
   // UI
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMac, setIsMac] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
 
   // Initialize engine and realtime
@@ -201,6 +202,12 @@ export default function HostQuizPage() {
   }, [])
 
   const toggleFullscreen = useCallback(() => {
+    // Mac : faux plein écran (la page remplit déjà le viewport). On n'appelle
+    // JAMAIS l'API native qui crée un Space macOS → écran principal noir.
+    if (isMac) {
+      setIsFullscreen(prev => !prev)
+      return
+    }
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen()
       setIsFullscreen(true)
@@ -208,6 +215,11 @@ export default function HostQuizPage() {
       document.exitFullscreen()
       setIsFullscreen(false)
     }
+  }, [isMac])
+
+  // Détection Mac côté client (navigator absent en SSR)
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
   }, [])
 
   useEffect(() => {
@@ -217,6 +229,16 @@ export default function HostQuizPage() {
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Mac : Échap quitte le faux plein écran
+  useEffect(() => {
+    if (!isMac) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMac])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#0f0a20] flex flex-col overflow-hidden">
