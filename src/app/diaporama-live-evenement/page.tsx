@@ -6,7 +6,7 @@ const URL = 'https://animajet.fr/diaporama-live-evenement'
 export const metadata: Metadata = {
   title: 'Diaporama Live Événement sur Écran Géant | Photos en Direct',
   description: 'Affichez les photos et messages de vos invités en direct sur écran géant. Diaporama live temps réel via QR code, sans application. Essai gratuit 24h.',
-  keywords: ['diaporama live', 'diaporama événement', 'photos écran géant', 'diaporama mariage direct', 'mur de photos live', 'diaporama soirée temps réel'],
+  keywords: ['diaporama live', 'diaporama événement', 'photos écran géant', 'diaporama soirée entreprise', 'mur de photos live', 'diaporama soirée temps réel'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Diaporama Live sur Écran Géant | AnimaJet',
@@ -50,6 +50,7 @@ const content: AnimationDetailContent = {
     { q: 'Que deviennent les photos après la soirée ?', a: "Elles restent disponibles dans un album téléchargeable, que vous pouvez partager avec vos invités après l'événement." },
   ],
   related: [
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
     { label: 'Borne photo', href: '/borne-photo' },

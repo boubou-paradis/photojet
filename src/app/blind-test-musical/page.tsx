@@ -50,6 +50,7 @@ const content: AnimationDetailContent = {
     { q: 'Le blind test convient-il à un mariage ou une soirée d\'entreprise ?', a: "Tout à fait. Le blind test musical fédère toutes les générations et s'adapte aussi bien à un mariage qu'à une soirée d'entreprise, un bar ou une soirée entre amis." },
   ],
   related: [
+    { label: 'Blind test mariage', href: '/blind-test-mariage' },
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Quiz de mariage', href: '/quiz-mariage' },
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },

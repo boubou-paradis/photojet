@@ -6,7 +6,7 @@ const URL = 'https://animajet.fr/logiciel-dj-mariage'
 export const metadata: Metadata = {
   title: 'Logiciel DJ Mariage | Animations Interactives pour DJ de Mariage',
   description: 'Le logiciel d\'animation pensé pour les DJ de mariage : quiz et blind test, photos en direct, jeux interactifs sur écran géant. Sans application. Essai gratuit 24h.',
-  keywords: ['logiciel DJ mariage', 'logiciel animation mariage', 'animation DJ mariage', 'jeux DJ mariage', 'quiz mariage interactif', 'outil DJ mariage'],
+  keywords: ['logiciel DJ mariage', 'logiciel animation mariage', 'animation DJ mariage', 'jeux DJ mariage', 'quiz mariage interactif', 'outil DJ mariage', 'application DJ mariage'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Logiciel DJ Mariage | AnimaJet',
@@ -52,6 +52,8 @@ const content: AnimationDetailContent = {
   related: [
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: 'Animation de mariage', href: '/animation-mariage-interactive' },
+    { label: 'Blind test mariage', href: '/blind-test-mariage' },
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Quiz & blind test', href: '/quiz-interactif' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],

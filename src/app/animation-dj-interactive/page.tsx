@@ -9,7 +9,10 @@ export const metadata: Metadata = {
   keywords: [
     'animation DJ',
     'outils DJ',
+    'logiciel animation DJ',
     'logiciel animation',
+    'outil DJ animateur',
+    'plateforme animation soirée',
     'quiz musical',
     'animation animateur',
     'borne photo DJ',

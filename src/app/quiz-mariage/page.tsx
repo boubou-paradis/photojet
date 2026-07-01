@@ -7,7 +7,7 @@ const URL = 'https://animajet.fr/quiz-mariage'
 export const metadata: Metadata = {
   title: 'Quiz Mariage Interactif | Quiz des Mariés sur Écran Géant',
   description: 'Créez un quiz de mariage interactif : « connaissez-vous les mariés ? », blind test musical, réponses depuis le téléphone et classement en direct sur écran géant. Sans application. Essai gratuit 24h.',
-  keywords: ['quiz mariage', 'quiz des mariés', 'quiz pour les mariés', 'quiz connaissez-vous les mariés', 'jeu mariage interactif', 'blind test mariage'],
+  keywords: ['quiz mariage', 'quiz des mariés', 'quiz pour les mariés', 'quiz connaissez-vous les mariés', 'jeu mariage interactif', 'quiz interactif mariage', 'quiz mariage smartphone'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Quiz Mariage Interactif | AnimaJet',
@@ -52,6 +52,8 @@ const content: AnimationDetailContent = {
   ],
   related: [
     { label: 'Animation de mariage', href: '/animation-mariage-interactive' },
+    { label: 'Blind test mariage', href: '/blind-test-mariage' },
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Logiciel DJ mariage', href: '/logiciel-dj-mariage' },
     { label: 'Quiz & blind test', href: '/quiz-interactif' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
