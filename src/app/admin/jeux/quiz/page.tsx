@@ -2621,9 +2621,30 @@ export default function QuizPage() {
                             </button>
                           )
                         })}
+                        {/* Option ∞ : révélation figée jusqu'à ce que le DJ avance manuellement (revealDuration = -1) */}
+                        {(() => {
+                          const infiniteActive = (editingQuestion.revealDuration ?? 10) < 0
+                          return (
+                            <button
+                              onClick={() => {
+                                const updated = { ...editingQuestion, revealDuration: -1 }
+                                setEditingQuestion(updated)
+                                updateQuestion(updated)
+                              }}
+                              title="Affichage illimité — le DJ passe manuellement à la question suivante"
+                              className={`flex-1 py-2 rounded-lg text-lg font-bold leading-none transition-colors ${
+                                infiniteActive
+                                  ? 'bg-[#D4AF37] text-black'
+                                  : 'bg-[#2E2E33] text-gray-300 hover:bg-[#3E3E43]'
+                              }`}
+                            >
+                              &#8734;
+                            </button>
+                          )
+                        })()}
                       </div>
                       <p className="text-gray-600 text-[10px] mt-1.5">
-                        Temps pendant lequel la photo reste affichée et l&apos;audio joue (par défaut 10s)
+                        Temps pendant lequel la photo reste affichée et l&apos;audio joue (par défaut 10s). &#8734; = illimité, vous avancez manuellement.
                       </p>
                     </div>
                   )}

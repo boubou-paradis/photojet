@@ -86,6 +86,7 @@ export default function QuizGame({
   const currentQuestion = questions[currentQuestionIndex]
   const revealPhotoUrl = currentQuestion?.photoUrl ?? null
   const revealDuration = currentQuestion?.revealDuration ?? 10
+  const isInfinite = revealDuration < 0 // ∞ : révélation figée jusqu'à l'avance manuelle du DJ
   const hasRevealPhoto = !!revealPhotoUrl
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
   const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
@@ -146,23 +147,30 @@ export default function QuizGame({
   // Si une photo est attachée, on attend la fin de sa durée pour ne pas la masquer.
   useEffect(() => {
     if (showResults && participants.length > 0) {
+      // ∞ : pas d'avance automatique vers le leaderboard, c'est le DJ qui passe à la suite.
+      if (isInfinite) {
+        setShowLeaderboard(false)
+        return
+      }
       const delay = hasRevealPhoto ? revealDuration * 1000 : 2000
       const timer = setTimeout(() => setShowLeaderboard(true), delay)
       return () => clearTimeout(timer)
     } else {
       setShowLeaderboard(false)
     }
-  }, [showResults, participants.length, hasRevealPhoto, revealDuration])
+  }, [showResults, participants.length, hasRevealPhoto, revealDuration, isInfinite])
 
   // Affichage de la photo de la bonne réponse au reveal, pendant la durée choisie
   useEffect(() => {
     if (showResults && hasRevealPhoto) {
       setRevealMediaVisible(true)
+      // ∞ : la photo/média de révélation reste affichée indéfiniment (pas de timer de masquage).
+      if (isInfinite) return
       const timer = setTimeout(() => setRevealMediaVisible(false), revealDuration * 1000)
       return () => clearTimeout(timer)
     }
     setRevealMediaVisible(false)
-  }, [showResults, currentQuestionIndex, hasRevealPhoto, revealDuration])
+  }, [showResults, currentQuestionIndex, hasRevealPhoto, revealDuration, isInfinite])
 
   // Écran d'attente si pas de question
   if (!currentQuestion) {
