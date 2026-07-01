@@ -44,6 +44,13 @@ import { createClient } from '@/lib/supabase'
 import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
+import dynamic from 'next/dynamic'
+
+// Outil de découpe audio (admin only) : chargé à la demande, jamais rendu côté serveur.
+const AudioTrimmer = dynamic(() => import('./AudioTrimmer'), { ssr: false })
+
+// Élément audio porteur de ses handlers de découpe (nettoyage propre entre lectures).
+type ClipAudio = HTMLAudioElement & { _clipTimer?: number; _clipTU?: () => void }
 
 // Default questions (Mariage)
 const DEFAULT_QUESTIONS: QuizQuestion[] = [
@@ -798,7 +805,9 @@ export default function QuizPage() {
     const tempUpdated = {
       ...editingQuestion!,
       audioUrl: localBlobUrl,
-      audioFileName
+      audioFileName,
+      audioStart: null, // nouveau fichier ⇒ découpe réinitialisée
+      audioEnd: null,
     } as QuizQuestion
     setEditingQuestion(tempUpdated)
 
@@ -826,7 +835,9 @@ export default function QuizPage() {
       const finalUpdated = {
         ...editingQuestion!,
         audioUrl: supabaseUrl,
-        audioFileName
+        audioFileName,
+        audioStart: null,
+        audioEnd: null,
       } as QuizQuestion
       setEditingQuestion(finalUpdated)
       updateQuestion(finalUpdated)
@@ -934,7 +945,7 @@ export default function QuizPage() {
       }
     }
 
-    const updated = { ...editingQuestion, audioUrl: null }
+    const updated = { ...editingQuestion, audioUrl: null, audioStart: null, audioEnd: null }
     setEditingQuestion(updated)
     updateQuestion(updated)
     stopPreviewAudio()
@@ -1005,6 +1016,8 @@ export default function QuizPage() {
       ...editingQuestion!,
       questionAudioUrl: localBlobUrl,
       questionAudioName,
+      questionAudioStart: null, // nouveau fichier ⇒ découpe réinitialisée
+      questionAudioEnd: null,
     } as QuizQuestion
     setEditingQuestion(tempUpdated)
     audioLocalCacheRef.current.set(localBlobUrl, localBlobUrl)
@@ -1030,6 +1043,8 @@ export default function QuizPage() {
         ...editingQuestion!,
         questionAudioUrl: supabaseUrl,
         questionAudioName,
+        questionAudioStart: null,
+        questionAudioEnd: null,
       } as QuizQuestion
       setEditingQuestion(finalUpdated)
       updateQuestion(finalUpdated)
@@ -1058,7 +1073,7 @@ export default function QuizPage() {
       }
     }
 
-    const updated = { ...editingQuestion, questionAudioUrl: null, questionAudioName: null }
+    const updated = { ...editingQuestion, questionAudioUrl: null, questionAudioName: null, questionAudioStart: null, questionAudioEnd: null }
     setEditingQuestion(updated)
     updateQuestion(updated)
     stopQuestionPreviewAudio()
@@ -1661,6 +1676,47 @@ export default function QuizPage() {
   }
 
   // Couper l'ambiance et lancer l'audio de la question (depuis le cache si préchargé)
+  // Retire les handlers de découpe (timer + timeupdate) d'un élément audio.
+  function clearClip(audio: HTMLAudioElement) {
+    const a = audio as ClipAudio
+    if (a._clipTimer !== undefined) { clearTimeout(a._clipTimer); a._clipTimer = undefined }
+    if (a._clipTU) { a.removeEventListener('timeupdate', a._clipTU); a._clipTU = undefined }
+  }
+
+  // Lance la lecture d'un extrait [start, end] (secondes).
+  // Coupe « au poil » : setTimeout précis + filet de sécurité timeupdate (~250 ms).
+  // start/end absents ⇒ lecture intégrale (comportement historique inchangé).
+  function startClippedPlayback(
+    audio: HTMLAudioElement,
+    start: number | null | undefined,
+    end: number | null | undefined,
+    onPlaying?: () => void,
+    onStopped?: () => void,
+  ) {
+    const a = audio as ClipAudio
+    clearClip(a)
+    const s = typeof start === 'number' && start > 0 ? start : 0
+    const hasEnd = typeof end === 'number' && end > s
+    const stop = () => { clearClip(a); a.pause(); onStopped?.() }
+    const begin = () => {
+      try { a.currentTime = s } catch { /* seek pas encore possible */ }
+      if (hasEnd) {
+        const tu = () => { if (a.currentTime >= (end as number)) stop() }
+        a._clipTU = tu
+        a.addEventListener('timeupdate', tu)
+        const ms = Math.max(0, ((end as number) - s) * 1000 / (a.playbackRate || 1))
+        a._clipTimer = window.setTimeout(stop, ms)
+      }
+      a.play().then(() => onPlaying?.()).catch((err) => {
+        console.error('Clip audio play failed:', err)
+        onStopped?.()
+      })
+    }
+    // On ne peut fixer currentTime qu'une fois les métadonnées connues.
+    if (a.readyState >= 1) begin()
+    else a.addEventListener('loadedmetadata', begin, { once: true })
+  }
+
   function playQuestionAudio() {
     const currentQ = questions[currentQuestionIndex]
     if (!currentQ?.questionAudioUrl) return
@@ -1686,14 +1742,15 @@ export default function QuizPage() {
     audio.onended = () => setIsQuestionAudioPlaying(false)
     audio.onerror = () => setIsQuestionAudioPlaying(false)
     questionAudioRef.current = audio
-    audio.play().then(() => {
-      setIsQuestionAudioPlaying(true)
-    }).catch((err) => {
-      // Autoplay refusé (rare sur le PC animateur car déclenché par un clic) :
-      // le mini-player « Activer le son » permet de relancer manuellement.
-      console.error('Question audio play failed:', err)
-      setIsQuestionAudioPlaying(false)
-    })
+    // Démarre à questionAudioStart et coupe à questionAudioEnd (si définis).
+    // Autoplay refusé (rare car déclenché par un clic) → le mini-player permet de relancer.
+    startClippedPlayback(
+      audio,
+      currentQ.questionAudioStart,
+      currentQ.questionAudioEnd,
+      () => setIsQuestionAudioPlaying(true),
+      () => setIsQuestionAudioPlaying(false),
+    )
   }
 
   // Relancer/mettre en pause manuellement (mini-player + secours autoplay)
@@ -1713,6 +1770,7 @@ export default function QuizPage() {
 
   function stopQuestionAudio() {
     if (questionAudioRef.current) {
+      clearClip(questionAudioRef.current)
       questionAudioRef.current.pause()
       questionAudioRef.current.onended = null
       questionAudioRef.current.onerror = null
@@ -1849,18 +1907,22 @@ export default function QuizPage() {
     }
 
     if (answerAudioRef.current) {
-      answerAudioRef.current.currentTime = 0
-      answerAudioRef.current.play().then(() => {
-        setIsAnswerAudioPlaying(true)
-      }).catch(err => {
-        console.error('Answer audio play failed:', err)
-      })
+      const q = questionsRef.current[currentQuestionIndexRef.current] ?? questions[currentQuestionIndex]
+      // Démarre à audioStart et coupe à audioEnd (si définis), sinon lecture intégrale.
+      startClippedPlayback(
+        answerAudioRef.current,
+        q?.audioStart,
+        q?.audioEnd,
+        () => setIsAnswerAudioPlaying(true),
+        () => setIsAnswerAudioPlaying(false),
+      )
     }
   }
 
   // Arrêter l'audio de la bonne réponse (nettoyage entre questions)
   function stopAnswerAudio() {
     if (answerAudioRef.current) {
+      clearClip(answerAudioRef.current)
       answerAudioRef.current.pause()
       answerAudioRef.current.currentTime = 0
       answerAudioRef.current = null
@@ -2317,6 +2379,23 @@ export default function QuizPage() {
                           </button>
                           <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(questionAudioVolume * 100)}%</span>
                         </div>
+
+                        {/* Découpe de l'extrait (IN/OUT) — admin only */}
+                        {!questionAudioUploading && (
+                          <AudioTrimmer
+                            key={editingQuestion.questionAudioUrl}
+                            audioUrl={editingQuestion.questionAudioUrl!}
+                            initialStart={editingQuestion.questionAudioStart}
+                            initialEnd={editingQuestion.questionAudioEnd}
+                            accent="#14B8A6"
+                            onValidate={(start, end) => {
+                              const u = { ...editingQuestion!, questionAudioStart: start, questionAudioEnd: end } as QuizQuestion
+                              setEditingQuestion(u)
+                              updateQuestion(u)
+                              toast.success('Découpe enregistrée')
+                            }}
+                          />
+                        )}
                       </div>
                     ) : (
                       <button
@@ -2423,6 +2502,23 @@ export default function QuizPage() {
                           </button>
                           <span className="text-xs text-gray-500 w-8 text-right shrink-0">{Math.round(answerAudioVolume * 100)}%</span>
                         </div>
+
+                        {/* Découpe de l'extrait (IN/OUT) — admin only */}
+                        {!audioUploading && (
+                          <AudioTrimmer
+                            key={editingQuestion.audioUrl}
+                            audioUrl={editingQuestion.audioUrl!}
+                            initialStart={editingQuestion.audioStart}
+                            initialEnd={editingQuestion.audioEnd}
+                            accent="#E91E63"
+                            onValidate={(start, end) => {
+                              const u = { ...editingQuestion!, audioStart: start, audioEnd: end } as QuizQuestion
+                              setEditingQuestion(u)
+                              updateQuestion(u)
+                              toast.success('Découpe enregistrée')
+                            }}
+                          />
+                        )}
                       </div>
                     ) : (
                       <button

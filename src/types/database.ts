@@ -245,8 +245,12 @@ export interface QuizQuestion {
   timeLimit: number // Seconds
   points: number
   audioUrl?: string | null // Audio played on correct answer reveal
+  audioStart?: number | null // Découpe : début (s) de l'extrait de révélation (défaut 0)
+  audioEnd?: number | null // Découpe : fin (s) de l'extrait de révélation (défaut = durée totale)
   questionAudioUrl?: string | null // Audio joué PENDANT la question (coupe la musique d'ambiance) — distinct de audioUrl (révélation)
   questionAudioName?: string | null // Nom du fichier audio de la question (affichage éditeur)
+  questionAudioStart?: number | null // Découpe : début (s) de l'extrait de la question (défaut 0)
+  questionAudioEnd?: number | null // Découpe : fin (s) de l'extrait de la question (défaut = durée totale)
   photoUrl?: string | null // Photo displayed on correct answer reveal
   revealDuration?: number | null // How long the reveal media shows/plays: 5 | 10 | 15 | 20 (seconds, default 10)
 }
