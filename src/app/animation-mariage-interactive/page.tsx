@@ -62,10 +62,12 @@ const content: AnimationDetailContent = {
     { q: 'Récupère-t-on les photos après le mariage ?', a: "Oui. Toutes les photos partagées sont rassemblées dans un album accessible après l'événement, que vous pouvez télécharger et partager avec vos invités." },
   ],
   related: [
+    { label: 'Blind test mariage', href: '/blind-test-mariage' },
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
+    { label: 'Quiz de mariage', href: '/quiz-mariage' },
     { label: 'Logiciel DJ mariage', href: '/logiciel-dj-mariage' },
-    { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
-    { label: 'Quiz & blind test', href: '/quiz-interactif' },
+    { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
   ],
 }
 

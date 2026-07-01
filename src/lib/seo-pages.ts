@@ -51,6 +51,7 @@ export const SEO_PAGES: SeoPage[] = [
   { slug: 'quiz-mariage', label: 'Quiz de mariage', blurb: 'Le quiz des mariés sur écran géant, réponses au téléphone.', category: 'evenement', priority: 0.8 },
   { slug: 'blind-test-mariage', label: 'Blind test mariage', blurb: 'Le blind test musical personnalisé autour du couple, réponses au téléphone.', category: 'evenement', priority: 0.9 },
   { slug: 'diaporama-live-mariage', label: 'Diaporama live mariage', blurb: 'Les photos des invités en direct sur grand écran, tout le jour J.', category: 'evenement', priority: 0.9 },
+  { slug: 'animation-photo-mariage', label: 'Animation photo mariage', blurb: 'Borne photo, partage live et impression réunis pour votre mariage.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-anniversaire', label: 'Anniversaire', blurb: 'Une animation mémorable pour souffler les bougies.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-soiree-privee', label: 'Soirée privée', blurb: 'Transformez votre soirée entre amis en moment fort.', category: 'evenement', priority: 0.8 },
   { slug: 'animation-centre-vacances', label: 'Centres de vacances', blurb: 'Des veillées interactives pour colos et clubs.', category: 'evenement', priority: 0.8 },

@@ -6,7 +6,7 @@ const URL = 'https://animajet.fr/blind-test-musical'
 export const metadata: Metadata = {
   title: 'Blind Test Musical Interactif | Sur Écran Géant, Réponses au Téléphone',
   description: 'Organisez un blind test musical interactif : diffusez les extraits, vos invités répondent depuis leur téléphone, le classement s\'affiche en direct sur écran géant. Sans application. Essai gratuit 24h.',
-  keywords: ['blind test musical', 'blind test interactif', 'blind test soirée', 'jeu blind test', 'quiz musical', 'blind test écran géant'],
+  keywords: ['blind test musical', 'blind test interactif', 'blind test DJ', 'blind test DJ professionnel', 'blind test sans buzzer', 'blind test smartphone', 'blind test soirée', 'jeu blind test', 'quiz musical', 'blind test écran géant'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Blind Test Musical Interactif | AnimaJet',

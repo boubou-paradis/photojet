@@ -6,7 +6,7 @@ const URL = 'https://animajet.fr/partage-photo-evenement'
 export const metadata: Metadata = {
   title: 'Partage Photo en Direct | Mur Photo sur Écran Géant pour Événements',
   description: 'Vos invités envoient leurs photos depuis leur téléphone, elles s\'affichent en direct sur écran géant. Mur photo interactif et album partagé téléchargeable. Sans application. Essai gratuit 24h.',
-  keywords: ['partage photo événement', 'partage photos événement', 'animation photos en direct', 'animation photo direct', 'mur photo interactif', 'photo en direct écran géant', 'diaporama mariage', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
+  keywords: ['partage photo événement', 'partage photos événement', 'partage photo mariage QR code', 'photo invités écran géant mariage', 'galerie photo collaborative mariage', 'animation photos en direct', 'animation photo direct', 'mur photo interactif', 'photo en direct écran géant', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
   alternates: { canonical: URL },
   openGraph: {
     title: 'Partage Photo en Direct | AnimaJet',
@@ -50,8 +50,9 @@ const content: AnimationDetailContent = {
     { q: 'Les invités doivent-ils créer un compte ?', a: "Non : ils scannent le QR code et envoient leurs photos directement, sans compte ni application." },
   ],
   related: [
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Borne photo', href: '/borne-photo' },
-    { label: 'Quiz interactif', href: '/quiz-interactif' },
+    { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
     { label: 'Animation mariage', href: '/animation-mariage-interactive' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],

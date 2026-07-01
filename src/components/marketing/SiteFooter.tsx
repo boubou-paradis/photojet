@@ -37,6 +37,7 @@ const events = [
   { label: 'Quiz de mariage', href: '/quiz-mariage' },
   { label: 'Blind test mariage', href: '/blind-test-mariage' },
   { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
+  { label: 'Animation photo mariage', href: '/animation-photo-mariage' },
   { label: 'Anniversaire', href: '/animation-anniversaire' },
   { label: 'Soirée privée', href: '/animation-soiree-privee' },
   { label: 'Centres de vacances', href: '/animation-centre-vacances' },
