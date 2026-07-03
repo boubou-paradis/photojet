@@ -56,7 +56,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz de mariage', href: '/quiz-mariage' },
     { label: 'Blind test mariage', href: '/blind-test-mariage' },
     { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
-    { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
+    { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
   ],
 }
 

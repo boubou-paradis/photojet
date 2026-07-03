@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'idees-animation-mariage'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-06-23'
-const MODIFIED = '2026-06-23'
+const MODIFIED = '2026-07-03'
 const TITLE = "Idées d'animation pour mariage : 25 jeux pour faire participer vos invités"
 const DESCRIPTION =
   "Découvrez 25 idées d'animation pour mariage classées par moment, du vin d'honneur à la soirée, pour faire participer tous vos invités. Trouvez la vôtre !"
@@ -114,7 +114,7 @@ const content: BlogArticleContent = {
         {
           heading: 'Le blind test musical',
           body: [
-            "Valeur sûre et universelle&nbsp;: on diffuse des extraits, les invités devinent titre et artiste. C'est un excellent moyen de fédérer toutes les générations. En version interactive, chacun buzze depuis son téléphone et le classement s'affiche en direct — découvrez comment fonctionne le <a href=\"/blind-test-musical\">blind test musical sur écran géant</a>.",
+            "Valeur sûre et universelle&nbsp;: on diffuse des extraits, les invités devinent titre et artiste. C'est un excellent moyen de fédérer toutes les générations. En version interactive, chacun buzze depuis son téléphone et le classement s'affiche en direct — découvrez comment organiser un <a href=\"/blind-test-mariage\">blind test de mariage</a>.",
           ],
         },
         {
@@ -168,7 +168,7 @@ const content: BlogArticleContent = {
         {
           heading: 'Le diaporama live',
           body: [
-            "Les photos prises par les invités s'affichent en direct sur grand écran pendant qu'ils dansent. C'est l'animation qui ne demande aucun effort et qui crée le plus d'émotion&nbsp;: chacun guette son apparition. Découvrez le <a href=\"/partage-photo-evenement\">partage photo en direct</a>.",
+            "Les photos prises par les invités s'affichent en direct sur grand écran pendant qu'ils dansent. C'est l'animation qui ne demande aucun effort et qui crée le plus d'émotion&nbsp;: chacun guette son apparition. Découvrez le <a href=\"/diaporama-live-mariage\">diaporama live de mariage</a>.",
           ],
         },
         {
@@ -215,7 +215,8 @@ const content: BlogArticleContent = {
   related: [
     { label: 'Animation interactive pour mariage', href: '/animation-mariage-interactive' },
     { label: 'Quiz de mariage', href: '/quiz-mariage' },
-    { label: 'Blind test musical', href: '/blind-test-musical' },
+    { label: 'Blind test mariage', href: '/blind-test-mariage' },
+    { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Roue de la destinée', href: '/roue-de-la-destinee' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
   ],

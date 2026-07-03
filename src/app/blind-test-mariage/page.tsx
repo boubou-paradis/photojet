@@ -56,7 +56,7 @@ const content: AnimationDetailContent = {
     { label: 'Animation de mariage', href: '/animation-mariage-interactive' },
     { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Logiciel DJ mariage', href: '/logiciel-dj-mariage' },
-    { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
+    { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
   ],
 }
 

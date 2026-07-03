@@ -55,7 +55,7 @@ const content: AnimationDetailContent = {
     { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
     { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Animation de mariage', href: '/animation-mariage-interactive' },
-    { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
+    { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
   ],
 }
 
