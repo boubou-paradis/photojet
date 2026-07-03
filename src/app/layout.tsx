@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     default: "AnimaJet - Animation interactive pour événements professionnels",
     template: "%s | AnimaJet",
   },
-  description: "Animations interactives pour l'événementiel : vos invités jouent et partagent leurs photos depuis leur téléphone, en direct sur écran géant. Sans application.",
+  description: "Animation interactive pour vos événements : quiz, blind test, partage photo en direct sur écran géant. Créé par un DJ pour les pros. Sans application.",
   keywords: [
     "animation événement",
     "animation entreprise",

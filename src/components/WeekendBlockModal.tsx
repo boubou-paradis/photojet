@@ -60,7 +60,7 @@ export default function WeekendBlockModal({
 
             {/* Description */}
             <p className="text-gray-400 mb-6 leading-relaxed">
-              L&apos;essai 24h est réservé aux tests en semaine (lundi-jeudi).
+              L&apos;essai 24h est réservé aux tests en semaine (du lundi 12h au vendredi 12h).
               <br />
               Pour animer vos événements du week-end, passez à l&apos;abonnement :
             </p>
@@ -76,7 +76,7 @@ export default function WeekendBlockModal({
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Revenez lundi pour continuer votre essai !
+                  Revenez lundi après 12h pour continuer votre essai !
                 </p>
               </div>
             )}

@@ -54,7 +54,7 @@ export default function BlockedWeekendPage() {
             <p className="text-gray-400 mb-6 leading-relaxed">
               L&apos;essai gratuit 24h est réservé aux tests en semaine
               <br />
-              <span className="text-gray-500">(lundi - jeudi)</span>
+              <span className="text-gray-500">(du lundi 12h au vendredi 12h)</span>
             </p>
 
             {/* Pricing highlight */}

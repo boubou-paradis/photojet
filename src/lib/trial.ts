@@ -40,21 +40,6 @@ export interface TrialAccessResult {
 // ============================================
 
 /**
- * Vérifie si on est actuellement le week-end (vendredi, samedi, dimanche)
- * Le blocage s'applique du vendredi 00:00 au dimanche 23:59
- * Utilise Europe/Paris pour garantir la cohérence client/serveur
- */
-export function isWeekend(): boolean {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    timeZone: 'Europe/Paris',
-  })
-  const dayName = formatter.format(new Date())
-  // Fri = Vendredi, Sat = Samedi, Sun = Dimanche
-  return dayName === 'Fri' || dayName === 'Sat' || dayName === 'Sun'
-}
-
-/**
  * Génère un token unique et sécurisé
  */
 export function generateTrialToken(): string {
