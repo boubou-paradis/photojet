@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { Maximize, Minimize } from 'lucide-react'
 import { WheelSegment, WheelAudioSettings } from '@/types/database'
+import { GEMS, GOLD } from './wheel-theme'
 
 interface WheelGameProps {
   segments: WheelSegment[]
@@ -17,22 +18,24 @@ interface WheelGameProps {
   spinMode?: 'auto' | 'manual'
 }
 
-// 6 pierres précieuses — glossy premium (light = centre, base, dark = bord)
-const GEMS = [
-  { light: '#ef4d66', base: '#b3122e', dark: '#69091b' }, // 1 — Rubis
-  { light: '#ffb24d', base: '#e07b1a', dark: '#964907' }, // 2 — Ambre
-  { light: '#5fe0a6', base: '#1f9d63', dark: '#0c5c39' }, // 3 — Émeraude
-  { light: '#5fb2f0', base: '#1f74bd', dark: '#0d4170' }, // 4 — Saphir
-  { light: '#6a73d6', base: '#2b2f86', dark: '#161a47' }, // 5 — Bleu nuit
-  { light: '#cd62e6', base: '#86209c', dark: '#4d0e63' }, // 6 — Améthyste
-]
+// Arrondi des coordonnées calculées (Math.cos/sin diffèrent d'un ULP entre
+// Node et le navigateur → mismatch d'hydratation sans cet arrondi)
+const rnd = (n: number) => Math.round(n * 1000) / 1000
 
-// Ampoules régulièrement espacées autour du cadre doré
-const BULB_COUNT = 24
+// Ampoules régulièrement espacées autour du cadre doré (décoratif uniquement)
+const BULB_COUNT = 28
 const BULBS = Array.from({ length: BULB_COUNT }, (_, i) => ({
   id: i,
   angle: (i * 360 / BULB_COUNT - 90) * (Math.PI / 180),
 }))
+
+// Spots bleus scéniques (plateau TV) — purement décoratifs, derrière la roue
+const STAGE_BEAMS = [
+  { left: '4%', rotate: 16, delay: 0, duration: 7.5 },
+  { left: '15%', rotate: 9, delay: 1.8, duration: 9 },
+  { left: '78%', rotate: -9, delay: 0.9, duration: 8.2 },
+  { left: '89%', rotate: -16, delay: 2.6, duration: 7 },
+]
 
 const CONFETTI_COLORS = ['#d4af37', '#f4d03f', '#ffe9a3', '#ffffff', '#c9a227']
 const SPIN_CSS_DURATION_MS = 8000
@@ -45,6 +48,8 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMac, setIsMac] = useState(false)
+  // Accessibilité : coupe particules, pulses et faisceaux animés (visuel uniquement)
+  const prefersReducedMotion = useReducedMotion()
   const previousSpinning = useRef(false)
   const previousSpinToIndex = useRef<number | undefined>(undefined)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -194,7 +199,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
   // Confettis dorés via canvas-confetti à l'apparition du résultat / de la fin
   useEffect(() => {
-    if (!showConfetti) return
+    if (!showConfetti || prefersReducedMotion) return
     const colors = CONFETTI_COLORS
     confetti({ particleCount: 150, spread: 105, startVelocity: 50, origin: { x: 0.5, y: 0.5 }, colors, scalar: 1.15, ticks: 260 })
     const end = Date.now() + 1500
@@ -206,7 +211,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }
     frame()
     return () => cancelAnimationFrame(raf)
-  }, [showConfetti])
+  }, [showConfetti, prefersReducedMotion])
 
   // Géométrie — 6 parts égales, gros numéros centrés
   const cx = 200, cy = 200, r = 184
@@ -217,29 +222,48 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     return availableSegments.map((segment, index) => {
       const startAngle = index * anglePerSegment - Math.PI / 2
       const endAngle = startAngle + anglePerSegment
-      const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle)
-      const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle)
+      const x1 = rnd(cx + r * Math.cos(startAngle)), y1 = rnd(cy + r * Math.sin(startAngle))
+      const x2 = rnd(cx + r * Math.cos(endAngle)), y2 = rnd(cy + r * Math.sin(endAngle))
       const largeArcFlag = anglePerSegment > Math.PI ? 1 : 0
       const pathData = [`M ${cx} ${cy}`, `L ${x1} ${y1}`, `A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`, 'Z'].join(' ')
       const midAngle = startAngle + anglePerSegment / 2
       const textRadius = r * 0.66
-      const textX = cx + textRadius * Math.cos(midAngle)
-      const textY = cy + textRadius * Math.sin(midAngle)
+      const textX = rnd(cx + textRadius * Math.cos(midAngle))
+      const textY = rnd(cy + textRadius * Math.sin(midAngle))
       // Trait de séparation (rayon au bord de départ du segment)
-      const dividerX = cx + r * Math.cos(startAngle), dividerY = cy + r * Math.sin(startAngle)
+      const dividerX = x1, dividerY = y1
+      // Rivet doré à la jonction des segments, près du bord
+      const rivetRadius = r - 13
+      const rivetX = rnd(cx + rivetRadius * Math.cos(startAngle)), rivetY = rnd(cy + rivetRadius * Math.sin(startAngle))
       const gem = GEMS[index % GEMS.length]
-      return { id: segment.id, pathData, gem, idx: index, text: segment.text, textX, textY, dividerX, dividerY }
+      return { id: segment.id, pathData, gem, idx: index, text: segment.text, textX, textY, dividerX, dividerY, rivetX, rivetY }
     })
   }, [availableSegments])
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: '#0c0a12' }}>
+    <div className="fixed inset-0 overflow-hidden" style={{ background: '#03040c' }}>
 
-      {/* FOND DRAMATIQUE + LUEUR DORÉE RADIALE RENFORCÉE */}
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 55% at 50% 48%, rgba(212,175,55,0.30) 0%, rgba(212,175,55,0.10) 32%, rgba(20,16,28,0) 60%), radial-gradient(ellipse at 50% 30%, #221b2e 0%, #14101d 45%, #0a0810 100%)' }} />
-      {/* Projecteurs scéniques discrets */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'conic-gradient(from 270deg at 50% 0%, transparent 0deg, rgba(212,175,55,0.06) 18deg, transparent 36deg, transparent 324deg, rgba(212,175,55,0.06) 342deg, transparent 360deg)' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(0,0,0,0.6) 100%)' }} />
+      {/* FOND PLATEAU TV — bleu nuit profond + halo doré derrière la roue */}
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 55% at 50% 46%, rgba(255,190,60,0.26) 0%, rgba(212,175,55,0.09) 32%, transparent 58%), radial-gradient(circle at 50% 42%, #111827 0%, #050510 60%, #000000 100%)' }} />
+
+      {/* Spots bleus scéniques (faisceaux depuis le haut, derrière la roue) */}
+      {STAGE_BEAMS.map((beam, i) => (
+        <motion.div key={`beam-${i}`} className="absolute pointer-events-none"
+          style={{
+            top: '-12%', left: beam.left, width: '13%', height: '92%',
+            transformOrigin: 'top center', rotate: beam.rotate,
+            clipPath: 'polygon(38% 0, 62% 0, 100% 100%, 0 100%)',
+            background: 'linear-gradient(to bottom, rgba(64,148,255,0.45) 0%, rgba(64,148,255,0.14) 52%, transparent 88%)',
+            filter: 'blur(22px)',
+          }}
+          animate={prefersReducedMotion ? { opacity: 0.4 } : { opacity: [0.28, 0.55, 0.28] }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: beam.duration, delay: beam.delay, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ))}
+      {/* Nappe bleue basse (retour de lumière des spots sur la scène) */}
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '30%', background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(40,90,180,0.16) 0%, transparent 70%)' }} />
+      {/* Vignette de contraste */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.68) 100%)' }} />
 
       {/* Bouton plein écran (discret) */}
       <motion.button onClick={toggleFullscreen} initial={{ opacity: 0 }} animate={{ opacity: 0.25 }}
@@ -251,65 +275,119 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
       {/* SCÈNE CENTRÉE */}
       <div className="relative z-10 h-full w-full flex items-center justify-center">
-        <div className="relative" style={{ width: 'min(92vmin, 880px)', height: 'min(92vmin, 880px)' }}>
+        {/* Roue légèrement remontée pour laisser le socle visible sous elle */}
+        <div className="relative" role="img" aria-label="Roue de la Destinée" style={{ width: 'min(85vmin, 860px)', height: 'min(85vmin, 860px)', transform: 'translateY(-4.5%)' }}>
 
-          {/* SOCLE / BASE */}
-          <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ bottom: '-11%', width: '96%', height: '24%' }}>
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-1 rounded-[50%] blur-3xl" style={{ width: '95%', height: '75%', background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.75) 0%, rgba(212,175,55,0.28) 42%, transparent 72%)' }} />
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0" style={{
-              width: '74%', height: '64%',
-              clipPath: 'polygon(18% 0, 82% 0, 100% 100%, 0 100%)',
-              background: 'linear-gradient(to bottom, #211b34 0%, #110d1d 100%)',
-              borderTop: '2.5px solid rgba(212,175,55,0.95)',
-              boxShadow: '0 16px 50px rgba(212,175,55,0.4), inset 0 2px 8px rgba(212,175,55,0.3)',
+          {/* SOCLE DE SCÈNE — la roue est un objet posé sur le plateau */}
+          <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ bottom: '-12%', width: '100%', height: '26%' }}>
+            {/* Reflet doré flou au sol */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 rounded-[50%] blur-3xl" style={{ width: '98%', height: '70%', background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.7) 0%, rgba(212,175,55,0.24) 42%, transparent 72%)' }} />
+            {/* Fût trapézoïdal bleu nuit, filet or en tête */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-[9%]" style={{
+              width: '70%', height: '58%',
+              clipPath: 'polygon(16% 0, 84% 0, 100% 100%, 0 100%)',
+              background: 'linear-gradient(to bottom, #131a30 0%, #0a0e1d 55%, #060812 100%)',
+              borderTop: `2.5px solid ${GOLD.g2}`,
+              boxShadow: '0 16px 50px rgba(212,175,55,0.35), inset 0 2px 10px rgba(246,196,83,0.3), inset 0 -12px 24px rgba(0,0,0,0.7)',
             }} />
+            {/* Base inférieure élargie, liseré or */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-0" style={{
+              width: '86%', height: '11%',
+              borderRadius: '6px 6px 10px 10px',
+              background: 'linear-gradient(to bottom, #1a2138 0%, #05060d 100%)',
+              borderTop: `2px solid ${GOLD.g3}`,
+              boxShadow: 'inset 0 1px 4px rgba(246,196,83,0.35), 0 10px 30px rgba(0,0,0,0.8)',
+            }} />
+            {/* Plaque décorative centrale + diamant or */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center" style={{
+              bottom: '22%', width: '17%', height: '26%',
+              borderRadius: 6,
+              background: 'linear-gradient(160deg, #101526 0%, #070a14 100%)',
+              border: '1.5px solid rgba(246,196,83,0.6)',
+              boxShadow: 'inset 0 0 12px rgba(0,0,0,0.8), 0 0 14px rgba(212,175,55,0.25)',
+            }}>
+              <span style={{ color: GOLD.g2, fontSize: 'clamp(9px, 2.4vmin, 18px)', lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(246,196,83,0.7))' }}>✦</span>
+            </div>
+            {/* Ombre portée de la roue sur le socle */}
+            <div className="absolute left-1/2 -translate-x-1/2 rounded-[50%] blur-xl" style={{ bottom: '52%', width: '58%', height: '22%', background: 'rgba(0,0,0,0.55)' }} />
           </div>
 
-          {/* Lueur dorée derrière la roue */}
-          <div className="absolute inset-[-6%] rounded-full blur-[60px] pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.42) 0%, rgba(212,175,55,0.12) 48%, transparent 70%)' }} />
+          {/* Halo doré derrière la roue (renforcé pendant le spin) */}
+          <motion.div className="absolute inset-[-6%] rounded-full blur-[60px] pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(255,190,60,0.45) 0%, rgba(212,175,55,0.13) 48%, transparent 70%)' }}
+            animate={{ opacity: isSpinning ? 1 : 0.72 }}
+            transition={{ duration: 0.6 }} />
 
-          {/* CADRE DORÉ + AMPOULES (fixe) */}
+          {/* COURONNE OR MÉTALLIQUE (fixe) — anneaux superposés + ampoules */}
           <div className="absolute inset-0 rounded-full" style={{
-            background: 'conic-gradient(from 210deg, #8a6a14 0%, #f6e6a8 12%, #c9a227 27%, #7a5e10 45%, #f1dd95 62%, #c9a227 78%, #8a6a14 100%)',
-            boxShadow: '0 0 34px rgba(212,175,55,0.5), 0 0 90px rgba(212,175,55,0.18), inset 0 3px 8px rgba(255,247,214,0.5), inset 0 -6px 14px rgba(0,0,0,0.55)',
+            background: `conic-gradient(from 210deg, ${GOLD.g3} 0%, ${GOLD.g1} 11%, ${GOLD.g2} 26%, ${GOLD.g4} 45%, ${GOLD.g1} 61%, ${GOLD.g2} 78%, ${GOLD.g3} 100%)`,
+            // Cerclage externe or sombre + lueur — donne l'épaisseur d'une vraie couronne
+            boxShadow: `0 0 0 3px ${GOLD.g4}, 0 0 0 4.5px rgba(255,241,168,0.35), 0 14px 44px rgba(0,0,0,0.65), 0 0 38px rgba(212,175,55,0.5), 0 0 100px rgba(212,175,55,0.18), inset 0 4px 10px rgba(255,247,214,0.55), inset 0 -7px 16px rgba(0,0,0,0.6)`,
           }}>
-            {/* Gorge sombre intérieure */}
-            <div className="absolute rounded-full" style={{ inset: '7.5%', background: '#0c0a12', boxShadow: 'inset 0 0 24px rgba(0,0,0,0.9)' }} />
-            {/* Filet doré fin */}
-            <div className="absolute rounded-full border border-[#f3e2a3]/35" style={{ inset: '3%' }} />
+            {/* Bombé métallique (biseau haut clair / bas sombre) */}
+            <div className="absolute inset-0 rounded-full pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(255,251,230,0.35) 0%, transparent 28%, transparent 72%, rgba(0,0,0,0.4) 100%)' }} />
+            {/* Filets dorés fins (double cerclage) */}
+            <div className="absolute rounded-full border border-[#fff1a8]/45 pointer-events-none" style={{ inset: '1.6%' }} />
+            <div className="absolute rounded-full border border-[#6f4308]/70 pointer-events-none" style={{ inset: '5.6%' }} />
+            {/* Gorge sombre intérieure (lit de la roue) */}
+            <div className="absolute rounded-full" style={{ inset: '7.5%', background: '#06070f', boxShadow: 'inset 0 0 26px rgba(0,0,0,0.95), 0 0 0 1.5px rgba(255,241,168,0.4)' }} />
 
-            {/* Ampoules — scintillement au repos / chase pendant la rotation */}
+            {/* Ampoules fête foraine — socle doré + verre chaud.
+                Chenillard pendant la rotation / scintillement au repos. */}
             {BULBS.map((bulb, i) => {
-              const x = 50 + 46.2 * Math.cos(bulb.angle)
-              const y = 50 + 46.2 * Math.sin(bulb.angle)
+              const x = rnd(50 + 46.2 * Math.cos(bulb.angle))
+              const y = rnd(50 + 46.2 * Math.sin(bulb.angle))
               return (
-                <motion.div key={bulb.id} className="absolute rounded-full"
-                  style={{
-                    width: '2.4%', height: '2.4%', left: `${x}%`, top: `${y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    background: 'radial-gradient(circle at 35% 30%, #fff7da 0%, #ffe49b 42%, #d4af37 100%)',
-                  }}
-                  animate={isSpinning
-                    ? { opacity: [0.35, 1, 0.35], boxShadow: ['0 0 2px rgba(212,175,55,0.4)', '0 0 12px rgba(255,224,150,1), 0 0 22px rgba(212,175,55,0.7)', '0 0 2px rgba(212,175,55,0.4)'] }
-                    : { opacity: [0.5, 1, 0.5], boxShadow: ['0 0 3px rgba(212,175,55,0.4)', '0 0 10px rgba(255,224,150,0.95), 0 0 18px rgba(212,175,55,0.55)', '0 0 3px rgba(212,175,55,0.4)'] }
-                  }
-                  transition={isSpinning
-                    ? { duration: 0.85, repeat: Infinity, ease: 'easeInOut', delay: (i / BULB_COUNT) * 0.85 }
-                    : { duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: (i % 6) * 0.28 }
-                  }
-                />
+                <div key={bulb.id} className="absolute" style={{ width: '3.1%', height: '3.1%', left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
+                  {/* Socle doré (statique) */}
+                  <div className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 40% 32%, ${GOLD.g2} 0%, ${GOLD.g3} 55%, ${GOLD.g4} 100%)`, boxShadow: 'inset 0 -1px 2px rgba(0,0,0,0.6)' }} />
+                  {/* Verre de l'ampoule */}
+                  <motion.div className="absolute rounded-full" style={{ inset: '13%', background: 'radial-gradient(circle at 35% 30%, #fffdf2 0%, #ffe49b 46%, #d4af37 100%)' }}
+                    animate={prefersReducedMotion
+                      ? { opacity: 0.92, boxShadow: '0 0 8px rgba(255,224,150,0.85)' }
+                      : isSpinning
+                        ? { opacity: [0.3, 1, 0.3], boxShadow: ['0 0 2px rgba(212,175,55,0.4)', '0 0 12px rgba(255,224,150,1), 0 0 24px rgba(212,175,55,0.75)', '0 0 2px rgba(212,175,55,0.4)'] }
+                        : { opacity: [0.5, 1, 0.5], boxShadow: ['0 0 3px rgba(212,175,55,0.4)', '0 0 10px rgba(255,224,150,0.95), 0 0 18px rgba(212,175,55,0.55)', '0 0 3px rgba(212,175,55,0.4)'] }
+                    }
+                    transition={prefersReducedMotion
+                      ? { duration: 0 }
+                      : isSpinning
+                        ? { duration: 0.85, repeat: Infinity, ease: 'easeInOut', delay: (i / BULB_COUNT) * 0.85 }
+                        : { duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: (i % 7) * 0.26 }
+                    }
+                  />
+                </div>
               )
             })}
           </div>
 
-          {/* POINTEUR (goutte blanche bordée d'or) */}
-          <motion.div className="absolute left-1/2 -translate-x-1/2 z-40" style={{ top: '-3.5%', width: '8%' }}
-            animate={isSpinning ? { y: ['0%', '-12%', '0%'] } : {}}
+          {/* POINTEUR — goutte ivoire, contour or métallique, rivet central.
+              Fixe devant la roue ; vibration « tick » pendant le spin. */}
+          <motion.div className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-none" style={{ top: '-2.2%', width: '8.5%' }}
+            animate={isSpinning && !prefersReducedMotion ? { y: ['0%', '-12%', '0%'] } : {}}
             transition={{ duration: 0.18, repeat: Infinity }}>
-            <svg viewBox="0 0 40 56" className="w-full h-auto" style={{ filter: 'drop-shadow(0 5px 8px rgba(0,0,0,0.6))' }}>
-              <path d="M20 55 C 8 38 2 30 2 18 A 18 18 0 1 1 38 18 C 38 30 32 38 20 55 Z"
-                fill="#ffffff" stroke="#d4af37" strokeWidth="3.5" />
-              <ellipse cx="14" cy="14" rx="6" ry="8" fill="rgba(255,255,255,0.7)" />
+            <svg viewBox="0 0 40 58" className="w-full h-auto" style={{ filter: 'drop-shadow(0 6px 9px rgba(0,0,0,0.65))' }}>
+              <defs>
+                <linearGradient id="ptr-gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={GOLD.g1} />
+                  <stop offset="45%" stopColor={GOLD.g2} />
+                  <stop offset="100%" stopColor={GOLD.g3} />
+                </linearGradient>
+                <radialGradient id="ptr-rivet" cx="38%" cy="30%" r="80%">
+                  <stop offset="0%" stopColor={GOLD.g1} />
+                  <stop offset="55%" stopColor={GOLD.g2} />
+                  <stop offset="100%" stopColor={GOLD.g4} />
+                </radialGradient>
+              </defs>
+              <path d="M20 57 C 8 39 2 30 2 18 A 18 18 0 1 1 38 18 C 38 30 32 39 20 57 Z"
+                fill="#fff9e6" stroke="url(#ptr-gold)" strokeWidth="4" />
+              {/* Relief interne (ombre du bord bas) */}
+              <path d="M20 53 C 10 37 5 29 5 18 A 15 15 0 1 1 35 18 C 35 29 30 37 20 53 Z"
+                fill="none" stroke="rgba(111,67,8,0.28)" strokeWidth="1.6" />
+              {/* Reflet lumineux haut-gauche */}
+              <ellipse cx="13.5" cy="13" rx="5.5" ry="7.5" fill="rgba(255,255,255,0.75)" />
+              {/* Rivet/axe doré */}
+              <circle cx="20" cy="18" r="4.6" fill="url(#ptr-rivet)" stroke="rgba(111,67,8,0.6)" strokeWidth="0.8" />
             </svg>
           </motion.div>
 
@@ -338,6 +416,23 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     <stop offset="34%" stopColor="rgba(255,255,255,0.10)" />
                     <stop offset="60%" stopColor="rgba(255,255,255,0)" />
                   </radialGradient>
+                  {/* Assombrissement près du bord — effet laque/vernis bombé */}
+                  <radialGradient id="rim-shade" cx="200" cy="200" r="184" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+                    <stop offset="78%" stopColor="rgba(0,0,0,0)" />
+                    <stop offset="100%" stopColor="rgba(0,0,0,0.42)" />
+                  </radialGradient>
+                  {/* Or métallique des séparateurs */}
+                  <linearGradient id="gold-stroke" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor={GOLD.g1} />
+                    <stop offset="45%" stopColor={GOLD.g2} />
+                    <stop offset="100%" stopColor={GOLD.g3} />
+                  </linearGradient>
+                  <radialGradient id="rivet-gold" cx="38%" cy="30%" r="80%">
+                    <stop offset="0%" stopColor={GOLD.g1} />
+                    <stop offset="55%" stopColor={GOLD.g2} />
+                    <stop offset="100%" stopColor={GOLD.g4} />
+                  </radialGradient>
                   <filter id="winGlow" x="-60%" y="-60%" width="220%" height="220%">
                     <feGaussianBlur stdDeviation="6" result="b" />
                     <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
@@ -345,83 +440,109 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                   <filter id="numShadow" x="-50%" y="-50%" width="200%" height="200%">
                     <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#000" floodOpacity="0.55" />
                   </filter>
+                  {/* Relief des séparateurs dorés */}
+                  <filter id="dividerShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="1.4" stdDeviation="1.2" floodColor="#000" floodOpacity="0.6" />
+                  </filter>
                 </defs>
 
                 {/* Disque de fond */}
-                <circle cx={cx} cy={cy} r={r} fill="#0c0a12" />
+                <circle cx={cx} cy={cy} r={r} fill="#06070f" />
 
-                {/* Segments pierres précieuses glossy */}
+                {/* Segments glossy — bord légèrement assombri par un stroke sombre */}
                 {wheelSegments.map((seg) => (
-                  <path key={`seg-${seg.id}`} d={seg.pathData} fill={`url(#gem-${seg.idx % GEMS.length})`} />
+                  <path key={`seg-${seg.id}`} d={seg.pathData} fill={`url(#gem-${seg.idx % GEMS.length})`}
+                    stroke="rgba(0,0,0,0.35)" strokeWidth="1.4" />
                 ))}
 
                 {/* Illumination de la part gagnante */}
                 {showResult && winningIndex !== undefined && wheelSegments[winningIndex] && (
                   <motion.g filter="url(#winGlow)"
                     initial={{ opacity: 0.85 }}
-                    animate={{ opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}>
+                    animate={prefersReducedMotion ? { opacity: 0.95 } : { opacity: [0.6, 1, 0.6] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}>
                     <path d={wheelSegments[winningIndex].pathData} fill="rgba(255,255,255,0.45)" />
                     <path d={wheelSegments[winningIndex].pathData} fill="none" stroke="#ffffff" strokeWidth="4.5" />
                   </motion.g>
                 )}
 
-                {/* Reflet glossy global */}
+                {/* Reflet glossy global (lumière venant du haut) */}
                 <circle cx={cx} cy={cy} r={r} fill="url(#gloss)" pointerEvents="none" />
+                {/* Vernis : assombrissement périphérique bombé */}
+                <circle cx={cx} cy={cy} r={r} fill="url(#rim-shade)" pointerEvents="none" />
 
-                {/* Traits dorés de séparation */}
+                {/* Séparateurs or en relief (ombre portée + tranche métallique) */}
                 {wheelSegments.map((seg) => (
-                  <line key={`div-${seg.id}`} x1={cx} y1={cy} x2={seg.dividerX} y2={seg.dividerY}
-                    stroke="#f6e6a8" strokeWidth="1.6" strokeOpacity="0.9" />
+                  <g key={`div-${seg.id}`} filter="url(#dividerShadow)">
+                    <line x1={cx} y1={cy} x2={seg.dividerX} y2={seg.dividerY}
+                      stroke="url(#gold-stroke)" strokeWidth="3.6" strokeLinecap="round" />
+                    <line x1={cx} y1={cy} x2={seg.dividerX} y2={seg.dividerY}
+                      stroke={GOLD.g1} strokeWidth="1" strokeOpacity="0.8" strokeLinecap="round" />
+                  </g>
                 ))}
 
-                {/* Anneau intérieur fin */}
-                <circle cx={cx} cy={cy} r={r - 1} fill="none" stroke="#f6e6a8" strokeWidth="2" strokeOpacity="0.55" />
+                {/* Rivets dorés aux jonctions des segments */}
+                {wheelSegments.map((seg) => (
+                  <g key={`rivet-${seg.id}`}>
+                    <circle cx={seg.rivetX} cy={seg.rivetY} r="4.6" fill="url(#rivet-gold)" stroke="rgba(111,67,8,0.7)" strokeWidth="0.9" />
+                    <circle cx={seg.rivetX - 1.2} cy={seg.rivetY - 1.4} r="1.3" fill="rgba(255,251,230,0.85)" />
+                  </g>
+                ))}
 
-                {/* Gros numéros blancs — toujours à l'endroit (contre-rotation) */}
+                {/* Double cerclage intérieur fin */}
+                <circle cx={cx} cy={cy} r={r - 1} fill="none" stroke="url(#gold-stroke)" strokeWidth="2.4" strokeOpacity="0.85" />
+                <circle cx={cx} cy={cy} r={r - 5} fill="none" stroke={GOLD.g1} strokeWidth="0.8" strokeOpacity="0.4" />
+
+                {/* Gros numéros ivoire embossés — toujours à l'endroit (contre-rotation).
+                    Double <text> superposé : lueur or floue dessous + chiffre net dessus. */}
                 {wheelSegments.map((seg, i) => (
-                  <text key={`txt-${seg.id}`}
-                    x={seg.textX} y={seg.textY}
-                    fill="#ffffff"
-                    fontSize="46"
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    transform={`rotate(${-rotation}, ${seg.textX}, ${seg.textY})`}
-                    filter="url(#numShadow)"
-                    style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-                    {i + 1}
-                  </text>
+                  <g key={`txt-${seg.id}`} transform={`rotate(${-rotation}, ${seg.textX}, ${seg.textY})`}>
+                    <text x={seg.textX} y={seg.textY + 2.5}
+                      fill="rgba(0,0,0,0.55)" fontSize="46" textAnchor="middle" dominantBaseline="central"
+                      style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
+                      {i + 1}
+                    </text>
+                    <text x={seg.textX} y={seg.textY}
+                      fill={GOLD.ivory} fontSize="46" textAnchor="middle" dominantBaseline="central"
+                      filter="url(#numShadow)"
+                      stroke="rgba(255,241,168,0.35)" strokeWidth="0.6"
+                      style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
+                      {i + 1}
+                    </text>
+                  </g>
                 ))}
               </svg>
             </motion.div>
           </div>
 
-          {/* MOYEU CENTRAL FIXE — titre + ornement */}
+          {/* MOYEU CENTRAL FIXE — plaque émaillée noire, double cerclage or, titre.
+              Positions texte/étoile/pivot calées sur la zone libre (fix 804bdb3). */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-            <div className="rounded-full flex flex-col items-center justify-start text-center"
+            <div className="rounded-full flex flex-col items-center justify-start text-center overflow-hidden"
               style={{
                 position: 'relative',
                 width: '31%', height: '31%',
                 paddingTop: '13%',
-                background: 'radial-gradient(circle at 50% 38%, #1a1626 0%, #0b0913 75%, #060409 100%)',
+                background: 'radial-gradient(circle at 50% 34%, #23242e 0%, #0b0b13 62%, #040308 100%)',
                 border: '3px solid transparent',
                 backgroundClip: 'padding-box',
-                boxShadow: '0 0 0 3px rgba(212,175,55,0.9), 0 0 0 6px rgba(0,0,0,0.6), 0 0 0 8px rgba(212,175,55,0.5), inset 0 0 24px rgba(0,0,0,0.8), 0 0 26px rgba(212,175,55,0.35)',
+                boxShadow: `0 0 0 3px ${GOLD.g2}, 0 0 0 6px rgba(0,0,0,0.7), 0 0 0 8.5px rgba(246,196,83,0.55), 0 0 0 10px rgba(111,67,8,0.5), inset 0 0 26px rgba(0,0,0,0.85), 0 0 28px rgba(212,175,55,0.35)`,
               }}>
-              <span style={{ fontFamily: 'var(--font-playfair), serif', fontWeight: 700, color: '#e7cd7e', fontSize: 'clamp(10px, 3.2vmin, 24px)', lineHeight: 1.1, letterSpacing: '0.02em' }}>Roue&nbsp;de&nbsp;la</span>
+              {/* Reflet verre bombé (laque noire) */}
+              <div className="absolute pointer-events-none" style={{ top: '5%', left: '14%', width: '72%', height: '34%', borderRadius: '50%', background: 'linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 70%, transparent 100%)' }} />
+              {/* Filet décoratif au-dessus du titre */}
+              <span aria-hidden style={{ position: 'absolute', left: '50%', top: '9.5%', transform: 'translateX(-50%)', width: '26%', height: 1, background: `linear-gradient(90deg, transparent, ${GOLD.g2}, transparent)` }} />
+              <span style={{ fontFamily: 'var(--font-playfair), serif', fontWeight: 700, color: '#f7d875', fontSize: 'clamp(10px, 3.2vmin, 24px)', lineHeight: 1.1, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Roue&nbsp;de&nbsp;la</span>
               <span style={{
                 fontFamily: 'var(--font-playfair), serif', fontWeight: 800, fontSize: 'clamp(13px, 4.6vmin, 34px)', lineHeight: 1.05, letterSpacing: '0.01em',
-                background: 'linear-gradient(180deg, #fbf3d6 0%, #e7cd7e 48%, #c9a227 100%)',
+                background: `linear-gradient(180deg, ${GOLD.ivory} 0%, #f7d875 48%, ${GOLD.g2} 82%, ${GOLD.g3} 100%)`,
                 WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.8))',
               }}>Destinée</span>
               {/* Ornement étoile — sous le pivot, dans la zone basse libre */}
-              <span style={{ position: 'absolute', left: '50%', top: '70%', transform: 'translateX(-50%)', color: '#d4af37', fontSize: 'clamp(10px, 3vmin, 20px)', lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(212,175,55,0.6))' }}>✦</span>
+              <span style={{ position: 'absolute', left: '50%', top: '70%', transform: 'translateX(-50%)', color: GOLD.g2, fontSize: 'clamp(10px, 3vmin, 20px)', lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(246,196,83,0.65))' }}>✦</span>
             </div>
           </div>
-
-          {/* Pivot central doré (axe de rotation, géométriquement centré, sous le texte) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 rounded-full pointer-events-none"
-            style={{ width: '2.6%', height: '2.6%', background: 'radial-gradient(circle at 38% 30%, #fbf0c8 0%, #d4af37 55%, #8a6a14 100%)', boxShadow: '0 0 8px rgba(212,175,55,0.8)' }} />
         </div>
       </div>
 

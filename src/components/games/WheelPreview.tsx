@@ -3,21 +3,16 @@
 import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { WheelSegment } from '@/types/database'
+// Palette casino partagée avec WheelGame (wheel-theme.ts)
+import { GEMS } from './wheel-theme'
 
 interface WheelPreviewProps {
   segments: WheelSegment[]
   size?: number
 }
 
-// 6 pierres précieuses — cohérent avec WheelGame
-const GEMS = [
-  { light: '#ef4d66', base: '#b3122e', dark: '#69091b' }, // 1 — Rubis
-  { light: '#ffb24d', base: '#e07b1a', dark: '#964907' }, // 2 — Ambre
-  { light: '#5fe0a6', base: '#1f9d63', dark: '#0c5c39' }, // 3 — Émeraude
-  { light: '#5fb2f0', base: '#1f74bd', dark: '#0d4170' }, // 4 — Saphir
-  { light: '#6a73d6', base: '#2b2f86', dark: '#161a47' }, // 5 — Bleu nuit
-  { light: '#cd62e6', base: '#86209c', dark: '#4d0e63' }, // 6 — Améthyste
-]
+// Arrondi anti-mismatch d'hydratation (Math.cos/sin Node ≠ navigateur au dernier ULP)
+const rnd = (n: number) => Math.round(n * 1000) / 1000
 
 export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps) {
   const [bulbPhase, setBulbPhase] = useState(0)
@@ -36,15 +31,15 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
     return segments.map((segment, index) => {
       const startAngle = index * anglePerSegment - Math.PI / 2
       const endAngle = startAngle + anglePerSegment
-      const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle)
-      const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle)
+      const x1 = rnd(cx + r * Math.cos(startAngle)), y1 = rnd(cy + r * Math.sin(startAngle))
+      const x2 = rnd(cx + r * Math.cos(endAngle)), y2 = rnd(cy + r * Math.sin(endAngle))
       const largeArcFlag = anglePerSegment > Math.PI ? 1 : 0
       const pathData = [`M ${cx} ${cy}`, `L ${x1} ${y1}`, `A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`, 'Z'].join(' ')
       const midAngle = startAngle + anglePerSegment / 2
       const textRadius = r * 0.66
-      const textX = cx + textRadius * Math.cos(midAngle)
-      const textY = cy + textRadius * Math.sin(midAngle)
-      const dividerX = cx + r * Math.cos(startAngle), dividerY = cy + r * Math.sin(startAngle)
+      const textX = rnd(cx + textRadius * Math.cos(midAngle))
+      const textY = rnd(cy + textRadius * Math.sin(midAngle))
+      const dividerX = x1, dividerY = y1
       return { id: segment.id, pathData, idx: index, textX, textY, dividerX, dividerY }
     })
   }, [segments])
@@ -54,8 +49,8 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
     return Array.from({ length: 24 }, (_, i) => {
       const angle = (i * 360 / 24 - 90) * (Math.PI / 180)
       const br = 184
-      const x = 200 + br * Math.cos(angle)
-      const y = 200 + br * Math.sin(angle)
+      const x = rnd(200 + br * Math.cos(angle))
+      const y = rnd(200 + br * Math.sin(angle))
       return { id: i, x, y, isLit: (i + bulbPhase) % 2 === 0 }
     })
   }, [bulbPhase])
