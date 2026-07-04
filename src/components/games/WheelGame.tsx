@@ -250,20 +250,23 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       {STAGE_BEAMS.map((beam, i) => (
         <motion.div key={`beam-${i}`} className="absolute pointer-events-none"
           style={{
-            top: '-12%', left: beam.left, width: '13%', height: '92%',
+            top: '-12%', left: beam.left, width: '15%', height: '96%',
             transformOrigin: 'top center', rotate: beam.rotate,
             clipPath: 'polygon(38% 0, 62% 0, 100% 100%, 0 100%)',
-            background: 'linear-gradient(to bottom, rgba(64,148,255,0.45) 0%, rgba(64,148,255,0.14) 52%, transparent 88%)',
-            filter: 'blur(22px)',
+            background: 'linear-gradient(to bottom, rgba(90,165,255,0.85) 0%, rgba(64,148,255,0.32) 52%, transparent 90%)',
+            // Flancs fondus pour un vrai cône de lumière (pas de bord dur)
+            maskImage: 'linear-gradient(to right, transparent 0%, black 32%, black 68%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 32%, black 68%, transparent 100%)',
+            filter: 'blur(20px)',
           }}
-          animate={prefersReducedMotion ? { opacity: 0.4 } : { opacity: [0.28, 0.55, 0.28] }}
+          animate={prefersReducedMotion ? { opacity: 0.7 } : { opacity: [0.55, 0.95, 0.55] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: beam.duration, delay: beam.delay, repeat: Infinity, ease: 'easeInOut' }}
         />
       ))}
       {/* Nappe bleue basse (retour de lumière des spots sur la scène) */}
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '30%', background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(40,90,180,0.16) 0%, transparent 70%)' }} />
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '34%', background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(50,110,210,0.26) 0%, transparent 72%)' }} />
       {/* Vignette de contraste */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.68) 100%)' }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(0,0,0,0.52) 100%)' }} />
 
       {/* Bouton plein écran (discret) */}
       <motion.button onClick={toggleFullscreen} initial={{ opacity: 0 }} animate={{ opacity: 0.25 }}
