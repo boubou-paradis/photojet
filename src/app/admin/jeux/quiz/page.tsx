@@ -1133,6 +1133,10 @@ export default function QuizPage() {
       const { error, data } = await supabase
         .from('sessions')
         .update({
+          // Désactiver les autres jeux (sinon /live les affiche en priorité)
+          mystery_photo_active: false,
+          lineup_active: false,
+          wheel_active: false,
           quiz_active: false, // Quiz pas encore actif
           quiz_lobby_visible: true, // Lobby visible
           quiz_questions: JSON.stringify(questions),
@@ -1193,6 +1197,10 @@ export default function QuizPage() {
       const { error } = await supabase
         .from('sessions')
         .update({
+          // Désactiver les autres jeux (sinon /live les affiche en priorité)
+          mystery_photo_active: false,
+          lineup_active: false,
+          wheel_active: false,
           quiz_active: true,
           quiz_lobby_visible: false,
           quiz_questions: JSON.stringify(questions),
