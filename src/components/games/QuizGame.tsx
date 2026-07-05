@@ -86,6 +86,8 @@ export default function QuizGame({
   const currentQuestion = questions[currentQuestionIndex]
   const revealPhotoUrl = currentQuestion?.photoUrl ?? null
   const revealDuration = currentQuestion?.revealDuration ?? 10
+  // Durée choisie explicitement dans l'éditeur (≠ défaut) : respectée même sans photo
+  const hasExplicitRevealDuration = currentQuestion?.revealDuration != null
   const isInfinite = revealDuration < 0 // ∞ : révélation figée jusqu'à l'avance manuelle du DJ
   const hasRevealPhoto = !!revealPhotoUrl
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
@@ -152,13 +154,14 @@ export default function QuizGame({
         setShowLeaderboard(false)
         return
       }
-      const delay = hasRevealPhoto ? revealDuration * 1000 : 2000
+      // Sans photo ni durée explicite : 5 s pour laisser lire la bonne réponse
+      const delay = (hasRevealPhoto || hasExplicitRevealDuration) ? revealDuration * 1000 : 5000
       const timer = setTimeout(() => setShowLeaderboard(true), delay)
       return () => clearTimeout(timer)
     } else {
       setShowLeaderboard(false)
     }
-  }, [showResults, participants.length, hasRevealPhoto, revealDuration, isInfinite])
+  }, [showResults, participants.length, hasRevealPhoto, hasExplicitRevealDuration, revealDuration, isInfinite])
 
   // Affichage de la photo de la bonne réponse au reveal, pendant la durée choisie
   useEffect(() => {
