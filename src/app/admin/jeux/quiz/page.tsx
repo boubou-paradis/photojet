@@ -2900,11 +2900,12 @@ export default function QuizPage() {
             >
               {/* Question display */}
               <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/40 shadow-[0_0_10px_rgba(212,175,55,0.3)]">
-                    <span className="text-[#D4AF37] font-bold">{currentQuestionIndex + 1}</span>
-                  </div>
-                  <span className="text-[#B0B0B5] text-sm">sur {questions.length} questions</span>
+                <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/40 shadow-[0_0_10px_rgba(212,175,55,0.3)]">
+                  <span className="text-[#B0B0B5] text-xs font-medium uppercase tracking-wider">Question</span>
+                  <span className="text-3xl font-black font-mono leading-none text-[#D4AF37]">
+                    {currentQuestionIndex + 1}
+                    <span className="text-white/50 text-xl font-bold"> / {questions.length}</span>
+                  </span>
                 </div>
                 {timeLeft !== null && (
                   <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
@@ -3143,7 +3144,7 @@ export default function QuizPage() {
                     className="w-full py-4 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-black rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:shadow-[0_0_35px_rgba(212,175,55,0.6)] border border-[#D4AF37]/50"
                   >
                     <SkipForward className="h-5 w-5" />
-                    Question suivante
+                    Question suivante ({currentQuestionIndex + 2}/{questions.length})
                   </motion.button>
                 )}
 
