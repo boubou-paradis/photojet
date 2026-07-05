@@ -334,7 +334,11 @@ export default function QuizPage() {
         setQuestions(qs)
       }
 
-      // Initialize game state from session si le jeu est actif
+      // Initialize game state from session si le jeu est actif.
+      // COMPORTEMENT VOULU (resume) : un quiz actif est restauré tel quel au
+      // rechargement de la page — précieux après un crash du PC en prestation.
+      // C'est pourquoi le quiz n'a PAS de cleanup beforeunload sur quiz_active
+      // (contrairement à lineup/wheel/mystery) : seul « Arrêter » y met fin.
       if (data.quiz_active) {
         setGameActive(true)
         setCurrentQuestionIndex(data.quiz_current_question ?? 0)
@@ -1139,6 +1143,7 @@ export default function QuizPage() {
           wheel_active: false,
           quiz_active: false, // Quiz pas encore actif
           quiz_lobby_visible: true, // Lobby visible
+          quiz_show_podium: false,
           quiz_questions: JSON.stringify(questions),
           quiz_current_question: 0,
           quiz_is_answering: false,
@@ -1203,6 +1208,7 @@ export default function QuizPage() {
           wheel_active: false,
           quiz_active: true,
           quiz_lobby_visible: false,
+          quiz_show_podium: false,
           quiz_questions: JSON.stringify(questions),
           quiz_current_question: 0,
           quiz_is_answering: false,
@@ -1442,6 +1448,7 @@ export default function QuizPage() {
       .update({
         quiz_active: false,
         quiz_lobby_visible: false, // IMPORTANT: reset pour que le diaporama reprenne
+        quiz_show_podium: false,
         // On garde quiz_questions intact !
         quiz_current_question: 0,
         quiz_is_answering: false,
@@ -1534,6 +1541,8 @@ export default function QuizPage() {
       .from('sessions')
       .update({
         quiz_active: false,
+        quiz_lobby_visible: false,
+        quiz_show_podium: false,
         quiz_questions: null,
         quiz_current_question: 0,
         quiz_is_answering: false,
@@ -1561,6 +1570,12 @@ export default function QuizPage() {
     if (audioRef.current) {
       audioRef.current.pause()
     }
+    // Persister le podium : sans ça il n'existe qu'en broadcast et un F5 de
+    // /live pendant le podium retombe sur l'écran de jeu.
+    await supabase
+      .from('sessions')
+      .update({ quiz_show_podium: true })
+      .eq('id', session.id)
     // Lire les participants depuis la DB pour avoir les scores à jour
     const { data } = await supabase
       .from('sessions')

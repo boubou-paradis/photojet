@@ -124,6 +124,9 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
       if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
       if (customAudioRef.current) customAudioRef.current.pause()
+      // Le son de spin par défaut aussi : un <audio> retiré du DOM peut
+      // continuer à jouer si la roue est démontée en plein spin.
+      if (audioRef.current) audioRef.current.pause()
     }
   }, [])
 

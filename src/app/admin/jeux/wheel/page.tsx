@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
+import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 import WheelPreview from '@/components/games/WheelPreview'
@@ -102,7 +103,7 @@ export default function WheelPage() {
   useEffect(() => {
     if (!session?.id) return
 
-    const cleanup = async () => {
+    const cleanup = () => {
       // Broadcast que le jeu n'est plus actif
       if (broadcastChannelRef.current) {
         broadcastChannelRef.current.send({
@@ -116,11 +117,11 @@ export default function WheelPage() {
           },
         })
       }
-      // Mettre à jour la base de données
-      await supabase
-        .from('sessions')
-        .update({ wheel_active: false })
-        .eq('id', session.id)
+      // sendBeacon survit à la fermeture de l'onglet ; un fetch await ici est
+      // souvent tué en vol → wheel_active resterait bloqué à true en base.
+      if (!sendDeactivateBeacon(session.id, 'wheel')) {
+        void supabase.from('sessions').update({ wheel_active: false }).eq('id', session.id).then(() => {})
+      }
     }
 
     window.addEventListener('beforeunload', cleanup)

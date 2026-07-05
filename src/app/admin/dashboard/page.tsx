@@ -913,6 +913,13 @@ fetch(${JSON.stringify(imageUrl)})
           lineup_is_game_over: false,
           lineup_current_points: 10,
           lineup_show_winner: false,
+          // Wheel + Quiz defaults (explicites plutôt que de dépendre des
+          // DEFAULT des colonnes DB — tous les jeux inactifs à la création)
+          wheel_active: false,
+          wheel_is_spinning: false,
+          quiz_active: false,
+          quiz_lobby_visible: false,
+          quiz_show_podium: false,
         })
         .select()
         .single()

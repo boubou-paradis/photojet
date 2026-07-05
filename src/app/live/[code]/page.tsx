@@ -383,6 +383,59 @@ export default function LivePage() {
   // Connected players (via Presence tracking)
   const [connectedPlayers, setConnectedPlayers] = useState<{ odientId: string; odientName: string }[]>([])
 
+  // Horodatage de réception du dernier broadcast de chaque jeu.
+  // Sert à invalider un état broadcast périmé (onglet admin crashé sans envoyer
+  // gameActive: false) : la DB reste l'arbitre de QUEL jeu est affiché, le
+  // broadcast n'enrichit que l'état interne du jeu. Sans ça, un broadcast
+  // gameActive: true figé masque indéfiniment les autres jeux et le diaporama.
+  const lineupBroadcastAtRef = useRef(0)
+  const wheelBroadcastAtRef = useRef(0)
+  const quizBroadcastAtRef = useRef(0)
+  // Délai de grâce avant d'invalider : laisse le temps à la DB de rattraper un
+  // broadcast frais au lancement d'un jeu (realtime + polling 5s).
+  const BROADCAST_STALE_MS = 10000
+
+  // Invalidation des broadcasts périmés : si la base dit qu'un jeu est inactif
+  // alors que son broadcast en mémoire le dit actif depuis plus de 10s, le
+  // broadcast est obsolète (admin crashé / onglet tué) → on le purge et on
+  // laisse la DB décider de l'affichage.
+  useEffect(() => {
+    if (!session) return
+
+    const purgeStale = () => {
+      const now = Date.now()
+      if (
+        lineupState?.gameActive === true &&
+        session.lineup_active !== true &&
+        now - lineupBroadcastAtRef.current > BROADCAST_STALE_MS
+      ) {
+        setLineupState(null)
+      }
+      if (
+        wheelState?.gameActive === true &&
+        session.wheel_active !== true &&
+        now - wheelBroadcastAtRef.current > BROADCAST_STALE_MS
+      ) {
+        setWheelState(null)
+      }
+      if (
+        (quizState?.gameActive === true || quizState?.lobbyVisible === true) &&
+        session.quiz_active !== true &&
+        session.quiz_lobby_visible !== true &&
+        now - quizBroadcastAtRef.current > BROADCAST_STALE_MS
+      ) {
+        setQuizState(null)
+      }
+    }
+
+    purgeStale()
+    // Re-vérifie après le délai de grâce : si le décalage DB/broadcast vient
+    // d'apparaître, la purge ci-dessus est passée trop tôt et rien ne
+    // re-déclencherait cet effet d'ici là.
+    const recheck = setTimeout(purgeStale, BROADCAST_STALE_MS + 500)
+    return () => clearTimeout(recheck)
+  }, [session, lineupState, wheelState, quizState])
+
   // Get wheel segments from broadcast state, or parse from database as fallback
   const wheelSegments: WheelSegment[] = useMemo(() => {
     if (wheelState?.segments && wheelState.segments.length > 0) {
@@ -689,6 +742,7 @@ export default function LivePage() {
       .channel(`lineup-game-${session.code}`)
       .on('broadcast', { event: 'lineup_state' }, (payload) => {
         if (payload.payload) {
+          lineupBroadcastAtRef.current = Date.now()
           setLineupState(payload.payload)
         }
       })
@@ -707,6 +761,7 @@ export default function LivePage() {
       .channel(`wheel-game-${session.code}`)
       .on('broadcast', { event: 'wheel_state' }, (payload) => {
         if (payload.payload) {
+          wheelBroadcastAtRef.current = Date.now()
           setWheelState(payload.payload)
         }
       })
@@ -725,6 +780,7 @@ export default function LivePage() {
       .channel(`quiz-game-${session.code}`)
       .on('broadcast', { event: 'quiz_state' }, (payload) => {
         if (payload.payload) {
+          quizBroadcastAtRef.current = Date.now()
           setQuizState(payload.payload)
         }
       })
@@ -918,6 +974,16 @@ export default function LivePage() {
     )
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // ORDRE DE PRIORITÉ D'AFFICHAGE (contrat — ne pas réordonner sans raison) :
+  // 1. Photo Mystère  2. Le Bon Ordre  3. Roue  4. Lobby Quiz  5. Quiz
+  // 6. Diaporama (défaut quand aucun flag actif)
+  // Le premier jeu « actif » gagne. Chaque page admin désactive les flags des
+  // autres jeux à son lancement (résets croisés) ; les broadcasts périmés sont
+  // purgés par l'effet d'invalidation plus haut. Garde commune : broadcast
+  // explicite (true/false) prioritaire, sinon fallback sur la colonne DB.
+  // ═══════════════════════════════════════════════════════════════════════
+
   // Show Mystery Photo Game if active
   // Check for mystery_photos (new multi-photo system) OR mystery_photo_url (legacy)
   if (session.mystery_photo_active && (session.mystery_photos || session.mystery_photo_url)) {
@@ -934,7 +1000,7 @@ export default function LivePage() {
 
   // Show Lineup Game (Le Bon Ordre) if active
   // Use broadcast state when available for real-time sync, fallback to session data
-  const isLineupActive = lineupState?.gameActive ?? session.lineup_active
+  const isLineupActive = lineupState?.gameActive === true || (lineupState?.gameActive === undefined && session.lineup_active === true)
   if (isLineupActive) {
     return (
       <LineupGame
@@ -959,6 +1025,9 @@ export default function LivePage() {
   // Check broadcast state first, then fall back to database state
   const isWheelActive = wheelState?.gameActive === true || (wheelState?.gameActive === undefined && session.wheel_active === true)
 
+  // Garde anti-crash : une roue à moins de 2 segments est injouable → on laisse
+  // volontairement retomber sur la suite (lobby quiz / diaporama) même si
+  // wheel_active est true. État incohérent possible mais jamais d'écran cassé.
   if (isWheelActive && wheelSegments.length >= 2) {
     // Get audio settings from broadcast or database
     const wheelAudioSettings = wheelState?.audioSettings ?? (session.wheel_audio ? (() => {
@@ -1249,7 +1318,7 @@ export default function LivePage() {
         timeLeft={quizState?.timeLeft ?? session.quiz_time_left ?? null}
         participants={quizParticipants}
         answerStats={quizState?.answerStats ?? [0, 0, 0, 0]}
-        isFinished={quizState?.isFinished ?? false}
+        isFinished={quizState?.isFinished ?? session.quiz_show_podium === true}
       />
     )
   }

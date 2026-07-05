@@ -84,11 +84,16 @@ export default function InvitePage() {
       try {
         const { data: quizSession } = await supabase
           .from('sessions')
-          .select('quiz_lobby_visible, quiz_active')
+          .select('quiz_lobby_visible')
           .eq('code', code)
           .single()
 
-        if (quizSession?.quiz_lobby_visible || quizSession?.quiz_active) {
+        // On ne détourne les invités vers le quiz QUE pendant le lobby
+        // (phase d'inscription). Pas sur quiz_active : un flag resté bloqué
+        // à true (onglet admin fermé en pleine partie, jamais « Arrêté »)
+        // détournerait tous les invités photo vers le quiz pour le reste de
+        // la soirée. Les retardataires rejoignent via le QR du lobby ou /join.
+        if (quizSession?.quiz_lobby_visible) {
           router.push(`/join/${code}`)
           return
         }

@@ -177,6 +177,11 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
       if (roundTransitionT2Ref.current) clearTimeout(roundTransitionT2Ref.current)
       if (fadeAudioIntervalRef.current) clearInterval(fadeAudioIntervalRef.current)
+      // Pauser explicitement : un <audio> retiré du DOM peut continuer à jouer
+      // (surtout le reveal audio en loop) → audio fantôme par-dessus le jeu
+      // suivant quand /live change de composant.
+      if (revealAudioRef.current) revealAudioRef.current.pause()
+      if (photoAudioRef.current) photoAudioRef.current.pause()
     }
   }, [])
 

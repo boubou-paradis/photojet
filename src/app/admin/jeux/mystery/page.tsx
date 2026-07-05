@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase'
+import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
@@ -195,11 +196,29 @@ export default function MysteryPage() {
     }
   }, [session?.code, supabase])
 
-  // Cleanup au unmount
+  // Cleanup : désactiver le jeu quand l'admin quitte la page (navigation SPA
+  // ET fermeture d'onglet). ATTENTION : un builder supabase non awaité/then
+  // n'exécute JAMAIS sa requête (thenable paresseux) — d'où le .then() explicite.
   useEffect(() => {
     if (!session?.id) return
+
+    const cleanup = () => {
+      // sendBeacon survit à la fermeture de l'onglet ; un fetch await ici est
+      // souvent tué en vol → mystery_photo_active resterait bloqué à true en base.
+      if (!sendDeactivateBeacon(session.id, 'mystery')) {
+        void supabase
+          .from('sessions')
+          .update({ mystery_photo_active: false, mystery_is_playing: false })
+          .eq('id', session.id)
+          .then(() => {})
+      }
+    }
+
+    window.addEventListener('beforeunload', cleanup)
+
     return () => {
-      supabase.from('sessions').update({ mystery_photo_active: false, mystery_is_playing: false }).eq('id', session.id)
+      window.removeEventListener('beforeunload', cleanup)
+      cleanup()
     }
   }, [session?.id, supabase])
 

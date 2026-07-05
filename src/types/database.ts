@@ -171,6 +171,7 @@ export interface Session {
   quiz_current_question: number
   quiz_is_answering: boolean
   quiz_show_results: boolean
+  quiz_show_podium?: boolean // Podium final affiché (persisté pour survivre au F5 de /live)
   quiz_time_left: number | null
   quiz_answers: string | null // JSON array of QuizAnswer
   quiz_participants: string | null // JSON array of QuizParticipant

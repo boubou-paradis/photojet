@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
+import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 
@@ -104,7 +105,7 @@ export default function LineupPage() {
   useEffect(() => {
     if (!session?.id) return
 
-    const cleanup = async () => {
+    const cleanup = () => {
       if (broadcastChannelRef.current) {
         broadcastChannelRef.current.send({
           type: 'broadcast',
@@ -112,7 +113,11 @@ export default function LineupPage() {
           payload: { gameActive: false, currentNumber: '', timeLeft: 0, isRunning: false, isPaused: false, isGameOver: false, currentPoints: 10, team1Score: 0, team2Score: 0, team1Name: 'Équipe 1', team2Name: 'Équipe 2', showWinner: false, clockDuration: 60 },
         })
       }
-      await supabase.from('sessions').update({ lineup_active: false }).eq('id', session.id)
+      // sendBeacon survit à la fermeture de l'onglet ; un fetch await ici est
+      // souvent tué en vol → lineup_active resterait bloqué à true en base.
+      if (!sendDeactivateBeacon(session.id, 'lineup')) {
+        void supabase.from('sessions').update({ lineup_active: false }).eq('id', session.id).then(() => {})
+      }
     }
 
     window.addEventListener('beforeunload', cleanup)
