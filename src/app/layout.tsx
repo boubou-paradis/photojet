@@ -106,13 +106,7 @@ export const metadata: Metadata = {
     images: ["/images/animajet_logo_principal.png"],
     creator: "@animajet",
   },
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/images/animajet_logo_vector.png", sizes: "32x32", type: "image/png" },
-    ],
-    apple: "/images/animajet_logo_vector.png",
-  },
+  // Favicon + icône Apple : convention fichiers Next.js (src/app/favicon.ico, icon.png, apple-icon.png)
   alternates: {
     canonical: "https://animajet.fr",
   },
