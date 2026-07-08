@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-mariage-interactive'
 
 export const metadata: Metadata = {
-  title: 'Animation Mariage Interactive | Photo Booth & Jeux pour Mariage',
-  description: 'Animation mariage interactive : photos des invités en direct sur écran géant, quiz musical, jeux interactifs. Vos invités participent, votre soirée décolle. Essai gratuit 24h.',
+  title: 'Animation Mariage Interactive : jeux & photos',
+  description: 'Quiz musical, photos en direct sur écran géant, jeux interactifs : l\'animation pour mariage qui fait participer tous vos invités. Essai gratuit 24h.',
   keywords: [
     'animation mariage',
     'animation de mariage',
@@ -67,6 +67,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz de mariage', href: '/quiz-mariage' },
     { label: 'Logiciel DJ mariage', href: '/logiciel-dj-mariage' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
+    { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
   ],

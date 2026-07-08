@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/roue-de-la-destinee'
 
 export const metadata: Metadata = {
-  title: 'Roue de la Destinée | Roue de la Chance Interactive pour Événements',
-  description: 'Une roue de la chance premium sur écran géant : gages, lots, défis. Le suspense monte à chaque tour. Animation interactive sans application. Essai gratuit 24h.',
+  title: 'Roue de la Destinée : la roue de la chance géante',
+  description: 'Faites tourner la Roue de la Destinée sur écran géant : gages, lots et défis pour vos invités. Suspense garanti, sans appli. Essai gratuit 24h.',
   keywords: ['roue de la chance', 'roue de la destinée', 'roue interactive', 'roue gagnante événement', 'animation roue', 'roue jackpot', 'roue cadeaux soirée'],
   alternates: { canonical: URL },
   openGraph: {

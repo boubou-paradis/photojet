@@ -4,12 +4,12 @@ import AnimationDetailPage, { buildSoftwareAppJsonLd, type AnimationDetailConten
 const URL = 'https://animajet.fr/diaporama-live-evenement'
 
 export const metadata: Metadata = {
-  title: 'Diaporama Live Événement sur Écran Géant | Photos en Direct',
-  description: 'Affichez les photos et messages de vos invités en direct sur écran géant. Diaporama live temps réel via QR code, sans application. Essai gratuit 24h.',
+  title: 'Diaporama en direct : vos photos sur écran géant',
+  description: 'Créez un diaporama en direct : la galerie photo de vos invités s\'affiche en temps réel sur écran géant, via QR code, sans appli. Essai gratuit 24h.',
   keywords: ['diaporama live', 'diaporama événement', 'photos écran géant', 'diaporama soirée entreprise', 'mur de photos live', 'diaporama soirée temps réel'],
   alternates: { canonical: URL },
   openGraph: {
-    title: 'Diaporama Live sur Écran Géant | AnimaJet',
+    title: 'Diaporama en direct sur écran géant | AnimaJet',
     description: 'Les photos de vos invités s\'affichent en direct sur grand écran, toute la soirée.',
     url: URL,
     type: 'website',

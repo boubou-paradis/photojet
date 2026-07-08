@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/partage-photo-evenement'
 
 export const metadata: Metadata = {
-  title: 'Partage Photo en Direct | Mur Photo sur Écran Géant pour Événements',
-  description: 'Vos invités envoient leurs photos depuis leur téléphone, elles s\'affichent en direct sur écran géant. Mur photo interactif et album partagé téléchargeable. Sans application. Essai gratuit 24h.',
+  title: 'Partage Photo en Direct : galerie sur écran géant',
+  description: 'Vos invités envoient leurs photos, la galerie s\'affiche en direct sur écran géant. Album partagé téléchargeable, sans appli. Essai gratuit 24h.',
   keywords: ['partage photo événement', 'partage photos événement', 'partage photo mariage QR code', 'photo invités écran géant mariage', 'galerie photo collaborative mariage', 'animation photos en direct', 'animation photo direct', 'mur photo interactif', 'photo en direct écran géant', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
   alternates: { canonical: URL },
   openGraph: {

@@ -4,12 +4,12 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/photo-mystere'
 
 export const metadata: Metadata = {
-  title: 'Photo Mystère : le jeu de l\'image à deviner',
-  description: "Le jeu Photo Mystère : l'image se dévoile case par case sur écran géant, le premier à la reconnaître gagne. Idéal mariage, soirée, camping. Essai gratuit 24h.",
+  title: 'Jeu Photo Mystère : la photo cachée à deviner',
+  description: "Découvrez Photo Mystère, le jeu où l'image se dévoile case par case sur écran géant : le premier qui la reconnaît gagne la manche. Essai gratuit 24h !",
   keywords: ['photo mystère', 'jeu photo deviner', 'jeu image cachée', 'animation photo événement', 'jeu interactif soirée', 'devine la photo'],
   alternates: { canonical: URL },
   openGraph: {
-    title: 'Photo Mystère : le jeu de l\'image à deviner | AnimaJet',
+    title: 'Jeu Photo Mystère : la photo cachée à deviner | AnimaJet',
     description: "Une image se dévoile case par case sur l'écran géant, le premier à la reconnaître crie la réponse et remporte la manche.",
     url: URL,
     type: 'website',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 const content: AnimationDetailContent = {
   eyebrow: 'ANIMATION PHOTO MYSTÈRE',
   title: 'Photo Mystère,',
-  highlight: 'le jeu qui rend accro',
+  highlight: 'le jeu photo qui rend accro',
   intro: "Une image se cache derrière des cases qui se révèlent une à une sur l'écran géant. Dès qu'un invité reconnaît la photo, il lève la main et crie : l'animateur accourt micro en main pour valider. Simple à comprendre, impossible à lâcher, Photo Mystère embarque toute la salle en quelques secondes.",
   image: '/images/games/photo-mystere.png',
   what: [
@@ -44,6 +44,7 @@ const content: AnimationDetailContent = {
   ],
   idealFor: ['Mariages', 'Soirées d\'entreprise', 'Campings', 'Anniversaires', 'Bars & restaurants', 'Animations famille'],
   faq: [
+    { q: 'Qu\'est-ce que le jeu Photo Mystère ?', a: "Le jeu Photo Mystère est une animation où une photo cachée se dévoile case par case sur écran géant : le premier invité qui reconnaît l'image crie sa réponse et remporte la manche." },
     { q: 'Puis-je utiliser mes propres photos ?', a: "Oui, vous importez vos images pour des manches personnalisées et inoubliables." },
     { q: 'Le jeu convient-il aux enfants ?', a: "Tout à fait : le principe visuel est accessible à tous les âges." },
     { q: 'Comment les invités participent-ils ?', a: "Sans téléphone : dès qu'un invité reconnaît l'image, il lève la main et crie sa réponse, et l'animateur le rejoint au micro pour la valider." },

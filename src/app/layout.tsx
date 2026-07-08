@@ -37,7 +37,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://animajet.fr'),
+  // Domaine canonique SEO = apex (non-www), figé volontairement : ne doit pas
+  // dépendre de NEXT_PUBLIC_APP_URL pour que les canonicals/og:url restent stables.
+  metadataBase: new URL('https://animajet.fr'),
   title: {
     default: "AnimaJet - Animation interactive pour événements professionnels",
     template: "%s | AnimaJet",

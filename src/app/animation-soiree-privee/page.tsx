@@ -4,12 +4,12 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-soiree-privee'
 
 export const metadata: Metadata = {
-  title: 'Animation Soirée Privée Interactive | Jeux & Photos entre Amis',
-  description: 'Animez votre soirée privée entre amis : quiz, blind test, photos en direct et jeux interactifs depuis le téléphone, sans application. Essai gratuit 24h.',
+  title: 'Animation Soirée Privée : jeux & photos en direct',
+  description: 'Quiz, blind test, photos en direct sur écran géant : l\'animation de soirée privée que vos amis n\'oublieront pas. Sans appli. Essai gratuit 24h.',
   keywords: ['animation soirée privée', 'animation soirée entre amis', 'jeux soirée privée', 'idée animation soirée', 'quiz entre amis', 'animation fête maison'],
   alternates: { canonical: URL },
   openGraph: {
-    title: 'Animation Soirée Privée Interactive | AnimaJet',
+    title: 'Animation Soirée Privée : jeux & photos en direct | AnimaJet',
     description: 'Quiz, blind test et photos en direct pour une soirée entre amis inoubliable.',
     url: URL,
     type: 'website',
@@ -51,6 +51,7 @@ const content: AnimationDetailContent = {
   ],
   related: [
     { label: 'Quiz & blind test', href: '/quiz-interactif' },
+    { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Anniversaire', href: '/animation-anniversaire' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },

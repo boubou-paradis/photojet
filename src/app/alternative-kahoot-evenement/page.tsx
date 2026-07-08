@@ -8,7 +8,7 @@ import { buildAnimationJsonLd } from '@/components/marketing/AnimationDetailPage
 const URL = 'https://animajet.fr/alternative-kahoot-evenement'
 
 export const metadata: Metadata = {
-  title: 'Alternative à Kahoot pour vos Événements Festifs | AnimaJet',
+  title: 'Alternative à Kahoot pour vos Événements Festifs',
   description: "AnimaJet est une alternative à Kahoot pensée pour l'animation festive d'événements : mariages, soirées d'entreprise, bars. Quiz et blind test musical, photos en direct, sans application. Essai gratuit 24h.",
   keywords: ['alternative Kahoot', 'Kahoot pour mariage', 'Kahoot soirée entreprise', 'alternative à Kahoot événement', 'quiz événement', 'animation soirée interactive'],
   alternates: { canonical: URL },

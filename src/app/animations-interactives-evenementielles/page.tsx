@@ -8,8 +8,8 @@ import SiteFooter from '@/components/marketing/SiteFooter'
 const URL = 'https://animajet.fr/animations-interactives-evenementielles'
 
 export const metadata: Metadata = {
-  title: 'Animations Interactives Événementielles | Le Guide Complet AnimaJet',
-  description: "Le guide des animations interactives pour l'événementiel : quiz, roue de la destinée, photo mystère, partage photo en direct, borne photo. Faites participer vos invités depuis leur téléphone, sur écran géant, sans application. Essai gratuit 24h.",
+  title: 'Animations interactives pour événements : le guide',
+  description: "Quiz, roue de la chance, photo mystère, partage photo : le guide des animations interactives pour vos événements, sans application. Essai gratuit 24h.",
   keywords: [
     'animations interactives',
     'animation interactive événementielle',

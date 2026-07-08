@@ -10,11 +10,11 @@ const PUBLISHED = '2026-06-23'
 const MODIFIED = '2026-07-03'
 const TITLE = "Idées d'animation pour mariage : 25 jeux pour faire participer vos invités"
 const DESCRIPTION =
-  "Découvrez 25 idées d'animation pour mariage classées par moment, du vin d'honneur à la soirée, pour faire participer tous vos invités. Trouvez la vôtre !"
+  "Un DJ animateur partage ses 25 idées d'animation pour mariage, du vin d'honneur à la soirée dansante. Faites participer tous vos invités !"
 const HERO = '/photo-qr-partage.png'
 
 export const metadata: Metadata = {
-  title: "Idées d'animation pour mariage : 25 jeux pour vos invités",
+  title: "25 idées d'animation pour mariage, par un DJ",
   description: DESCRIPTION,
   keywords: [
     "idées d'animation pour mariage",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: URL },
   openGraph: {
-    title: "Idées d'animation pour mariage : 25 jeux pour vos invités",
+    title: "25 idées d'animation pour mariage, par un DJ",
     description: DESCRIPTION,
     url: URL,
     type: 'article',

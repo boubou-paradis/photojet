@@ -64,6 +64,7 @@ const content: AnimationDetailContent = {
   related: [
     { label: 'Quiz & blind test', href: '/quiz-interactif' },
     { label: 'Le Bon Ordre (jeu d\'équipe)', href: '/le-bon-ordre' },
+    { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Pour l\'événementiel', href: '/animation-evenementielle-interactive' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],

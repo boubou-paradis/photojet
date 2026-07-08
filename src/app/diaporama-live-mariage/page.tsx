@@ -4,7 +4,7 @@ import AnimationDetailPage, { buildSoftwareAppJsonLd, type AnimationDetailConten
 const URL = 'https://animajet.fr/diaporama-live-mariage'
 
 export const metadata: Metadata = {
-  title: 'Diaporama Live Mariage | Photos des Invités sur Écran Géant | AnimaJet',
+  title: 'Diaporama Live Mariage : les photos des invités',
   description: 'Vos invités envoient leurs photos par QR code, elles s\'affichent en direct sur grand écran pendant le mariage. Sans appli. Essai gratuit 24h.',
   keywords: ['diaporama live mariage', 'diaporama mariage en direct', 'photo invités grand écran mariage', 'partage photo mariage QR code', 'mur de photos mariage', 'projection photo mariage temps réel', 'slideshow mariage interactif'],
   alternates: { canonical: URL },

@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-camping-interactive'
 
 export const metadata: Metadata = {
-  title: 'Animation Camping Interactive | Soirées & Jeux pour Vacanciers',
-  description: 'Animez vos soirées camping : quiz, roue de la destinée, photo mystère et partage photo en direct sur écran géant. Vos vacanciers participent depuis leur téléphone, sans application. Essai gratuit 24h.',
+  title: 'Animation Camping Interactive : jeux & soirées',
+  description: 'Quiz, blind test, photo mystère : animez vos soirées camping sur écran géant. Vos vacanciers jouent depuis leur téléphone, sans appli. Essai 24h.',
   keywords: [
     'animation camping',
     'animation camping interactive',
