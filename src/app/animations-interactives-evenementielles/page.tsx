@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { ArrowRight, Check, ChevronDown } from 'lucide-react'
 import SiteHeader from '@/components/marketing/SiteHeader'
 import SiteFooter from '@/components/marketing/SiteFooter'
+import { breadcrumbJsonLd } from '@/components/marketing/AnimationDetailPage'
 
 const URL = 'https://animajet.fr/animations-interactives-evenementielles'
 
@@ -72,6 +73,7 @@ const jsonLd = {
       '@type': 'FAQPage',
       mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
     },
+    breadcrumbJsonLd('Animations interactives événementielles', URL),
   ],
 }
 

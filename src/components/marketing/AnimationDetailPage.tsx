@@ -170,7 +170,18 @@ function iconForEmoji(emoji: string): LucideIcon {
   return EMOJI_ICON[key] ?? Sparkles
 }
 
-/** Construit le graphe JSON-LD (Service + FAQPage) d'une page animation. */
+/** Fil d'Ariane JSON-LD (Accueil → page), affiché par Google à la place de l'URL brute. */
+export function breadcrumbJsonLd(name: string, url: string) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: 'https://animajet.fr' },
+      { '@type': 'ListItem', position: 2, name, item: url },
+    ],
+  }
+}
+
+/** Construit le graphe JSON-LD (Service + FAQPage + BreadcrumbList) d'une page animation. */
 export function buildAnimationJsonLd({
   name,
   description,
@@ -210,11 +221,12 @@ export function buildAnimationJsonLd({
           acceptedAnswer: { '@type': 'Answer', text: f.a },
         })),
       },
+      breadcrumbJsonLd(name, url),
     ],
   }
 }
 
-/** Construit le graphe JSON-LD (SoftwareApplication + FAQPage) d'une page fonctionnalité. */
+/** Construit le graphe JSON-LD (SoftwareApplication + FAQPage + BreadcrumbList) d'une page fonctionnalité. */
 export function buildSoftwareAppJsonLd({
   name,
   description,
@@ -254,6 +266,7 @@ export function buildSoftwareAppJsonLd({
           acceptedAnswer: { '@type': 'Answer', text: f.a },
         })),
       },
+      breadcrumbJsonLd(name, url),
     ],
   }
 }

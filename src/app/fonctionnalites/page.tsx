@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react'
 import SiteHeader from '@/components/marketing/SiteHeader'
 import SiteFooter from '@/components/marketing/SiteFooter'
 import { SEO_PAGES, seoPagesByCategory, type SeoCategory } from '@/lib/seo-pages'
+import { breadcrumbJsonLd } from '@/components/marketing/AnimationDetailPage'
 
 const URL = 'https://animajet.fr/fonctionnalites'
 
@@ -47,6 +48,7 @@ const jsonLd = {
         url: `https://animajet.fr/${p.slug}`,
       })),
     },
+    breadcrumbJsonLd('Fonctionnalités', URL),
   ],
 }
 
