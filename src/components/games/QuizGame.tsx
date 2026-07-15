@@ -90,6 +90,14 @@ export default function QuizGame({
   const hasExplicitRevealDuration = currentQuestion?.revealDuration != null
   const isInfinite = revealDuration < 0 // ∞ : révélation figée jusqu'à l'avance manuelle du DJ
   const hasRevealPhoto = !!revealPhotoUrl
+  const revealAnswerLabel = currentQuestion ? currentQuestion.answers[currentQuestion.correctAnswer] : ''
+
+  // Instantané figé (photo + libellé de réponse) autorisé à l'affichage au reveal.
+  // L'overlay ne rend QUE ce snapshot, jamais les valeurs dérivées live : au
+  // changement de question, revealPhotoUrl/currentQuestion passent déjà à la
+  // question suivante, mais revealData reste l'ancienne (ou null) tant qu'on n'est
+  // pas légitimement au reveal → plus de flash de la photo/réponse suivante.
+  const [revealData, setRevealData] = useState<{ photoUrl: string; answerLabel: string } | null>(null)
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
   const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
 
@@ -163,17 +171,33 @@ export default function QuizGame({
     }
   }, [showResults, participants.length, hasRevealPhoto, hasExplicitRevealDuration, revealDuration, isInfinite])
 
-  // Affichage de la photo de la bonne réponse au reveal, pendant la durée choisie
+  // Préchargement INVISIBLE de la photo de révélation de la question courante, dès
+  // qu'elle est connue (pendant que la question est posée). Au moment du reveal
+  // elle est déjà décodée → apparition instantanée, synchronisée avec l'audio de
+  // révélation (joué sur le PC animateur). Ne touche à AUCUN état visible.
   useEffect(() => {
-    if (showResults && hasRevealPhoto) {
+    if (!revealPhotoUrl) return
+    const img = new window.Image()
+    img.src = revealPhotoUrl
+  }, [revealPhotoUrl])
+
+  // Affichage de la photo de la bonne réponse au reveal, pendant la durée choisie.
+  // On fige un snapshot { photoUrl, answerLabel } au moment légitime du reveal ;
+  // l'overlay ne rend QUE ce snapshot (cf. anti-flash au changement de question).
+  useEffect(() => {
+    if (showResults && hasRevealPhoto && revealPhotoUrl) {
+      setRevealData({ photoUrl: revealPhotoUrl, answerLabel: revealAnswerLabel })
       setRevealMediaVisible(true)
       // ∞ : la photo/média de révélation reste affichée indéfiniment (pas de timer de masquage).
       if (isInfinite) return
       const timer = setTimeout(() => setRevealMediaVisible(false), revealDuration * 1000)
       return () => clearTimeout(timer)
     }
+    // Hors reveal (question posée, ou changement de question) : on masque ET on
+    // efface le snapshot → jamais la photo/réponse de la question suivante en clair.
     setRevealMediaVisible(false)
-  }, [showResults, currentQuestionIndex, hasRevealPhoto, revealDuration, isInfinite])
+    setRevealData(null)
+  }, [showResults, currentQuestionIndex, hasRevealPhoto, revealPhotoUrl, revealAnswerLabel, revealDuration, isInfinite])
 
   // Écran d'attente si pas de question
   if (!currentQuestion) {
@@ -441,7 +465,7 @@ export default function QuizGame({
 
       {/* PHOTO DE LA BONNE RÉPONSE */}
       <AnimatePresence>
-        {revealMediaVisible && revealPhotoUrl && (
+        {revealMediaVisible && revealData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -457,12 +481,12 @@ export default function QuizGame({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={revealPhotoUrl}
+                src={revealData.photoUrl}
                 alt="Bonne réponse"
                 className="w-full max-h-[75vh] object-contain rounded-3xl border-2 border-[#D4AF37] shadow-[0_0_60px_rgba(212,175,55,0.35)] bg-black"
               />
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white font-bold px-5 py-1.5 rounded-full text-sm shadow-lg whitespace-nowrap">
-                ✓ {currentQuestion?.answers[currentQuestion.correctAnswer]}
+                ✓ {revealData.answerLabel}
               </div>
             </motion.div>
           </motion.div>
