@@ -337,7 +337,10 @@ export default function SettingsPage() {
     setUploadingBg(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const filePath = `backgrounds/${selectedSession.id}.${fileExt}`
+      // Nom unique par upload (timestamp) : change le chemin donc l'URL publique,
+      // ce qui casse le cache navigateur/CDN et garantit l'affichage de la nouvelle
+      // image (admin ET /live), même quand l'extension est identique.
+      const filePath = `backgrounds/${selectedSession.id}-${Date.now()}.${fileExt}`
 
       // Delete old background if exists
       if (formData.background_image) {
