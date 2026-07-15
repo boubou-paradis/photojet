@@ -824,8 +824,11 @@ export default function InvitePage() {
                         variant="outline"
                         className="w-full h-16 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 rounded-xl text-lg font-semibold"
                       >
-                        <ImagePlus className="mr-3 h-6 w-6" />
-                        Choisir dans ma galerie (jusqu&apos;à {MAX_PHOTOS})
+                        <ImagePlus className="mr-3 h-6 w-6 shrink-0" />
+                        <span className="flex flex-col items-start leading-tight text-left">
+                          <span>Choisir dans ma galerie</span>
+                          <span className="text-xs font-normal opacity-80">jusqu&apos;à {MAX_PHOTOS} photos</span>
+                        </span>
                       </Button>
 
                       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
