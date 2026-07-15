@@ -114,21 +114,47 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const totalTiles = cols * rows
   const speed = SPEED_MAP[session.mystery_photo_speed || 'medium']
 
-  // Get current photo URL
-  const currentPhotoUrl = useMemo(() => {
-    if (photos.length > 0 && currentRound <= photos.length) {
-      const photoData = photos[currentRound - 1]
+  // URL d'une photo pour une manche donnée (helper : sert aussi à précharger la
+  // manche cible AVANT de basculer le <img>, cf. transition anti-spoiler plus bas)
+  const getPhotoUrlForRound = useCallback((round: number, photosArr: MysteryPhotoData[]) => {
+    if (photosArr.length > 0 && round <= photosArr.length) {
+      const photoData = photosArr[round - 1]
       if (photoData?.url) {
-        const { data } = supabase.storage.from('photos').getPublicUrl(photoData.url)
-        return data.publicUrl
+        return supabase.storage.from('photos').getPublicUrl(photoData.url).data.publicUrl
       }
     }
     if (session.mystery_photo_url) {
-      const { data } = supabase.storage.from('photos').getPublicUrl(session.mystery_photo_url)
-      return data.publicUrl
+      return supabase.storage.from('photos').getPublicUrl(session.mystery_photo_url).data.publicUrl
     }
     return null
-  }, [photos, currentRound, session.mystery_photo_url, supabase])
+  }, [session.mystery_photo_url, supabase])
+
+  // Get current photo URL
+  const currentPhotoUrl = useMemo(
+    () => getPhotoUrlForRound(currentRound, photos),
+    [getPhotoUrlForRound, currentRound, photos]
+  )
+
+  // Anti-spoiler : la nouvelle image n'est mise dans le <img> visible qu'une fois
+  // PRÉCHARGÉE (décodée). Protège aussi la 1re manche au lancement : tant que
+  // readyPhotoUrl est null, le plateau reste couvert par les tuiles opaques (aucune
+  // image en clair tant que les tuiles ne sont pas en place).
+  const [readyPhotoUrl, setReadyPhotoUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!currentPhotoUrl) {
+      setReadyPhotoUrl(null)
+      return
+    }
+    let cancelled = false
+    const markReady = () => { if (!cancelled) setReadyPhotoUrl(currentPhotoUrl) }
+    const img = new window.Image()
+    img.onload = markReady
+    img.onerror = markReady // fail-open : ne jamais bloquer le plateau si l'image échoue
+    img.src = currentPhotoUrl
+    if (img.complete && img.naturalWidth > 0) markReady() // déjà en cache
+    return () => { cancelled = true }
+  }, [currentPhotoUrl])
 
   // Get current audio URL
   const currentAudioUrl = useMemo(() => {
@@ -187,6 +213,11 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   // Sync currentRoundRef
   useEffect(() => { currentRoundRef.current = currentRound }, [currentRound])
+
+  // Sync photosRef : la souscription realtime lit la liste fraîche des photos sans
+  // dépendre du state capturé dans sa closure (sinon URL de manche cible périmée)
+  const photosRef = useRef(photos)
+  useEffect(() => { photosRef.current = photos }, [photos])
 
   // Détection Mac côté client (navigator absent en SSR)
   useEffect(() => {
@@ -372,21 +403,58 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             onExit()
             return
           }
+
+          // Liste fraîche des photos issue du payload (évite le state périmé dans
+          // la closure de la souscription)
+          let nextPhotos = photosRef.current
+          if (updated.mystery_photos) {
+            try {
+              nextPhotos = JSON.parse(updated.mystery_photos)
+            } catch {
+              console.error('Failed to parse updated mystery_photos')
+            }
+          }
+
           const newRound = updated.mystery_current_round || 1
           const prevRound = currentRoundRef.current
           if (newRound !== prevRound && newRound > prevRound) {
+            // 1) Rideau opaque + on RECOUVRE tout de suite les tuiles DERRIÈRE le
+            //    rideau : leur fondu (0,5 s) se termine bien avant la levée du rideau
+            //    (>= 2 s) → tuiles 100 % opaques quand le plateau réapparaît.
             setShowRoundTransition(true)
-            if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
-            roundTransitionT1Ref.current = setTimeout(() => {
-              setRevealedTiles([])
-              if (roundTransitionT2Ref.current) clearTimeout(roundTransitionT2Ref.current)
-              roundTransitionT2Ref.current = setTimeout(() => {
-                if (!isMountedRef.current) return
-                setCurrentRound(newRound)
-                setShowRoundTransition(false)
-              }, 100)
-            }, 2000)
+            setRevealedTiles([])
+
+            // 2) Précharge l'image de la manche cible AVANT de basculer le <img>.
+            const nextUrl = getPhotoUrlForRound(newRound, nextPhotos)
+            const preloaded = new Promise<void>((resolve) => {
+              if (!nextUrl) { resolve(); return }
+              const img = new window.Image()
+              img.onload = () => resolve()
+              img.onerror = () => resolve() // fail-open : ne pas bloquer la manche
+              img.src = nextUrl
+              if (img.complete && img.naturalWidth > 0) resolve() // déjà en cache
+            })
+            const celebration = new Promise<void>((resolve) => {
+              if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
+              roundTransitionT1Ref.current = setTimeout(resolve, 2000)
+            })
+
+            // 3) Image préchargée ET délai de célébration écoulé → bascule (toujours
+            //    sous le rideau + sous tuiles opaques), puis FRAME DE SÉCURITÉ (double
+            //    rAF = 1 frame peinte garantie) avant de lever le rideau.
+            Promise.all([preloaded, celebration]).then(() => {
+              if (!isMountedRef.current) return
+              setPhotos(nextPhotos)
+              setCurrentRound(newRound)
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  if (!isMountedRef.current) return
+                  setShowRoundTransition(false)
+                })
+              })
+            })
           } else {
+            setPhotos(nextPhotos)
             setCurrentRound(newRound)
             setRevealedTiles(updated.mystery_revealed_tiles || [])
           }
@@ -394,14 +462,6 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           setIsPlaying(updated.mystery_is_playing || false)
           // Update QR code visibility
           setShowQR(updated.show_qr_on_screen ?? false)
-          if (updated.mystery_photos) {
-            try {
-              const parsedPhotos = JSON.parse(updated.mystery_photos)
-              setPhotos(parsedPhotos)
-            } catch {
-              console.error('Failed to parse updated mystery_photos')
-            }
-          }
         }
       )
       .subscribe()
@@ -929,11 +989,13 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             maxHeight: `calc(95vw / ${cols / rows})`,
           }}
         >
-          <img
-            src={currentPhotoUrl}
-            alt="Photo Mystère"
-            className="absolute top-0 left-0 w-full h-full object-cover"
-          />
+          {readyPhotoUrl && (
+            <img
+              src={readyPhotoUrl}
+              alt="Photo Mystère"
+              className="absolute top-0 left-0 w-full h-full object-cover"
+            />
+          )}
           <div
             className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden"
             style={{
