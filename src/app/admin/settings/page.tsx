@@ -371,7 +371,10 @@ export default function SettingsPage() {
     setUploadingLogo(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const filePath = `logos/${selectedSession.id}.${fileExt}`
+      // Nom unique par upload (timestamp) : change le chemin donc l'URL publique,
+      // ce qui casse le cache navigateur/CDN et garantit l'affichage du nouveau
+      // logo (admin ET /live), même quand l'extension est identique. Cf. fond d'écran.
+      const filePath = `logos/${selectedSession.id}-${Date.now()}.${fileExt}`
 
       // Delete old logo if exists
       if (formData.custom_logo) {
