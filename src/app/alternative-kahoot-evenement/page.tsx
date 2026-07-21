@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   keywords: ['alternative Kahoot', 'Kahoot pour mariage', 'Kahoot soirée entreprise', 'alternative à Kahoot événement', 'quiz événement', 'animation soirée interactive'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Alternative à Kahoot pour vos événements festifs | AnimaJet',
     description: "AnimaJet répond à un besoin différent de Kahoot : l'animation festive d'événements (mariages, soirées d'entreprise, bars).",
     url: URL,

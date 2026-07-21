@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     canonical: URL,
   },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Animation Entreprise Interactive | AnimaJet',
     description: 'Team building, séminaires, soirées corporate. Renforcez la cohésion avec des animations interactives.',
     url: URL,

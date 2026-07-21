@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     "Idées d'animation, jeux interactifs et conseils de pro pour vos mariages, soirées d'entreprise et événements. Par un DJ animateur qui teste tout sur le terrain.",
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Blog AnimaJet : idées et conseils d’animation',
     description: "Idées d'animation et conseils de pro pour faire participer vos invités.",
     url: URL,

@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   // dépendre de NEXT_PUBLIC_APP_URL pour que les canonicals/og:url restent stables.
   metadataBase: new URL('https://animajet.fr'),
   title: {
-    default: "AnimaJet - Animation interactive pour événements professionnels",
+    default: "Logiciel d'animation interactive pour DJ et événements | AnimaJet",
     template: "%s | AnimaJet",
   },
   description: "Animation interactive pour vos événements : quiz, blind test, partage photo en direct sur écran géant. Créé par un DJ pour les pros. Sans application.",

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['animation soirée privée', 'animation soirée entre amis', 'jeux soirée privée', 'idée animation soirée', 'quiz entre amis', 'animation fête maison'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Animation Soirée Privée : jeux & photos en direct | AnimaJet',
     description: 'Quiz, blind test et photos en direct pour une soirée entre amis inoubliable.',
     url: URL,

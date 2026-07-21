@@ -89,13 +89,13 @@ export default function HeroV5({
 
             {/* Title */}
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
-              Transformez n&apos;importe quel événement en{' '}
-              <span className="text-gold-gradient">expérience interactive.</span>
+              Le logiciel d&apos;animation interactive{' '}
+              <span className="text-gold-gradient">pour DJ et événements.</span>
             </h1>
 
             {/* Description */}
             <p className="text-lg lg:text-xl text-gray-300 leading-relaxed max-w-[500px]">
-              Vos invités participent depuis leur téléphone. Tout s&apos;affiche en direct sur écran géant.{' '}
+              Quiz, blind test, photos en direct et jeux sur écran géant. Vos invités participent depuis leur téléphone.{' '}
               <span className="text-white font-medium">Sans application.</span>
             </p>
 

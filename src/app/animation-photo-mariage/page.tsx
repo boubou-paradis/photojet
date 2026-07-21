@@ -4,11 +4,12 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-photo-mariage'
 
 export const metadata: Metadata = {
-  title: 'Animation Photo Mariage | Borne Photo, Partage Live & Impression | AnimaJet',
+  title: 'Animation Photo Mariage | Borne Photo, Partage Live & Impression',
   description: 'Animation photo complète pour votre mariage : borne photo, partage des photos des invités en direct via QR code et impression sur place. Sans appli. Essai gratuit 24h.',
   keywords: ['animation photo mariage', 'borne photo mariage', 'partage photo mariage', 'impression photo mariage', 'galerie photo mariage collaborative', 'photobooth mariage', 'photo invités mariage écran géant'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Animation Photo Mariage : Borne, Partage Live & Impression | AnimaJet',
     description: 'Borne photo, partage live des photos des invités et impression sur place, réunis dans une seule plateforme pour votre mariage.',
     url: URL,

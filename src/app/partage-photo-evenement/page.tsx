@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['partage photo événement', 'partage photos événement', 'partage photo mariage QR code', 'photo invités écran géant mariage', 'galerie photo collaborative mariage', 'animation photos en direct', 'animation photo direct', 'mur photo interactif', 'photo en direct écran géant', 'album photo partagé', 'photo live soirée', 'wall photo événement'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Partage Photo en Direct | AnimaJet',
     description: 'Les photos de vos invités s\'affichent en direct sur écran géant, avec album partagé téléchargeable.',
     url: URL,

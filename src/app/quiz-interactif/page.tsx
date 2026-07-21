@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['quiz interactif', 'quiz interactif smartphone', 'quiz sans application événement', 'quiz événement interactif', 'quiz événement', 'quiz soirée', 'animation quiz', 'quiz écran géant', 'quiz smartphone', 'quiz QR code', 'blind test', 'blind test interactif', 'blind test musical', 'quiz mariage'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Animation Quiz Interactif sur Écran Géant | AnimaJet',
     description: 'Vos invités répondent depuis leur téléphone, le classement s\'affiche en direct sur écran géant.',
     url: URL,

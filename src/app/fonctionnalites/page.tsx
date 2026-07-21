@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   keywords: ['fonctionnalités AnimaJet', 'animations interactives événement', 'logiciel animation événementielle', 'jeux interactifs soirée', 'photos en direct événement'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Fonctionnalités AnimaJet | Toutes les animations interactives',
     description: 'Quiz, blind test, photos en direct, impression, diaporama live, jeux interactifs : le panorama complet d\'AnimaJet.',
     url: URL,

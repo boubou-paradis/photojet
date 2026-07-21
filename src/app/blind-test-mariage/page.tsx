@@ -4,11 +4,12 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/blind-test-mariage'
 
 export const metadata: Metadata = {
-  title: 'Blind Test Mariage | Quiz Musical Interactif pour Invités | AnimaJet',
+  title: 'Blind Test Mariage | Quiz Musical Interactif pour Invités',
   description: 'Un blind test musical pour votre mariage : vos invités devinent les titres depuis leur téléphone, classement en direct sur écran géant. Essai gratuit 24h.',
   keywords: ['blind test mariage', 'blind test musical mariage', 'jeu musical mariage invités', 'animation blind test mariage', 'quiz musical mariage smartphone', 'blind test soirée mariage', 'blind test QR code'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Blind Test Mariage Interactif | AnimaJet',
     description: 'Vos invités reconnaissent les titres depuis leur téléphone, le classement s\'affiche en direct sur écran géant. L\'animation musicale qui enflamme la salle.',
     url: URL,

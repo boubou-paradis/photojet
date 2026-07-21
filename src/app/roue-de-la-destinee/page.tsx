@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['roue de la chance', 'roue de la destinée', 'roue interactive', 'roue gagnante événement', 'animation roue', 'roue jackpot', 'roue cadeaux soirée'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Roue de la Destinée | AnimaJet',
     description: 'Une roue jackpot premium sur écran géant : gages, lots et défis pour électriser votre soirée.',
     url: URL,

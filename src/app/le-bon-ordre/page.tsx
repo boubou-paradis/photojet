@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['jeu le bon ordre', "jeu d'équipe mariage", 'jeu écran géant', 'animation par équipes', 'jeu équipe événement', 'animation mariage'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Le Bon Ordre | AnimaJet',
     description: "Un duel par équipes où la séquence affichée à l'écran doit être reconstituée à la pancarte le plus vite possible.",
     url: URL,

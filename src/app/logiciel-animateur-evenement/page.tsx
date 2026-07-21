@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['logiciel animateur', 'logiciel animation événement', 'outil animateur soirée', 'application animation événement', 'jeux interactifs animateur', 'animation événementielle logiciel'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Logiciel Animateur Événement | AnimaJet',
     description: 'Quiz, photos en direct, jeux interactifs : la boîte à outils complète de l\'animateur.',
     url: URL,

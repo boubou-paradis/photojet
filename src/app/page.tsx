@@ -175,11 +175,6 @@ const jsonLd = {
       '@type': 'WebSite',
       name: 'AnimaJet',
       url: 'https://animajet.fr',
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: 'https://animajet.fr/?search={search_term_string}',
-        'query-input': 'required name=search_term_string',
-      },
     },
     {
       '@type': 'FAQPage',

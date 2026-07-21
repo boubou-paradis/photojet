@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Politique de Confidentialité | AnimaJet',
+  title: 'Politique de Confidentialité',
   description: 'Politique de confidentialité et protection des données personnelles - AnimaJet, conforme RGPD.',
   alternates: {
     canonical: 'https://animajet.fr/confidentialite',

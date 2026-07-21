@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['blind test musical', 'blind test interactif', 'blind test DJ', 'blind test DJ professionnel', 'blind test sans buzzer', 'blind test smartphone', 'blind test soirée', 'jeu blind test', 'quiz musical', 'blind test écran géant'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Blind Test Musical Interactif | AnimaJet',
     description: 'Diffusez les extraits, vos invités buzzent depuis leur téléphone, le classement s\'affiche en direct sur écran géant.',
     url: URL,

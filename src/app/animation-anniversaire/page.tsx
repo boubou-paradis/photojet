@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['animation anniversaire', 'idée animation anniversaire', 'jeux anniversaire adulte', 'animation fête anniversaire', 'quiz anniversaire', 'animation anniversaire interactive'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Animation Anniversaire Interactive | AnimaJet',
     description: 'Quiz, photos en direct et jeux interactifs pour un anniversaire dont on se souvient.',
     url: URL,
