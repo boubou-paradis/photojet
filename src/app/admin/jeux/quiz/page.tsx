@@ -9,7 +9,7 @@ function parseJsonArray<T = unknown>(raw: unknown): T[] {
 }
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
+import { fetchUserSession } from '@/lib/session-select'
 import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
@@ -169,6 +170,7 @@ export default function QuizPage() {
   const [loadingSavedQuizzes, setLoadingSavedQuizzes] = useState(false)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const currentQuestionIndexRef = useRef(0)
@@ -317,15 +319,7 @@ export default function QuizPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (error) throw error
+      const data = await fetchUserSession(supabase, user.id, searchParams.get('session'))
       setSession(data)
 
       // Charger les questions depuis la DB (même si le jeu n'est pas actif)
@@ -1472,7 +1466,7 @@ export default function QuizPage() {
     })
 
     toast.success('Jeu arrêté - Configuration conservée')
-    router.push('/admin/jeux')
+    router.push(`/admin/jeux?session=${session.id}`)
   }
 
   // Fonction pour supprimer toutes les données (questions)
@@ -2041,7 +2035,7 @@ export default function QuizPage() {
                     .update({ quiz_lobby_visible: false })
                     .eq('id', session.id)
                 }
-                router.push('/admin/jeux')
+                router.push(`/admin/jeux?session=${session.id}`)
               }}
               className="text-white hover:text-[#D4AF37]"
             >
