@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import QRCode from 'react-qr-code'
@@ -27,6 +27,7 @@ import { createClient } from '@/lib/supabase'
 import { Session, BorneConnection } from '@/types/database'
 import { toast } from 'sonner'
 import { getBorneUrl } from '@/lib/utils'
+import { fetchUserSessions, pickSession } from '@/lib/session-select'
 
 export default function BornePage() {
   const [, setSessions] = useState<Session[]>([])
@@ -35,6 +36,7 @@ export default function BornePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
@@ -57,17 +59,9 @@ export default function BornePage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setSessions(data || [])
-      if (data && data.length > 0) {
-        setSelectedSession(data[0])
-      }
+      const data = await fetchUserSessions(supabase, user.id)
+      setSessions(data)
+      setSelectedSession(pickSession(data, searchParams.get('session')))
     } catch (err) {
       console.error('Error fetching sessions:', err)
     } finally {
@@ -286,7 +280,7 @@ export default function BornePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push('/admin/settings')}
+            onClick={() => router.push(`/admin/settings?session=${selectedSession.id}`)}
             className="border-white/10 text-white hover:bg-white/5 hover:text-[#D4AF37]"
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -596,7 +590,7 @@ export default function BornePage() {
                       variant="outline"
                       size="sm"
                       className="mt-4 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50"
-                      onClick={() => router.push('/admin/settings')}
+                      onClick={() => router.push(`/admin/settings?session=${selectedSession.id}`)}
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Modifier les paramètres
