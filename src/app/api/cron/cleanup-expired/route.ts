@@ -74,6 +74,22 @@ function collectSessionStoragePaths(session: any): string[] {
   return Array.from(new Set(out.filter((p): p is string => !!p)))
 }
 
+// Extrait les chemins Storage (bucket photos) référencés dans les jeux Photo
+// Mystère sauvegardés dans la bibliothèque personnelle d'un utilisateur
+// (saved_mysteries.photos, jsonb : [{url, audioUrl}, ...]).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function collectSavedMysteriesStoragePaths(rows: any[]): string[] {
+  const out: (string | null)[] = []
+  for (const row of rows) {
+    const photos = Array.isArray(row.photos) ? row.photos : []
+    for (const p of photos) {
+      out.push(toPhotosPath(p?.url))
+      out.push(toPhotosPath(p?.audioUrl))
+    }
+  }
+  return Array.from(new Set(out.filter((p): p is string => !!p)))
+}
+
 // Supprime une liste de chemins du bucket photos (par lots de 100). Renvoie le nb tenté.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function removeFromPhotos(supabase: any, paths: string[]): Promise<number> {
@@ -412,6 +428,28 @@ async function deleteUserData(
   // 10b. Delete saved quizzes (bibliothèque personnelle) — cascade auth aussi en filet
   await supabase
     .from('saved_quizzes')
+    .delete()
+    .eq('user_id', userId)
+
+  // 10c. Delete saved Photo Mystère games (bibliothèque personnelle) + leurs
+  // fichiers Storage. Contrairement à saved_quizzes (10b), on supprime aussi
+  // les fichiers ici : à ce stade toutes les sessions de l'utilisateur sont
+  // déjà supprimées (étape 6 plus haut), donc plus rien d'autre ne peut
+  // référencer ces fichiers. Robuste si la table n'existe pas encore
+  // (select renvoie {data: null, error} sans lever d'exception, la
+  // condition ci-dessous saute simplement le bloc).
+  const { data: savedMysteries } = await supabase
+    .from('saved_mysteries')
+    .select('photos')
+    .eq('user_id', userId)
+
+  if (savedMysteries && savedMysteries.length > 0) {
+    const savedMysteriesPaths = collectSavedMysteriesStoragePaths(savedMysteries)
+    filesDeleted += await removeFromPhotos(supabase, savedMysteriesPaths)
+  }
+
+  await supabase
+    .from('saved_mysteries')
     .delete()
     .eq('user_id', userId)
 
