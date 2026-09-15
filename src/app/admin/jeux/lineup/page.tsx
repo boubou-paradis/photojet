@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
+import { fetchUserSession } from '@/lib/session-select'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
@@ -60,6 +61,7 @@ export default function LineupPage() {
   const audioInputRef = useRef<HTMLInputElement | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
@@ -164,15 +166,7 @@ export default function LineupPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (error) throw error
+      const data = await fetchUserSession(supabase, user.id, searchParams.get('session'))
       setSession(data)
 
       // Initialize state from session - use defaults if game not active
@@ -882,7 +876,7 @@ export default function LineupPage() {
     toast.success('Jeu arrêté - Données réinitialisées')
 
     // Retour à la liste des jeux
-    router.push('/admin/jeux')
+    router.push(`/admin/jeux?session=${session.id}`)
   }
 
   // Keyboard shortcuts
@@ -955,7 +949,7 @@ export default function LineupPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/admin/jeux')}
+              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
               className="text-white hover:text-[#D4AF37]"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
