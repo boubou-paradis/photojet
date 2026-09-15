@@ -2209,7 +2209,7 @@ fetch(${JSON.stringify(imageUrl)})
                       variant="outline"
                       size="sm"
                       className="w-full h-7 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
-                      onClick={() => router.push('/admin/borne')}
+                      onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
                     >
                       <Tablet className="h-3.5 w-3.5 mr-1.5" />
                       Borne photo

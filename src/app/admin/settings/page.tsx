@@ -1613,7 +1613,7 @@ export default function SettingsPage() {
                     variant="outline"
                     size="sm"
                     className="w-full h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
-                    onClick={() => router.push('/admin/borne')}
+                    onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
                   >
                     <Tablet className="h-3.5 w-3.5 mr-1.5" />
                     Gérer la borne
