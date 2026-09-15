@@ -1504,7 +1504,7 @@ fetch(${JSON.stringify(imageUrl)})
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/admin/borne`)}
+                  onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
                   className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Tablet className="h-4 w-4 mr-2" />
@@ -1513,7 +1513,7 @@ fetch(${JSON.stringify(imageUrl)})
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/admin/jeux`)}
+                  onClick={() => router.push(`/admin/jeux?session=${selectedSession.id}`)}
                   className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Gamepad2 className="h-4 w-4 mr-2" />
@@ -1522,7 +1522,7 @@ fetch(${JSON.stringify(imageUrl)})
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/admin/settings`)}
+                  onClick={() => router.push(`/admin/settings?session=${selectedSession.id}`)}
                   className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Settings className="h-4 w-4 mr-2" />
