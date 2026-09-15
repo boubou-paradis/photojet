@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Loader2, X, ZoomIn, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getCroppedImageBlob } from '@/lib/image-utils'
+import { toast } from 'sonner'
 
 interface PhotoCropModalProps {
   imageSrc: string
@@ -42,6 +43,9 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
     try {
       const blob = await getCroppedImageBlob(imageSrc, croppedAreaPixels, rotation)
       onConfirm(blob)
+    } catch (err) {
+      console.error('Error cropping image:', err)
+      toast.error('Erreur lors du recadrage de l\'image')
     } finally {
       setExporting(false)
     }

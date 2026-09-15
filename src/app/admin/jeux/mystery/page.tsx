@@ -562,7 +562,7 @@ export default function MysteryPage() {
       toast.error('Ajoutez au moins une photo avant de sauvegarder')
       return
     }
-    if (uploading !== null) {
+    if (uploading !== null || uploadingAudio !== null || uploadingRevealAudio) {
       toast.error('Patientez la fin de l\'upload avant de sauvegarder')
       return
     }
@@ -616,7 +616,7 @@ export default function MysteryPage() {
   }
 
   // Charger un jeu sauvegardé dans l'éditeur (remplace les photos actuelles de la session courante)
-  function handleLoadMystery(saved: SavedMystery) {
+  async function handleLoadMystery(saved: SavedMystery) {
     if (!window.confirm('Charger ce jeu remplacera les photos actuelles. Continuer ?')) return
 
     const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
@@ -634,7 +634,7 @@ export default function MysteryPage() {
     })
 
     setPhotos(photoSlots)
-    savePhotosToDatabase(photoSlots)
+    await savePhotosToDatabase(photoSlots)
     setShowLoadMysteryModal(false)
     const count = saved.photos?.length ?? 0
     toast.success(`Jeu « ${saved.name} » chargé (${count} photo${count > 1 ? 's' : ''})`)
@@ -847,7 +847,7 @@ export default function MysteryPage() {
     if (!session) return
 
     // Demander confirmation
-    if (!window.confirm('Supprimer toutes les photos et audio ? Cette action est irréversible.')) {
+    if (!window.confirm('Supprimer toutes les photos et audio ? Cette action est irréversible et affectera aussi tout jeu sauvegardé dans votre bibliothèque qui utilise ces mêmes photos.')) {
       return
     }
 
@@ -1463,6 +1463,7 @@ export default function MysteryPage() {
                 placeholder="Ex : Les plus grandes villes du monde"
                 className="w-full bg-[#2E2E33] text-white rounded-lg px-3 py-2.5 border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none mt-1"
               />
+              <p className="text-xs text-gray-500 mt-2">Supprimer une photo depuis une session la retirera aussi de ce jeu sauvegardé.</p>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
               <button
