@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2, Sparkles, FileText } from 'lucide-react'
 import Image from 'next/image'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { toast } from 'sonner'
+import { fetchUserSession } from '@/lib/session-select'
 
 // Game card data
 const games = [
@@ -66,6 +67,7 @@ export default function JeuxPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
@@ -80,15 +82,7 @@ export default function JeuxPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (error) throw error
+      const data = await fetchUserSession(supabase, user.id, searchParams.get('session'))
       setSession(data)
     } catch (err) {
       console.error('Error fetching session:', err)
@@ -210,7 +204,7 @@ export default function JeuxPage() {
                 duration: 0.5,
                 ease: [0.23, 1, 0.32, 1]
               }}
-              onClick={() => game.available && router.push(game.path)}
+              onClick={() => game.available && router.push(`${game.path}?session=${session.id}`)}
               className={`
                 group relative rounded-2xl cursor-pointer
                 transition-all duration-300 ease-out
