@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
+import { fetchUserSession } from '@/lib/session-select'
 import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 import WheelPreview from '@/components/games/WheelPreview'
@@ -79,6 +80,7 @@ export default function WheelPage() {
   const audioInputRef = useRef<HTMLInputElement | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
@@ -179,15 +181,7 @@ export default function WheelPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (error) throw error
+      const data = await fetchUserSession(supabase, user.id, searchParams.get('session'))
       setSession(data)
 
       // Charger les segments depuis la DB (même si le jeu n'est pas actif)
@@ -643,7 +637,7 @@ export default function WheelPage() {
     })
 
     toast.success('Jeu arrêté - Configuration conservée')
-    router.push('/admin/jeux')
+    router.push(`/admin/jeux?session=${session.id}`)
   }
 
   // Fonction pour supprimer toutes les données
@@ -718,7 +712,7 @@ export default function WheelPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/admin/jeux')}
+              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
               className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
