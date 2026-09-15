@@ -36,6 +36,7 @@ import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
+import PhotoCropModal from './PhotoCropModal'
 
 interface PhotoSlot {
   url: string
@@ -57,6 +58,10 @@ export default function MysteryPage() {
 
   // Multi-photo support (20 photos max)
   const [photos, setPhotos] = useState<(PhotoSlot | null)[]>(Array(20).fill(null))
+
+  // Recadrage : fichier sélectionné en attente de validation du cadrage
+  const [croppingIndex, setCroppingIndex] = useState<number | null>(null)
+  const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null)
 
   // Game state (realtime)
   const [gameActive, setGameActive] = useState(false)
@@ -216,14 +221,40 @@ export default function MysteryPage() {
     }
   }, [session?.id, supabase])
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, index: number) {
+  // Étape 1 : sélection du fichier → ouvre la modale de recadrage (pas d'upload direct)
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, index: number) {
     const file = e.target.files?.[0]
     if (!file || !session) return
+    setCroppingImageSrc(URL.createObjectURL(file))
+    setCroppingIndex(index)
+  }
+
+  // Ferme la modale de recadrage et réinitialise l'input file (pour pouvoir
+  // resélectionner le même fichier ensuite) sans upload — utilisé par
+  // l'annulation ET après une validation réussie.
+  function closeCropModal() {
+    if (croppingImageSrc) URL.revokeObjectURL(croppingImageSrc)
+    const indexToReset = croppingIndex
+    setCroppingImageSrc(null)
+    setCroppingIndex(null)
+    if (indexToReset !== null && fileInputRefs.current[indexToReset]) {
+      fileInputRefs.current[indexToReset]!.value = ''
+    }
+  }
+
+  // Étape 2 : validation du recadrage → pipeline d'upload existant, inchangé
+  // à partir d'ici (compression, Storage, sauvegarde session).
+  async function handleCropConfirm(blob: Blob) {
+    const index = croppingIndex
+    if (index === null || !session) return
+    closeCropModal()
 
     setUploading(index)
     try {
+      const croppedFile = new File([blob], `mystery-crop-${Date.now()}.jpg`, { type: 'image/jpeg' })
+
       // Compress image
-      const compressedFile = await imageCompression(file, {
+      const compressedFile = await imageCompression(croppedFile, {
         maxSizeMB: 2,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
@@ -258,9 +289,6 @@ export default function MysteryPage() {
       toast.error('Erreur lors de l\'upload')
     } finally {
       setUploading(null)
-      if (fileInputRefs.current[index]) {
-        fileInputRefs.current[index]!.value = ''
-      }
     }
   }
 
@@ -1156,7 +1184,7 @@ export default function MysteryPage() {
                       ref={(el) => { fileInputRefs.current[index] = el }}
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUpload(e, index)}
+                      onChange={(e) => handleFileSelect(e, index)}
                       className="hidden"
                     />
                     <input
@@ -1258,6 +1286,17 @@ export default function MysteryPage() {
           </motion.div>
         )}
       </main>
+
+      {/* Modale de recadrage : ratio verrouillé sur le quadrillage de tuiles actuel */}
+      {croppingImageSrc && (
+        <PhotoCropModal
+          imageSrc={croppingImageSrc}
+          gridCols={cols}
+          gridRows={rows}
+          onCancel={closeCropModal}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   )
 }
