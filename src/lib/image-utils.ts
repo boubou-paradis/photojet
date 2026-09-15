@@ -145,3 +145,76 @@ export function formatDate(date: string): string {
     minute: '2-digit',
   }).format(new Date(date))
 }
+
+// Rectangle de recadrage en pixels, dans le référentiel de l'image source
+// (format renvoyé par react-easy-crop via son callback onCropComplete).
+export interface CropPixelArea {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+// Applique une rotation puis un recadrage à une image source (URL ou blob: local)
+// et exporte le résultat en JPEG via un canvas — pattern canonique de react-easy-crop.
+export async function getCroppedImageBlob(
+  imageSrc: string,
+  cropPixels: CropPixelArea,
+  rotationDeg: number
+): Promise<Blob> {
+  const image = await loadImageElement(imageSrc)
+  const rotRad = (rotationDeg * Math.PI) / 180
+
+  // Canvas intermédiaire assez grand pour contenir l'image tournée sans découpe
+  const rotatedSize = {
+    width: Math.abs(Math.cos(rotRad) * image.width) + Math.abs(Math.sin(rotRad) * image.height),
+    height: Math.abs(Math.sin(rotRad) * image.width) + Math.abs(Math.cos(rotRad) * image.height),
+  }
+
+  const rotateCanvas = document.createElement('canvas')
+  rotateCanvas.width = rotatedSize.width
+  rotateCanvas.height = rotatedSize.height
+  const rotateCtx = rotateCanvas.getContext('2d')
+  if (!rotateCtx) throw new Error('Canvas non supporté par ce navigateur')
+
+  rotateCtx.translate(rotatedSize.width / 2, rotatedSize.height / 2)
+  rotateCtx.rotate(rotRad)
+  rotateCtx.drawImage(image, -image.width / 2, -image.height / 2)
+
+  // Canvas final : découpe selon le rectangle calculé par react-easy-crop
+  const outputCanvas = document.createElement('canvas')
+  outputCanvas.width = cropPixels.width
+  outputCanvas.height = cropPixels.height
+  const outputCtx = outputCanvas.getContext('2d')
+  if (!outputCtx) throw new Error('Canvas non supporté par ce navigateur')
+
+  outputCtx.drawImage(
+    rotateCanvas,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    cropPixels.width,
+    cropPixels.height
+  )
+
+  return new Promise((resolve, reject) => {
+    outputCanvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Échec de l\'export de l\'image recadrée'))),
+      'image/jpeg',
+      0.9
+    )
+  })
+}
