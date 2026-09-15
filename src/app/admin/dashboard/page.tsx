@@ -1446,12 +1446,16 @@ fetch(${JSON.stringify(imageUrl)})
                     }`}>
                       #{session.code}
                     </span>
-                    {selectedSession?.id === session.id && (
-                      <div className="flex items-center gap-0.5">
-                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[8px] text-emerald-400">Active</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-0.5">
+                      <span className={`w-1 h-1 rounded-full ${
+                        session.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'
+                      }`} />
+                      <span className={`text-[8px] ${
+                        session.is_active ? 'text-emerald-400' : 'text-gray-500'
+                      }`}>
+                        {session.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
