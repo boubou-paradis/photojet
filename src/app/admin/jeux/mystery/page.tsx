@@ -33,7 +33,7 @@ import {
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
-import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
+import { Session, MysteryPhotoGrid, MysteryPhotoSpeed, SavedMystery, SavedMysteryPhoto } from '@/types/database'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 import PhotoCropModal from './PhotoCropModal'
@@ -82,6 +82,14 @@ export default function MysteryPage() {
   const [playingRevealAudio, setPlayingRevealAudio] = useState(false)
   const revealAudioInputRef = useRef<HTMLInputElement | null>(null)
   const revealAudioPreviewRef = useRef<HTMLAudioElement | null>(null)
+
+  // Bibliothèque personnelle de jeux Photo Mystère (saved_mysteries)
+  const [showSaveMysteryModal, setShowSaveMysteryModal] = useState(false)
+  const [showLoadMysteryModal, setShowLoadMysteryModal] = useState(false)
+  const [saveMysteryName, setSaveMysteryName] = useState('')
+  const [savingMystery, setSavingMystery] = useState(false)
+  const [savedMysteries, setSavedMysteries] = useState<SavedMystery[]>([])
+  const [loadingSavedMysteries, setLoadingSavedMysteries] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -537,6 +545,113 @@ export default function MysteryPage() {
       audio.currentTime = 0
       audio.play()
       setPlayingRevealAudio(true)
+    }
+  }
+
+  // === Bibliothèque personnelle de jeux Photo Mystère (saved_mysteries) ===
+
+  // Sauvegarder le jeu courant (toutes les photos valides, dans l'ordre) dans la bibliothèque de l'utilisateur
+  async function handleSaveMystery() {
+    const name = saveMysteryName.trim()
+    if (!name) {
+      toast.error('Donnez un nom à votre jeu')
+      return
+    }
+    const validPhotos = photos.filter((p): p is PhotoSlot => p !== null)
+    if (validPhotos.length === 0) {
+      toast.error('Ajoutez au moins une photo avant de sauvegarder')
+      return
+    }
+    if (uploading !== null) {
+      toast.error('Patientez la fin de l\'upload avant de sauvegarder')
+      return
+    }
+
+    setSavingMystery(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Session expirée, reconnectez-vous')
+        return
+      }
+      const photosToSave: SavedMysteryPhoto[] = validPhotos.map((p) => ({
+        url: p.url,
+        audioUrl: p.audioUrl || null,
+      }))
+      const { error } = await supabase
+        .from('saved_mysteries')
+        .insert({ user_id: user.id, name, photos: photosToSave })
+
+      if (error) throw error
+
+      toast.success('Jeu sauvegardé dans votre bibliothèque ✅')
+      setShowSaveMysteryModal(false)
+      setSaveMysteryName('')
+    } catch (err) {
+      console.error('Error saving mystery:', err)
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingMystery(false)
+    }
+  }
+
+  // Charger la liste des jeux sauvegardés de l'utilisateur (RLS = seulement les siens)
+  async function loadSavedMysteries() {
+    setShowLoadMysteryModal(true)
+    setLoadingSavedMysteries(true)
+    try {
+      const { data, error } = await supabase
+        .from('saved_mysteries')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setSavedMysteries((data as SavedMystery[]) || [])
+    } catch (err) {
+      console.error('Error loading saved mysteries:', err)
+      toast.error('Erreur lors du chargement de la bibliothèque')
+      setSavedMysteries([])
+    } finally {
+      setLoadingSavedMysteries(false)
+    }
+  }
+
+  // Charger un jeu sauvegardé dans l'éditeur (remplace les photos actuelles de la session courante)
+  function handleLoadMystery(saved: SavedMystery) {
+    if (!window.confirm('Charger ce jeu remplacera les photos actuelles. Continuer ?')) return
+
+    const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
+    ;(saved.photos || []).forEach((p, index) => {
+      if (index < 20 && p.url) {
+        const { data: urlData } = supabase.storage.from('photos').getPublicUrl(p.url)
+        const slot: PhotoSlot = { url: p.url, preview: urlData.publicUrl }
+        if (p.audioUrl) {
+          const { data: audioUrlData } = supabase.storage.from('photos').getPublicUrl(p.audioUrl)
+          slot.audioUrl = p.audioUrl
+          slot.audioPreview = audioUrlData.publicUrl
+        }
+        photoSlots[index] = slot
+      }
+    })
+
+    setPhotos(photoSlots)
+    savePhotosToDatabase(photoSlots)
+    setShowLoadMysteryModal(false)
+    const count = saved.photos?.length ?? 0
+    toast.success(`Jeu « ${saved.name} » chargé (${count} photo${count > 1 ? 's' : ''})`)
+  }
+
+  // Supprimer un jeu de la bibliothèque (ligne DB uniquement — les fichiers Storage
+  // peuvent encore être utilisés par une session active, donc jamais supprimés ici)
+  async function handleDeleteSavedMystery(id: string) {
+    if (!window.confirm('Supprimer définitivement ce jeu de votre bibliothèque ?')) return
+    try {
+      const { error } = await supabase.from('saved_mysteries').delete().eq('id', id)
+      if (error) throw error
+      setSavedMysteries((prev) => prev.filter((m) => m.id !== id))
+      toast.success('Jeu supprimé de la bibliothèque')
+    } catch (err) {
+      console.error('Error deleting saved mystery:', err)
+      toast.error('Erreur lors de la suppression')
     }
   }
 

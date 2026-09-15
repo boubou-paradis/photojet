@@ -266,6 +266,21 @@ export interface SavedQuiz {
   updated_at: string
 }
 
+export interface SavedMysteryPhoto {
+  url: string
+  audioUrl?: string | null
+}
+
+// Photo Mystère sauvegardé dans la bibliothèque personnelle de l'utilisateur (réutilisable d'une session à l'autre)
+export interface SavedMystery {
+  id: string
+  user_id: string
+  name: string
+  photos: SavedMysteryPhoto[] // même structure que sessions.mystery_photos
+  created_at: string
+  updated_at: string
+}
+
 export interface QuizAnswer {
   odientId: string
   odientName: string
