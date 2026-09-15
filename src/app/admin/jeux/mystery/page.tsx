@@ -977,6 +977,22 @@ export default function MysteryPage() {
                 Notice
               </Button>
             </a>
+            <button
+              onClick={() => setShowSaveMysteryModal(true)}
+              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+              title="Sauvegarder ce jeu dans votre bibliothèque"
+            >
+              <span aria-hidden>💾</span>
+              Sauvegarder
+            </button>
+            <button
+              onClick={loadSavedMysteries}
+              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+              title="Charger un jeu de votre bibliothèque"
+            >
+              <span aria-hidden>📂</span>
+              Charger
+            </button>
             {gameActive && (
               <Button
                 size="sm"
@@ -1411,6 +1427,143 @@ export default function MysteryPage() {
           onCancel={closeCropModal}
           onConfirm={handleCropConfirm}
         />
+      )}
+
+      {/* Modale : Sauvegarder le jeu dans la bibliothèque */}
+      {showSaveMysteryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-md w-full overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">💾</div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Sauvegarder ce jeu</h3>
+                  <p className="text-sm text-gray-400">{validPhotosCount} photo{validPhotosCount > 1 ? 's' : ''} dans votre bibliothèque</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSaveMysteryModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <label className="text-gray-400 text-xs">Nom du jeu</label>
+              <input
+                type="text"
+                value={saveMysteryName}
+                onChange={(e) => setSaveMysteryName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !savingMystery) handleSaveMystery() }}
+                autoFocus
+                placeholder="Ex : Les plus grandes villes du monde"
+                className="w-full bg-[#2E2E33] text-white rounded-lg px-3 py-2.5 border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none mt-1"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => setShowSaveMysteryModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveMystery}
+                disabled={savingMystery}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-xl font-bold hover:from-[#F4D03F] hover:to-[#D4AF37] flex items-center gap-2 transition-all duration-200 disabled:opacity-60"
+              >
+                {savingMystery ? <Loader2 className="h-4 w-4 animate-spin" /> : <span aria-hidden>💾</span>}
+                Sauvegarder
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modale : Charger un jeu sauvegardé */}
+      {showLoadMysteryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">📂</div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Votre bibliothèque de jeux Photo Mystère</h3>
+                  <p className="text-sm text-gray-400">Charger remplace les photos actuelles</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLoadMysteryModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {loadingSavedMysteries ? (
+                <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Chargement…
+                </div>
+              ) : savedMysteries.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-4xl mb-3">📂</div>
+                  <p>Aucun jeu sauvegardé pour l&apos;instant.</p>
+                  <p className="text-sm text-gray-500 mt-1">Préparez un jeu puis cliquez sur « 💾 Sauvegarder ».</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {savedMysteries.map((mystery) => (
+                    <div
+                      key={mystery.id}
+                      className="card-gold rounded-xl p-4 flex items-center justify-between gap-3 hover:border-[#D4AF37]/50 transition-all duration-200"
+                    >
+                      <button
+                        onClick={() => handleLoadMystery(mystery)}
+                        className="flex-1 text-left group"
+                      >
+                        <h4 className="text-white font-bold group-hover:text-[#D4AF37] transition-colors">{mystery.name}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {(mystery.photos?.length ?? 0)} photo{(mystery.photos?.length ?? 0) > 1 ? 's' : ''}
+                          {' · '}
+                          {new Date(mystery.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => handleLoadMystery(mystery)}
+                        className="shrink-0 px-3 py-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-lg font-bold text-sm hover:from-[#F4D03F] hover:to-[#D4AF37] transition-all duration-200"
+                      >
+                        Charger
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSavedMystery(mystery.id)}
+                        className="shrink-0 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                        title="Supprimer de la bibliothèque"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
+              <button
+                onClick={() => setShowLoadMysteryModal(false)}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   )
