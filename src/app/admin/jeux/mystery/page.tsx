@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase'
+import { fetchUserSession } from '@/lib/session-select'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { toast } from 'sonner'
@@ -78,6 +79,7 @@ export default function MysteryPage() {
   const revealAudioPreviewRef = useRef<HTMLAudioElement | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const winnerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
@@ -98,15 +100,7 @@ export default function MysteryPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (error) throw error
+      const data = await fetchUserSession(supabase, user.id, searchParams.get('session'))
       setSession(data)
 
       // Initialize state from session
@@ -702,7 +696,7 @@ export default function MysteryPage() {
     toast.success('Jeu arrêté - Configuration conservée')
 
     // Retour à la liste des jeux
-    router.push('/admin/jeux')
+    router.push(`/admin/jeux?session=${session.id}`)
   }
 
   // Fonction pour supprimer toutes les données (photos, audio)
@@ -815,7 +809,7 @@ export default function MysteryPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/admin/jeux')}
+              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
               className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
