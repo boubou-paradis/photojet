@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
@@ -48,6 +48,7 @@ import { createClient } from '@/lib/supabase'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
 import { generateSessionCode } from '@/lib/image-utils'
 import { toast } from 'sonner'
+import { fetchUserSessions, pickSession } from '@/lib/session-select'
 
 // Parse la colonne JSON promo_affiches (chemins storage ordonnés) en tableau
 function parsePromoAffiches(raw: string | null): string[] {
@@ -76,6 +77,7 @@ export default function SettingsPage() {
   const promoInputRef = useRef<HTMLInputElement>(null)
   const MAX_PROMO_AFFICHES = 5
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [formData, setFormData] = useState({
@@ -175,17 +177,9 @@ export default function SettingsPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setSessions(data || [])
-      if (data && data.length > 0) {
-        setSelectedSession(data[0])
-      }
+      const data = await fetchUserSessions(supabase, user.id)
+      setSessions(data)
+      setSelectedSession(pickSession(data, searchParams.get('session')))
     } catch (err) {
       console.error('Error fetching sessions:', err)
     } finally {
