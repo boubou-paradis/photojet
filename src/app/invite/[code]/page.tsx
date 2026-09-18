@@ -19,13 +19,6 @@ type SelectionSource = 'camera' | 'gallery'
 // Nombre maximum de photos sélectionnables en une fois depuis la galerie
 const MAX_PHOTOS = 3
 
-// Android/Chrome (et Samsung Internet) sont connus pour mal gérer l'attribut
-// capture="environment" (option Caméra masquée ou bouton inerte). iOS/Safari
-// le gère bien : on ne le retire donc que sur Android.
-function isAndroidUA(): boolean {
-  return typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)
-}
-
 function getUploadErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     const msg = err.message.toLowerCase()
@@ -839,12 +832,7 @@ export default function InvitePage() {
                         ref={cameraInputRef}
                         type="file"
                         accept="image/*"
-                        // capture="environment" ouvre l'appareil photo directement sur
-                        // iOS/Safari de façon fiable. Sur Android/Chrome (et Samsung
-                        // Internet), cet attribut est connu pour masquer l'option Caméra
-                        // ou rendre le bouton inerte : on le retire donc sur Android et on
-                        // laisse le sélecteur natif proposer l'appareil photo comme option.
-                        {...(isAndroidUA() ? {} : { capture: 'environment' as const })}
+                        capture="environment"
                         onChange={(e) => handleFileSelect(e, 'camera')}
                         className="hidden"
                       />
