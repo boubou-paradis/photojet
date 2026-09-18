@@ -114,8 +114,32 @@ export async function compressImage(
   } catch (error) {
     console.error('[Image] Compression error:', error)
     onProgress?.({ stage: 'done', progress: 100 })
+    // La compression a échoué (ex: format non décodable par ce navigateur,
+    // comme le HEIC sur Chrome/Android) : on renvoie le fichier d'origine
+    // intact, réétiqueté avec son vrai type détecté par magic bytes plutôt
+    // que de laisser le type navigateur (parfois vide/faux sur Android).
+    const { detectedType } = await validateImageFile(file)
+    if (detectedType && detectedType !== file.type) {
+      return new File([file], file.name, { type: detectedType })
+    }
     return file
   }
+}
+
+const MIME_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+}
+
+// Déduit l'extension de fichier à utiliser à l'upload à partir du type MIME
+// réel du fichier (après compression, qui peut avoir échoué et conservé le
+// format d'origine) — pour ne jamais stocker un fichier avec une extension/
+// content-type qui ne correspond pas à son contenu réel.
+export function extensionForMimeType(mimeType: string): string {
+  return MIME_EXTENSIONS[mimeType] ?? 'jpg'
 }
 
 export function needsCompression(file: File): boolean {

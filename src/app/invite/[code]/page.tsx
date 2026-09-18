@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
-import { compressImage, validateImageFile, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
+import { compressImage, validateImageFile, extensionForMimeType, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
 import { Session } from '@/types/database'
 
 type TabType = 'photo' | 'message'
@@ -18,6 +18,13 @@ type SelectionSource = 'camera' | 'gallery'
 
 // Nombre maximum de photos sélectionnables en une fois depuis la galerie
 const MAX_PHOTOS = 3
+
+// Android/Chrome (et Samsung Internet) sont connus pour mal gérer l'attribut
+// capture="environment" (option Caméra masquée ou bouton inerte). iOS/Safari
+// le gère bien : on ne le retire donc que sur Android.
+function isAndroidUA(): boolean {
+  return typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)
+}
 
 function getUploadErrorMessage(err: unknown): string {
   if (err instanceof Error) {
@@ -44,6 +51,7 @@ export default function InvitePage() {
   const [compressionProgress, setCompressionProgress] = useState(0)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [previewErrors, setPreviewErrors] = useState<Set<string>>(new Set())
   const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(null)
   const [uploadIndex, setUploadIndex] = useState(0)
   const [uploadTotal, setUploadTotal] = useState(0)
@@ -158,6 +166,7 @@ export default function InvitePage() {
 
     setSelectedFiles(validFiles)
     setPreviews(urls)
+    setPreviewErrors(new Set())
     setSelectionSource(source)
     setPartialNotice(null)
     setPhotoUploadStatus('idle')
@@ -232,10 +241,16 @@ export default function InvitePage() {
             await new Promise(r => setTimeout(r, 1000 * attempt))
           }
           try {
-            const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+            // Le type réel du fichier compressé (browser-image-compression renvoie
+            // du JPEG en cas de succès ; en cas d'échec — ex: HEIC non décodable
+            // par ce navigateur — compressImage renvoie le fichier d'origine avec
+            // son vrai type). On ne force plus .jpg/image/jpeg à l'aveugle.
+            const contentType = compressedFile.type || 'image/jpeg'
+            const ext = extensionForMimeType(contentType)
+            const fileName = `${session.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
             const { error: uploadError } = await supabase.storage
               .from('photos')
-              .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
+              .upload(fileName, compressedFile, { contentType })
             if (uploadError) throw uploadError
 
             const { error: dbError } = await supabase
@@ -699,7 +714,21 @@ export default function InvitePage() {
                     <div className="p-6">
                       {previews.length === 1 ? (
                         <div className="relative aspect-square rounded-xl overflow-hidden mb-4 border-2 border-[#D4AF37]/30 shadow-lg shadow-black/50">
-                          <img src={previews[0]} alt="Preview" className="w-full h-full object-cover" />
+                          {previewErrors.has(previews[0]) ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-black/40 text-center p-4">
+                              <ImagePlus className="h-6 w-6 text-[#D4AF37]" />
+                              <p className="text-xs text-gray-300">
+                                Aperçu indisponible sur ce téléphone — la photo sera bien envoyée.
+                              </p>
+                            </div>
+                          ) : (
+                            <img
+                              src={previews[0]}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                              onError={() => setPreviewErrors((prev) => new Set(prev).add(previews[0]))}
+                            />
+                          )}
                           <button
                             onClick={handleCancel}
                             className="absolute top-3 right-3 p-2.5 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-black/90 transition-all hover:scale-110"
@@ -711,7 +740,19 @@ export default function InvitePage() {
                         <div className="grid grid-cols-3 gap-2 mb-4">
                           {previews.map((url, i) => (
                             <div key={url} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#D4AF37]/30 shadow-lg shadow-black/50">
-                              <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
+                              {previewErrors.has(url) ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-black/40 text-center p-2">
+                                  <ImagePlus className="h-4 w-4 text-[#D4AF37]" />
+                                  <p className="text-[10px] leading-tight text-gray-300">Aperçu indisponible</p>
+                                </div>
+                              ) : (
+                                <img
+                                  src={url}
+                                  alt={`Preview ${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={() => setPreviewErrors((prev) => new Set(prev).add(url))}
+                                />
+                              )}
                               <button
                                 onClick={() => handleRemovePhoto(i)}
                                 className="absolute top-1.5 right-1.5 p-1.5 bg-black/70 backdrop-blur-sm rounded-full text-white hover:bg-black/90 transition-all hover:scale-110"
@@ -798,7 +839,12 @@ export default function InvitePage() {
                         ref={cameraInputRef}
                         type="file"
                         accept="image/*"
-                        capture="environment"
+                        // capture="environment" ouvre l'appareil photo directement sur
+                        // iOS/Safari de façon fiable. Sur Android/Chrome (et Samsung
+                        // Internet), cet attribut est connu pour masquer l'option Caméra
+                        // ou rendre le bouton inerte : on le retire donc sur Android et on
+                        // laisse le sélecteur natif proposer l'appareil photo comme option.
+                        {...(isAndroidUA() ? {} : { capture: 'environment' as const })}
                         onChange={(e) => handleFileSelect(e, 'camera')}
                         className="hidden"
                       />
