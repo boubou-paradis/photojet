@@ -1013,6 +1013,14 @@ export default function MysteryPage() {
               <span aria-hidden>📂</span>
               Charger
             </button>
+            <button
+              onClick={clearAllData}
+              className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+              title="Supprimer toutes les photos et audio"
+            >
+              <Trash2 className="h-4 w-4" />
+              Tout vider
+            </button>
             {gameActive && (
               <Button
                 size="sm"
@@ -1423,18 +1431,6 @@ export default function MysteryPage() {
               )}
               Lancer le jeu ({validPhotosCount} manche{validPhotosCount > 1 ? 's' : ''})
             </Button>
-
-            {/* Clear data button */}
-            {validPhotosCount > 0 && (
-              <Button
-                onClick={clearAllData}
-                variant="outline"
-                className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Supprimer toutes les photos ({validPhotosCount})
-              </Button>
-            )}
           </motion.div>
         )}
       </main>
