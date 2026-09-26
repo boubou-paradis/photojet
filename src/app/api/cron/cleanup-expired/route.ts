@@ -76,7 +76,8 @@ function collectSessionStoragePaths(session: any): string[] {
 
 // Extrait les chemins Storage (bucket photos) référencés dans les jeux Photo
 // Mystère sauvegardés dans la bibliothèque personnelle d'un utilisateur
-// (saved_mysteries.photos, jsonb : [{url, audioUrl}, ...]).
+// (saved_mysteries.photos, jsonb : [{url, audioUrl}, ...], + l'audio de fond
+// éventuel sauvegardé avec le jeu : saved_mysteries.reveal_audio_url).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function collectSavedMysteriesStoragePaths(rows: any[]): string[] {
   const out: (string | null)[] = []
@@ -86,6 +87,7 @@ function collectSavedMysteriesStoragePaths(rows: any[]): string[] {
       out.push(toPhotosPath(p?.url))
       out.push(toPhotosPath(p?.audioUrl))
     }
+    out.push(toPhotosPath(row.reveal_audio_url))
   }
   return Array.from(new Set(out.filter((p): p is string => !!p)))
 }
@@ -440,7 +442,7 @@ async function deleteUserData(
   // condition ci-dessous saute simplement le bloc).
   const { data: savedMysteries } = await supabase
     .from('saved_mysteries')
-    .select('photos')
+    .select('photos, reveal_audio_url')
     .eq('user_id', userId)
 
   if (savedMysteries && savedMysteries.length > 0) {

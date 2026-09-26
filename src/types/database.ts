@@ -277,6 +277,7 @@ export interface SavedMystery {
   user_id: string
   name: string
   photos: SavedMysteryPhoto[] // même structure que sessions.mystery_photos
+  reveal_audio_url?: string | null // même valeur que sessions.mystery_reveal_audio
   created_at: string
   updated_at: string
 }

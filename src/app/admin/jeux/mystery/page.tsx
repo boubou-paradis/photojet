@@ -580,7 +580,12 @@ export default function MysteryPage() {
       }))
       const { error } = await supabase
         .from('saved_mysteries')
-        .insert({ user_id: user.id, name, photos: photosToSave })
+        .insert({
+          user_id: user.id,
+          name,
+          photos: photosToSave,
+          reveal_audio_url: revealAudio?.url || null,
+        })
 
       if (error) throw error
 
@@ -617,6 +622,7 @@ export default function MysteryPage() {
 
   // Charger un jeu sauvegardé dans l'éditeur (remplace les photos actuelles de la session courante)
   async function handleLoadMystery(saved: SavedMystery) {
+    if (!session) return
     if (!window.confirm('Charger ce jeu remplacera les photos actuelles. Continuer ?')) return
 
     const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
@@ -635,6 +641,20 @@ export default function MysteryPage() {
 
     setPhotos(photoSlots)
     await savePhotosToDatabase(photoSlots)
+
+    // Restaure l'audio de fond (musique de révélation) sauvegardé avec le jeu,
+    // sur le même modèle que les audios par photo ci-dessus.
+    if (saved.reveal_audio_url) {
+      const { data: revealUrlData } = supabase.storage.from('photos').getPublicUrl(saved.reveal_audio_url)
+      setRevealAudio({ url: saved.reveal_audio_url, preview: revealUrlData.publicUrl })
+    } else {
+      setRevealAudio(null)
+    }
+    await supabase
+      .from('sessions')
+      .update({ mystery_reveal_audio: saved.reveal_audio_url || null })
+      .eq('id', session.id)
+
     setShowLoadMysteryModal(false)
     const count = saved.photos?.length ?? 0
     toast.success(`Jeu « ${saved.name} » chargé (${count} photo${count > 1 ? 's' : ''})`)

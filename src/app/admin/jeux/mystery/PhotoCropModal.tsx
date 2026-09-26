@@ -91,6 +91,7 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
               onCropComplete={handleCropComplete}
               minZoom={1}
               maxZoom={3}
+              objectFit="cover"
             />
             {/* Overlay grille de tuiles, purement visuel, ne capte aucun clic */}
             <div className="absolute inset-0 pointer-events-none">
