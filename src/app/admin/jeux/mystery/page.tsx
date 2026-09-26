@@ -307,12 +307,15 @@ export default function MysteryPage() {
     if (!photo) return
 
     try {
-      // Delete photo and audio from storage
+      // Delete photo and audio from storage (sauf si encore utilisés dans la bibliothèque)
       const filesToDelete = [photo.url]
       if (photo.audioUrl) {
         filesToDelete.push(photo.audioUrl)
       }
-      await supabase.storage.from('photos').remove(filesToDelete)
+      const safeToDelete = await filterPathsSafeToDelete(filesToDelete)
+      if (safeToDelete.length > 0) {
+        await supabase.storage.from('photos').remove(safeToDelete)
+      }
 
       // Update local state
       const newPhotos = [...photos]
@@ -396,8 +399,11 @@ export default function MysteryPage() {
     if (!photo?.audioUrl) return
 
     try {
-      // Delete audio from storage
-      await supabase.storage.from('photos').remove([photo.audioUrl])
+      // Delete audio from storage (sauf si encore utilisé dans la bibliothèque)
+      const safeToDelete = await filterPathsSafeToDelete([photo.audioUrl])
+      if (safeToDelete.length > 0) {
+        await supabase.storage.from('photos').remove(safeToDelete)
+      }
 
       // Update local state
       const newPhotos = [...photos]
@@ -469,9 +475,12 @@ export default function MysteryPage() {
       const fileName = `mystery_reveal_${session.id}_${Date.now()}.${file.name.split('.').pop()}`
       const filePath = `mystery-audio/${fileName}`
 
-      // Delete old file if exists
+      // Delete old file if exists (sauf si encore utilisé dans la bibliothèque)
       if (revealAudio?.url) {
-        await supabase.storage.from('photos').remove([revealAudio.url])
+        const safeToDelete = await filterPathsSafeToDelete([revealAudio.url])
+        if (safeToDelete.length > 0) {
+          await supabase.storage.from('photos').remove(safeToDelete)
+        }
       }
 
       // Upload to Supabase Storage
@@ -511,8 +520,11 @@ export default function MysteryPage() {
     if (!session || !revealAudio) return
 
     try {
-      // Delete from storage
-      await supabase.storage.from('photos').remove([revealAudio.url])
+      // Delete from storage (sauf si encore utilisé dans la bibliothèque)
+      const safeToDelete = await filterPathsSafeToDelete([revealAudio.url])
+      if (safeToDelete.length > 0) {
+        await supabase.storage.from('photos').remove(safeToDelete)
+      }
 
       // Update database
       await supabase
@@ -549,6 +561,39 @@ export default function MysteryPage() {
   }
 
   // === Bibliothèque personnelle de jeux Photo Mystère (saved_mysteries) ===
+
+  // Empêche de supprimer physiquement du Storage un fichier encore référencé
+  // par un jeu de la bibliothèque (saved_mysteries.photos / reveal_audio_url
+  // pointent vers les MÊMES fichiers que la session, pas des copies) : sans ce
+  // filtre, éditer/supprimer une photo dans la session courante casse
+  // silencieusement et définitivement tout jeu sauvegardé qui l'utilise
+  // encore. RLS restreint déjà la requête aux jeux de l'utilisateur courant.
+  async function filterPathsSafeToDelete(paths: string[]): Promise<string[]> {
+    const candidates = paths.filter(Boolean)
+    if (candidates.length === 0) return []
+    const { data, error } = await supabase
+      .from('saved_mysteries')
+      .select('photos, reveal_audio_url')
+    if (error) {
+      console.error('Error checking library references before delete:', error)
+      return [] // prudence : en cas de doute, ne rien supprimer
+    }
+    const used = new Set<string>()
+    for (const row of (data || []) as { photos: SavedMysteryPhoto[] | null; reveal_audio_url: string | null }[]) {
+      if (row.reveal_audio_url) used.add(row.reveal_audio_url)
+      for (const p of row.photos || []) {
+        if (p.url) used.add(p.url)
+        if (p.audioUrl) used.add(p.audioUrl)
+      }
+    }
+    const skipped = candidates.filter((p) => used.has(p))
+    if (skipped.length > 0) {
+      toast.info(
+        `${skipped.length} fichier${skipped.length > 1 ? 's' : ''} conservé${skipped.length > 1 ? 's' : ''} en Storage (encore utilisé${skipped.length > 1 ? 's' : ''} dans votre bibliothèque)`
+      )
+    }
+    return candidates.filter((p) => !used.has(p))
+  }
 
   // Sauvegarder le jeu courant (toutes les photos valides, dans l'ordre) dans la bibliothèque de l'utilisateur
   async function handleSaveMystery() {
@@ -882,11 +927,11 @@ export default function MysteryPage() {
     if (!session) return
 
     // Demander confirmation
-    if (!window.confirm('Supprimer toutes les photos et audio ? Cette action est irréversible et affectera aussi tout jeu sauvegardé dans votre bibliothèque qui utilise ces mêmes photos.')) {
+    if (!window.confirm('Supprimer toutes les photos et audio ? Cette action est irréversible (les fichiers encore utilisés par un jeu de votre bibliothèque seront conservés).')) {
       return
     }
 
-    // Delete photos and audio from storage
+    // Delete photos and audio from storage (sauf si encore utilisés dans la bibliothèque)
     const filesToDelete: string[] = []
     photos.filter(p => p !== null).forEach(p => {
       filesToDelete.push(p!.url)
@@ -894,8 +939,9 @@ export default function MysteryPage() {
         filesToDelete.push(p!.audioUrl)
       }
     })
-    if (filesToDelete.length > 0) {
-      await supabase.storage.from('photos').remove(filesToDelete)
+    const safeToDelete = await filterPathsSafeToDelete(filesToDelete)
+    if (safeToDelete.length > 0) {
+      await supabase.storage.from('photos').remove(safeToDelete)
     }
 
     // Reset ALL game data
