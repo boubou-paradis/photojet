@@ -1198,13 +1198,14 @@ export default function MysteryPage() {
                   <div
                     key={index}
                     className={`
-                      aspect-square rounded-xl border-2 relative overflow-hidden cursor-pointer
+                      rounded-xl border-2 relative overflow-hidden cursor-pointer
                       transition-all duration-200 group
                       ${photo
                         ? 'border-[#D4AF37]'
                         : 'border-dashed border-[#3E3E43] hover:border-[#D4AF37]/50 bg-[#1A1A1E]'
                       }
                     `}
+                    style={{ aspectRatio: `${cols} / ${rows}` }}
                     onClick={() => {
                       if (!uploading && !photo) {
                         fileInputRefs.current[index]?.click()

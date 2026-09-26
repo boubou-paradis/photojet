@@ -59,8 +59,8 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full overflow-hidden flex flex-col"
       >
         <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
