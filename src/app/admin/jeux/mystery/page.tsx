@@ -775,7 +775,22 @@ export default function MysteryPage() {
   async function revealAll() {
     if (!session) return
 
-    const allTiles = Array.from({ length: totalTiles }, (_, i) => i)
+    // Recalcule totalTiles depuis la grille RÉELLEMENT en base (pas depuis
+    // mysteryPhotoGrid, qui est un state local d'édition pouvant diverger de
+    // la valeur persistée tant que "Enregistrer les paramètres" n'a pas été
+    // cliqué). MysteryPhotoGame.tsx (l'affichage en jeu) lit toujours la
+    // valeur en base : un décalage ici laissait des tuiles non révélées en
+    // bas de grille et empêchait l'audio de la photo de se déclencher
+    // (les deux dépendent de revealedTiles.length === totalTiles).
+    const { data: currentSession } = await supabase
+      .from('sessions')
+      .select('mystery_photo_grid')
+      .eq('id', session.id)
+      .single()
+    const [dbCols, dbRows] = (currentSession?.mystery_photo_grid || mysteryPhotoGrid).split('x').map(Number)
+    const dbTotalTiles = dbCols * dbRows
+
+    const allTiles = Array.from({ length: dbTotalTiles }, (_, i) => i)
     await supabase
       .from('sessions')
       .update({
