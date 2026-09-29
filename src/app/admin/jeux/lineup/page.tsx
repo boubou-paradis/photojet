@@ -26,6 +26,7 @@ import { fetchUserSession } from '@/lib/session-select'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
+import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 
 export default function LineupPage() {
   const [session, setSession] = useState<Session | null>(null)
@@ -302,14 +303,15 @@ export default function LineupPage() {
         }
       }
 
-      // Upload new audio
-      const fileExt = file.name.split('.').pop()
+      // Upload new audio (compressé après validation, avant l'upload)
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileExt = fileToUpload.name.split('.').pop()
       const fileName = `lineup-audio-${Date.now()}.${fileExt}`
       const filePath = `${session.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('lineup-audio')
-        .upload(filePath, file)
+        .upload(filePath, fileToUpload)
 
       if (uploadError) throw uploadError
 

@@ -30,6 +30,7 @@ import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { fetchUserSession } from '@/lib/session-select'
 import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
+import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import WheelPreview from '@/components/games/WheelPreview'
 
 // Default segments
@@ -301,14 +302,15 @@ export default function WheelPage() {
         }
       }
 
-      // Upload new audio
-      const fileExt = file.name.split('.').pop()
+      // Upload new audio (compressé après validation, avant l'upload)
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileExt = fileToUpload.name.split('.').pop()
       const fileName = `wheel-audio-${Date.now()}.${fileExt}`
       const filePath = `${session.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('wheel-audio')
-        .upload(filePath, file)
+        .upload(filePath, fileToUpload)
 
       if (uploadError) throw uploadError
 
