@@ -1078,6 +1078,21 @@ export default function SettingsPage() {
                     <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Échap</kbd>{' '}
                     pour quitter le plein écran.
                   </li>
+                  <li>
+                    <span className="text-white font-medium">Avec Safari</span>, une manipulation
+                    officielle Apple permet d&apos;éliminer complètement cette barre résiduelle :
+                    <br />
+                    1. Menu <span className="text-white font-medium">Présentation</span> de
+                    Safari → décochez{' '}
+                    <span className="text-white font-medium">
+                      « Toujours afficher la barre d&apos;outils en plein écran »
+                    </span>
+                    <br />
+                    2. Activez le plein écran avec{' '}
+                    <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Ctrl + Cmd + F</kbd>
+                    <br />
+                    3. Si la barre est encore visible, répétez une seconde fois ce raccourci.
+                  </li>
                 </ul>
               </div>
 
