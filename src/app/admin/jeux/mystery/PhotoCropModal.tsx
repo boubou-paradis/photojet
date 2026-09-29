@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Cropper, { Area, MediaSize } from 'react-easy-crop'
 import { motion } from 'framer-motion'
 import { Loader2, X, ZoomIn, RotateCw } from 'lucide-react'
@@ -16,16 +16,56 @@ interface PhotoCropModalProps {
   onConfirm: (blob: Blob) => void
 }
 
-// Hauteur fixe du cadre de recadrage (react-easy-crop exige un conteneur de
-// taille explicite). La largeur du cadre se déduit du ratio cols/rows du
-// quadrillage de tuiles actuel, pour que l'aperçu soit exactement ce que le
-// jeu affichera (object-fit: cover n'aura plus rien à recadrer derrière).
-const PREVIEW_HEIGHT = 360
+// react-easy-crop exige un conteneur de taille explicite (pas de %/CSS pur).
+// Le cadre est calculé à partir de la fenêtre du navigateur (voir
+// computePreviewSize) pour rester confortable aussi bien sur un grand écran
+// de bureau que sur un petit laptop, plutôt qu'une taille fixe qui donnait
+// l'impression d'une photo "réduite" une fois le fix d'image entière en place.
+const MAX_PREVIEW_WIDTH = 900
+const MAX_PREVIEW_HEIGHT = 640
+const MIN_PREVIEW_WIDTH = 320
+const MIN_PREVIEW_HEIGHT = 220
+// Espace vertical/horizontal réservé au reste de la modale (en-tête, sliders
+// zoom/rotation, pied de page, marges) — estimé, pas mesuré dynamiquement.
+const RESERVED_VERTICAL_SPACE = 340
+const RESERVED_HORIZONTAL_SPACE = 120
+
+function computePreviewSize(aspect: number): { width: number; height: number } {
+  if (typeof window === 'undefined') {
+    // Rendu serveur impossible ici (modale affichée uniquement côté client),
+    // mais garde une valeur de repli cohérente si jamais évalué hors navigateur.
+    return { width: 540, height: 360 }
+  }
+
+  const availableWidth = Math.min(window.innerWidth - RESERVED_HORIZONTAL_SPACE, MAX_PREVIEW_WIDTH)
+  const availableHeight = Math.min(window.innerHeight - RESERVED_VERTICAL_SPACE, MAX_PREVIEW_HEIGHT)
+
+  let width = availableWidth
+  let height = width / aspect
+  if (height > availableHeight) {
+    height = availableHeight
+    width = height * aspect
+  }
+
+  width = Math.max(width, MIN_PREVIEW_WIDTH)
+  height = Math.max(height, MIN_PREVIEW_HEIGHT)
+
+  return { width, height }
+}
 
 export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel, onConfirm }: PhotoCropModalProps) {
   const aspect = gridCols / gridRows
-  const previewWidth = Math.min(640, PREVIEW_HEIGHT * aspect)
-  const previewHeight = previewWidth / aspect
+  const [previewSize, setPreviewSize] = useState(() => computePreviewSize(aspect))
+  const { width: previewWidth, height: previewHeight } = previewSize
+
+  useEffect(() => {
+    function handleResize() {
+      setPreviewSize(computePreviewSize(aspect))
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [aspect])
 
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -42,8 +82,24 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
   // par défaut (1) — on calcule ici le zoom réel auquel l'image entière tient
   // dans le cadre, pour l'utiliser comme zoom minimum ET comme zoom de départ.
   // Ne touche pas à objectFit="cover" (nécessaire au fix portrait, cf. commit 04f59cf).
+  //
+  // IMPORTANT : mediaSize.width/height fournis par ce callback ne sont PAS
+  // fiables au premier appel (bug de timing interne à react-easy-crop@6.2.3 —
+  // son état this.state.mediaObjectFit vaut encore undefined à ce moment-là,
+  // ce qui lui fait utiliser sa branche "contain" par défaut pour calculer
+  // mediaSize, alors que le rendu CSS réel utilise déjà la bonne branche
+  // "cover"). On ignore donc mediaSize.width/height et on recalcule nous-
+  // mêmes la taille de couverture à partir de naturalWidth/naturalHeight
+  // (fiables, ce sont des propriétés intrinsèques de l'image) — même formule
+  // que la librairie utilise pour choisir sa classe CSS Cover_Horizontal/Vertical.
   const handleMediaLoaded = useCallback((mediaSize: MediaSize) => {
-    const fitZoom = Math.min(previewWidth / mediaSize.width, previewHeight / mediaSize.height, 1)
+    const mediaAspect = mediaSize.naturalWidth / mediaSize.naturalHeight
+    const containerAspect = previewWidth / previewHeight
+    const coverSize = mediaAspect < containerAspect
+      ? { width: previewWidth, height: previewWidth / mediaAspect }
+      : { width: previewHeight * mediaAspect, height: previewHeight }
+
+    const fitZoom = Math.min(previewWidth / coverSize.width, previewHeight / coverSize.height, 1)
     setMinZoom(fitZoom)
     setZoom(fitZoom)
   }, [previewWidth, previewHeight])
@@ -68,11 +124,11 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
   const horizontalLines = Array.from({ length: gridRows - 1 }, (_, i) => ((i + 1) / gridRows) * 100)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 py-8 bg-black/80 backdrop-blur-md">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full overflow-hidden flex flex-col"
+        className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-5xl w-full overflow-hidden flex flex-col"
       >
         <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
           <div>
