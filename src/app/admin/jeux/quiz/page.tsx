@@ -45,6 +45,8 @@ import { fetchUserSession } from '@/lib/session-select'
 import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
+import { compressImage, needsCompression } from '@/lib/image-utils'
+import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import dynamic from 'next/dynamic'
 
 // Outil de découpe audio (admin only) : chargé à la demande, jamais rendu côté serveur.
@@ -815,12 +817,14 @@ export default function QuizPage() {
     toast.success('Audio prêt ! Upload en cours...')
     setAudioUploading(true)
 
-    // 3. Uploader en arrière-plan vers Supabase
+    // 3. Uploader en arrière-plan vers Supabase (compression après la preview
+    // locale instantanée, pour ne pas retarder le retour visuel/sonore immédiat)
     try {
-      const fileName = `quiz-audio/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileName = `quiz-audio/${session.id}_${questionId}_${Date.now()}.${fileToUpload.name.split('.').pop()}`
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(fileName, file, { contentType: file.type })
+        .upload(fileName, fileToUpload, { contentType: fileToUpload.type })
 
       if (uploadError) throw uploadError
 
@@ -879,12 +883,13 @@ export default function QuizPage() {
     toast.success('Photo prête ! Upload en cours...')
     setPhotoUploading(true)
 
-    // 2. Upload en arrière-plan vers Supabase
+    // 2. Upload en arrière-plan vers Supabase (compression après la preview locale)
     try {
-      const fileName = `quiz-photos/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const fileToUpload = needsCompression(file) ? await compressImage(file) : file
+      const fileName = `quiz-photos/${session.id}_${questionId}_${Date.now()}.${fileToUpload.name.split('.').pop()}`
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(fileName, file, { contentType: file.type })
+        .upload(fileName, fileToUpload, { contentType: fileToUpload.type })
 
       if (uploadError) throw uploadError
 
@@ -1023,12 +1028,14 @@ export default function QuizPage() {
     toast.success('Audio de la question prêt ! Upload en cours...')
     setQuestionAudioUploading(true)
 
-    // 2. Upload en arrière-plan vers Supabase (préfixe distinct du reveal)
+    // 2. Upload en arrière-plan vers Supabase (préfixe distinct du reveal,
+    // compression après la preview locale instantanée)
     try {
-      const fileName = `quiz-question-audio/${session.id}_${questionId}_${Date.now()}.${file.name.split('.').pop()}`
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileName = `quiz-question-audio/${session.id}_${questionId}_${Date.now()}.${fileToUpload.name.split('.').pop()}`
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(fileName, file, { contentType: file.type })
+        .upload(fileName, fileToUpload, { contentType: fileToUpload.type })
 
       if (uploadError) throw uploadError
 
