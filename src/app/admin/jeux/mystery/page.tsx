@@ -63,6 +63,7 @@ export default function MysteryPage() {
   // Recadrage : fichier sélectionné en attente de validation du cadrage
   const [croppingIndex, setCroppingIndex] = useState<number | null>(null)
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null)
+  const [croppingGrid, setCroppingGrid] = useState<{ cols: number; rows: number } | null>(null)
 
   // Game state (realtime)
   const [gameActive, setGameActive] = useState(false)
@@ -231,9 +232,23 @@ export default function MysteryPage() {
   }, [session?.id, supabase])
 
   // Étape 1 : sélection du fichier → ouvre la modale de recadrage (pas d'upload direct)
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, index: number) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, index: number) {
     const file = e.target.files?.[0]
     if (!file || !session) return
+
+    // Relit la grille RÉELLEMENT en base (pas mysteryPhotoGrid, state local
+    // d'édition pouvant diverger tant que "Enregistrer les paramètres" n'a
+    // pas été cliqué) — même principe que revealAll(). Sans ça, une photo
+    // recadrée juste après un changement de grille non sauvegardé exporte
+    // un ratio différent de celui que le jeu utilisera réellement.
+    const { data: currentSession } = await supabase
+      .from('sessions')
+      .select('mystery_photo_grid')
+      .eq('id', session.id)
+      .single()
+    const [dbCols, dbRows] = (currentSession?.mystery_photo_grid || mysteryPhotoGrid).split('x').map(Number)
+
+    setCroppingGrid({ cols: dbCols, rows: dbRows })
     setCroppingImageSrc(URL.createObjectURL(file))
     setCroppingIndex(index)
   }
@@ -246,6 +261,7 @@ export default function MysteryPage() {
     const indexToReset = croppingIndex
     setCroppingImageSrc(null)
     setCroppingIndex(null)
+    setCroppingGrid(null)
     if (indexToReset !== null && fileInputRefs.current[indexToReset]) {
       fileInputRefs.current[indexToReset]!.value = ''
     }
@@ -1502,12 +1518,15 @@ export default function MysteryPage() {
         )}
       </main>
 
-      {/* Modale de recadrage : ratio verrouillé sur le quadrillage de tuiles actuel */}
-      {croppingImageSrc && (
+      {/* Modale de recadrage : ratio verrouillé sur le quadrillage RÉELLEMENT
+          enregistré en base (croppingGrid, relu à l'ouverture) — pas sur
+          cols/rows qui reflètent le state local d'édition, potentiellement
+          non sauvegardé. */}
+      {croppingImageSrc && croppingGrid && (
         <PhotoCropModal
           imageSrc={croppingImageSrc}
-          gridCols={cols}
-          gridRows={rows}
+          gridCols={croppingGrid.cols}
+          gridRows={croppingGrid.rows}
           onCancel={closeCropModal}
           onConfirm={handleCropConfirm}
         />
