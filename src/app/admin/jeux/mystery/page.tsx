@@ -36,6 +36,7 @@ import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, MysteryPhotoGrid, MysteryPhotoSpeed, SavedMystery, SavedMysteryPhoto } from '@/types/database'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
+import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import PhotoCropModal from './PhotoCropModal'
 
 interface PhotoSlot {
@@ -351,13 +352,14 @@ export default function MysteryPage() {
 
     setUploadingAudio(index)
     try {
-      const fileName = `mystery_audio_${session.id}_${index}_${Date.now()}.${file.name.split('.').pop()}`
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileName = `mystery_audio_${session.id}_${index}_${Date.now()}.${fileToUpload.name.split('.').pop()}`
       const filePath = `mystery-audio/${fileName}`
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(filePath, file)
+        .upload(filePath, fileToUpload)
 
       if (uploadError) throw uploadError
 
@@ -472,7 +474,8 @@ export default function MysteryPage() {
 
     setUploadingRevealAudio(true)
     try {
-      const fileName = `mystery_reveal_${session.id}_${Date.now()}.${file.name.split('.').pop()}`
+      const fileToUpload = needsAudioCompression(file) ? await compressAudio(file) : file
+      const fileName = `mystery_reveal_${session.id}_${Date.now()}.${fileToUpload.name.split('.').pop()}`
       const filePath = `mystery-audio/${fileName}`
 
       // Delete old file if exists (sauf si encore utilisé dans la bibliothèque)
@@ -486,7 +489,7 @@ export default function MysteryPage() {
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(filePath, file)
+        .upload(filePath, fileToUpload)
 
       if (uploadError) throw uploadError
 
