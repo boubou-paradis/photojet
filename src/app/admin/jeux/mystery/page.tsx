@@ -262,10 +262,13 @@ export default function MysteryPage() {
     try {
       const croppedFile = new File([blob], `mystery-crop-${Date.now()}.jpg`, { type: 'image/jpeg' })
 
-      // Compress image
+      // Compress image — les tuiles de la grille (12x8 par défaut) sont petites
+      // à l'affichage, 1920px/2 Mo (sans initialQuality, donc qualité 1.0 par
+      // défaut) était largement surdimensionné pour ce qui sera réellement rendu.
       const compressedFile = await imageCompression(croppedFile, {
-        maxSizeMB: 2,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.6,
+        maxWidthOrHeight: 1280,
+        initialQuality: 0.85,
         useWebWorker: true,
       })
 
