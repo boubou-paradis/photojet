@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import Cropper, { Area } from 'react-easy-crop'
+import Cropper, { Area, MediaSize } from 'react-easy-crop'
 import { motion } from 'framer-motion'
 import { Loader2, X, ZoomIn, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
 
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [minZoom, setMinZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -36,6 +37,16 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
   const handleCropComplete = useCallback((_croppedArea: Area, pixels: Area) => {
     setCroppedAreaPixels(pixels)
   }, [])
+
+  // objectFit="cover" affiche l'image déjà "remplie" (recadrée) au zoom minimum
+  // par défaut (1) — on calcule ici le zoom réel auquel l'image entière tient
+  // dans le cadre, pour l'utiliser comme zoom minimum ET comme zoom de départ.
+  // Ne touche pas à objectFit="cover" (nécessaire au fix portrait, cf. commit 04f59cf).
+  const handleMediaLoaded = useCallback((mediaSize: MediaSize) => {
+    const fitZoom = Math.min(previewWidth / mediaSize.width, previewHeight / mediaSize.height, 1)
+    setMinZoom(fitZoom)
+    setZoom(fitZoom)
+  }, [previewWidth, previewHeight])
 
   async function handleValidate() {
     if (!croppedAreaPixels) return
@@ -89,7 +100,8 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
               onZoomChange={setZoom}
               onRotationChange={setRotation}
               onCropComplete={handleCropComplete}
-              minZoom={1}
+              onMediaLoaded={handleMediaLoaded}
+              minZoom={minZoom}
               maxZoom={3}
               objectFit="cover"
             />
@@ -108,7 +120,7 @@ export default function PhotoCropModal({ imageSrc, gridCols, gridRows, onCancel,
             <ZoomIn className="h-4 w-4 text-gray-400 shrink-0" />
             <input
               type="range"
-              min={1}
+              min={minZoom}
               max={3}
               step={0.05}
               value={zoom}
