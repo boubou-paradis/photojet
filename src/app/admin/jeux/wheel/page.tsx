@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { fetchUserSession } from '@/lib/session-select'
-import { Session, WheelSegment, WheelResult, WheelAudioSettings } from '@/types/database'
+import { Session, WheelSegment, WheelResult, WheelAudioSettings, WheelDrawOrder } from '@/types/database'
 import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import WheelPreview from '@/components/games/WheelPreview'
@@ -49,6 +49,32 @@ const COLORS = [
   '#1ABC9C', '#E74C3C', '#3498DB', '#9B59B6', '#E67E22', '#16A085',
 ]
 
+// Mode "ordre prédéfini" — valeur absente/illisible = mode aléatoire
+const DEFAULT_DRAW_ORDER: WheelDrawOrder = { enabled: false, order: [] }
+
+function parseDrawOrder(raw: string | null | undefined): WheelDrawOrder {
+  if (!raw) return DEFAULT_DRAW_ORDER
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && parsed.enabled === true && Array.isArray(parsed.order)) {
+      return { enabled: true, order: parsed.order.filter((id: unknown): id is string => typeof id === 'string') }
+    }
+  } catch { /* JSON invalide → aléatoire */ }
+  return DEFAULT_DRAW_ORDER
+}
+
+// Ordre effectif : ids de l'ordre qui existent encore, puis segments non classés (ordre de la liste)
+function effectiveOrder(order: string[], segs: WheelSegment[]): WheelSegment[] {
+  const byId = new Map(segs.map(s => [s.id, s]))
+  const seen = new Set<string>()
+  const ranked: WheelSegment[] = []
+  for (const id of order) {
+    const seg = byId.get(id)
+    if (seg && !seen.has(id)) { seen.add(id); ranked.push(seg) }
+  }
+  return [...ranked, ...segs.filter(s => !seen.has(s.id))]
+}
+
 export default function WheelPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,6 +90,7 @@ export default function WheelPage() {
   const [result, setResult] = useState<string | null>(null)
   const [history, setHistory] = useState<WheelResult[]>([])
   const [spinMode, setSpinMode] = useState<'auto' | 'manual'>('auto')
+  const [drawOrder, setDrawOrder] = useState<WheelDrawOrder>(DEFAULT_DRAW_ORDER)
   const pendingResultRef = useRef<{ segment: WheelSegment; index: number } | null>(null)
   const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const phase2TimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -194,6 +221,8 @@ export default function WheelPage() {
         }
       }
 
+      setDrawOrder(parseDrawOrder(data.wheel_draw_order))
+
       // Charger les paramètres audio
       if (data.wheel_audio) {
         try {
@@ -230,6 +259,89 @@ export default function WheelPage() {
       .from('sessions')
       .update({ wheel_segments: JSON.stringify(updatedSegments) })
       .eq('id', session.id)
+  }
+
+  // Mode/ordre : enregistrés en base immédiatement (la base fait foi au tirage)
+  async function saveDrawOrder(next: WheelDrawOrder) {
+    if (!session) return
+    setDrawOrder(next)
+    const { error } = await supabase
+      .from('sessions')
+      .update({ wheel_draw_order: JSON.stringify(next) })
+      .eq('id', session.id)
+    if (error) toast.error("Erreur d'enregistrement de l'ordre")
+  }
+
+  function toggleDrawOrder() {
+    if (isSpinning) return
+    if (drawOrder.enabled) {
+      saveDrawOrder({ ...drawOrder, enabled: false })
+    } else {
+      saveDrawOrder({ enabled: true, order: effectiveOrder(drawOrder.order, segments).map(s => s.id) })
+    }
+  }
+
+  function moveInDrawOrder(segmentId: string, direction: -1 | 1) {
+    if (isSpinning) return
+    const ids = effectiveOrder(drawOrder.order, segments).map(s => s.id)
+    const from = ids.indexOf(segmentId)
+    // Les segments déjà tirés ne sont pas affichés : on saute vers le voisin visible
+    const availableIds = new Set(availableSegments.map(s => s.id))
+    let to = from + direction
+    while (to >= 0 && to < ids.length && !availableIds.has(ids[to])) to += direction
+    if (from < 0 || to < 0 || to >= ids.length) return
+    ;[ids[from], ids[to]] = [ids[to], ids[from]]
+    saveDrawOrder({ enabled: true, order: ids })
+  }
+
+  function renderDrawOrderCard() {
+    const list = effectiveOrder(drawOrder.order, segments).filter(s => availableSegments.some(a => a.id === s.id))
+    return (
+      <div className="card-gold rounded-xl p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-white">Ordre de sortie</h3>
+            <p className="text-gray-400 text-xs">
+              {drawOrder.enabled ? 'Ordre prédéfini : la roue s’arrête dans cet ordre' : 'Mode aléatoire (par défaut)'}
+            </p>
+          </div>
+          <button
+            onClick={toggleDrawOrder}
+            disabled={isSpinning}
+            role="switch"
+            aria-checked={drawOrder.enabled}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              drawOrder.enabled ? 'bg-[#D4AF37] text-black' : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
+            } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {drawOrder.enabled ? 'Ordre prédéfini : ON' : 'Ordre prédéfini : OFF'}
+          </button>
+        </div>
+        {drawOrder.enabled && (
+          <div className="space-y-1.5 mt-3 max-h-[260px] overflow-y-auto pr-1">
+            {list.map((segment, i) => (
+              <div key={segment.id} className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2">
+                <span className="text-[#D4AF37] font-mono text-xs w-6">{i + 1}.</span>
+                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: segment.color }} />
+                <span className="flex-1 text-white text-sm truncate">{segment.text}</span>
+                <button
+                  onClick={() => moveInDrawOrder(segment.id, -1)}
+                  disabled={i === 0 || isSpinning}
+                  aria-label="Monter"
+                  className="px-1.5 text-gray-400 hover:text-[#D4AF37] disabled:opacity-30"
+                >▲</button>
+                <button
+                  onClick={() => moveInDrawOrder(segment.id, 1)}
+                  disabled={i === list.length - 1 || isSpinning}
+                  aria-label="Descendre"
+                  className="px-1.5 text-gray-400 hover:text-[#D4AF37] disabled:opacity-30"
+                >▼</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   function addSegment() {
@@ -470,7 +582,23 @@ export default function WheelPage() {
     finishSpinInProgressRef.current = false
 
     // Choose random segment from AVAILABLE segments only
-    const randomIndex = Math.floor(Math.random() * availableSegments.length)
+    let randomIndex = Math.floor(Math.random() * availableSegments.length)
+
+    // Mode "ordre prédéfini" : relire mode + ordre en base (source de vérité,
+    // pas le state local). Seul l'INDEX change — l'animation est strictement
+    // la même qu'en mode aléatoire (WheelGame ne sait pas comment il est choisi).
+    const { data: fresh, error: drawOrderError } = await supabase
+      .from('sessions')
+      .select('wheel_draw_order')
+      .eq('id', session.id)
+      .single()
+    const drawCfg = drawOrderError ? drawOrder : parseDrawOrder(fresh?.wheel_draw_order)
+    if (drawCfg.enabled) {
+      const availableIds = new Set(availableSegments.map(s => s.id))
+      const next = effectiveOrder(drawCfg.order, segments).find(s => availableIds.has(s.id))
+      const nextIndex = next ? availableSegments.findIndex(s => s.id === next.id) : -1
+      if (nextIndex >= 0) randomIndex = nextIndex
+    }
     const selectedSegment = availableSegments[randomIndex]
 
     // Store pending result for manual mode
@@ -835,6 +963,9 @@ export default function WheelPage() {
                 </div>
               </div>
 
+              {/* Ordre de sortie (mode aléatoire par défaut) */}
+              {renderDrawOrderCard()}
+
               {/* Audio Section - Compact */}
               <div className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
                 <div className="flex items-center gap-3 mb-3">
@@ -1001,6 +1132,9 @@ export default function WheelPage() {
                 Manuel
               </button>
             </div>
+
+            {/* Ordre de sortie — modifiable entre deux tirages */}
+            <div className="mb-4">{renderDrawOrderCard()}</div>
 
             {/* Current result */}
             {result && (

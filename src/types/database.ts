@@ -164,6 +164,7 @@ export interface Session {
   wheel_result: string | null // Current result text
   wheel_history: string | null // JSON array of WheelResult
   wheel_audio: string | null // JSON of WheelAudioSettings
+  wheel_draw_order?: string | null // JSON of WheelDrawOrder (null = mode aléatoire)
   // Quiz settings
   quiz_active: boolean
   quiz_lobby_visible?: boolean // Lobby screen visible (before quiz starts)
@@ -229,6 +230,13 @@ export interface WheelResult {
   segmentId: string
   text: string
   timestamp: string
+}
+
+// Mode "ordre prédéfini" : ordre de sortie par id de segment (les numéros
+// affichés sur la roue changent à chaque tirage, les ids non)
+export interface WheelDrawOrder {
+  enabled: boolean
+  order: string[]
 }
 
 export interface WheelAudioSettings {
