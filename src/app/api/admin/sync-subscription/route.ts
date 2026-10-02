@@ -18,6 +18,18 @@ const getSupabaseAdmin = () => {
   )
 }
 
+// Abonnement coupé (past_due/canceled/expired) → sessions à désactiver, sauf comptes owner
+// (lifetime) dont les sessions ne doivent jamais être coupées par erreur.
+async function shouldDeactivateSessions(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  userId: string,
+  dbStatus: string
+): Promise<boolean> {
+  if (dbStatus === 'active' || dbStatus === 'trialing') return false
+  const { data } = await supabase.from('user_profiles').select('role').eq('id', userId).single()
+  return data?.role !== 'owner'
+}
+
 export async function GET(request: NextRequest) {
   // Auth check
   const authHeader = request.headers.get('authorization')
@@ -121,6 +133,7 @@ export async function GET(request: NextRequest) {
   let previousPeriodEnd = ''
   let profileCreated = false
   let subscriptionCreated = false
+  let sessionsDeactivated = false
 
   if (!dbSub) {
     // Find auth user
@@ -311,6 +324,9 @@ export async function GET(request: NextRequest) {
     // Reactivate existing sessions or note there are none
     if (dbStatus === 'active') {
       await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+    } else if (await shouldDeactivateSessions(supabase, userId, dbStatus)) {
+      sessionsDeactivated = true
+      await supabase.from('sessions').update({ is_active: false }).eq('user_id', userId)
     }
   } else {
     // Record exists - update it
@@ -331,6 +347,9 @@ export async function GET(request: NextRequest) {
 
     if (dbStatus === 'active') {
       await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+    } else if (await shouldDeactivateSessions(supabase, userId, dbStatus)) {
+      sessionsDeactivated = true
+      await supabase.from('sessions').update({ is_active: false }).eq('user_id', userId)
     }
 
     // Fix missing profile
@@ -371,6 +390,7 @@ export async function GET(request: NextRequest) {
     profileCreated,
     subscriptionCreated,
     sessionsReactivated: dbStatus === 'active',
+    sessionsDeactivated,
     emailSentTo: email,
     emailSent,
   })

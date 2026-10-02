@@ -557,6 +557,9 @@ async function isOwner(userId: string): Promise<boolean> {
   return data?.role === 'owner'
 }
 
+// Statuts d'abonnement qui coupent l'accès (cohérent avec isSubscriptionValid du middleware)
+const SESSION_CUT_STATUSES: string[] = ['past_due', 'canceled', 'expired', 'unpaid']
+
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Try to find by stripe_subscription_id first
   let { data } = await getSupabaseAdmin()
@@ -622,6 +625,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (newStatus === 'active' && previousStatus !== 'active') {
     await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
     console.log(`[Webhook] subscription.updated: reactivated sessions for user ${data.user_id} (${previousStatus} → active)`)
+  }
+
+  // Symétrique : abonnement coupé → sessions désactivées (sinon /live, /play, /join
+  // restent ouverts pour un compte dont l'abonnement est coupé). Idempotent, et
+  // volontairement non conditionné à previousStatus : couvre aussi un past_due
+  // dont les sessions auraient été réactivées entre-temps.
+  if (SESSION_CUT_STATUSES.includes(newStatus)) {
+    await getSupabaseAdmin().from('sessions').update({ is_active: false }).eq('user_id', data.user_id)
+    console.log(`[Webhook] subscription.updated: deactivated sessions for user ${data.user_id} (${previousStatus} → ${newStatus})`)
   }
 }
 
