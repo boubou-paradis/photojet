@@ -27,6 +27,35 @@ const SPEED_MAP: Record<MysteryPhotoSpeed, number> = {
 // Helper function for delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+// Précharge une image avec tentatives automatiques (réseau instable : un échec
+// ponctuel ne doit pas condamner la manche pour de bon comme avant). Fail-open
+// uniquement après épuisement des tentatives, pour ne jamais bloquer le plateau.
+function preloadImageWithRetry(
+  url: string,
+  onSettled: () => void,
+  isCancelled: () => boolean,
+  maxAttempts = 4
+) {
+  let attempt = 0
+  const tryLoad = () => {
+    if (isCancelled()) return
+    const img = new window.Image()
+    img.onload = () => { if (!isCancelled()) onSettled() }
+    img.onerror = () => {
+      if (isCancelled()) return
+      attempt += 1
+      if (attempt < maxAttempts) {
+        setTimeout(tryLoad, 1000 * attempt) // 1s, 2s, 3s
+      } else {
+        onSettled() // fail-open après épuisement des tentatives
+      }
+    }
+    img.src = url
+    if (img.complete && img.naturalWidth > 0) { if (!isCancelled()) onSettled() } // déjà en cache
+  }
+  tryLoad()
+}
+
 // Données pré-générées pour éviter Math.random() dans le render (évite le clignotement)
 const WINNER_CONFETTI_DATA = Array.from({ length: 100 }, (_, i) => ({
   id: i,
@@ -147,12 +176,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
       return
     }
     let cancelled = false
-    const markReady = () => { if (!cancelled) setReadyPhotoUrl(currentPhotoUrl) }
-    const img = new window.Image()
-    img.onload = markReady
-    img.onerror = markReady // fail-open : ne jamais bloquer le plateau si l'image échoue
-    img.src = currentPhotoUrl
-    if (img.complete && img.naturalWidth > 0) markReady() // déjà en cache
+    preloadImageWithRetry(currentPhotoUrl, () => setReadyPhotoUrl(currentPhotoUrl), () => cancelled)
     return () => { cancelled = true }
   }, [currentPhotoUrl])
 
@@ -299,23 +323,50 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }
   }, [revealedTiles.length, totalTiles, isRevealAudioPlaying, isMuted, audioVolume])
 
+  // Lance l'audio de la photo révélée, avec tentatives automatiques : un
+  // <audio> dont le fetch initial a échoué (réseau instable) ne retente
+  // jamais tout seul, même si le réseau redevient bon entre-temps — sans
+  // ceci l'audio ne joue plus jamais pour le reste de la manche.
+  // Récursion via ref (comme photosRef/currentRoundRef plus haut) pour éviter
+  // toute auto-référence de fonction avant déclaration.
+  const attemptPlayPhotoAudioRef = useRef((_attempt: number = 0) => {})
+  attemptPlayPhotoAudioRef.current = (attempt = 0) => {
+    const audioEl = photoAudioRef.current
+    if (!audioEl || !isMountedRef.current) return
+    const roundAtStart = currentRoundRef.current
+    audioEl.currentTime = 0
+    audioEl.loop = false
+    audioEl.play().then(() => {
+      if (!isMountedRef.current) return
+      setIsPhotoAudioPlaying(true)
+      setHasPlayedPhotoAudio(true)
+    }).catch(() => {
+      if (!isMountedRef.current) return
+      if (attempt < 3) {
+        setTimeout(() => {
+          // Manche changée entre-temps : l'<audio> pointe sur un autre son, ne pas le relancer
+          if (!isMountedRef.current || currentRoundRef.current !== roundAtStart) return
+          audioEl.load() // relance le fetch de la ressource avant de réessayer
+          attemptPlayPhotoAudioRef.current(attempt + 1)
+        }, 1000 * (attempt + 1)) // 1s, 2s, 3s
+      } else {
+        setHasPlayedPhotoAudio(true) // abandon après 3 tentatives, ne pas boucler indéfiniment
+      }
+    })
+  }
+  const attemptPlayPhotoAudio = useCallback((attempt = 0) => attemptPlayPhotoAudioRef.current(attempt), [])
+
   // Play PER-PHOTO audio when all tiles are revealed
   useEffect(() => {
     if (revealedTiles.length === totalTiles && totalTiles > 0 && currentAudioUrl && !hasPlayedPhotoAudio && !isMuted) {
       // Wait a bit for reveal audio to fade, then play photo audio
       const timer = setTimeout(() => {
-        if (photoAudioRef.current) {
-          photoAudioRef.current.currentTime = 0
-          photoAudioRef.current.loop = false
-          photoAudioRef.current.play().catch(() => {})
-          setIsPhotoAudioPlaying(true)
-          setHasPlayedPhotoAudio(true)
-        }
+        attemptPlayPhotoAudio()
       }, 700)
 
       return () => clearTimeout(timer)
     }
-  }, [revealedTiles.length, totalTiles, currentAudioUrl, hasPlayedPhotoAudio, isMuted])
+  }, [revealedTiles.length, totalTiles, currentAudioUrl, hasPlayedPhotoAudio, isMuted, attemptPlayPhotoAudio])
 
   // Reset audio states when round changes
   useEffect(() => {
@@ -428,11 +479,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
             const nextUrl = getPhotoUrlForRound(newRound, nextPhotos)
             const preloaded = new Promise<void>((resolve) => {
               if (!nextUrl) { resolve(); return }
-              const img = new window.Image()
-              img.onload = () => resolve()
-              img.onerror = () => resolve() // fail-open : ne pas bloquer la manche
-              img.src = nextUrl
-              if (img.complete && img.naturalWidth > 0) resolve() // déjà en cache
+              preloadImageWithRetry(nextUrl, resolve, () => !isMountedRef.current)
             })
             const celebration = new Promise<void>((resolve) => {
               if (roundTransitionT1Ref.current) clearTimeout(roundTransitionT1Ref.current)
