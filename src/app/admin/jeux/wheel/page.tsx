@@ -32,6 +32,8 @@ import { Session, WheelSegment, WheelResult, WheelAudioSettings, WheelDrawOrder 
 import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import WheelPreview from '@/components/games/WheelPreview'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 
 // Default segments
 const DEFAULT_SEGMENTS: WheelSegment[] = [
@@ -797,6 +799,21 @@ export default function WheelPage() {
     toast.success('Toutes les données ont été supprimées')
   }
 
+  // Télécommande de présentation : PageDown = tourner / STOP (manuel), PageUp = masquer le résultat.
+  // Actifs uniquement partie lancée, non terminée, interrupteur ON. Mêmes handlers que les boutons.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: gameActive && remoteOn && !isGameFinished,
+    phase: `${isSpinning}|${spinMode}|${result ?? ''}`,
+    onNext: () => {
+      if (!isSpinning) { void spinWheel(); return spinMode === 'auto' ? 8500 : 0 }
+      if (spinMode === 'manual') { void stopWheel(); return 3500 }
+    },
+    onPrev: () => {
+      if (result && !isSpinning) void clearResult()
+    },
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
@@ -862,6 +879,7 @@ export default function WheelPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameFinished} />
             <a href="/roue-de-la-destinee-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />
