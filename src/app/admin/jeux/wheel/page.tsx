@@ -651,6 +651,7 @@ export default function WheelPage() {
     if (phase2TimeoutRef.current) { clearTimeout(phase2TimeoutRef.current); phase2TimeoutRef.current = null }
 
     const { segment: selectedSegment, index: randomIndex } = pendingResultRef.current
+    pendingResultRef.current = null // garde anti double STOP : un 2e appel pendant la décélération sort au test ci-dessus
 
     // Broadcast the stop with target index so wheel animates to result
     broadcastGameState({
