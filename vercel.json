@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/weekend-pass-reminder",
       "schedule": "0 18 * * 0"
+    },
+    {
+      "path": "/api/cron/purge-matching",
+      "schedule": "0 * * * *"
     }
   ]
 }

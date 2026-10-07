@@ -1,3 +1,5 @@
+import type { AffinityFinalStats, AffinityPhase, AffinityQuestion, AffinityRevealData } from '@/lib/affinity/types'
+
 // ===========================================
 // SUBSCRIPTION & AUTH TYPES
 // ===========================================
@@ -184,6 +186,15 @@ export interface Session {
   // Impression payante (avertissement informatif côté guest, paiement physique)
   print_paid: boolean
   print_price: number | null // Prix en euros, ex. 2.00
+  // Matching (identifiant technique affinity) : uniquement des données publiques
+  // et agrégées. Joueurs et réponses vivent dans les tables affinity_* (serveur).
+  affinity_active?: boolean
+  affinity_phase?: AffinityPhase | null
+  affinity_questions?: AffinityQuestion[] | null // jsonb
+  affinity_current_question?: number
+  affinity_deadline?: string | null // fin du chrono (ISO), null = infini
+  affinity_reveal?: AffinityRevealData | null // jsonb
+  affinity_final_stats?: AffinityFinalStats | null // jsonb
 }
 
 // Mystery Photo types
