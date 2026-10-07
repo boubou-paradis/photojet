@@ -162,7 +162,7 @@ export default function JeuxPage() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 md:py-12 max-w-7xl">
+      <main className="relative z-10 mx-auto px-4 md:px-8 py-8 md:py-12 max-w-[1800px]">
 
         {/* Premium Header */}
         <motion.div
