@@ -72,6 +72,7 @@ const games = [
     glowColor: 'rgba(212, 175, 55, 0.5)',
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
+    notice: '/matching-regles.pdf',
   },
 ]
 

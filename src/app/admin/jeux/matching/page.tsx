@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowDown, ArrowLeft, ArrowUp, Loader2, Monitor, Package, Plus, Rocket, Timer, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, FileText, Loader2, Monitor, Package, Plus, Rocket, Timer, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AdminGamePanel, { type GameAction } from '@/components/affinity/AdminGamePanel'
@@ -432,6 +432,12 @@ export default function MatchingPage() {
           </div>
           <div className="flex items-center gap-2">
           <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={phase === 'finished'} />
+          <a href="/matching-regles.pdf" target="_blank" rel="noopener noreferrer">
+            <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
+              <FileText className="h-4 w-4 mr-2" />
+              Notice
+            </Button>
+          </a>
           {active && (
             <Button size="sm" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]">
               <Monitor className="h-4 w-4 mr-2" />
