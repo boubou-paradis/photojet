@@ -44,6 +44,8 @@ import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
 import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 import { compressImage, needsCompression } from '@/lib/image-utils'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
@@ -1981,6 +1983,23 @@ export default function QuizPage() {
   const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
 
+  // Télécommande de présentation : PageDown déclenche le bouton affiché
+  // (Lancer la question → Révéler → Question suivante → Podium). PageUp et B
+  // non mappés. Le lobby est ignoré (gameActive faux), coupé après le podium.
+  // L'état local fait foi : c'est cette page qui pilote le chrono et la base.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: gameActive && remoteOn && !showPodium,
+    phase: `${currentQuestionIndex}|${isAnswering}|${showResults}`,
+    isBlocked: () => showCsvImportModal || showPrepackagedModal || showSaveQuizModal || showLoadQuizModal,
+    onNext: async () => {
+      if (!isAnswering && !showResults) { await startQuestion(); return 1500 }
+      if (isAnswering) { await revealAnswer(); return 1500 }
+      if (currentQuestionIndex < questions.length - 1) { await nextQuestion(); return }
+      await displayPodium()
+    },
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
@@ -2060,6 +2079,7 @@ export default function QuizPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={showPodium} />
             <a href="/quiz-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400">
                 <FileText className="h-4 w-4 mr-2" />
