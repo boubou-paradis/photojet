@@ -27,6 +27,8 @@ import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 
 export default function LineupPage() {
   const [session, setSession] = useState<Session | null>(null)
@@ -908,6 +910,23 @@ export default function LineupPage() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [gameActive, isRunning, isPaused, isGameOver, currentNumber])
 
+  // Télécommande de présentation : PageDown = démarrer / reprendre, PageUp =
+  // pause / reprise. Numéro suivant et Nouvelle partie jamais mappés ; coupée
+  // une fois la partie terminée. Mêmes handlers que les boutons.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: gameActive && remoteOn && !isGameOver,
+    phase: `${isRunning}|${isPaused}`,
+    onNext: async () => {
+      if (isPaused) await resumeGame()
+      else if (!isRunning && timeLeft === clockDuration) await startGame()
+    },
+    onPrev: async () => {
+      if (isRunning) await pauseGame()
+      else if (isPaused) await resumeGame()
+    },
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
@@ -968,6 +987,7 @@ export default function LineupPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameOver} />
             <a href="/le-bon-ordre-regles-du-jeu.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />
