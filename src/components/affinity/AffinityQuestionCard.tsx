@@ -3,35 +3,35 @@
 // © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
 // Code propriétaire - Reproduction interdite.
 
-// Une question dans l'éditeur de Matching : texte, 2 à 4 réponses, chrono,
-// déplacement et suppression.
+// Édition d'une question de Matching : texte, 2 à 4 réponses, chrono.
+// Le déplacement et la suppression se font dans la liste (comme le Quiz).
 
-import { ArrowDown, ArrowUp, Plus, Trash2, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { AFFINITY_LIMITS, AFFINITY_TIME_LIMITS } from '@/lib/affinity/constants'
 import type { AffinityQuestion, AffinityTimeLimit } from '@/lib/affinity/types'
 
 interface AffinityQuestionCardProps {
   question: AffinityQuestion
   index: number
-  total: number
   onChange: (question: AffinityQuestion) => void
-  onRemove: () => void
-  onMove: (direction: -1 | 1) => void
 }
 
 const timeLabel = (t: AffinityTimeLimit) => (t === null ? '∞' : `${t} s`)
 
-export default function AffinityQuestionCard({ question, index, total, onChange, onRemove, onMove }: AffinityQuestionCardProps) {
+export default function AffinityQuestionCard({ question, index, onChange }: AffinityQuestionCardProps) {
   const setAnswer = (i: number, value: string) =>
     onChange({ ...question, answers: question.answers.map((a, j) => (j === i ? value : a)) })
 
   return (
-    <div className="bg-[#1A1A1E] rounded-xl border border-white/5 p-4">
-      <div className="flex items-start gap-3">
-        <span className="flex-none w-8 h-8 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] font-bold text-sm flex items-center justify-center">
+    <div className="card-gold rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center border border-violet-500/30 text-violet-400 font-bold">
           {index + 1}
-        </span>
-        <div className="flex-1 min-w-0 space-y-3">
+        </div>
+        <h3 className="text-white font-bold text-lg">Modifier la question</h3>
+      </div>
+      <div>
+        <div className="space-y-3">
           <label className="sr-only" htmlFor={`aff-q-${question.id}`}>Question {index + 1}</label>
           <input
             id={`aff-q-${question.id}`}
@@ -39,7 +39,8 @@ export default function AffinityQuestionCard({ question, index, total, onChange,
             maxLength={AFFINITY_LIMITS.questionMaxLength}
             onChange={(e) => onChange({ ...question, text: e.target.value })}
             placeholder="Ex. Plutôt mer ou montagne ?"
-            className="w-full bg-[#0D0D0F] border border-white/10 rounded-lg px-3 py-2.5 text-white font-semibold placeholder:text-gray-600 focus:outline-none focus:border-[#D4AF37]/60"
+            autoFocus={!question.text}
+            className="w-full bg-[#2E2E33] text-white rounded-xl px-4 py-3 border border-[rgba(255,255,255,0.1)] font-semibold placeholder:text-gray-500 focus:border-[#D4AF37] focus:outline-none"
           />
 
           <div className="grid sm:grid-cols-2 gap-2">
@@ -52,7 +53,7 @@ export default function AffinityQuestionCard({ question, index, total, onChange,
                   maxLength={AFFINITY_LIMITS.answerMaxLength}
                   onChange={(e) => setAnswer(i, e.target.value)}
                   placeholder={`Réponse ${i + 1}`}
-                  className="flex-1 min-w-0 bg-[#0D0D0F] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#D4AF37]/60"
+                  className="flex-1 min-w-0 bg-[#2E2E33] text-white rounded-xl px-4 py-2.5 border border-[rgba(255,255,255,0.1)] placeholder:text-gray-500 focus:border-[#D4AF37] focus:outline-none"
                 />
                 {question.answers.length > AFFINITY_LIMITS.minAnswers && (
                   <button
@@ -99,17 +100,6 @@ export default function AffinityQuestionCard({ question, index, total, onChange,
           </div>
         </div>
 
-        <div className="flex-none flex flex-col gap-1">
-          <button type="button" onClick={() => onMove(-1)} disabled={index === 0} className="p-1.5 text-gray-500 hover:text-white disabled:opacity-20" title="Monter">
-            <ArrowUp className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={() => onMove(1)} disabled={index === total - 1} className="p-1.5 text-gray-500 hover:text-white disabled:opacity-20" title="Descendre">
-            <ArrowDown className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={onRemove} className="p-1.5 text-gray-500 hover:text-red-400" title="Supprimer la question">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
       </div>
     </div>
   )

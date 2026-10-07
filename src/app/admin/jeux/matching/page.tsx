@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Monitor, Package, Plus, Rocket, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Loader2, Monitor, Package, Plus, Rocket, Timer, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AdminGamePanel, { type GameAction } from '@/components/affinity/AdminGamePanel'
@@ -64,6 +64,8 @@ export default function MatchingPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [questions, setQuestions] = useState<AffinityQuestion[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = questions.find((q) => q.id === selectedId) ?? null
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [active, setActive] = useState(false)
   const [phase, setPhase] = useState<AffinityPhase | null>(null)
@@ -330,6 +332,7 @@ export default function MatchingPage() {
     if (!pack) return
     if (questions.length > 0 && !window.confirm(`Charger le ${pack.name} remplacera vos ${questions.length} question(s). Continuer ?`)) return
     editQuestions(() => pack.questions.map((q) => ({ ...q, answers: [...q.answers] })))
+    setSelectedId(null)
     toast.success(`${pack.questions.length} questions chargées`)
   }
 
@@ -337,11 +340,19 @@ export default function MatchingPage() {
     if (questions.length === 0) return
     if (!window.confirm(`Supprimer les ${questions.length} question(s) ? Cette action est irréversible.`)) return
     editQuestions(() => [])
+    setSelectedId(null)
     toast.success('Questions supprimées')
   }
 
   function addQuestion() {
-    editQuestions((list) => [...list, { id: newQuestionId(), text: '', answers: ['', ''], timeLimit: AFFINITY_DEFAULT_TIME_LIMIT }])
+    const id = newQuestionId()
+    editQuestions((list) => [...list, { id, text: '', answers: ['', ''], timeLimit: AFFINITY_DEFAULT_TIME_LIMIT }])
+    setSelectedId(id)
+  }
+
+  function removeQuestion(id: string) {
+    editQuestions((list) => list.filter((q) => q.id !== id))
+    if (selectedId === id) setSelectedId(null)
   }
 
   function moveQuestion(index: number, direction: -1 | 1) {
@@ -411,8 +422,9 @@ export default function MatchingPage() {
         </div>
       </header>
 
-      <main className="relative z-10 container mx-auto px-4 py-6 max-w-4xl">
+      <main className="relative z-10 px-4 sm:px-8 py-6">
         {active ? (
+          <div className="max-w-4xl mx-auto">
           <AdminGamePanel
             phase={phase}
             questions={questions}
@@ -427,73 +439,134 @@ export default function MatchingPage() {
             onNewGame={newGame}
             onQuit={quit}
           />
+          </div>
         ) : (
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => loadPack('soiree')}
-                className="px-4 py-2.5 bg-[#2E2E33] text-[#D4AF37] rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm border border-[#D4AF37]/30"
-              >
-                <Package className="h-4 w-4" />
-                Charger le pack de démarrage
-              </button>
-              <button
-                onClick={clearAll}
-                disabled={questions.length === 0}
-                className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 disabled:opacity-40"
-              >
-                <Trash2 className="h-4 w-4" />
-                Tout vider
-              </button>
-              <span className="ml-auto text-xs text-gray-500" aria-live="polite">{saveLabel}</span>
-            </div>
-
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-white font-semibold">
-                {questions.length} question{questions.length > 1 ? 's' : ''}
-                {questions.length > 0 && <span className="text-gray-500 font-normal"> · environ {estimateMinutes(questions.length)} min de jeu</span>}
-              </h2>
-              <span className="text-xs text-gray-500">
-                {AFFINITY_LIMITS.minQuestions} à {AFFINITY_LIMITS.maxQuestions} questions · 10 questions ≈ 8 minutes
-              </span>
-            </div>
-
-            <p className="text-xs text-gray-500 bg-[#1A1A1E] rounded-lg px-3 py-2 border border-white/5">
-              Gardez des questions légères. Évitez celles qui jugent des personnes de la salle et les sujets sensibles :
-              religion, politique, orientation sexuelle, santé, handicap, origine, sexualité.
-            </p>
-
-            {questions.length === 0 ? (
-              <div className="text-center py-12 bg-[#1A1A1E] rounded-xl border border-dashed border-white/10">
-                <p className="text-white font-semibold">Aucune question pour l&apos;instant</p>
-                <p className="text-sm text-gray-500 mt-1">Chargez le pack de démarrage (20 questions prêtes) ou ajoutez les vôtres.</p>
+          <div className="space-y-6">
+            {/* Liste des questions (même disposition que le Quiz) */}
+            <section className="card-gold rounded-xl p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 flex items-center justify-center border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                    <AffinityMark size={18} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Matching</h2>
+                    <p className="text-[#6B6B70] text-sm">
+                      {questions.length} question{questions.length > 1 ? 's' : ''}
+                      {questions.length > 0 && ` · environ ${estimateMinutes(questions.length)} min de jeu`}
+                      {saveLabel && <span aria-live="polite"> · {saveLabel}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => loadPack('soiree')}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#D4AF37] rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm border border-[#D4AF37]/30"
+                  >
+                    <Package className="h-4 w-4" />
+                    Charger le pack de démarrage
+                  </button>
+                  <button
+                    onClick={addQuestion}
+                    disabled={questions.length >= AFFINITY_LIMITS.maxQuestions}
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-xl font-bold flex items-center gap-2 text-sm disabled:opacity-40"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </button>
+                  <button
+                    onClick={clearAll}
+                    disabled={questions.length === 0}
+                    className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 disabled:opacity-40"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Tout vider
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {questions.map((question, index) => (
-                  <AffinityQuestionCard
-                    key={question.id}
-                    question={question}
-                    index={index}
-                    total={questions.length}
-                    onChange={(updated) => editQuestions((list) => list.map((q) => (q.id === updated.id ? updated : q)))}
-                    onRemove={() => editQuestions((list) => list.filter((q) => q.id !== question.id))}
-                    onMove={(direction) => moveQuestion(index, direction)}
-                  />
-                ))}
+
+              <p className="text-xs text-gray-500 mb-4">
+                {AFFINITY_LIMITS.minQuestions} à {AFFINITY_LIMITS.maxQuestions} questions (10 questions ≈ 8 minutes). Gardez des questions légères :
+                évitez celles qui jugent des personnes de la salle et les sujets sensibles (religion, politique, orientation sexuelle, santé, handicap, origine, sexualité).
+              </p>
+
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2">
+                {questions.length === 0 ? (
+                  <div className="text-center py-12 text-[#6B6B70]">
+                    <p className="text-white font-semibold">Aucune question pour l&apos;instant</p>
+                    <p className="text-sm mt-1">Chargez le pack de démarrage (20 questions prêtes) ou cliquez sur « Ajouter ».</p>
+                  </div>
+                ) : (
+                  questions.map((q, index) => {
+                    const isSelected = q.id === selected?.id
+                    return (
+                      <div
+                        key={q.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedId(q.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(q.id) } }}
+                        className={`flex items-center gap-3 rounded-xl p-3.5 cursor-pointer transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-[#D4AF37]/20 to-[#D4AF37]/10 border border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
+                            : 'bg-[#1A1A1E]/80 hover:bg-[#2E2E33] border border-transparent hover:border-[#D4AF37]/20'
+                        }`}
+                      >
+                        <div className={`flex-none w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${isSelected ? 'bg-[#D4AF37] text-black' : 'bg-[#2E2E33] text-[#6B6B70]'}`}>
+                          {index + 1}
+                        </div>
+                        <span className={`flex-1 min-w-0 truncate font-medium ${q.text ? 'text-white' : 'text-gray-500 italic'}`}>
+                          {q.text || 'Question sans texte'}
+                        </span>
+                        <span className="hidden sm:flex items-center px-2.5 py-1 bg-violet-500/10 rounded-lg border border-violet-500/20 text-violet-400 text-xs font-semibold">
+                          {q.answers.length} réponses
+                        </span>
+                        <span className="flex items-center gap-1 px-2.5 py-1 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20 text-[#D4AF37] text-xs font-semibold">
+                          <Timer className="h-3 w-3" />
+                          {q.timeLimit === null ? '∞' : `${q.timeLimit}s`}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveQuestion(index, -1) }}
+                          disabled={index === 0}
+                          className="p-1.5 text-[#6B6B70] hover:text-white disabled:opacity-20"
+                          title="Monter"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveQuestion(index, 1) }}
+                          disabled={index === questions.length - 1}
+                          className="p-1.5 text-[#6B6B70] hover:text-white disabled:opacity-20"
+                          title="Descendre"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeQuestion(q.id) }}
+                          className="p-2 text-[#6B6B70] hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                          title="Supprimer la question"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
               </div>
+            </section>
+
+            {/* Édition de la question sélectionnée */}
+            {selected && (
+              <AffinityQuestionCard
+                key={selected.id}
+                question={selected}
+                index={questions.findIndex((q) => q.id === selected.id)}
+                onChange={(updated) => editQuestions((list) => list.map((q) => (q.id === updated.id ? updated : q)))}
+              />
             )}
 
-            <button
-              onClick={addQuestion}
-              disabled={questions.length >= AFFINITY_LIMITS.maxQuestions}
-              className="w-full py-3 rounded-xl border border-dashed border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/5 flex items-center justify-center gap-2 text-sm disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter une question
-            </button>
-
-            <div className="pt-2">
+            <div>
               {!validation.ok && questions.length > 0 && <p className="text-sm text-orange-300 mb-2">{validation.error}</p>}
               <button
                 onClick={launch}
@@ -504,7 +577,7 @@ export default function MatchingPage() {
                 Afficher le lobby
               </button>
             </div>
-          </section>
+          </div>
         )}
       </main>
     </div>
