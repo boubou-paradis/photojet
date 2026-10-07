@@ -1016,7 +1016,8 @@ export default function MysteryPage() {
   // Télécommande de présentation. L'état de la manche est relu en base à chaque
   // appui (les cases sont révélées par l'écran /live, le state local peut être
   // en retard) : PageDown = PLAY → Révéler → Manche suivante, PageUp = pause /
-  // reprise. Reset n'est jamais mappé. Mêmes handlers que les boutons.
+  // reprise, B = animation GAGNANT. Reset n'est jamais mappé. Mêmes handlers
+  // que les boutons.
   async function readRoundState() {
     if (!session) return null
     const { data } = await supabase
@@ -1058,6 +1059,10 @@ export default function MysteryPage() {
       if (!state || state.allRevealed) return
       if (state.isPlaying) await setPlaying(false)
       else if (state.revealed > 0) await setPlaying(true)
+    },
+    onSecondary: async () => {
+      await triggerWinnerAnimation()
+      return 1500
     },
   })
 
