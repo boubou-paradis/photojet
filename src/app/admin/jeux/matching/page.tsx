@@ -14,14 +14,17 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AdminGamePanel, { type GameAction } from '@/components/affinity/AdminGamePanel'
 import AffinityMark from '@/components/affinity/AffinityMark'
+import { LoadMatchingModal, SaveMatchingModal } from '@/components/affinity/AffinityLibrary'
 import AffinityQuestionCard from '@/components/affinity/AffinityQuestionCard'
+import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { AFFINITY_PACKS } from '@/data/affinity-packs'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
+import { useAmbianceMusic } from '@/hooks/useAmbianceMusic'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { AFFINITY_DEFAULT_TIME_LIMIT, AFFINITY_HEARTBEAT_INTERVAL_MS, AFFINITY_LIMITS } from '@/lib/affinity/constants'
-import type { AffinityPhase, AffinityQuestion } from '@/lib/affinity/types'
+import type { AffinityPhase, AffinityQuestion, SavedMatching } from '@/lib/affinity/types'
 import { validateQuestions } from '@/lib/affinity/validation'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
@@ -72,6 +75,10 @@ export default function MatchingPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [deadline, setDeadline] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [libraryModal, setLibraryModal] = useState<'save' | 'load' | null>(null)
+  // Musique d'ambiance : jouée sur ce PC seulement, en boucle pendant la partie.
+  const music = useAmbianceMusic()
+  const pauseMusic = music.pause
 
   const dirtyRef = useRef(false)
   const activeRef = useRef(false)
@@ -149,9 +156,10 @@ export default function MatchingPage() {
     baselineRef.current = null
     setActive(false)
     setPhase(null)
+    pauseMusic()
     if (reason === 'other-game') toast.info('Un autre jeu a été lancé : Matching s\'est arrêté.')
     else toast.success('Matching arrêté. Vos questions sont conservées.')
-  }, [session])
+  }, [session, pauseMusic])
 
   // Applique la règle « un autre jeu passe de faux à vrai après le lancement ».
   const applyOtherGameRule = useCallback((row: Partial<Session>) => {
@@ -259,6 +267,7 @@ export default function MatchingPage() {
       activeRef.current = true
       setActive(true)
       setPhase('lobby')
+      music.restart()
       window.open(`/live/${session.code}`, 'photojet-live')
       toast.success('Lobby affiché sur l\'écran géant')
     } finally {
@@ -305,7 +314,10 @@ export default function MatchingPage() {
     try {
       const result = await callAdmin(session.id, 'launch')
       if (!result.ok) toast.error(result.error ?? 'Lancement impossible')
-      else baselineRef.current = readFlags({})
+      else {
+        baselineRef.current = readFlags({})
+        music.restart()
+      }
     } finally {
       setBusy(false)
     }
@@ -334,6 +346,14 @@ export default function MatchingPage() {
     editQuestions(() => pack.questions.map((q) => ({ ...q, answers: [...q.answers] })))
     setSelectedId(null)
     toast.success(`${pack.questions.length} questions chargées`)
+  }
+
+  function loadSaved(saved: SavedMatching) {
+    const list = Array.isArray(saved.questions) ? saved.questions : []
+    editQuestions(() => list.map((q) => ({ ...q, id: newQuestionId(), answers: [...q.answers] })))
+    setSelectedId(null)
+    setLibraryModal(null)
+    toast.success(`« ${saved.name} » chargé (${list.length} question${list.length > 1 ? 's' : ''})`)
   }
 
   function clearAll() {
@@ -439,6 +459,9 @@ export default function MatchingPage() {
             onNewGame={newGame}
             onQuit={quit}
           />
+          <div className="mt-6">
+            <AmbianceMusicControls music={music} inGame />
+          </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -459,6 +482,23 @@ export default function MatchingPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setLibraryModal('save')}
+                    disabled={questions.length === 0}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white flex items-center gap-2 text-sm border border-white/5 hover:border-[#D4AF37]/30 disabled:opacity-40"
+                    title="Sauvegarder ces questions dans votre bibliothèque"
+                  >
+                    <span aria-hidden>💾</span>
+                    Sauvegarder
+                  </button>
+                  <button
+                    onClick={() => setLibraryModal('load')}
+                    className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white flex items-center gap-2 text-sm border border-white/5 hover:border-[#D4AF37]/30"
+                    title="Charger un jeu de votre bibliothèque"
+                  >
+                    <span aria-hidden>📂</span>
+                    Charger
+                  </button>
                   <button
                     onClick={() => loadPack('soiree')}
                     className="px-4 py-2.5 bg-[#2E2E33] text-[#D4AF37] rounded-xl hover:bg-[#3E3E43] flex items-center gap-2 text-sm border border-[#D4AF37]/30"
@@ -566,6 +606,8 @@ export default function MatchingPage() {
               />
             )}
 
+            <AmbianceMusicControls music={music} />
+
             <div>
               {!validation.ok && questions.length > 0 && <p className="text-sm text-orange-300 mb-2">{validation.error}</p>}
               <button
@@ -580,6 +622,11 @@ export default function MatchingPage() {
           </div>
         )}
       </main>
+
+      {libraryModal === 'save' && <SaveMatchingModal questions={questions} onClose={() => setLibraryModal(null)} />}
+      {libraryModal === 'load' && (
+        <LoadMatchingModal hasQuestions={questions.length > 0} onLoad={loadSaved} onClose={() => setLibraryModal(null)} />
+      )}
     </div>
   )
 }

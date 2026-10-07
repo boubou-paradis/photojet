@@ -76,3 +76,13 @@ export interface AffinityStatus {
   /** Heure du serveur (ISO), pour caler les chronos des écrans. */
   serverNow: string
 }
+
+/** Un jeu de la bibliothèque personnelle (table saved_matchings, RLS par utilisateur). */
+export interface SavedMatching {
+  id: string
+  user_id: string
+  name: string
+  questions: AffinityQuestion[]
+  created_at: string
+  updated_at: string
+}
