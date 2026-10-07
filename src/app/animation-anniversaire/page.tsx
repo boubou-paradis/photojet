@@ -52,6 +52,7 @@ const content: AnimationDetailContent = {
   ],
   related: [
     { label: 'Quiz interactif', href: '/quiz-interactif' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Soirée privée', href: '/animation-soiree-privee' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },

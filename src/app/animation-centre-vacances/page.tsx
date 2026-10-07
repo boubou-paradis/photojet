@@ -53,6 +53,7 @@ const content: AnimationDetailContent = {
   related: [
     { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
     { label: 'Quiz interactif', href: '/quiz-interactif' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Campings & vacances', href: '/animation-camping-interactive' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],

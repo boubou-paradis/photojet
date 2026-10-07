@@ -55,6 +55,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
     { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }

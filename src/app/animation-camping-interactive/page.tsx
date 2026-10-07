@@ -66,6 +66,7 @@ const content: AnimationDetailContent = {
     { label: 'Centres de vacances', href: '/animation-centre-vacances' },
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
   ],
 }

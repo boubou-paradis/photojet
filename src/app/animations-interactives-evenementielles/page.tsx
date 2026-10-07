@@ -37,6 +37,7 @@ const animations = [
   { name: 'Roue de la Destinée', href: '/roue-de-la-destinee', img: '/images/games/roue-de-la-destinee.png', desc: 'Une roue jackpot premium pour distribuer lots, gages et défis dans un suspense total.' },
   { name: 'Photo Mystère', href: '/photo-mystere', img: '/images/games/photo-mystere.png', desc: 'Une photo se dévoile peu à peu : le premier qui devine remporte la manche.' },
   { name: 'Le Bon Ordre', href: '/le-bon-ordre', img: '/images/games/le-bon-ordre.png', desc: 'Un jeu de classement malin qui fait réfléchir et débattre toute la salle.' },
+  { name: 'Matching', href: '/jeu-points-communs', img: '/images/games/matching-v2.png', desc: 'Le jeu des points communs : chacun répond au téléphone et découvre qui a répondu comme lui.' },
   { name: 'Partage photo en direct', href: '/partage-photo-evenement', img: '/photo-qr-partage.png', desc: 'Les photos des invités s\'affichent en direct sur écran géant, album partagé à la clé.' },
   { name: 'Borne photo', href: '/borne-photo', img: '/images/borne-photo.png', desc: 'Le photobooth nouvelle génération : impression instantanée et album connecté.' },
 ]

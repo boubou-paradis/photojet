@@ -16,6 +16,7 @@ const animations = [
   { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
   { label: 'Photo Mystère', href: '/photo-mystere' },
   { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
+  { label: 'Matching', href: '/jeu-points-communs' },
   { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
   { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
   { label: 'Diaporama live', href: '/diaporama-live-evenement' },

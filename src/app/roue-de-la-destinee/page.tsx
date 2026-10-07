@@ -54,6 +54,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }

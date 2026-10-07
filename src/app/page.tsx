@@ -55,6 +55,12 @@ const animations = [
     desc: 'Remettez les éléments dans le bon ordre. Réflexion et rapidité pour tous.',
   },
   {
+    name: 'Matching',
+    img: '/images/games/matching-v2.png',
+    href: '/jeu-points-communs',
+    desc: 'Le jeu des points communs : chacun répond depuis son téléphone et découvre à la fin qui a répondu comme lui.',
+  },
+  {
     name: 'Partage photo en direct',
     img: '/photo-qr-partage.png',
     href: '/partage-photo-evenement',
@@ -150,7 +156,7 @@ const jsonLd = {
       featureList: [
         'Photos et messages en direct',
         'Diaporama HD temps réel',
-        '4 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz)',
+        '5 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching)',
         'QR codes personnalisés',
         'Borne photo intégrée',
         'Personnalisation logo et arrière-plan',
@@ -209,7 +215,7 @@ const howItWorks = [
   {
     step: '4',
     title: 'Lancez les jeux interactifs',
-    description: 'Quiz musical, Photo Mystère, Le Bon Ordre...',
+    description: 'Quiz musical, Photo Mystère, Matching...',
   },
 ]
 
@@ -217,7 +223,7 @@ const pricingFeatures = [
   'Photos et messages illimités',
   'Diaporama en direct HD',
   'Borne photo intégrée',
-  '4 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz)',
+  '5 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching)',
   'QR codes personnalisés',
   'Personnalisation logo + arrière-plan',
   'Modération des contenus',

@@ -25,7 +25,7 @@ const content: AnimationDetailContent = {
   intro: "Quel que soit l'événement que vous animez — mariage, soirée d'entreprise, anniversaire, événement privé — AnimaJet réunit dans un seul logiciel toutes les animations interactives dont vous avez besoin pour faire participer le public, sans installer la moindre application.",
   image: '/images/games/quiz.png',
   what: [
-    "AnimaJet est le logiciel tout-en-un de l'animateur moderne. Plutôt que de jongler entre plusieurs outils, vous disposez d'une plateforme unique : quiz interactif et blind test, Roue de la Destinée, Photo Mystère, Le Bon Ordre, partage de photos en direct, borne photo et diaporama géant. De quoi composer le programme d'animation parfait pour chaque prestation.",
+    "AnimaJet est le logiciel tout-en-un de l'animateur moderne. Plutôt que de jongler entre plusieurs outils, vous disposez d'une plateforme unique : quiz interactif et blind test, Roue de la Destinée, Photo Mystère, Le Bon Ordre, Matching, partage de photos en direct, borne photo et diaporama géant. De quoi composer le programme d'animation parfait pour chaque prestation.",
     "Le principe reste toujours le même, et il est redoutablement efficace : vos invités scannent un QR code et participent depuis leur téléphone, pendant que l'action se déroule sur le grand écran. Vous, vous orchestrez tout depuis votre tableau de bord — lancement des jeux, modération, rythme — comme un véritable chef d'orchestre de la soirée.",
     "Conçu pour les professionnels, AnimaJet se personnalise à votre image (logo, couleurs) et vous permet de proposer une offre différenciante à vos clients. L'essai gratuit de 24h vous laisse découvrir l'ensemble des animations avant de vous engager.",
   ],
@@ -45,7 +45,7 @@ const content: AnimationDetailContent = {
   ],
   idealFor: ['Animateurs', 'DJ', 'Agences événementielles', 'Wedding planners', 'Comités d\'entreprise', 'Prestataires loisirs'],
   faq: [
-    { q: 'Quelles animations sont incluses dans le logiciel ?', a: "Quiz interactif et blind test, Roue de la Destinée, Photo Mystère, Le Bon Ordre, partage de photos en direct, borne photo et diaporama live : tout est inclus dans l'abonnement." },
+    { q: 'Quelles animations sont incluses dans le logiciel ?', a: "Quiz interactif et blind test, Roue de la Destinée, Photo Mystère, Le Bon Ordre, Matching, partage de photos en direct, borne photo et diaporama live : tout est inclus dans l'abonnement." },
     { q: 'Le logiciel s\'adapte-t-il à différents types d\'événements ?', a: "Oui. Vous composez librement votre programme d'animation selon le public : mariage, soirée d'entreprise, anniversaire, événement privé, camping, bar ou restaurant." },
     { q: 'Mes clients verront-ils ma marque ou celle d\'AnimaJet ?', a: "La vôtre. Vous personnalisez le logo et l'arrière-plan affichés sur les écrans et les QR codes." },
     { q: 'Y a-t-il un engagement ?', a: "Non. Vous commencez par un essai gratuit de 24h, puis l'abonnement est mensuel et sans engagement." },
@@ -62,7 +62,7 @@ const jsonLd = buildSoftwareAppJsonLd({
   name: 'AnimaJet — Logiciel animateur événement',
   description: 'Logiciel d\'animation tout-en-un pour animateurs d\'événements : quiz, blind test, jeux interactifs, photos en direct et diaporama, sans application.',
   url: URL,
-  featureList: ['Quiz et blind test', 'Roue, Photo Mystère, Le Bon Ordre', 'Partage de photos en direct', 'Borne photo et diaporama', 'Personnalisation à votre marque'],
+  featureList: ['Quiz et blind test', 'Roue, Photo Mystère, Le Bon Ordre, Matching', 'Partage de photos en direct', 'Borne photo et diaporama', 'Personnalisation à votre marque'],
   faq: content.faq,
 })
 

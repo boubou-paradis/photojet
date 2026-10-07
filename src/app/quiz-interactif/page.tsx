@@ -54,6 +54,7 @@ const content: AnimationDetailContent = {
     { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
+    { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }
