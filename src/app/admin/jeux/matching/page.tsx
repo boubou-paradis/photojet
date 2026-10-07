@@ -9,10 +9,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Monitor, Package, Plus, Rocket, StopCircle, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Loader2, Monitor, Package, Plus, Rocket, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import AdminGamePanel, { type GameAction } from '@/components/affinity/AdminGamePanel'
 import AffinityMark from '@/components/affinity/AffinityMark'
 import AffinityQuestionCard from '@/components/affinity/AffinityQuestionCard'
 import { AFFINITY_PACKS } from '@/data/affinity-packs'
@@ -26,7 +26,7 @@ import { fetchUserSession } from '@/lib/session-select'
 import type { Session } from '@/types/database'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
-type AdminAction = 'launch' | 'exit' | 'heartbeat'
+type AdminAction = 'launch' | 'exit' | 'heartbeat' | GameAction
 
 const OTHER_GAME_FLAGS = ['quiz_active', 'quiz_lobby_visible', 'lineup_active', 'wheel_active', 'mystery_photo_active'] as const
 type OtherFlags = Record<(typeof OTHER_GAME_FLAGS)[number], boolean>
@@ -65,6 +65,8 @@ export default function MatchingPage() {
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [active, setActive] = useState(false)
   const [phase, setPhase] = useState<AffinityPhase | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [deadline, setDeadline] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const dirtyRef = useRef(false)
@@ -96,6 +98,8 @@ export default function MatchingPage() {
         setQuestions(Array.isArray(data.affinity_questions) ? data.affinity_questions : [])
         setActive(data.affinity_active === true)
         setPhase(data.affinity_phase ?? null)
+        setCurrentIndex(data.affinity_current_question ?? 0)
+        setDeadline(data.affinity_deadline ?? null)
         if (data.affinity_active) baselineRef.current = readFlags(data)
       } catch {
         toast.error('Erreur lors du chargement de la session')
@@ -154,34 +158,46 @@ export default function MatchingPage() {
   }, [exitMatching])
 
   // ---------- Temps réel : la ligne de session ----------
+  // La base fait foi : à chaque événement, on relit la ligne (regroupé sur
+  // 150 ms). Les événements d'une révélation (fermé puis révélé) peuvent
+  // arriver dans le désordre ; la relecture donne toujours l'état final.
+  const syncFromDb = useCallback(async () => {
+    if (!session?.id) return
+    const { data } = await supabase.from('sessions').select('*').eq('id', session.id).single()
+    if (!data) return
+    const row = data as Session
+    applyOtherGameRule(row)
+    if (activeRef.current && row.affinity_active === false) {
+      // Arrêtée ailleurs (cron, autre onglet) : on suit la base.
+      activeRef.current = false
+      setActive(false)
+    }
+    setPhase(row.affinity_phase ?? null)
+    setCurrentIndex(row.affinity_current_question ?? 0)
+    setDeadline(row.affinity_deadline ?? null)
+    // Partie en cours : questions telles que validées par le serveur.
+    if (row.affinity_active && Array.isArray(row.affinity_questions)) setQuestions(row.affinity_questions)
+  }, [session?.id, supabase, applyOtherGameRule])
+
   useEffect(() => {
     if (!session?.id) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const schedule = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => void syncFromDb(), 150)
+    }
     const channel = supabase
       .channel(`affinity-admin-${session.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${session.id}` },
-        (payload) => {
-          const row = payload.new as Session
-          applyOtherGameRule(row)
-          if (activeRef.current && row.affinity_active === false) {
-            // Arrêtée ailleurs (cron, autre onglet) : on suit la base.
-            activeRef.current = false
-            setActive(false)
-          }
-          setPhase(row.affinity_phase ?? null)
-        },
-      )
-      .subscribe(async (state) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${session.id}` }, schedule)
+      .subscribe((state) => {
         // (Re)connexion : un événement a pu être manqué pendant la coupure.
-        if (state !== 'SUBSCRIBED') return
-        const { data } = await supabase.from('sessions').select('*').eq('id', session.id).single()
-        if (data) applyOtherGameRule(data as Session)
+        if (state === 'SUBSCRIBED') schedule()
       })
     return () => {
+      if (timer) clearTimeout(timer)
       void supabase.removeChannel(channel)
     }
-  }, [session?.id, supabase, applyOtherGameRule])
+  }, [session?.id, supabase, syncFromDb])
 
   // ---------- Signal de vie (table hors realtime) ----------
   useEffect(() => {
@@ -241,6 +257,33 @@ export default function MatchingPage() {
       setPhase('lobby')
       window.open(`/live/${session.code}`, 'photojet-live')
       toast.success('Lobby affiché sur l\'écran géant')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const gameAction = useCallback(async (action: GameAction) => {
+    if (!session) return
+    // Fermeture automatique (fin du chrono) : sans bloquer les boutons.
+    if (action !== 'close') setBusy(true)
+    try {
+      const result = await callAdmin(session.id, action)
+      if (!result.ok && action !== 'close') toast.error(result.error ?? 'Action impossible')
+      // État final relu en base, sans attendre le temps réel.
+      await syncFromDb()
+    } finally {
+      if (action !== 'close') setBusy(false)
+    }
+  }, [session, syncFromDb])
+
+  async function newGame() {
+    if (!session) return
+    if (!window.confirm('Lancer une nouvelle partie ? Les inscriptions et les résultats de celle-ci seront effacés.')) return
+    setBusy(true)
+    try {
+      const result = await callAdmin(session.id, 'launch')
+      if (!result.ok) toast.error(result.error ?? 'Lancement impossible')
+      else baselineRef.current = readFlags({})
     } finally {
       setBusy(false)
     }
@@ -347,30 +390,20 @@ export default function MatchingPage() {
 
       <main className="relative z-10 container mx-auto px-4 py-6 max-w-4xl">
         {active ? (
-          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border-2 border-[#D4AF37] bg-[#1A1A1E] p-6 space-y-5">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-white font-bold">{phase === 'lobby' ? 'Lobby affiché sur l\'écran géant' : 'Partie en cours'}</span>
-            </div>
-            <div className="flex items-center gap-4 bg-black/30 rounded-xl p-5">
-              <Users className="h-8 w-8 text-[#D4AF37]" />
-              <div>
-                <p className="text-4xl font-bold text-white tabular-nums">{status.playerCount}</p>
-                <p className="text-sm text-gray-400">{status.playerCount > 1 ? 'joueurs inscrits' : 'joueur inscrit'}</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-400">
-              Les invités scannent le QR de la session (#{session.code}) : il mène à Matching tant que la partie est en cours.
-            </p>
-            <button
-              onClick={quit}
-              disabled={busy}
-              className="w-full py-3 bg-red-500/10 hover:bg-red-500/25 text-red-400 rounded-xl text-sm flex items-center justify-center gap-2 border border-red-500/30 disabled:opacity-50"
-            >
-              <StopCircle className="h-4 w-4" />
-              Quitter Matching
-            </button>
-          </motion.section>
+          <AdminGamePanel
+            phase={phase}
+            questions={questions}
+            index={currentIndex}
+            deadline={deadline}
+            clockOffsetMs={status.clockOffsetMs}
+            playerCount={status.playerCount}
+            answeredCount={status.answeredCount}
+            sessionCode={session.code}
+            busy={busy}
+            onAction={gameAction}
+            onNewGame={newGame}
+            onQuit={quit}
+          />
         ) : (
           <section className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">

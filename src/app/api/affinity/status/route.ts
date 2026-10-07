@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   if (!isSessionCode(code)) return NextResponse.json({ error: 'Code de session invalide.' }, { status: 400 })
 
   const admin = getAffinityAdmin()
-  const notLive = NextResponse.json({ live: false, phase: null, playerCount: 0, answeredCount: 0 }, { headers: NO_STORE })
+  const notLive = NextResponse.json({ live: false, phase: null, playerCount: 0, answeredCount: 0, serverNow: new Date().toISOString() }, { headers: NO_STORE })
 
   const { data: sessionData } = await admin
     .from('sessions')
@@ -61,5 +61,5 @@ export async function GET(request: Request) {
     answeredCount = await countQuestionAnswers(admin, runtime.round_id as string, current.id)
   }
 
-  return NextResponse.json({ live: true, phase: session.affinity_phase, playerCount: playerCount ?? 0, answeredCount }, { headers: NO_STORE })
+  return NextResponse.json({ live: true, phase: session.affinity_phase, playerCount: playerCount ?? 0, answeredCount, serverNow: new Date().toISOString() }, { headers: NO_STORE })
 }

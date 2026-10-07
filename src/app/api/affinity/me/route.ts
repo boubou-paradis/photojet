@@ -4,7 +4,8 @@
 // Matching : état du joueur, pour reprendre après un rechargement ou une
 // coupure réseau. Ne renvoie QUE les données de ce joueur : sa réponse en
 // cours et, une fois la partie terminée, son Top 5 (déjà filtré par le
-// consentement). Jamais les réponses des autres.
+// consentement). Jamais les réponses des autres. `nobodyVisible` (fin de
+// partie) dit seulement si aucun autre joueur n'a accepté d'apparaître.
 // POST (jeton dans le corps, pas dans l'URL, pour ne pas finir dans les logs).
 
 import { NextResponse } from 'next/server'
@@ -73,6 +74,17 @@ export async function POST(request: Request) {
     myAnswerIndex = (answer?.answer_index as number | undefined) ?? null
   }
 
+  let nobodyVisible = false
+  if (session.affinity_phase === 'finished') {
+    const { count } = await admin
+      .from('affinity_players')
+      .select('id', { count: 'exact', head: true })
+      .eq('round_id', player.round_id as string)
+      .eq('consent', true)
+      .neq('id', playerId)
+    nobodyVisible = (count ?? 0) === 0
+  }
+
   return NextResponse.json(
     {
       nickname: player.nickname as string,
@@ -82,6 +94,8 @@ export async function POST(request: Request) {
       currentQuestionId: inQuestion ? current.id : null,
       myAnswerIndex,
       top5: session.affinity_phase === 'finished' ? ((player.top5 as AffinityMatch[] | null) ?? []) : null,
+      nobodyVisible,
+      serverNow: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   )

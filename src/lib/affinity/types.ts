@@ -73,4 +73,6 @@ export interface AffinityStatus {
   phase: AffinityPhase | null
   playerCount: number
   answeredCount: number
+  /** Heure du serveur (ISO), pour caler les chronos des écrans. */
+  serverNow: string
 }
