@@ -64,11 +64,10 @@ const games = [
   {
     id: 'affinity',
     name: 'Matching',
-    image: '/images/games/matching.png',
+    image: '/images/games/matching-v2.png',
     description: 'Le jeu des points communs : découvrez qui a répondu comme vous',
     path: '/admin/jeux/matching',
-    // Prochainement : carte grisée tant que le jeu n'est pas finalisé.
-    available: false,
+    available: true,
     glowColor: 'rgba(212, 175, 55, 0.5)',
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
@@ -206,7 +205,7 @@ export default function JeuxPage() {
         </motion.div>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6">
           {games.map((game, index) => (
             <motion.div
               key={game.id}
@@ -226,7 +225,7 @@ export default function JeuxPage() {
             >
               {/* Card */}
               <div className={`
-                relative rounded-2xl overflow-hidden aspect-[4/3]
+                relative rounded-2xl overflow-hidden aspect-[16/9]
                 border-2 border-white/5 ${game.available ? game.borderHover : ''}
                 transition-all duration-300 group-hover:brightness-110
               `}>
@@ -235,7 +234,7 @@ export default function JeuxPage() {
                   alt={game.name}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                 />
                 {/* Badge notice PDF */}
                 {'notice' in game && game.notice && (
@@ -244,7 +243,7 @@ export default function JeuxPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute top-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white backdrop-blur-sm transition-all hover:scale-105"
+                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-white backdrop-blur-sm transition-all hover:scale-105"
                     style={{ background: 'rgba(139,92,246,0.85)', border: '1px solid rgba(139,92,246,0.5)' }}
                   >
                     <FileText className="h-3.5 w-3.5" />
@@ -265,7 +264,7 @@ export default function JeuxPage() {
         >
           <div className="inline-flex items-center gap-3 text-gray-600 text-sm">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-700" />
-            <span>4 jeux disponibles</span>
+            <span>{games.filter((g) => g.available).length} jeux disponibles</span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-700" />
           </div>
         </motion.div>
