@@ -46,6 +46,7 @@ import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/datab
 import { toast } from 'sonner'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 import { compressImage, needsCompression } from '@/lib/image-utils'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
@@ -1987,6 +1988,9 @@ export default function QuizPage() {
   // (Lancer la question → Révéler → Question suivante → Podium). PageUp et B
   // non mappés. Le lobby est ignoré (gameActive faux), coupé après le podium.
   // L'état local fait foi : c'est cette page qui pilote le chrono et la base.
+  // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
+  useLeaveGuard(gameActive || lobbyVisible)
+
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({
     active: gameActive && remoteOn && !showPodium,

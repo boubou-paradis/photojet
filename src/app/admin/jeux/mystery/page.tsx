@@ -40,6 +40,7 @@ import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import PhotoCropModal from './PhotoCropModal'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
 interface PhotoSlot {
   url: string
@@ -225,10 +226,12 @@ export default function MysteryPage() {
       }
     }
 
-    window.addEventListener('beforeunload', cleanup)
+    // pagehide (pas beforeunload) : ne part que si la page part vraiment,
+    // après un éventuel « Annuler » sur la boîte de useLeaveGuard.
+    window.addEventListener('pagehide', cleanup)
 
     return () => {
-      window.removeEventListener('beforeunload', cleanup)
+      window.removeEventListener('pagehide', cleanup)
       cleanup()
     }
   }, [session?.id, supabase])
@@ -1036,6 +1039,9 @@ export default function MysteryPage() {
       total: data.mystery_total_rounds ?? 1,
     }
   }
+
+  // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
+  useLeaveGuard(gameActive)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({

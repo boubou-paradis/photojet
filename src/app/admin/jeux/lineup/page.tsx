@@ -29,6 +29,7 @@ import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
 export default function LineupPage() {
   const [session, setSession] = useState<Session | null>(null)
@@ -125,11 +126,13 @@ export default function LineupPage() {
       }
     }
 
-    window.addEventListener('beforeunload', cleanup)
+    // pagehide (pas beforeunload) : ne part que si la page part vraiment,
+    // après un éventuel « Annuler » sur la boîte de useLeaveGuard.
+    window.addEventListener('pagehide', cleanup)
 
     return () => {
       if (awardPointsTimeoutRef.current) { clearTimeout(awardPointsTimeoutRef.current); awardPointsTimeoutRef.current = null }
-      window.removeEventListener('beforeunload', cleanup)
+      window.removeEventListener('pagehide', cleanup)
       cleanup()
     }
   }, [session?.id, supabase])
@@ -914,6 +917,9 @@ export default function LineupPage() {
   // points à l'équipe 2 (comme flèche gauche / droite), B = démarrer / pause /
   // reprise (comme Espace). Numéro suivant et Nouvelle partie jamais mappés ;
   // coupée une fois la partie terminée. Mêmes handlers que les boutons.
+  // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
+  useLeaveGuard(gameActive)
+
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   const remoteAward = async (team: 1 | 2) => {
     if (!currentNumber || (!isRunning && !isPaused)) return

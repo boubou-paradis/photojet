@@ -34,6 +34,7 @@ import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import WheelPreview from '@/components/games/WheelPreview'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
 // Default segments
 const DEFAULT_SEGMENTS: WheelSegment[] = [
@@ -156,12 +157,14 @@ export default function WheelPage() {
       }
     }
 
-    window.addEventListener('beforeunload', cleanup)
+    // pagehide (pas beforeunload) : ne part que si la page part vraiment,
+    // après un éventuel « Annuler » sur la boîte de useLeaveGuard.
+    window.addEventListener('pagehide', cleanup)
 
     return () => {
       if (spinTimeoutRef.current) { clearTimeout(spinTimeoutRef.current); spinTimeoutRef.current = null }
       if (phase2TimeoutRef.current) { clearTimeout(phase2TimeoutRef.current); phase2TimeoutRef.current = null }
-      window.removeEventListener('beforeunload', cleanup)
+      window.removeEventListener('pagehide', cleanup)
       cleanup()
     }
   }, [session?.id, supabase])
@@ -801,6 +804,9 @@ export default function WheelPage() {
 
   // Télécommande de présentation : PageDown = tourner / STOP (manuel), PageUp = masquer le résultat.
   // Actifs uniquement partie lancée, non terminée, interrupteur ON. Mêmes handlers que les boutons.
+  // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
+  useLeaveGuard(gameActive)
+
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({
     active: gameActive && remoteOn && !isGameFinished,
