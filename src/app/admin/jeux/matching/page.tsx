@@ -15,9 +15,11 @@ import { Button } from '@/components/ui/button'
 import AdminGamePanel, { type GameAction } from '@/components/affinity/AdminGamePanel'
 import AffinityMark from '@/components/affinity/AffinityMark'
 import AffinityQuestionCard from '@/components/affinity/AffinityQuestionCard'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { AFFINITY_PACKS } from '@/data/affinity-packs'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { AFFINITY_DEFAULT_TIME_LIMIT, AFFINITY_HEARTBEAT_INTERVAL_MS, AFFINITY_LIMITS } from '@/lib/affinity/constants'
 import type { AffinityPhase, AffinityQuestion } from '@/lib/affinity/types'
 import { validateQuestions } from '@/lib/affinity/validation'
@@ -276,6 +278,24 @@ export default function MatchingPage() {
     }
   }, [session, syncFromDb])
 
+  // Télécommande de présentation : PageDown = prochaine action logique
+  // (lancer → révéler → question suivante). Elle ne termine JAMAIS la partie
+  // (bouton explicite) ; après la dernière révélation, elle rappelle de
+  // cliquer sur « Terminer ». PageUp et B ne font rien dans Matching.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: active && remoteOn && phase !== 'finished',
+    phase: `${phase}|${currentIndex}`,
+    onNext: async () => {
+      if (phase === 'lobby') { await gameAction('start'); return 1500 }
+      if (phase === 'question' || phase === 'closed') { await gameAction('reveal'); return 1500 }
+      if (phase === 'revealed') {
+        if (currentIndex < questions.length - 1) { await gameAction('next'); return 1500 }
+        toast.info('Dernière question révélée : cliquez sur « Terminer la partie ».')
+      }
+    },
+  })
+
   async function newGame() {
     if (!session) return
     if (!window.confirm('Lancer une nouvelle partie ? Les inscriptions et les résultats de celle-ci seront effacés.')) return
@@ -379,12 +399,15 @@ export default function MatchingPage() {
               </div>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={phase === 'finished'} />
           {active && (
             <Button size="sm" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]">
               <Monitor className="h-4 w-4 mr-2" />
               Écran géant
             </Button>
           )}
+          </div>
         </div>
       </header>
 

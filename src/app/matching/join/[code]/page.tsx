@@ -53,7 +53,10 @@ export default function MatchingJoinPage() {
         .then((r) => r.json())
         .catch(() => null)) as AffinityStatus | null
       if (cancelled) return
-      setScreen(status?.live && status.phase !== 'finished' ? 'form' : 'closed')
+      // Statut inconnu (réseau, base saturée) : on montre le formulaire, l'inscription
+      // dira elle-même s'il n'y a pas de partie. « Pas de partie » seulement si c'est certain.
+      const known = typeof status?.live === 'boolean'
+      setScreen(known && (!status?.live || status.phase === 'finished') ? 'closed' : 'form')
     })()
     return () => {
       cancelled = true

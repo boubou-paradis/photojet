@@ -31,34 +31,42 @@ export async function GET(request: Request) {
   const admin = getAffinityAdmin()
   const notLive = NextResponse.json({ live: false, phase: null, playerCount: 0, answeredCount: 0, serverNow: new Date().toISOString() }, { headers: NO_STORE })
 
-  const { data: sessionData } = await admin
+  const busy = NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
+
+  const { data: sessionData, error: sessionError } = await admin
     .from('sessions')
     .select(`${AFFINITY_SESSION_COLUMNS}, ${OTHER_GAME_FLAGS.join(', ')}`)
     .eq('code', code)
     .maybeSingle()
+  if (sessionError) return busy
   const session = sessionData as StatusSessionRow | null
   if (!session?.affinity_active || !session.affinity_phase || OTHER_GAME_FLAGS.some((flag) => session[flag] === true)) {
     return notLive
   }
 
-  const { data: runtime } = await admin
+  const { data: runtime, error: runtimeError } = await admin
     .from('affinity_runtime')
     .select('round_id, heartbeat_at')
     .eq('session_id', session.id)
     .maybeSingle()
+  if (runtimeError) return busy
   if (!runtime || !isHeartbeatFresh(runtime.heartbeat_at as string)) return notLive
 
   const { count: playerCount, error: playersError } = await admin
     .from('affinity_players')
     .select('id', { count: 'exact', head: true })
     .eq('round_id', runtime.round_id as string)
-  if (playersError) throw new Error(playersError.message)
+  if (playersError) return busy
 
   let answeredCount = 0
   const questions = Array.isArray(session.affinity_questions) ? (session.affinity_questions as AffinityQuestion[]) : []
   const current = questions[session.affinity_current_question]
   if (current && (session.affinity_phase === 'question' || session.affinity_phase === 'closed')) {
-    answeredCount = await countQuestionAnswers(admin, runtime.round_id as string, current.id)
+    try {
+      answeredCount = await countQuestionAnswers(admin, runtime.round_id as string, current.id)
+    } catch {
+      return busy
+    }
   }
 
   return NextResponse.json({ live: true, phase: session.affinity_phase, playerCount: playerCount ?? 0, answeredCount, serverNow: new Date().toISOString() }, { headers: NO_STORE })

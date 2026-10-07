@@ -19,6 +19,8 @@ import { nicknameKey, parseJoinRequest, suggestNickname } from '@/lib/affinity/v
 type JoinSessionRow = AffinitySessionRow & Partial<Record<(typeof OTHER_GAME_FLAGS)[number], boolean | null>>
 
 const NO_GAME = 'Aucune partie Matching en cours.'
+// Base injoignable ou saturée : le joueur doit réessayer, pas croire qu'il n'y a pas de partie.
+const busy = () => NextResponse.json({ error: 'Réseau saturé, réessaie dans un instant.' }, { status: 503 })
 
 export async function POST(request: Request) {
   let body: unknown
@@ -34,11 +36,12 @@ export async function POST(request: Request) {
 
   const admin = getAffinityAdmin()
 
-  const { data: sessionData } = await admin
+  const { data: sessionData, error: sessionError } = await admin
     .from('sessions')
     .select(`${AFFINITY_SESSION_COLUMNS}, ${OTHER_GAME_FLAGS.join(', ')}`)
     .eq('code', code)
     .maybeSingle()
+  if (sessionError) return busy()
   const session = sessionData as JoinSessionRow | null
   if (
     !session ||
@@ -50,20 +53,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: NO_GAME }, { status: 409 })
   }
 
-  const { data: runtime } = await admin
+  const { data: runtime, error: runtimeError } = await admin
     .from('affinity_runtime')
     .select('round_id, heartbeat_at')
     .eq('session_id', session.id)
     .maybeSingle()
+  if (runtimeError) return busy()
   if (!runtime || !isHeartbeatFresh(runtime.heartbeat_at as string)) {
     return NextResponse.json({ error: NO_GAME }, { status: 409 })
   }
   const roundId = runtime.round_id as string
 
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from('affinity_players')
     .select('id', { count: 'exact', head: true })
     .eq('round_id', roundId)
+  if (countError) return busy()
   if ((count ?? 0) >= AFFINITY_LIMITS.maxPlayers) {
     return NextResponse.json({ error: 'La partie est complète.' }, { status: 409 })
   }
