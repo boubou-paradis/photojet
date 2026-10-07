@@ -38,6 +38,8 @@ import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import PhotoCropModal from './PhotoCropModal'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 
 interface PhotoSlot {
   url: string
@@ -828,9 +830,12 @@ export default function MysteryPage() {
   }
 
   async function togglePlayPause() {
+    await setPlaying(!isPlaying)
+  }
+
+  async function setPlaying(newIsPlaying: boolean) {
     if (!session) return
 
-    const newIsPlaying = !isPlaying
     await supabase
       .from('sessions')
       .update({ mystery_is_playing: newIsPlaying })
@@ -1008,6 +1013,54 @@ export default function MysteryPage() {
 
   const validPhotosCount = photos.filter(p => p !== null).length
 
+  // Télécommande de présentation. L'état de la manche est relu en base à chaque
+  // appui (les cases sont révélées par l'écran /live, le state local peut être
+  // en retard) : PageDown = PLAY → Révéler → Manche suivante, PageUp = pause /
+  // reprise. Reset n'est jamais mappé. Mêmes handlers que les boutons.
+  async function readRoundState() {
+    if (!session) return null
+    const { data } = await supabase
+      .from('sessions')
+      .select('mystery_is_playing, mystery_revealed_tiles, mystery_photo_grid, mystery_current_round, mystery_total_rounds')
+      .eq('id', session.id)
+      .single()
+    if (!data) return null
+    const [dbCols, dbRows] = (data.mystery_photo_grid || mysteryPhotoGrid).split('x').map(Number)
+    const revealed = data.mystery_revealed_tiles?.length ?? 0
+    return {
+      isPlaying: data.mystery_is_playing ?? false,
+      revealed,
+      allRevealed: revealed >= dbCols * dbRows,
+      round: data.mystery_current_round ?? 1,
+      total: data.mystery_total_rounds ?? 1,
+    }
+  }
+
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: gameActive && remoteOn,
+    phase: `${currentRound}|${isPlaying}`,
+    isBlocked: () => croppingIndex !== null || showSaveMysteryModal || showLoadMysteryModal,
+    onNext: async () => {
+      const state = await readRoundState()
+      if (!state) return
+      if (state.allRevealed) {
+        // Dernière manche, ou state local pas encore à jour : on ne fait rien.
+        if (state.round < state.total && state.round === currentRound) { await nextRound(); return 1000 }
+        return
+      }
+      if (!state.isPlaying && state.revealed === 0) { await setPlaying(true); return }
+      await revealAll()
+      return 1500
+    },
+    onPrev: async () => {
+      const state = await readRoundState()
+      if (!state || state.allRevealed) return
+      if (state.isPlaying) await setPlaying(false)
+      else if (state.revealed > 0) await setPlaying(true)
+    },
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
@@ -1074,6 +1127,7 @@ export default function MysteryPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} />
             <a href="/photo-mystere-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300 border border-cyan-400/30 hover:border-cyan-400">
                 <FileText className="h-4 w-4 mr-2" />
