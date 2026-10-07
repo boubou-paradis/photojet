@@ -910,20 +910,25 @@ export default function LineupPage() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [gameActive, isRunning, isPaused, isGameOver, currentNumber])
 
-  // Télécommande de présentation : PageDown = démarrer / reprendre, PageUp =
-  // pause / reprise. Numéro suivant et Nouvelle partie jamais mappés ; coupée
-  // une fois la partie terminée. Mêmes handlers que les boutons.
+  // Télécommande de présentation : PageUp = points à l'équipe 1, PageDown =
+  // points à l'équipe 2 (comme flèche gauche / droite), B = démarrer / pause /
+  // reprise (comme Espace). Numéro suivant et Nouvelle partie jamais mappés ;
+  // coupée une fois la partie terminée. Mêmes handlers que les boutons.
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  const remoteAward = async (team: 1 | 2) => {
+    if (!currentNumber || (!isRunning && !isPaused)) return
+    await awardPoints(team)
+    return 1500 // un double appui donnerait aussi les points du numéro suivant
+  }
   useRemoteControl({
     active: gameActive && remoteOn && !isGameOver,
-    phase: `${isRunning}|${isPaused}`,
-    onNext: async () => {
-      if (isPaused) await resumeGame()
-      else if (!isRunning && timeLeft === clockDuration) await startGame()
-    },
-    onPrev: async () => {
+    phase: `${isRunning}|${isPaused}|${currentNumber}`,
+    onPrev: () => remoteAward(1),
+    onNext: () => remoteAward(2),
+    onSecondary: async () => {
       if (isRunning) await pauseGame()
       else if (isPaused) await resumeGame()
+      else if (timeLeft === clockDuration) await startGame()
     },
   })
 
