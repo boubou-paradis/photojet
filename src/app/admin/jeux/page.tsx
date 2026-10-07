@@ -61,6 +61,18 @@ const games = [
     accentColor: 'text-red-400',
     notice: '/quiz-regles.pdf',
   },
+  {
+    id: 'affinity',
+    name: 'Matching',
+    image: '/images/games/matching.png',
+    description: 'Le jeu des points communs : découvrez qui a répondu comme vous',
+    path: '/admin/jeux/matching',
+    // Prochainement : carte grisée tant que le jeu n'est pas finalisé.
+    available: false,
+    glowColor: 'rgba(212, 175, 55, 0.5)',
+    borderHover: 'hover:border-[#D4AF37]',
+    accentColor: 'text-[#D4AF37]',
+  },
 ]
 
 export default function JeuxPage() {

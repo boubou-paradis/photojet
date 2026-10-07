@@ -99,6 +99,28 @@ export default function InvitePage() {
           return
         }
 
+        // Matching : même QR que la session. Redirige seulement si Matching est
+        // vraiment actif (statut serveur : signal de vie, aucun autre jeu actif,
+        // partie non terminée), sauf si l'invité a choisi « juste des photos ».
+        const photosOnly = new URLSearchParams(window.location.search).get('photos') === '1'
+        if (photosOnly) {
+          try { sessionStorage.setItem(`matching-photos-only-${code}`, '1') } catch { /* navigation privée */ }
+        }
+        let skipMatching = photosOnly
+        try { skipMatching ||= sessionStorage.getItem(`matching-photos-only-${code}`) === '1' } catch { /* idem */ }
+        if (!skipMatching) {
+          const { data: matchingSession } = await supabase
+            .from('sessions').select('affinity_active').eq('code', code).single()
+          if (matchingSession?.affinity_active) {
+            const status = await fetch(`/api/affinity/status?code=${encodeURIComponent(code)}`)
+              .then((r) => r.json()).catch(() => null)
+            if (status?.live && status.phase !== 'finished') {
+              router.push(`/matching/join/${code}`)
+              return
+            }
+          }
+        }
+
         const { data, error } = await supabase
           .from('sessions')
           .select('*')

@@ -20,6 +20,8 @@ import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
 import WheelGame from '@/components/games/WheelGame'
 import QuizGame from '@/components/games/QuizGame'
+import AffinityGame from '@/components/games/AffinityGame'
+import { useAffinityStatus } from '@/hooks/useAffinityStatus'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
@@ -865,6 +867,10 @@ export default function LivePage() {
     return data.publicUrl
   }
 
+  // Matching : statut serveur (signal de vie, aucun autre jeu), interrogé
+  // seulement quand la ligne de session indique Matching actif.
+  const affinityStatus = useAffinityStatus(code, session?.affinity_active === true)
+
   const transitionType = session?.transition_type || 'fade'
   const currentItem = slideshowItems[currentIndex]
 
@@ -1321,6 +1327,12 @@ export default function LivePage() {
         isFinished={quizState?.isFinished ?? session.quiz_show_podium === true}
       />
     )
+  }
+
+  // Matching : en dernier, juste avant le diaporama. Affiché seulement si le
+  // serveur confirme qu'il est vraiment actif (signal de vie frais, aucun autre jeu).
+  if (session.affinity_active && affinityStatus.live) {
+    return <AffinityGame session={session} status={affinityStatus} />
   }
 
   return (

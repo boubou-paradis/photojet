@@ -66,3 +66,11 @@ export interface AffinityFinalStats {
    *  `given.percent` est la part de la salle, `then.percent` la part du groupe `given`. */
   surprise?: { given: AffinityStatAnswer; then: AffinityStatAnswer }
 }
+
+/** Réponse de GET /api/affinity/status (publique, agrégée). */
+export interface AffinityStatus {
+  live: boolean
+  phase: AffinityPhase | null
+  playerCount: number
+  answeredCount: number
+}

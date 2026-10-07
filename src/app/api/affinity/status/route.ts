@@ -4,7 +4,8 @@
 // Matching : état public d'une session, pour /invite et /live.
 // `live` = Matching actif, aucun autre jeu actif ET page animateur vivante
 // (signal de vie de moins de 3 min, lu dans affinity_runtime, table hors
-// realtime). `answeredCount` = nombre de réponses à la question en cours.
+// realtime). `playerCount` = joueurs inscrits, `answeredCount` = nombre de
+// réponses à la question en cours.
 // Aucune donnée nominative.
 
 import { NextResponse } from 'next/server'
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
   if (!isSessionCode(code)) return NextResponse.json({ error: 'Code de session invalide.' }, { status: 400 })
 
   const admin = getAffinityAdmin()
-  const notLive = NextResponse.json({ live: false, phase: null, answeredCount: 0 }, { headers: NO_STORE })
+  const notLive = NextResponse.json({ live: false, phase: null, playerCount: 0, answeredCount: 0 }, { headers: NO_STORE })
 
   const { data: sessionData } = await admin
     .from('sessions')
@@ -47,6 +48,12 @@ export async function GET(request: Request) {
     .maybeSingle()
   if (!runtime || !isHeartbeatFresh(runtime.heartbeat_at as string)) return notLive
 
+  const { count: playerCount, error: playersError } = await admin
+    .from('affinity_players')
+    .select('id', { count: 'exact', head: true })
+    .eq('round_id', runtime.round_id as string)
+  if (playersError) throw new Error(playersError.message)
+
   let answeredCount = 0
   const questions = Array.isArray(session.affinity_questions) ? (session.affinity_questions as AffinityQuestion[]) : []
   const current = questions[session.affinity_current_question]
@@ -54,5 +61,5 @@ export async function GET(request: Request) {
     answeredCount = await countQuestionAnswers(admin, runtime.round_id as string, current.id)
   }
 
-  return NextResponse.json({ live: true, phase: session.affinity_phase, answeredCount }, { headers: NO_STORE })
+  return NextResponse.json({ live: true, phase: session.affinity_phase, playerCount: playerCount ?? 0, answeredCount }, { headers: NO_STORE })
 }
