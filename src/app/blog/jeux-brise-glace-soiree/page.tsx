@@ -113,7 +113,7 @@ const content: BlogArticleContent = {
         {
           heading: "2. Le « tu préfères » dans la salle",
           body: [
-            "Vous posez une question à deux choix («&nbsp;Mer ou montagne&nbsp;?&nbsp;»), et chacun va se placer du côté gauche ou droit de la salle. Les invités voient immédiatement qui pense comme eux, et ils se retrouvent physiquement à côté. Très efficace avec un grand groupe, à condition d'avoir de la place.",
+            "Vous posez une question à deux choix («&nbsp;Mer ou montagne&nbsp;?&nbsp;»), et chacun va se placer du côté gauche ou droit de la salle. Les invités voient immédiatement qui pense comme eux, et ils se retrouvent physiquement à côté. Très efficace avec un grand groupe, à condition d'avoir de la place. Besoin d'idées&nbsp;? Piochez dans nos <a href=\"/blog/questions-pour-faire-connaissance\">60 questions pour faire connaissance</a>.",
           ],
         },
         {
@@ -215,7 +215,7 @@ const content: BlogArticleContent = {
       heading: "Le point de vue d'un DJ animateur",
       body: [
         "Ce que j'ai appris en soirée&nbsp;: les invités n'ont presque jamais besoin d'être convaincus de s'amuser, ils ont besoin d'un <em>prétexte</em> pour faire le premier pas. Personne n'ose aborder un inconnu en lui disant «&nbsp;bonjour, parlons&nbsp;». Mais «&nbsp;il paraît qu'on a 8 réponses identiques sur 10&nbsp;», tout le monde ose.",
-        "C'est pour ça que nous avons créé Matching&nbsp;: un jeu dont la fin ne s'arrête pas à l'écran, mais se prolonge dans la salle. Pour composer le reste de votre soirée, consultez le <a href=\"/animations-interactives-evenementielles\">guide des animations interactives</a>.",
+        "C'est pour ça que nous avons créé Matching&nbsp;: un jeu dont la fin ne s'arrête pas à l'écran, mais se prolonge dans la salle. Selon votre événement, voyez aussi nos guides pour une <a href=\"/blog/animation-soiree-celibataires\">soirée célibataires</a>, pour <a href=\"/blog/mariage-faire-connaissance-invites\">faire se rencontrer les deux familles d'un mariage</a> et pour un <a href=\"/blog/icebreaker-entreprise\">icebreaker en entreprise</a>. Pour composer le reste de votre soirée, consultez le <a href=\"/animations-interactives-evenementielles\">guide des animations interactives</a>.",
       ],
     },
   ],

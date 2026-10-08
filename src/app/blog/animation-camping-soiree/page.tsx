@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'animation-camping-soiree'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-07-01'
-const MODIFIED = '2026-07-01'
+const MODIFIED = '2026-10-08'
 const TITLE = 'Animation camping en soirée : idées simples pour faire participer tout le monde'
 const DESCRIPTION =
   "Animer les soirées d'un camping sans matériel lourd : idées interactives pour toutes les générations, jouables depuis le téléphone des vacanciers, sur écran ou vidéoprojecteur."
@@ -132,7 +132,7 @@ const content: BlogArticleContent = {
         },
         {
           heading: 'Renouveler sans tout recréer',
-          body: ["Comme le public change chaque semaine, vous pouvez rejouer les mêmes quiz auprès de nouveaux vacanciers. Pour les familles qui restent, changez simplement quelques thèmes pour garder la surprise."],
+          body: ["Comme le public change chaque semaine, vous pouvez rejouer les mêmes quiz auprès de nouveaux vacanciers. Pour les familles qui restent, changez simplement quelques thèmes pour garder la surprise.", "Le lundi soir, quand les nouveaux vacanciers ne se connaissent pas encore, <a href=\"/jeu-points-communs\">Matching, le jeu des points communs</a> fait un excellent lancement de semaine&nbsp;: chacun répond depuis son téléphone et découvre les vacanciers qui ont répondu comme lui. Les familles se retrouvent ensuite à la piscine avec un sujet de conversation tout trouvé."],
         },
       ],
     },
@@ -152,6 +152,7 @@ const content: BlogArticleContent = {
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Blind test musical', href: '/blind-test-musical' },
     { label: 'Animations interactives événementielles', href: '/animations-interactives-evenementielles' },
+    { label: '12 jeux brise-glace pour lancer une soirée', href: '/blog/jeux-brise-glace-soiree' },
   ],
   cta: {
     title: 'Animez vos soirées toute la saison',

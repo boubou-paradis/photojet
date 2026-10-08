@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'idees-animation-mariage'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-06-23'
-const MODIFIED = '2026-07-03'
+const MODIFIED = '2026-10-08'
 const TITLE = "Idées d'animation pour mariage : 25 jeux pour faire participer vos invités"
 const DESCRIPTION =
   "Un DJ animateur partage ses 25 idées d'animation pour mariage, du vin d'honneur à la soirée dansante. Faites participer tous vos invités !"
@@ -109,6 +109,7 @@ const content: BlogArticleContent = {
           heading: 'Jeux brise-glace pour lancer la fête',
           body: [
             "Un quiz « qui connaît le mieux les mariés », une chasse au trésor légère dans le jardin, ou des défis photo à réaliser en équipe&nbsp;: ces formats poussent les invités à se parler. Gardez-les courts (10 à 15 minutes) pour ne pas couper l'ambiance apéritive.",
+            "Pour que les deux familles se rencontrent vraiment, essayez <a href=\"/jeu-points-communs\">Matching, le jeu des points communs</a>&nbsp;: chacun répond à des questions légères depuis son téléphone, puis découvre en privé les 5 invités qui ont répondu le plus comme lui. Plus d'idées dans notre guide pour <a href=\"/blog/mariage-faire-connaissance-invites\">faire se rencontrer les deux familles</a>.",
           ],
         },
         {
@@ -191,6 +192,7 @@ const content: BlogArticleContent = {
         { title: 'Quiz interactif & blind test', desc: 'Vos invités répondent et buzzent depuis leur téléphone, le classement s’affiche en direct.' },
         { title: 'Roue de la destinée', desc: 'Gages, défis et lots tirés au sort sur l’écran géant entre les plats.' },
         { title: 'Photo Mystère & Le Bon Ordre', desc: 'Des jeux de réflexion rapides qui opposent les tables en quelques minutes.' },
+        { title: 'Matching', desc: 'Chaque invité découvre en privé les 5 personnes qui ont répondu comme lui : idéal pour mélanger les familles.' },
         { title: 'Partage photo & borne', desc: 'Photos des invités projetées en direct, et borne photo sans matériel à louer.' },
       ],
     },
@@ -219,6 +221,7 @@ const content: BlogArticleContent = {
     { label: 'Diaporama live mariage', href: '/diaporama-live-mariage' },
     { label: 'Roue de la destinée', href: '/roue-de-la-destinee' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
+    { label: 'Faire se rencontrer les deux familles', href: '/blog/mariage-faire-connaissance-invites' },
   ],
   cta: {
     title: 'Faites participer tous vos invités le jour J',

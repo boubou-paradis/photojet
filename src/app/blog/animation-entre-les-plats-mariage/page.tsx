@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'animation-entre-les-plats-mariage'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-07-01'
-const MODIFIED = '2026-07-01'
+const MODIFIED = '2026-10-08'
 const TITLE = 'Animation entre les plats de mariage : que faire sans lasser les invités ?'
 const DESCRIPTION =
   "Animer entre les plats d'un mariage sans casser le service : idées courtes, minutage plat par plat et le format qui fait participer toute la salle depuis un téléphone."
@@ -110,7 +110,7 @@ const content: BlogArticleContent = {
         { title: '🎵 Le blind test express', desc: "Une manche de 6 titres entre deux plats. On reconnaît, on buzze depuis son mobile, on relance la manche suivante au plat d'après." },
         { title: '🖼️ La photo mystère', desc: "Une photo des mariés se dévoile case par case : le premier qui devine gagne. Parfait pour un inter-plat très court." },
         { title: '📸 Le partage photo live', desc: "Les invités envoient leurs photos du jour, elles s'affichent en direct sur l'écran. Ça tourne en fond, sans animation active." },
-        { title: '🗳️ Le sondage surprise', desc: "« Qui va attraper le bouquet ? », « Première danse : quel style ? » : un vote rapide qui fait rire et implique tout le monde." },
+        { title: '🗳️ Le sondage surprise', desc: "« Qui va attraper le bouquet ? », « Première danse : quel style ? » : un vote rapide qui fait rire et implique tout le monde. En version Matching, chacun découvre ensuite les invités qui ont voté comme lui." },
         { title: '🎡 La roue de la destinée', desc: "On tire au sort une table qui doit relever un petit défi bon enfant : une façon ludique de faire participer sans forcer." },
       ],
     },
@@ -156,6 +156,7 @@ const content: BlogArticleContent = {
     { label: 'Blind test mariage', href: '/blind-test-mariage' },
     { label: 'Animation interactive pour mariage', href: '/animation-mariage-interactive' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
+    { label: 'Matching, le jeu des points communs', href: '/jeu-points-communs' },
   ],
   cta: {
     title: 'Animez le repas sans casser le service',

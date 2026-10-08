@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'animation-soiree-entreprise-idees'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-07-01'
-const MODIFIED = '2026-07-01'
+const MODIFIED = '2026-10-08'
 const TITLE = "10 idées d'animation pour une soirée d'entreprise mémorable"
 const DESCRIPTION =
   "10 idées d'animation pour une soirée d'entreprise ou un team building : blind test, quiz, photo live et jeux interactifs qui impliquent vraiment tous les collaborateurs."
@@ -105,7 +105,7 @@ const content: BlogArticleContent = {
         "Autour des animations interactives, ces cinq idées complètent une soirée d'entreprise réussie&nbsp;:",
       ],
       cards: [
-        { title: '6. Le brise-glace en début de soirée', desc: "Un mini-quiz de 3 minutes dès l'apéritif pour lancer la dynamique et détendre l'atmosphère." },
+        { title: '6. Le brise-glace en début de soirée', desc: "Dès l'apéritif, une partie de Matching : chacun répond depuis son téléphone et découvre les collègues qui ont répondu comme lui. Les services se mélangent tout seuls." },
         { title: '7. La remise de « trophées » internes', desc: "Des prix humoristiques votés en direct par la salle depuis leur téléphone : fou rire garanti." },
         { title: '8. Le photobooth / borne photo', desc: "Un coin photo avec accessoires : les clichés rejoignent le mur de photos live et la galerie partagée." },
         { title: '9. La battle de services', desc: "Marketing contre technique, ventes contre support : les équipes s'affrontent au quiz, l'esprit d'équipe fait le reste." },
@@ -125,7 +125,7 @@ const content: BlogArticleContent = {
       heading: 'Tout réunir avec AnimaJet',
       body: [
         "AnimaJet rassemble blind test, quiz, photo live, roue et jeux interactifs dans une seule plateforme, personnalisable à la marque de l'entreprise (logo, couleurs). Idéal pour un séminaire, une soirée de CE ou un arbre de Noël.",
-        "Découvrez l'<a href=\"/animation-entreprise-interactive\">animation de soirée d'entreprise</a> en détail, ou le <a href=\"/quiz-interactif\">quiz interactif</a> et le <a href=\"/blind-test-musical\">blind test musical</a>.",
+        "Pour l'ouverture d'un séminaire, voyez aussi nos <a href=\"/blog/icebreaker-entreprise\">10 icebreakers en entreprise</a> et <a href=\"/jeu-points-communs\">Matching, le jeu des points communs</a>. Découvrez l'<a href=\"/animation-entreprise-interactive\">animation de soirée d'entreprise</a> en détail, ou le <a href=\"/quiz-interactif\">quiz interactif</a> et le <a href=\"/blind-test-musical\">blind test musical</a>.",
       ],
     },
   ],
@@ -135,6 +135,7 @@ const content: BlogArticleContent = {
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Blind test musical', href: '/blind-test-musical' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
+    { label: 'Icebreaker en entreprise', href: '/blog/icebreaker-entreprise' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],
   cta: {

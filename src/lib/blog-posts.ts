@@ -22,6 +22,46 @@ export interface BlogPostMeta {
 
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: 'icebreaker-entreprise',
+    title: "Icebreaker en entreprise : 10 activités pour séminaire, réunion et team building",
+    excerpt:
+      "Des icebreakers classés selon la taille du groupe, de la réunion d'équipe à la convention de 300 personnes, sans le côté forcé.",
+    category: 'Entreprise',
+    date: '2026-10-08',
+    readingTime: '8 min',
+    image: '/images/games/quiz.png',
+  },
+  {
+    slug: 'mariage-faire-connaissance-invites',
+    title: "Mariage : comment faire se rencontrer les deux familles et tous les invités",
+    excerpt:
+      "Plan de table, jeux du vin d'honneur, quiz par table : ce qui fait vraiment se mélanger les invités d'un mariage, moment par moment.",
+    category: 'Mariage',
+    date: '2026-10-08',
+    readingTime: '8 min',
+    image: '/photo-qr-partage.png',
+  },
+  {
+    slug: 'animation-soiree-celibataires',
+    title: "Soirée célibataires : les animations qui brisent la glace sans mettre mal à l’aise",
+    excerpt:
+      "Le déroulé type, les jeux qui fonctionnent et le Top 5 des points communs, que chacun découvre en privé sur son téléphone.",
+    category: 'Idées de soirée',
+    date: '2026-10-08',
+    readingTime: '8 min',
+    image: '/images/games/matching-v2.png',
+  },
+  {
+    slug: 'questions-pour-faire-connaissance',
+    title: "60 questions pour faire connaissance en groupe (soirée, travail, mariage)",
+    excerpt:
+      "60 questions classées par thème, surtout au format « tu préfères », à poser en tête-à-tête ou à toute une salle.",
+    category: 'Idées de soirée',
+    date: '2026-10-08',
+    readingTime: '9 min',
+    image: '/images/games/matching-v2.png',
+  },
+  {
     slug: 'jeux-brise-glace-soiree',
     title: 'Jeux brise-glace : 12 idées pour lancer une soirée où personne ne se connaît',
     excerpt:
