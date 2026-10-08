@@ -22,6 +22,16 @@ export interface BlogPostMeta {
 
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: 'jeux-brise-glace-soiree',
+    title: 'Jeux brise-glace : 12 idées pour lancer une soirée où personne ne se connaît',
+    excerpt:
+      "Des jeux sans matériel, avec trois feuilles ou sur téléphone, classés selon le nombre d'invités, pour que tout le monde se parle dès les premières minutes.",
+    category: 'Idées de soirée',
+    date: '2026-10-08',
+    readingTime: '8 min',
+    image: '/images/games/matching-v2.png',
+  },
+  {
     slug: '50-questions-quiz-mariage',
     title: '50 questions pour réussir un quiz de mariage',
     excerpt:
