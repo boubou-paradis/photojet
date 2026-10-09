@@ -32,25 +32,25 @@ import { toast } from 'sonner'
 const animations = [
   {
     name: 'Quiz interactif',
-    img: '/images/games/quiz.png',
+    img: '/images/games/quiz-v2.png',
     href: '/quiz-interactif',
     desc: 'Questions à choix multiples, buzzer, classement en direct. Photo et audio à la révélation de la bonne réponse.',
   },
   {
     name: 'Roue de la Destinée',
-    img: '/images/games/roue-de-la-destinee.png',
+    img: '/images/games/roue-de-la-destinee-v2.png',
     href: '/roue-de-la-destinee',
     desc: 'La roue jackpot premium : gages, lots, défis. Le suspense monte sur l\'écran géant.',
   },
   {
     name: 'Photo Mystère',
-    img: '/images/games/photo-mystere.png',
+    img: '/images/games/photo-mystere-v2.png',
     href: '/photo-mystere',
     desc: 'Une photo se dévoile peu à peu. Le premier qui devine remporte la manche.',
   },
   {
     name: 'Le Bon Ordre',
-    img: '/images/games/le-bon-ordre.png',
+    img: '/images/games/le-bon-ordre-v2.png',
     href: '/le-bon-ordre',
     desc: 'Remettez les éléments dans le bon ordre. Réflexion et rapidité pour tous.',
   },
@@ -99,10 +99,10 @@ const segments = [
 // GALERIE — photos réelles d'événements en priorité (ajoute tes photos dans public/images/gallery/ pour enrichir)
 const galleryPhotos = [
   { src: '/photo-qr-partage.png', alt: 'Partage photo en direct sur écran géant lors d\'une soirée AnimaJet', featured: true },
-  { src: '/images/games/quiz.png', alt: 'Quiz interactif AnimaJet affiché sur écran géant' },
-  { src: '/images/games/roue-de-la-destinee.png', alt: 'Roue de la Destinée AnimaJet en soirée' },
+  { src: '/images/games/quiz-v2.png', alt: 'Quiz interactif AnimaJet affiché sur écran géant' },
+  { src: '/images/games/roue-de-la-destinee-v2.png', alt: 'Roue de la Destinée AnimaJet en soirée' },
   { src: '/images/borne-photo.png', alt: 'Borne photo connectée AnimaJet' },
-  { src: '/images/games/photo-mystere.png', alt: 'Jeu Photo Mystère AnimaJet sur écran géant' },
+  { src: '/images/games/photo-mystere-v2.png', alt: 'Jeu Photo Mystère AnimaJet sur écran géant' },
 ]
 
 const PRICE = 29.90

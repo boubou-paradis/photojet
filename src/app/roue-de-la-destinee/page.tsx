@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'La Roue de la Destinée,',
   highlight: 'le grand frisson du tirage',
   intro: "Faites tourner une roue jackpot premium sur votre écran géant. Gages, lots, défis ou questions : à chaque tour, le suspense est total et toute la salle retient son souffle. Une animation simple à lancer et terriblement efficace.",
-  image: '/images/games/roue-de-la-destinee.png',
+  image: '/images/games/roue-de-la-destinee-v2.png',
   what: [
     "La Roue de la Destinée est une roue de la chance interactive, affichée en grand sur votre écran ou vidéoprojecteur. Vous définissez vous-même les segments : lots à gagner, gages à réaliser, défis à relever, ou questions surprises.",
     "Au lancement, la roue s'anime avec un rendu jackpot premium — couleurs, lumières et ralenti final — pour créer un véritable moment de suspense collectif. Idéale pour distribuer des cadeaux, pimenter une soirée ou désigner un volontaire avec le sourire.",

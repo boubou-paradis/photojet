@@ -11,7 +11,7 @@ const MODIFIED = '2026-06-23'
 const TITLE = 'Comment animer un repas de mariage sans casser le rythme du service'
 const DESCRIPTION =
   "Animer un repas de mariage sans casser le rythme du service : les erreurs qui plombent la soirée, la durée idéale des animations et le minutage plat par plat."
-const HERO = '/images/games/quiz.png'
+const HERO = '/images/games/quiz-v2.png'
 
 export const metadata: Metadata = {
   title: 'Animer un repas de mariage sans casser le service',

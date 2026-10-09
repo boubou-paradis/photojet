@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'Les veillées de vacances',
   highlight: 'qui rassemblent tout le monde',
   intro: "Colonies de vacances, clubs, centres de loisirs ou villages vacances : AnimaJet donne à vos équipes d'animation un outil clé en main pour des veillées interactives où petits et grands participent ensemble, depuis leur téléphone, sans matériel à transporter.",
-  image: '/images/games/le-bon-ordre.png',
+  image: '/images/games/le-bon-ordre-v2.png',
   what: [
     "Animer une veillée demande du rythme et des idées qui fédèrent. AnimaJet rassemble en une plateforme tout ce qu'il faut : quiz interactif par équipes, jeux de rapidité comme Le Bon Ordre, Photo Mystère et Roue de la Destinée, ainsi que le partage de photos qui fait défiler sur l'écran les moments forts du séjour.",
     "Le fonctionnement est idéal pour un centre : un seul écran ou vidéoprojecteur dans la salle commune, un QR code projeté, et tous les vacanciers rejoignent l'animation depuis leur smartphone. Les animateurs gardent la main sur le rythme et la modération, pour des veillées cadrées et sécurisées.",

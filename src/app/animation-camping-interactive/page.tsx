@@ -35,7 +35,7 @@ const content: AnimationDetailContent = {
   title: 'Des soirées camping',
   highlight: 'dont tout le monde se souvient',
   intro: "Quiz familial, roue de la destinée, photo mystère et partage photo en direct sur écran géant : AnimaJet anime vos soirées de camping et fait participer familles et vacanciers depuis leur téléphone, sans application ni matériel compliqué à installer.",
-  image: '/images/games/roue-de-la-destinee.png',
+  image: '/images/games/roue-de-la-destinee-v2.png',
   what: [
     "Au camping, une bonne soirée d'animation rassemble des familles entières, des enfants aux grands-parents, autour de l'écran de la salle commune ou de la terrasse du bar. AnimaJet propose des jeux pensés pour cette ambiance conviviale : un quiz accessible à tous, une roue de la destinée qui distribue défis et petits lots, et une photo mystère qui fait monter le suspense manche après manche.",
     "Le fonctionnement est idéal pour un public de vacances : un QR code affiché à l'écran, les vacanciers le scannent avec leur téléphone et jouent immédiatement, sans rien installer. Le partage de photos en direct fait défiler les souvenirs de la semaine sur grand écran, et crée une vraie vie de groupe entre les campeurs. L'animateur pilote tout depuis une tablette ou un ordinateur, sans stress.",

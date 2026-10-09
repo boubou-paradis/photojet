@@ -11,7 +11,7 @@ const MODIFIED = '2026-07-01'
 const TITLE = '50 questions pour réussir un quiz de mariage'
 const DESCRIPTION =
   "50 questions originales pour un quiz de mariage interactif, classées par thème : les mariés, leur rencontre, l'enfance, les invités, la musique et les anecdotes."
-const HERO = '/images/games/quiz.png'
+const HERO = '/images/games/quiz-v2.png'
 
 export const metadata: Metadata = {
   title: '50 questions pour un quiz de mariage interactif',

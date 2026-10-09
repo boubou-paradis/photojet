@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'La boîte à outils des',
   highlight: 'animateurs d\'événements',
   intro: "Quel que soit l'événement que vous animez — mariage, soirée d'entreprise, anniversaire, événement privé — AnimaJet réunit dans un seul logiciel toutes les animations interactives dont vous avez besoin pour faire participer le public, sans installer la moindre application.",
-  image: '/images/games/quiz.png',
+  image: '/images/games/quiz-v2.png',
   what: [
     "AnimaJet est le logiciel tout-en-un de l'animateur moderne. Plutôt que de jongler entre plusieurs outils, vous disposez d'une plateforme unique : quiz interactif et blind test, Roue de la Destinée, Photo Mystère, Le Bon Ordre, Matching, partage de photos en direct, borne photo et diaporama géant. De quoi composer le programme d'animation parfait pour chaque prestation.",
     "Le principe reste toujours le même, et il est redoutablement efficace : vos invités scannent un QR code et participent depuis leur téléphone, pendant que l'action se déroule sur le grand écran. Vous, vous orchestrez tout depuis votre tableau de bord — lancement des jeux, modération, rythme — comme un véritable chef d'orchestre de la soirée.",

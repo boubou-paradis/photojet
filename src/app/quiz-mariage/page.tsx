@@ -24,7 +24,7 @@ const content: AnimationDetailContent = {
   title: 'Le quiz des mariés',
   highlight: 'qui fait participer toute la salle',
   intro: "« Connaissez-vous vraiment les mariés ? » Créez un quiz de mariage interactif où vos invités répondent depuis leur téléphone et voient le classement s'afficher en direct sur écran géant. Questions sur le couple, blind test musical, anecdotes : l'animation qui réunit toutes les générations, sans application.",
-  image: '/images/games/quiz.png',
+  image: '/images/games/quiz-v2.png',
   what: [
     "Le quiz de mariage est devenu un incontournable de la soirée : il fait participer les invités, déclenche les rires et met le couple à l'honneur. Avec AnimaJet, vous préparez vos propres questions — comment les mariés se sont rencontrés, leur première destination de voyage, leur chanson… — et les invités répondent en quelques secondes depuis leur smartphone. Bonnes réponses, rapidité et classement s'affichent en temps réel sur l'écran.",
     "Vous pouvez mêler les formats : des questions « connaissez-vous les mariés ? », un blind test musical pour réchauffer la piste, et même des photos à la révélation des réponses. Tout passe par un QR code : aucun téléchargement, aucune application, ni pour vous ni pour vos invités. Des enfants aux grands-parents, tout le monde joue depuis son propre téléphone.",

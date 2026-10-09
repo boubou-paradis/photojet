@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'Photo Mystère,',
   highlight: 'le jeu photo qui rend accro',
   intro: "Une image se cache derrière des cases qui se révèlent une à une sur l'écran géant. Dès qu'un invité reconnaît la photo, il lève la main et crie : l'animateur accourt micro en main pour valider. Simple à comprendre, impossible à lâcher, Photo Mystère embarque toute la salle en quelques secondes.",
-  image: '/images/games/photo-mystere.png',
+  image: '/images/games/photo-mystere-v2.png',
   what: [
     "Photo Mystère est un jeu de devinette visuel animé en direct par votre animateur. Sur l'écran géant, des cases se retirent une à une pour dévoiler peu à peu une image cachée — une personne, un objet ou un lieu — pendant que la salle cherche à l'identifier.",
     "Dès qu'un invité pense avoir trouvé, il lève la main et crie sa réponse. L'animateur le rejoint au micro pour valider : si c'est juste, l'image est entièrement révélée et il remporte la manche ; sinon, les cases continuent de tomber jusqu'à la bonne réponse ou l'image complète.",

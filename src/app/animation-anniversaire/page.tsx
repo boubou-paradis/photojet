@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'L\'animation d\'anniversaire',
   highlight: 'dont on se souvient',
   intro: "Pour un anniversaire surprise, une fête de 30 ans ou les 60 ans de papa, AnimaJet fait participer tous les invités : quiz personnalisé sur la personne fêtée, photos en direct sur grand écran et jeux interactifs, le tout depuis leur téléphone et sans rien installer.",
-  image: '/images/games/roue-de-la-destinee.png',
+  image: '/images/games/roue-de-la-destinee-v2.png',
   what: [
     "Animer un anniversaire, c'est créer des moments où tout le monde participe, des plus jeunes aux plus âgés. Avec AnimaJet, vous lancez un quiz spécial dédié à la personne fêtée — son enfance, ses anecdotes, ses goûts — et les invités s'affrontent depuis leur smartphone, avec un classement qui s'affiche en direct sur l'écran.",
     "Entre deux jeux, le partage de photos en direct fait défiler les souvenirs envoyés par les convives, tandis que les messages de félicitations s'intercalent dans le diaporama. La Roue de la Destinée et Photo Mystère ajoutent une dose de surprise et de rire, parfaites pour relancer l'ambiance après le gâteau.",

@@ -11,7 +11,7 @@ const MODIFIED = '2026-07-01'
 const TITLE = 'Soirée quiz dans un bar : le guide complet pour attirer du monde'
 const DESCRIPTION =
   "Organiser une soirée quiz rentable dans un bar : format, jour idéal, déroulé, lots et le système qui fait jouer toute la salle depuis un téléphone, sans matériel."
-const HERO = '/images/games/quiz.png'
+const HERO = '/images/games/quiz-v2.png'
 
 export const metadata: Metadata = {
   title: 'Soirée quiz bar : organiser une animation qui attire du monde',

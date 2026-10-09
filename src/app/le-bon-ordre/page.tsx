@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'Le Bon Ordre,',
   highlight: "le duel d'équipes en direct",
   intro: "Deux équipes s'affrontent en direct : une séquence de numéros s'affiche sur l'écran géant, et chaque équipe doit se positionner dans le bon ordre, pancartes en main, le plus vite possible. L'équipe la plus rapide marque le point. Rythmé, physique et spectaculaire, Le Bon Ordre met le feu à la salle.",
-  image: '/images/games/le-bon-ordre.png',
+  image: '/images/games/le-bon-ordre-v2.png',
   what: [
     "Le Bon Ordre est un jeu d'équipe 100 % physique qui se joue sur grand écran. Lors d'un mariage, les mariés choisissent chacun cinq personnes pour former leur équipe — l'équipe du marié contre l'équipe de la mariée — et chaque membre reçoit une pancarte numérotée de 1 à 5.",
     "À chaque manche, un numéro est généré et projeté sur l'écran géant. Les deux équipes doivent alors se replacer dans l'ordre affiché en brandissant leurs pancartes. La première équipe à reconstituer la bonne séquence remporte la manche et marque un point.",

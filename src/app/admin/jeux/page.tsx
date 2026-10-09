@@ -16,7 +16,7 @@ const games = [
   {
     id: 'mystery',
     name: 'Photo Mystère',
-    image: '/images/games/photo-mystere.png',
+    image: '/images/games/photo-mystere-v2.png',
     description: 'Devinez la photo cachée pixel par pixel',
     path: '/admin/jeux/mystery',
     available: true,
@@ -28,7 +28,7 @@ const games = [
   {
     id: 'lineup',
     name: 'Le Bon Ordre',
-    image: '/images/games/le-bon-ordre.png',
+    image: '/images/games/le-bon-ordre-v2.png',
     description: "2 équipes s'affrontent pour remettre les numéros dans l'ordre le plus vite possible",
     path: '/admin/jeux/lineup',
     available: true,
@@ -40,7 +40,7 @@ const games = [
   {
     id: 'wheel',
     name: 'Roue de la Destinée',
-    image: '/images/games/roue-de-la-destinee.png',
+    image: '/images/games/roue-de-la-destinee-v2.png',
     description: 'Tournez la roue et découvrez votre défi',
     path: '/admin/jeux/wheel',
     available: true,
@@ -52,7 +52,7 @@ const games = [
   {
     id: 'quiz',
     name: 'Quiz',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
     description: 'Questions-réponses interactif en équipe',
     path: '/admin/jeux/quiz',
     available: true,

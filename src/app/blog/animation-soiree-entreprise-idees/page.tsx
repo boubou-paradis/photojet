@@ -11,7 +11,7 @@ const MODIFIED = '2026-10-08'
 const TITLE = "10 idées d'animation pour une soirée d'entreprise mémorable"
 const DESCRIPTION =
   "10 idées d'animation pour une soirée d'entreprise ou un team building : blind test, quiz, photo live et jeux interactifs qui impliquent vraiment tous les collaborateurs."
-const HERO = '/images/games/quiz.png'
+const HERO = '/images/games/quiz-v2.png'
 
 export const metadata: Metadata = {
   title: "10 idées d'animation pour une soirée d'entreprise",

@@ -11,7 +11,7 @@ const MODIFIED = '2026-10-08'
 const TITLE = 'Icebreaker en entreprise : 10 activités pour séminaire, réunion et team building'
 const DESCRIPTION =
   "10 icebreakers pour un séminaire, une réunion ou un team building, sans le côté forcé : des activités jouables à 15 comme à 300 collaborateurs."
-const HERO = '/images/games/quiz.png'
+const HERO = '/images/games/quiz-v2.png'
 
 export const metadata: Metadata = {
   title: 'Icebreaker en entreprise : 10 activités qui marchent',

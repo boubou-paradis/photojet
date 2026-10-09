@@ -35,7 +35,7 @@ const content: AnimationDetailContent = {
   title: 'L\'animation qui fédère',
   highlight: 'vos équipes',
   intro: "Séminaire, team building, soirée de fin d'année ou événement de CE : AnimaJet transforme vos rassemblements professionnels en moments de cohésion. Quiz personnalisés aux couleurs de l'entreprise, jeux d'équipe et photos en direct, tout depuis le téléphone des collaborateurs, sans application.",
-  image: '/images/games/quiz.png',
+  image: '/images/games/quiz-v2.png',
   what: [
     "Réunir des collaborateurs autour d'un objectif commun, sans que personne ne reste spectateur : c'est tout l'enjeu d'une animation d'entreprise réussie. Avec AnimaJet, vous créez un quiz sur mesure (culture d'entreprise, valeurs, anecdotes internes) ou un blind test, et les équipes s'affrontent en direct sur écran géant. Le classement temps réel crée une émulation saine et beaucoup de rires.",
     "Tout repose sur un QR code : chaque participant le scanne et rejoint l'animation depuis son navigateur, sans installation ni compte. Le partage de photos en direct immortalise le séminaire ou la soirée, et l'album reste accessible ensuite pour la communication interne. Vous gardez la main sur le rythme depuis un ordinateur, et l'animation s'adapte aussi bien à une salle de réunion qu'à une grande soirée.",

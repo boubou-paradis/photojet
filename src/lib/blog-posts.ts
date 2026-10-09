@@ -29,7 +29,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     category: 'Entreprise',
     date: '2026-10-08',
     readingTime: '8 min',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
   },
   {
     slug: 'mariage-faire-connaissance-invites',
@@ -79,7 +79,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     category: 'Mariage',
     date: '2026-07-01',
     readingTime: '9 min',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
   },
   {
     slug: 'animation-entre-les-plats-mariage',
@@ -99,7 +99,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     category: 'Bar & restaurant',
     date: '2026-07-01',
     readingTime: '9 min',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
   },
   {
     slug: 'blind-test-bar',
@@ -159,7 +159,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     category: 'Entreprise',
     date: '2026-07-01',
     readingTime: '9 min',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
   },
   {
     slug: 'animer-repas-mariage',
@@ -169,7 +169,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     category: 'Mariage',
     date: '2026-06-23',
     readingTime: '8 min',
-    image: '/images/games/quiz.png',
+    image: '/images/games/quiz-v2.png',
   },
   {
     slug: 'idees-animation-mariage',

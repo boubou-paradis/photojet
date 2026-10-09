@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'Le quiz interactif qui',
   highlight: 'fait monter la salle',
   intro: "Posez vos questions sur écran géant, vos invités répondent depuis leur téléphone. Le bon répondant le plus rapide marque le plus de points, et le classement se met à jour en direct. L'ambiance d'un plateau télé, sans aucune application à installer.",
-  image: '/images/games/quiz.png',
+  image: '/images/games/quiz-v2.png',
   what: [
     "Le quiz interactif AnimaJet transforme n'importe quelle salle en plateau de jeu. Vous projetez les questions sur votre écran ou vidéoprojecteur, et chaque participant joue depuis son smartphone après avoir scanné un simple QR code.",
     "Chaque question est chronométrée : plus on répond vite et juste, plus on gagne de points. À la révélation de la bonne réponse, vous pouvez afficher une photo et diffuser un extrait audio pour renforcer le suspense. Le classement en temps réel pousse tout le monde à se dépasser.",
