@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, FileText, Loader2, Monitor, Rocket } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, LogOut, Monitor, Rocket } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
@@ -422,7 +422,8 @@ export default function BuzzerAdminPage() {
                   <Monitor className="h-4 w-4 mr-2" />
                   Écran géant
                 </Button>
-                <Button size="sm" variant="ghost" onClick={quit} disabled={busy} className="text-gray-300 border border-white/10 hover:text-white">
+                <Button size="sm" onClick={quit} disabled={busy} className="bg-red-600 text-white font-semibold hover:bg-red-500 border border-red-400/60 shadow-[0_0_14px_rgba(220,38,38,0.45)]">
+                  <LogOut className="h-4 w-4 mr-2" />
                   Quitter AnimaBuzz
                 </Button>
               </>
