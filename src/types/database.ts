@@ -195,6 +195,9 @@ export interface Session {
   affinity_deadline?: string | null // fin du chrono (ISO), null = infini
   affinity_reveal?: AffinityRevealData | null // jsonb
   affinity_final_stats?: AffinityFinalStats | null // jsonb
+  // AnimaBuzz (identifiant technique buzzer) : seul drapeau public. Joueurs,
+  // buzz et état vivent dans les tables buzzer_* (serveur uniquement).
+  buzzer_active?: boolean
 }
 
 // Mystery Photo types

@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/purge-matching",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/purge-buzzer",
+      "schedule": "30 * * * *"
     }
   ]
 }
