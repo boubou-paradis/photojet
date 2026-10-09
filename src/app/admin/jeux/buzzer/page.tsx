@@ -444,7 +444,7 @@ export default function BuzzerAdminPage() {
             onSettings={(args) => void act('settings', args)}
             onRemove={removePlayer}
           />
-          <div className="max-w-6xl mx-auto mt-4 grid lg:grid-cols-2 gap-4">
+          <div className="mt-4 grid lg:grid-cols-2 gap-4 items-start">
             <SoundsPanel sounds={sounds} />
             <AmbianceMusicControls music={music} inGame />
           </div>
@@ -493,43 +493,63 @@ interface SetupPanelProps {
 function SetupPanel(p: SetupPanelProps) {
   const teamCount = p.teamsText.split('\n').map((t) => t.trim()).filter(Boolean).length
   const tooMany = teamCount > BUZZER_LIMITS.maxTeams
-  return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <section className="card-gold rounded-xl p-6 flex flex-wrap items-center gap-6">
-        <Buzzer state="off" size="120px" />
-        <div className="flex-1 min-w-[220px]">
-          <AnimaBuzzLogo variant="full" size="40px" />
-          <p className="text-[#B0B0B5] text-sm mt-4">
-            Les téléphones des invités deviennent des buzzers. Vous posez les questions comme vous voulez (au micro, en blind test, sur PowerPoint),
-            AnimaBuzz donne la parole au plus rapide.
-          </p>
-        </div>
-      </section>
+  const modeCard = (m: BuzzerMode) => (
+    <label key={m} className={`cursor-pointer rounded-xl border p-4 flex flex-col ${p.mode === m ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'}`}>
+      <input type="radio" name="bz-mode" value={m} checked={p.mode === m} onChange={() => p.setMode(m)} className="sr-only" />
+      <span className="text-white font-semibold">{m === 'solo' ? 'Individuel' : 'Équipe'}</span>
+      <span className="text-sm text-[#9a94b5] mt-1">
+        {m === 'solo' ? 'Chaque joueur choisit un pseudo.' : 'Chaque téléphone choisit son équipe. Le premier qui appuie fait buzzer toute l’équipe.'}
+      </span>
+    </label>
+  )
 
-      <section className="card-gold rounded-xl p-6 space-y-5">
-        <fieldset>
+  return (
+    <div className="space-y-6">
+      {/* Réglages (même disposition que le Quiz et Matching : pleine largeur) */}
+      <section className="card-gold rounded-xl p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 flex items-center justify-center border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+            <Buzzer state="off" size="34px" mini />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">AnimaBuzz</h2>
+            <p className="text-[#6B6B70] text-sm">Le buzzer live · réglages de la partie</p>
+          </div>
+        </div>
+        <p className="text-xs text-[#9a94b5] mt-3">
+          Les téléphones des invités deviennent des buzzers. Vous posez les questions comme vous voulez (au micro, en blind test, sur PowerPoint), AnimaBuzz donne la parole au plus rapide.
+        </p>
+
+        <fieldset className="mt-5">
           <legend className="text-white font-semibold mb-2">Mode de jeu</legend>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {(['solo', 'team'] as const).map((m) => (
-              <label key={m} className={`cursor-pointer rounded-xl border p-4 ${p.mode === m ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 hover:border-white/20'}`}>
-                <input type="radio" name="bz-mode" value={m} checked={p.mode === m} onChange={() => p.setMode(m)} className="sr-only" />
-                <span className="block text-white font-semibold">{m === 'solo' ? 'Individuel' : 'Équipe'}</span>
-                <span className="block text-sm text-[#9a94b5] mt-1">
-                  {m === 'solo' ? 'Chaque joueur choisit un pseudo.' : 'Chaque téléphone choisit son équipe. Le premier qui appuie fait buzzer toute l’équipe.'}
-                </span>
-              </label>
-            ))}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {modeCard('solo')}
+            {modeCard('team')}
+            <div className="flex flex-col">
+              <label htmlFor="bz-window" className="text-sm text-gray-300 font-semibold">Après le 1er buzz</label>
+              <select id="bz-window" value={p.windowMs} onChange={(e) => p.setWindowMs(Number(e.target.value))} className="mt-2 w-full rounded-xl bg-[#1A1A1E] border border-white/10 p-3 text-white text-sm">
+                {BUZZER_WINDOWS_MS.map((w) => <option key={w} value={w}>{windowLabel(w)}{w === BUZZER_DEFAULT_WINDOW_MS ? ' (conseillé)' : ''}</option>)}
+              </select>
+              <p className="text-xs text-[#9a94b5] mt-1">La fenêtre classe aussi les suivants : en cas de mauvaise réponse, le 2e prend la main.</p>
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="bz-timer" className="text-sm text-gray-300 font-semibold">Chrono à l’ouverture</label>
+              <select id="bz-timer" value={p.timerS ?? ''} onChange={(e) => p.setTimerS(e.target.value === '' ? null : Number(e.target.value))} className="mt-2 w-full rounded-xl bg-[#1A1A1E] border border-white/10 p-3 text-white text-sm">
+                {BUZZER_TIMERS_S.map((t) => <option key={t ?? 'none'} value={t ?? ''}>{timerLabel(t)}</option>)}
+              </select>
+              <p className="text-xs text-[#9a94b5] mt-1">Modifiable entre deux manches.</p>
+            </div>
           </div>
         </fieldset>
 
         {p.mode === 'team' && (
-          <div>
+          <div className="mt-5">
             <label htmlFor="bz-teams" className="text-white font-semibold">Liste des équipes <span className="text-[#9a94b5] font-normal">(facultatif, une par ligne)</span></label>
             <textarea
               id="bz-teams"
               value={p.teamsText}
               onChange={(e) => p.setTeamsText(e.target.value)}
-              rows={5}
+              rows={4}
               placeholder={'Table 1\nTable 2\nLes Bretons'}
               className="mt-2 w-full rounded-xl bg-[#1A1A1E] border border-white/10 focus:border-[#D4AF37] outline-none p-3 text-white text-sm"
             />
@@ -538,23 +558,6 @@ function SetupPanel(p: SetupPanelProps) {
             </p>
           </div>
         )}
-
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="bz-window" className="text-white font-semibold">Après le 1er buzz</label>
-            <select id="bz-window" value={p.windowMs} onChange={(e) => p.setWindowMs(Number(e.target.value))} className="mt-2 w-full rounded-xl bg-[#1A1A1E] border border-white/10 p-3 text-white text-sm">
-              {BUZZER_WINDOWS_MS.map((w) => <option key={w} value={w}>{windowLabel(w)}{w === BUZZER_DEFAULT_WINDOW_MS ? ' (conseillé)' : ''}</option>)}
-            </select>
-            <p className="text-xs text-[#9a94b5] mt-1">La fenêtre classe aussi les suivants : en cas de mauvaise réponse, le 2e prend la main.</p>
-          </div>
-          <div>
-            <label htmlFor="bz-timer" className="text-white font-semibold">Chrono à l’ouverture</label>
-            <select id="bz-timer" value={p.timerS ?? ''} onChange={(e) => p.setTimerS(e.target.value === '' ? null : Number(e.target.value))} className="mt-2 w-full rounded-xl bg-[#1A1A1E] border border-white/10 p-3 text-white text-sm">
-              {BUZZER_TIMERS_S.map((t) => <option key={t ?? 'none'} value={t ?? ''}>{timerLabel(t)}</option>)}
-            </select>
-            <p className="text-xs text-[#9a94b5] mt-1">Modifiable entre deux manches.</p>
-          </div>
-        </div>
       </section>
 
       {p.extras}
@@ -680,7 +683,7 @@ function GamePanel({ state, players, rounds, busy, lastBeat, onAction, onSetting
   const slow = players.filter((p) => p.rttMs !== null && p.rttMs > 400)
 
   return (
-    <div className="max-w-6xl mx-auto space-y-4">
+    <div className="space-y-4">
       {state.paused && (
         <p className="rounded-xl border border-orange-500/40 bg-orange-500/10 text-orange-200 text-sm px-4 py-3">Reprise en cours… les buzz étaient en pause.</p>
       )}
