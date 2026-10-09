@@ -299,8 +299,32 @@ export default function WheelPage() {
     saveDrawOrder({ enabled: true, order: ids })
   }
 
+  function shuffleDrawOrder() {
+    if (isSpinning) return
+    const ids = availableSegments.map(s => s.id)
+    const listOrder = ids.join('|')
+    let shuffled = [...ids]
+    for (let attempt = 0; attempt < 10; attempt++) {
+      shuffled = [...ids]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      }
+      if (ids.length < 2 || shuffled.join('|') !== listOrder) break
+    }
+    // Les cases déjà tirées restent à la fin (elles ne sortent plus).
+    const used = effectiveOrder(drawOrder.order, segments).map(seg => seg.id).filter(id => !ids.includes(id))
+    saveDrawOrder({ enabled: true, order: [...shuffled, ...used] })
+  }
+
   function renderDrawOrderCard() {
     const list = effectiveOrder(drawOrder.order, segments).filter(s => availableSegments.some(a => a.id === s.id))
+    // Numéro actuel de chaque case sur la roue (les numéros se recalculent sur les cases restantes).
+    const wheelNumber = (id: string) => availableSegments.findIndex(a => a.id === id) + 1
+    const next = list[0]
+    // Ordre resté celui de la liste : chaque tirage prend la 1re case restante,
+    // donc la roue s'arrête TOUJOURS sur la case n°1.
+    const followsList = list.length > 1 && list.every((seg, i) => seg.id === availableSegments[i]?.id)
     return (
       <div className="card-gold rounded-xl p-4">
         <div className="flex items-center justify-between gap-3">
@@ -322,6 +346,26 @@ export default function WheelPage() {
             {drawOrder.enabled ? 'Ordre prédéfini : ON' : 'Ordre prédéfini : OFF'}
           </button>
         </div>
+        {drawOrder.enabled && next && (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-white" data-testid="next-segment">
+              Prochaine case : <b className="text-[#D4AF37]">{next.text}</b>
+              <span className="text-gray-400 text-xs"> (case n°{wheelNumber(next.id)} sur la roue)</span>
+            </p>
+            {followsList && (
+              <p role="alert" className="text-xs text-orange-200 bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-2">
+                L’ordre suit encore la liste : la roue s’arrêtera toujours sur la case n°1. Réglez-le avec ▲▼ ou mélangez-le.
+              </p>
+            )}
+            <button
+              onClick={shuffleDrawOrder}
+              disabled={isSpinning || list.length < 2}
+              className="w-full py-1.5 rounded-lg text-xs font-bold border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/10 disabled:opacity-40"
+            >
+              🔀 Mélanger l’ordre
+            </button>
+          </div>
+        )}
         {drawOrder.enabled && (
           <div className="space-y-1.5 mt-3 max-h-[260px] overflow-y-auto pr-1">
             {list.map((segment, i) => (
@@ -329,6 +373,7 @@ export default function WheelPage() {
                 <span className="text-[#D4AF37] font-mono text-xs w-6">{i + 1}.</span>
                 <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: segment.color }} />
                 <span className="flex-1 text-white text-sm truncate">{segment.text}</span>
+                <span className="text-gray-500 text-[10px] whitespace-nowrap">case n°{wheelNumber(segment.id)}</span>
                 <button
                   onClick={() => moveInDrawOrder(segment.id, -1)}
                   disabled={i === 0 || isSpinning}
