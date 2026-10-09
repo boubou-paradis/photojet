@@ -179,6 +179,15 @@ export default function WheelPage() {
     return segments.filter(s => !usedSegmentIds.includes(s.id))
   }, [segments, usedSegmentIds])
 
+  // Vue de contrôle en partie : numéros fixes (position dans la liste, comme
+  // l'écran géant) et cases visibles là-bas (la case tirée y reste tant que le
+  // résultat est affiché).
+  const wheelNumbers = useMemo(() => new Map(segments.map((s, i) => [s.id, i + 1])), [segments])
+  const lastDrawnId = history[0]?.segmentId ?? null
+  const screenSegments = useMemo(() => {
+    return segments.filter(s => !usedSegmentIds.includes(s.id) || (result !== null && s.id === lastDrawnId))
+  }, [segments, usedSegmentIds, result, lastDrawnId])
+
   // Jeu terminé quand tous les segments sont utilisés
   const isGameFinished = useMemo(() => {
     return gameActive && availableSegments.length === 0
@@ -1153,11 +1162,13 @@ export default function WheelPage() {
             </div>
           </motion.div>
         ) : (
-          /* Control Panel */
+          /* Partie en cours - commandes à gauche, vue de la roue à droite */
+          <div className="flex flex-col lg:flex-row gap-6">
+          {/* Control Panel */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
+            className="flex-1 card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
           >
             {/* Header avec status */}
             <div className="flex items-center justify-between mb-4">
@@ -1288,6 +1299,40 @@ export default function WheelPage() {
               Quitter le jeu
             </button>
           </motion.div>
+
+          {/* Colonne droite - les cases telles qu'elles sont sur l'écran géant (numéros fixes) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card-gold rounded-xl p-5 lg:w-[360px] flex flex-col items-center"
+            data-testid="wheel-live-view"
+          >
+            <h3 className="text-sm font-bold text-white self-start">Sur l’écran géant</h3>
+            <p className="text-gray-400 text-xs mb-4 self-start">
+              {result ? 'Case tirée en surbrillance' : `${availableSegments.length} case${availableSegments.length > 1 ? 's' : ''} encore sur la roue`}
+            </p>
+            {screenSegments.length >= 2 ? (
+              <WheelPreview segments={screenSegments} size={240} numberOf={wheelNumbers} still highlightId={result ? lastDrawnId : null} />
+            ) : (
+              <p className="text-[#D4AF37] text-sm py-8 text-center" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+                {screenSegments.length === 1 ? `Dernière case : n°${wheelNumbers.get(screenSegments[0].id)}` : 'Toutes les cases ont été tirées'}
+              </p>
+            )}
+            {availableSegments.length > 0 && (
+              <div className="w-full mt-5">
+                <p className="text-gray-400 text-xs mb-2">Cases restantes</p>
+                <ul className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
+                  {availableSegments.map(s => (
+                    <li key={s.id} className="flex items-baseline gap-2 text-sm">
+                      <span className="w-7 shrink-0 text-right font-bold text-[#D4AF37] tabular-nums">{wheelNumbers.get(s.id)}</span>
+                      <span className="text-gray-200 min-w-0 break-words">{s.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </motion.div>
+          </div>
         )}
       </main>
     </div>

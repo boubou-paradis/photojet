@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react'
+import { motion, AnimatePresence, useReducedMotion, type TargetAndTransition } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { Maximize, Minimize } from 'lucide-react'
 import { WheelSegment, WheelAudioSettings } from '@/types/database'
+import {
+  FREE_SPEED_DEG_S,
+  SPIN_UP_MS,
+  decelPosition,
+  decelVelocity,
+  planDeceleration,
+  targetAngleFor,
+  type DecelPlan,
+} from '@/lib/wheel-physics'
 import { GEMS, GOLD } from './wheel-theme'
 
 interface WheelGameProps {
@@ -38,25 +47,118 @@ const STAGE_BEAMS = [
 ]
 
 const CONFETTI_COLORS = ['#d4af37', '#f4d03f', '#ffe9a3', '#ffffff', '#c9a227']
+// Durée totale d'un tirage auto côté animateur (5 s de rotation libre + 3 s de décélération).
 const SPIN_CSS_DURATION_MS = 8000
+// Durée de décélération après la cible (STOP manuel, ou cible auto reçue tôt).
+const DECEL_MAX_S = 3
+
+const noopSubscribe = () => () => {}
+const detectMac = () => /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
+
+// « Clac » de la roue à chaque séparateur qui passe sous le pointeur :
+// claquement synthétisé (bruit filtré très court + petit impact grave), aucun
+// fichier à charger. Le navigateur n'autorise le son qu'après une interaction
+// avec le site : sans elle, la roue tourne en silence, rien ne casse.
+function useTickSound() {
+  const ctxRef = useRef<AudioContext | null>(null)
+  const noiseRef = useRef<AudioBuffer | null>(null)
+
+  const ensure = useCallback((): AudioContext | null => {
+    if (ctxRef.current) return ctxRef.current
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) return null
+    try {
+      const ctx = new Ctor()
+      const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3)
+      ctxRef.current = ctx
+      noiseRef.current = buffer
+      return ctx
+    } catch {
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    const unlock = () => { void ensure()?.resume().catch(() => {}) }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+      void ctxRef.current?.close().catch(() => {})
+      ctxRef.current = null
+    }
+  }, [ensure])
+
+  return useCallback((volume: number) => {
+    const ctx = ensure()
+    if (!ctx || !noiseRef.current) return
+    if (ctx.state !== 'running') { void ctx.resume().catch(() => {}); return }
+    const now = ctx.currentTime
+    const noise = ctx.createBufferSource()
+    noise.buffer = noiseRef.current
+    const band = ctx.createBiquadFilter()
+    band.type = 'bandpass'
+    band.frequency.value = 2300
+    band.Q.value = 1.1
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(volume, now)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035)
+    noise.connect(band).connect(gain).connect(ctx.destination)
+    noise.start(now)
+    noise.stop(now + 0.04)
+    const thump = ctx.createOscillator()
+    thump.type = 'triangle'
+    thump.frequency.setValueAtTime(190, now)
+    thump.frequency.exponentialRampToValueAtTime(90, now + 0.03)
+    const thumpGain = ctx.createGain()
+    thumpGain.gain.setValueAtTime(volume * 0.55, now)
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035)
+    thump.connect(thumpGain).connect(ctx.destination)
+    thump.start(now)
+    thump.stop(now + 0.04)
+  }, [ensure])
+}
+
+type MotionPhase = 'idle' | 'spinup' | 'free' | 'decel'
 
 export default function WheelGame({ segments, isSpinning, result, spinToIndex, usedSegmentIds = [], isGameFinished = false, audioSettings, spinMode = 'auto' }: WheelGameProps) {
-  const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showFinished, setShowFinished] = useState(false)
-  const [isInfiniteSpinning, setIsInfiniteSpinning] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isMac, setIsMac] = useState(false)
-  // Accessibilité : coupe particules, pulses et faisceaux animés (visuel uniquement)
+  // Détection Mac côté client (navigator absent au rendu serveur → false).
+  const isMac = useSyncExternalStore(noopSubscribe, detectMac, () => false)
+  // La case gagnante reste sur la roue pendant toute la révélation : la base la
+  // marque « utilisée » dès la fin du tirage, mais la roue ne doit pas se
+  // redessiner sous les yeux du public à ce moment-là.
+  const [heldWinnerId, setHeldWinnerId] = useState<string | null>(null)
+  // Accessibilité : coupe particules, pulses, faisceaux et pointeur animés (visuel uniquement)
   const prefersReducedMotion = useReducedMotion()
   const previousSpinning = useRef(false)
-  const previousSpinToIndex = useRef<number | undefined>(undefined)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const customAudioRef = useRef<HTMLAudioElement | null>(null)
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const spinStartTimeRef = useRef<number>(0)
+
+  // ─── MOTEUR DE ROTATION ───────────────────────────────────────────────────
+  // Animé image par image (pas de React à chaque image) : vitesse continue du
+  // départ à l'arrêt, « clac » et pointeur synchronisés avec les séparateurs.
+  const wheelRef = useRef<HTMLDivElement>(null)
+  const numbersRef = useRef<HTMLDivElement>(null)
+  const flapRef = useRef<HTMLDivElement>(null)
+  const angleRef = useRef(0)
+  const motionRef = useRef<{ phase: MotionPhase; t0: number; from: number; plan: DecelPlan | null }>({ phase: 'idle', t0: 0, from: 0, plan: null })
+  const pendingTargetRef = useRef<{ angle: number; maxDuration: number } | null>(null)
+  const lastBoundaryRef = useRef(0)
+  const lastFrameRef = useRef(0)
+  const rafRef = useRef(0)
+  const awaitingResultRef = useRef(false)
+  const segmentCountRef = useRef(1)
+  const frameRef = useRef<FrameRequestCallback | null>(null)
+  const playTick = useTickSound()
 
   const toggleFullscreen = useCallback(async () => {
     // Mac : faux plein écran (le conteneur est déjà fixed inset-0). On n'appelle
@@ -73,11 +175,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       }
     } catch { /* refusé par le navigateur */ }
   }, [isMac])
-
-  // Détection Mac côté client (useEffect : navigator absent en SSR)
-  useEffect(() => {
-    setIsMac(/Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent))
-  }, [])
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -114,25 +211,140 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }, stepTime)
   }, [])
 
+  // Cases encore en jeu (sert au calcul de la case visée, comme l'animateur).
   const availableSegments = useMemo(() =>
     segments.filter(s => !usedSegmentIds.includes(s.id)),
     [segments, usedSegmentIds]
+  )
+  // Cases dessinées : les cases en jeu + la gagnante tant que le résultat est affiché.
+  const displayedSegments = useMemo(() =>
+    segments.filter(s => !usedSegmentIds.includes(s.id) || s.id === heldWinnerId),
+    [segments, usedSegmentIds, heldWinnerId]
   )
 
   // Numéro FIXE de chaque case : sa position dans la liste complète. Il ne
   // change pas quand des cases sont tirées (la roue ne renumérote plus), donc
   // l'animateur et les invités gardent les mêmes repères toute la partie.
-  // Affichage seul : rotation, timing et choix de la case inchangés.
   const numberOf = useMemo(() => new Map(segments.map((s, i) => [s.id, i + 1])), [segments])
+
+  // ── Réactions aux changements de l'animateur (pendant le rendu, sans effet) ──
+  const [prevSpinning, setPrevSpinning] = useState(isSpinning)
+  if (isSpinning !== prevSpinning) {
+    setPrevSpinning(isSpinning)
+    if (isSpinning) {
+      setShowResult(false)
+      setShowConfetti(false)
+      setHeldWinnerId(null)
+    }
+  }
+  const [prevSpinTo, setPrevSpinTo] = useState(spinToIndex)
+  if (spinToIndex !== prevSpinTo) {
+    setPrevSpinTo(spinToIndex)
+    if (isSpinning && spinToIndex !== undefined) setHeldWinnerId(availableSegments[spinToIndex]?.id ?? null)
+  }
+  // Résultat masqué par l'animateur : la case gagnante quitte la roue.
+  if (heldWinnerId !== null && !isSpinning && result === null) setHeldWinnerId(null)
+
+  // Applique l'angle à la roue et garde les numéros droits (contre-rotation).
+  const applyAngle = useCallback((angle: number) => {
+    if (wheelRef.current) wheelRef.current.style.transform = `rotate(${angle}deg)`
+    const layer = numbersRef.current
+    if (layer) {
+      layer.style.transform = `rotate(${angle}deg)`
+      for (const el of Array.from(layer.children)) (el as HTMLElement).style.transform = `translate(-50%, -50%) rotate(${-angle}deg)`
+    }
+  }, [])
+
+  const revealResult = useCallback(() => {
+    awaitingResultRef.current = false
+    setShowResult(true)
+    setShowConfetti(true)
+  }, [])
+
+  const startLoop = useCallback(() => {
+    if (rafRef.current) return
+    lastFrameRef.current = 0
+    rafRef.current = requestAnimationFrame((t) => frameRef.current?.(t))
+  }, [])
+
+  // Une image du moteur (fonction tenue à jour à chaque rendu).
+  useLayoutEffect(() => {
+    segmentCountRef.current = Math.max(1, displayedSegments.length)
+    frameRef.current = (now: number) => {
+      const m = motionRef.current
+      const dt = lastFrameRef.current ? Math.min(0.05, (now - lastFrameRef.current) / 1000) : 0
+      lastFrameRef.current = now
+      let angle = angleRef.current
+      let velocity = 0
+
+      if (m.phase === 'spinup') {
+        const p = Math.min(1, (now - m.t0) / SPIN_UP_MS)
+        velocity = FREE_SPEED_DEG_S * p * p * (3 - 2 * p)
+        angle += velocity * dt
+        if (p >= 1) m.phase = 'free'
+      } else if (m.phase === 'free') {
+        velocity = FREE_SPEED_DEG_S
+        angle += velocity * dt
+        // Cible connue : la décélération part EXACTEMENT de la vitesse en cours.
+        const target = pendingTargetRef.current
+        if (target) {
+          pendingTargetRef.current = null
+          m.plan = planDeceleration(angle, FREE_SPEED_DEG_S, target.angle, target.maxDuration)
+          m.phase = 'decel'
+          m.t0 = now
+          m.from = angle
+        }
+      } else if (m.phase === 'decel' && m.plan) {
+        const t = (now - m.t0) / 1000
+        angle = m.from + decelPosition(m.plan, t)
+        velocity = decelVelocity(m.plan, t)
+        if (t >= m.plan.duration) {
+          angle = m.from + m.plan.distance
+          m.phase = 'idle'
+        }
+      }
+
+      angleRef.current = angle
+      applyAngle(angle)
+
+      // Un séparateur passe sous le pointeur : « clac » + le pointeur fléchit.
+      const seg = 360 / segmentCountRef.current
+      const boundary = Math.floor(angle / seg)
+      if (boundary !== lastBoundaryRef.current) {
+        lastBoundaryRef.current = boundary
+        if (velocity > 1) {
+          playTick(audioSettings?.enabled && audioSettings?.url ? 0.16 : 0.3)
+          if (!prefersReducedMotion && flapRef.current) {
+            const segMs = (seg / velocity) * 1000
+            flapRef.current.animate(
+              [{ transform: 'rotate(0deg)' }, { transform: 'rotate(-17deg)', offset: 0.28 }, { transform: 'rotate(0deg)' }],
+              { duration: Math.max(70, Math.min(260, segMs * 0.9)), easing: 'cubic-bezier(.2,.8,.3,1)' },
+            )
+          }
+        }
+      }
+
+      if (m.phase !== 'idle') {
+        rafRef.current = requestAnimationFrame((t) => frameRef.current?.(t))
+      } else {
+        rafRef.current = 0
+        lastFrameRef.current = 0
+        if (awaitingResultRef.current) revealResult()
+      }
+    }
+  })
+
+  // Après chaque rendu (nouvelles cases, nouveaux numéros) : même angle.
+  useLayoutEffect(() => {
+    applyAngle(angleRef.current)
+  })
 
   useEffect(() => {
     return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
       if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
       if (customAudioRef.current) customAudioRef.current.pause()
-      // Le son de spin par défaut aussi : un <audio> retiré du DOM peut
-      // continuer à jouer si la roue est démontée en plein spin.
-      if (audioRef.current) audioRef.current.pause()
     }
   }, [])
 
@@ -143,70 +355,65 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }
   }, [isGameFinished])
 
+  // Début et fin de tirage : son, moteur, révélation (aucun état modifié ici).
   useEffect(() => {
     if (isSpinning && !previousSpinning.current) {
       spinStartTimeRef.current = Date.now()
-      setShowResult(false)
-      setShowConfetti(false)
+      awaitingResultRef.current = false
+      pendingTargetRef.current = null
+      if (resultTimeoutRef.current) { clearTimeout(resultTimeoutRef.current); resultTimeoutRef.current = null }
       if (audioSettings?.enabled && audioSettings?.url && customAudioRef.current) {
         customAudioRef.current.currentTime = 0
         customAudioRef.current.volume = 1
         customAudioRef.current.loop = true
         customAudioRef.current.play().catch(() => {})
-      } else if (audioRef.current) {
-        audioRef.current.play().catch(() => {})
       }
-      if (spinToIndex !== undefined) {
-        setIsInfiniteSpinning(false)
-        const segmentAngle = 360 / availableSegments.length
-        const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-        const fullRotations = 5 + Math.floor(Math.random() * 3)
-        setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
-      } else {
-        setIsInfiniteSpinning(true)
-      }
+      motionRef.current = { phase: 'spinup', t0: performance.now(), from: angleRef.current, plan: null }
+      lastBoundaryRef.current = Math.floor(angleRef.current / (360 / segmentCountRef.current))
+      startLoop()
     } else if (!isSpinning && previousSpinning.current) {
-      setIsInfiniteSpinning(false)
       if (customAudioRef.current && !customAudioRef.current.paused && spinMode !== 'manual') {
         fadeOutAudio(customAudioRef.current, 500)
       }
-      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
-      if (spinMode === 'auto') {
-        const elapsed = Date.now() - spinStartTimeRef.current
-        const remainingMs = Math.max(0, SPIN_CSS_DURATION_MS - elapsed)
-        resultTimeoutRef.current = setTimeout(() => { setShowResult(true); setShowConfetti(true) }, remainingMs + 50)
+      if (motionRef.current.phase === 'idle') {
+        // La roue est déjà arrêtée : révélation immédiate.
+        resultTimeoutRef.current = setTimeout(revealResult, 120)
       } else {
-        resultTimeoutRef.current = setTimeout(() => { setShowResult(true); setShowConfetti(true) }, 100)
+        // Révélation dès que la roue s'arrête (jamais avant).
+        awaitingResultRef.current = true
+        if (motionRef.current.phase !== 'decel' && !pendingTargetRef.current) {
+          // Cible jamais reçue (écran ouvert en plein tirage) : arrêt doux là où elle est.
+          pendingTargetRef.current = { angle: angleRef.current + 200, maxDuration: 1.8 }
+        }
       }
     }
     previousSpinning.current = isSpinning
-  }, [isSpinning, availableSegments.length, rotation, audioSettings, fadeOutAudio, spinMode])
+  }, [isSpinning, audioSettings, fadeOutAudio, spinMode, startLoop, revealResult])
 
-  const [isManualStop, setIsManualStop] = useState(false)
+  // Case visée reçue (auto : à 5 s ; manuel : au STOP) → plan de décélération.
   useEffect(() => {
-    if (isSpinning && spinToIndex !== undefined && previousSpinToIndex.current === undefined) {
-      setIsInfiniteSpinning(false)
-      setIsManualStop(true)
-      const segmentAngle = 360 / availableSegments.length
-      const targetAngle = 360 - (spinToIndex * segmentAngle) - segmentAngle / 2
-      const fullRotations = spinMode === 'auto' ? 3 : 1
-      setRotation(rotation + (fullRotations * 360) + targetAngle - (rotation % 360))
-      // En mode auto, l'audio continue pendant la décel et fade à la fin du spin
-      if (spinMode !== 'auto' && customAudioRef.current && !customAudioRef.current.paused) {
-        customAudioRef.current.pause()
-        customAudioRef.current.currentTime = 0
-      }
+    if (!isSpinning || spinToIndex === undefined) return
+    const count = availableSegments.length
+    if (count === 0) return
+    if (spinMode === 'manual' && customAudioRef.current && !customAudioRef.current.paused) {
+      customAudioRef.current.pause()
+      customAudioRef.current.currentTime = 0
     }
-    if (!isSpinning) setIsManualStop(false)
-    previousSpinToIndex.current = spinToIndex
-  }, [spinToIndex, isSpinning, availableSegments.length, rotation, spinMode])
+    // Auto : la roue doit être arrêtée avant les 8 s du tirage (révélation).
+    const remaining = (SPIN_CSS_DURATION_MS - (Date.now() - spinStartTimeRef.current) - 150) / 1000
+    const maxDuration = spinMode === 'auto' ? Math.max(2.2, Math.min(DECEL_MAX_S, remaining)) : DECEL_MAX_S
+    // Arrêt légèrement variable dans la case (suspense), jamais près du bord.
+    const jitter = Math.random() * 1.6 - 0.8
+    pendingTargetRef.current = { angle: targetAngleFor(spinToIndex, count, jitter), maxDuration }
+    startLoop()
+    // availableSegments relu volontairement au moment où la cible arrive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinToIndex, isSpinning, spinMode, startLoop])
 
   // ─── RENDU ────────────────────────────────────────────────────────────────
-  const winningIndex = spinToIndex
-  const winningNumber = winningIndex !== undefined
-    ? (numberOf.get(availableSegments[winningIndex]?.id ?? '') ?? winningIndex + 1)
-    : null
-  const winningGem = winningIndex !== undefined ? GEMS[winningIndex % GEMS.length] : GEMS[0]
+  const winnerIndex = heldWinnerId ? displayedSegments.findIndex(s => s.id === heldWinnerId) : -1
+  const winningNumber = heldWinnerId ? (numberOf.get(heldWinnerId) ?? null) : null
+  const winningGem = winnerIndex >= 0 ? GEMS[winnerIndex % GEMS.length] : GEMS[0]
 
   // Confettis dorés via canvas-confetti à l'apparition du résultat / de la fin
   useEffect(() => {
@@ -224,13 +431,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     return () => cancelAnimationFrame(raf)
   }, [showConfetti, prefersReducedMotion])
 
-  // Géométrie — 6 parts égales, gros numéros centrés
+  // Géométrie — parts égales, gros numéros centrés
   const cx = 200, cy = 200, r = 184
   const wheelSegments = useMemo(() => {
-    const count = availableSegments.length
+    const count = displayedSegments.length
     if (count === 0) return []
     const anglePerSegment = (2 * Math.PI) / count
-    return availableSegments.map((segment, index) => {
+    return displayedSegments.map((segment, index) => {
       const startAngle = index * anglePerSegment - Math.PI / 2
       const endAngle = startAngle + anglePerSegment
       const x1 = rnd(cx + r * Math.cos(startAngle)), y1 = rnd(cy + r * Math.sin(startAngle))
@@ -249,7 +456,9 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       const gem = GEMS[index % GEMS.length]
       return { id: segment.id, pathData, gem, idx: index, text: segment.text, textX, textY, dividerX, dividerY, rivetX, rivetY }
     })
-  }, [availableSegments])
+  }, [displayedSegments])
+  const layoutKey = useMemo(() => displayedSegments.map(s => s.id).join('|'), [displayedSegments])
+  const pulse = (keyframes: TargetAndTransition, still: TargetAndTransition): TargetAndTransition => (prefersReducedMotion ? still : keyframes)
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: '#03040c' }}>
@@ -289,8 +498,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
       {/* SCÈNE CENTRÉE */}
       <div className="relative z-10 h-full w-full flex items-center justify-center">
-        {/* Roue légèrement remontée pour laisser le socle visible sous elle */}
-        <div className="relative" role="img" aria-label="Roue de la Destinée" style={{ width: 'min(85vmin, 860px)', height: 'min(85vmin, 860px)', transform: 'translateY(-4.5%)' }}>
+        {/* Roue légèrement remontée pour laisser le socle visible sous elle.
+            Taille liée à l'écran (85 % du petit côté), sans plafond bas : grande aussi en 4K. */}
+        <motion.div className="relative" role="img" aria-label="Roue de la Destinée"
+          style={{ width: 'min(85vmin, 1700px)', height: 'min(85vmin, 1700px)', y: '-4.5%' }}
+          // Révélation, temps 1 : la roue s'avance légèrement vers le public.
+          animate={{ scale: showResult && !prefersReducedMotion ? 1.035 : 1 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 18 }}>
 
           {/* SOCLE DE SCÈNE — la roue est un objet posé sur le plateau */}
           <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ bottom: '-12%', width: '100%', height: '26%' }}>
@@ -320,7 +534,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               border: '1.5px solid rgba(246,196,83,0.6)',
               boxShadow: 'inset 0 0 12px rgba(0,0,0,0.8), 0 0 14px rgba(212,175,55,0.25)',
             }}>
-              <span style={{ color: GOLD.g2, fontSize: 'clamp(9px, 2.4vmin, 18px)', lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(246,196,83,0.7))' }}>✦</span>
+              <span style={{ color: GOLD.g2, fontSize: 'clamp(9px, 2.4vmin, 32px)', lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(246,196,83,0.7))' }}>✦</span>
             </div>
             {/* Ombre portée de la roue sur le socle */}
             <div className="absolute left-1/2 -translate-x-1/2 rounded-[50%] blur-xl" style={{ bottom: '52%', width: '58%', height: '22%', background: 'rgba(0,0,0,0.55)' }} />
@@ -329,7 +543,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           {/* Halo doré derrière la roue (renforcé pendant le spin) */}
           <motion.div className="absolute inset-[-6%] rounded-full blur-[60px] pointer-events-none"
             style={{ background: 'radial-gradient(circle, rgba(255,190,60,0.45) 0%, rgba(212,175,55,0.13) 48%, transparent 70%)' }}
-            animate={{ opacity: isSpinning ? 1 : 0.72 }}
+            animate={{ opacity: isSpinning || showResult ? 1 : 0.72 }}
             transition={{ duration: 0.6 }} />
 
           {/* COURONNE OR MÉTALLIQUE (fixe) — anneaux superposés + ampoules */}
@@ -347,7 +561,8 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
             <div className="absolute rounded-full" style={{ inset: '7.5%', background: '#06070f', boxShadow: 'inset 0 0 26px rgba(0,0,0,0.95), 0 0 0 1.5px rgba(255,241,168,0.4)' }} />
 
             {/* Ampoules fête foraine — socle doré + verre chaud.
-                Chenillard pendant la rotation / scintillement au repos. */}
+                Chenillard pendant la rotation, scintillement au repos, flash au résultat.
+                Seule l'opacité est animée (halo fixe) : léger pour les petits PC. */}
             {BULBS.map((bulb, i) => {
               const x = rnd(50 + 46.2 * Math.cos(bulb.angle))
               const y = rnd(50 + 46.2 * Math.sin(bulb.angle))
@@ -355,19 +570,23 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 <div key={bulb.id} className="absolute" style={{ width: '3.1%', height: '3.1%', left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
                   {/* Socle doré (statique) */}
                   <div className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 40% 32%, ${GOLD.g2} 0%, ${GOLD.g3} 55%, ${GOLD.g4} 100%)`, boxShadow: 'inset 0 -1px 2px rgba(0,0,0,0.6)' }} />
-                  {/* Verre de l'ampoule */}
-                  <motion.div className="absolute rounded-full" style={{ inset: '13%', background: 'radial-gradient(circle at 35% 30%, #fffdf2 0%, #ffe49b 46%, #d4af37 100%)' }}
+                  {/* Verre de l'ampoule (halo fixe, seule l'opacité varie) */}
+                  <motion.div className="absolute rounded-full" style={{ inset: '13%', background: 'radial-gradient(circle at 35% 30%, #fffdf2 0%, #ffe49b 46%, #d4af37 100%)', boxShadow: '0 0 10px rgba(255,224,150,0.95), 0 0 20px rgba(212,175,55,0.6)' }}
                     animate={prefersReducedMotion
-                      ? { opacity: 0.92, boxShadow: '0 0 8px rgba(255,224,150,0.85)' }
+                      ? { opacity: 0.92 }
                       : isSpinning
-                        ? { opacity: [0.3, 1, 0.3], boxShadow: ['0 0 2px rgba(212,175,55,0.4)', '0 0 12px rgba(255,224,150,1), 0 0 24px rgba(212,175,55,0.75)', '0 0 2px rgba(212,175,55,0.4)'] }
-                        : { opacity: [0.5, 1, 0.5], boxShadow: ['0 0 3px rgba(212,175,55,0.4)', '0 0 10px rgba(255,224,150,0.95), 0 0 18px rgba(212,175,55,0.55)', '0 0 3px rgba(212,175,55,0.4)'] }
+                        ? { opacity: [0.25, 1, 0.25] }
+                        : showResult
+                          ? { opacity: [0.35, 1, 0.35] }
+                          : { opacity: [0.45, 1, 0.45] }
                     }
                     transition={prefersReducedMotion
                       ? { duration: 0 }
                       : isSpinning
                         ? { duration: 0.85, repeat: Infinity, ease: 'easeInOut', delay: (i / BULB_COUNT) * 0.85 }
-                        : { duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: (i % 7) * 0.26 }
+                        : showResult
+                          ? { duration: 0.45, repeat: Infinity, ease: 'easeInOut', delay: (i % 2) * 0.22 }
+                          : { duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: (i % 7) * 0.26 }
                     }
                   />
                 </div>
@@ -376,46 +595,41 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           </div>
 
           {/* POINTEUR — goutte ivoire, contour or métallique, rivet central.
-              Fixe devant la roue ; vibration « tick » pendant le spin. */}
-          <motion.div className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-none" style={{ top: '-2.2%', width: '8.5%' }}
-            animate={isSpinning && !prefersReducedMotion ? { y: ['0%', '-12%', '0%'] } : {}}
-            transition={{ duration: 0.18, repeat: Infinity }}>
-            <svg viewBox="0 0 40 58" className="w-full h-auto" style={{ filter: 'drop-shadow(0 6px 9px rgba(0,0,0,0.65))' }}>
-              <defs>
-                <linearGradient id="ptr-gold" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={GOLD.g1} />
-                  <stop offset="45%" stopColor={GOLD.g2} />
-                  <stop offset="100%" stopColor={GOLD.g3} />
-                </linearGradient>
-                <radialGradient id="ptr-rivet" cx="38%" cy="30%" r="80%">
-                  <stop offset="0%" stopColor={GOLD.g1} />
-                  <stop offset="55%" stopColor={GOLD.g2} />
-                  <stop offset="100%" stopColor={GOLD.g4} />
-                </radialGradient>
-              </defs>
-              <path d="M20 57 C 8 39 2 30 2 18 A 18 18 0 1 1 38 18 C 38 30 32 39 20 57 Z"
-                fill="#fff9e6" stroke="url(#ptr-gold)" strokeWidth="4" />
-              {/* Relief interne (ombre du bord bas) */}
-              <path d="M20 53 C 10 37 5 29 5 18 A 15 15 0 1 1 35 18 C 35 29 30 37 20 53 Z"
-                fill="none" stroke="rgba(111,67,8,0.28)" strokeWidth="1.6" />
-              {/* Reflet lumineux haut-gauche */}
-              <ellipse cx="13.5" cy="13" rx="5.5" ry="7.5" fill="rgba(255,255,255,0.75)" />
-              {/* Rivet/axe doré */}
-              <circle cx="20" cy="18" r="4.6" fill="url(#ptr-rivet)" stroke="rgba(111,67,8,0.6)" strokeWidth="0.8" />
-            </svg>
-          </motion.div>
+              Fixe devant la roue ; fléchit à chaque séparateur qui passe (moteur). */}
+          <div className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-none" style={{ top: '-2.2%', width: '8.5%' }}>
+            <div ref={flapRef} style={{ transformOrigin: '50% 31%' }}>
+              <svg viewBox="0 0 40 58" className="w-full h-auto" style={{ filter: 'drop-shadow(0 6px 9px rgba(0,0,0,0.65))' }}>
+                <defs>
+                  <linearGradient id="ptr-gold" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={GOLD.g1} />
+                    <stop offset="45%" stopColor={GOLD.g2} />
+                    <stop offset="100%" stopColor={GOLD.g3} />
+                  </linearGradient>
+                  <radialGradient id="ptr-rivet" cx="38%" cy="30%" r="80%">
+                    <stop offset="0%" stopColor={GOLD.g1} />
+                    <stop offset="55%" stopColor={GOLD.g2} />
+                    <stop offset="100%" stopColor={GOLD.g4} />
+                  </radialGradient>
+                </defs>
+                <path d="M20 57 C 8 39 2 30 2 18 A 18 18 0 1 1 38 18 C 38 30 32 39 20 57 Z"
+                  fill="#fff9e6" stroke="url(#ptr-gold)" strokeWidth="4" />
+                {/* Relief interne (ombre du bord bas) */}
+                <path d="M20 53 C 10 37 5 29 5 18 A 15 15 0 1 1 35 18 C 35 29 30 37 20 53 Z"
+                  fill="none" stroke="rgba(111,67,8,0.28)" strokeWidth="1.6" />
+                {/* Reflet lumineux haut-gauche */}
+                <ellipse cx="13.5" cy="13" rx="5.5" ry="7.5" fill="rgba(255,255,255,0.75)" />
+                {/* Rivet/axe doré */}
+                <circle cx="20" cy="18" r="4.6" fill="url(#ptr-rivet)" stroke="rgba(111,67,8,0.6)" strokeWidth="0.8" />
+              </svg>
+            </div>
+          </div>
 
-          {/* ROUE TOURNANTE */}
+          {/* ROUE TOURNANTE (angle appliqué image par image par le moteur) */}
           <div className="absolute rounded-full overflow-hidden" style={{ inset: '7.5%' }}>
-            <motion.div
-              animate={{ rotate: isInfiniteSpinning ? [rotation, rotation + 360] : rotation }}
-              transition={
-                isInfiniteSpinning
-                  ? { duration: 0.8, repeat: Infinity, ease: 'linear' }
-                  : { duration: isSpinning ? (isManualStop ? 3 : 8) : 0, ease: isSpinning ? (isManualStop && spinMode === 'auto' ? [0.25, 0.1, 0.8, 1] : [0.25, 1, 0.5, 1]) : 'linear' }
-              }
-              className="w-full h-full">
-              <svg viewBox="0 0 400 400" className="w-full h-full">
+            <div ref={wheelRef} className="w-full h-full" style={{ willChange: 'transform' }}>
+              <motion.svg key={layoutKey} viewBox="0 0 400 400" className="w-full h-full"
+                // Changement du nombre de cases (case gagnante retirée) : fondu doux.
+                initial={{ opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
                 <defs>
                   {GEMS.map((gem, i) => (
                     <radialGradient key={i} id={`gem-${i}`} cx="200" cy="200" r="184" gradientUnits="userSpaceOnUse">
@@ -451,9 +665,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     <feGaussianBlur stdDeviation="6" result="b" />
                     <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
                   </filter>
-                  <filter id="numShadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#000" floodOpacity="0.55" />
-                  </filter>
                   {/* Relief des séparateurs dorés */}
                   <filter id="dividerShadow" x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="1.4" stdDeviation="1.2" floodColor="#000" floodOpacity="0.6" />
@@ -469,14 +680,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     stroke="rgba(0,0,0,0.35)" strokeWidth="1.4" />
                 ))}
 
-                {/* Illumination de la part gagnante */}
-                {showResult && winningIndex !== undefined && wheelSegments[winningIndex] && (
+                {/* Révélation, temps 1 : la case gagnante s'illumine (roue visible) */}
+                {showResult && winnerIndex >= 0 && wheelSegments[winnerIndex] && (
                   <motion.g filter="url(#winGlow)"
                     initial={{ opacity: 0.85 }}
                     animate={prefersReducedMotion ? { opacity: 0.95 } : { opacity: [0.6, 1, 0.6] }}
                     transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}>
-                    <path d={wheelSegments[winningIndex].pathData} fill="rgba(255,255,255,0.45)" />
-                    <path d={wheelSegments[winningIndex].pathData} fill="none" stroke="#ffffff" strokeWidth="4.5" />
+                    <path d={wheelSegments[winnerIndex].pathData} fill="rgba(255,255,255,0.45)" />
+                    <path d={wheelSegments[winnerIndex].pathData} fill="none" stroke="#ffffff" strokeWidth="4.5" />
                   </motion.g>
                 )}
 
@@ -506,27 +717,26 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 {/* Double cerclage intérieur fin */}
                 <circle cx={cx} cy={cy} r={r - 1} fill="none" stroke="url(#gold-stroke)" strokeWidth="2.4" strokeOpacity="0.85" />
                 <circle cx={cx} cy={cy} r={r - 5} fill="none" stroke={GOLD.g1} strokeWidth="0.8" strokeOpacity="0.4" />
+              </motion.svg>
+            </div>
 
-                {/* Gros numéros ivoire embossés — toujours à l'endroit (contre-rotation).
-                    Double <text> superposé : lueur or floue dessous + chiffre net dessus. */}
-                {wheelSegments.map((seg, i) => (
-                  <g key={`txt-${seg.id}`} transform={`rotate(${-rotation}, ${seg.textX}, ${seg.textY})`}>
-                    <text x={seg.textX} y={seg.textY + 2.5}
-                      fill="rgba(0,0,0,0.55)" fontSize="46" textAnchor="middle" dominantBaseline="central"
-                      style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-                      {numberOf.get(seg.id) ?? i + 1}
-                    </text>
-                    <text x={seg.textX} y={seg.textY}
-                      fill={GOLD.ivory} fontSize="46" textAnchor="middle" dominantBaseline="central"
-                      filter="url(#numShadow)"
-                      stroke="rgba(255,241,168,0.35)" strokeWidth="0.6"
-                      style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-                      {numberOf.get(seg.id) ?? i + 1}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-            </motion.div>
+            {/* Gros numéros ivoire embossés — toujours DROITS, même en pleine rotation :
+                calque qui tourne avec la roue, chaque numéro contre-tourne (moteur). */}
+            <div ref={numbersRef} className="absolute inset-0 pointer-events-none" style={{ containerType: 'inline-size', willChange: 'transform' }}>
+              {wheelSegments.map((seg) => (
+                <span key={`num-${seg.id}`} className="absolute select-none"
+                  style={{
+                    left: `${seg.textX / 4}%`, top: `${seg.textY / 4}%`,
+                    fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, fontSize: '12.4cqw', lineHeight: 1,
+                    color: GOLD.ivory,
+                    WebkitTextStroke: '0.6px rgba(255,241,168,0.35)',
+                    textShadow: '0 0.06em 0.05em rgba(0,0,0,0.55), 0 0.02em 0.12em rgba(0,0,0,0.45)',
+                    willChange: 'transform',
+                  }}>
+                  {numberOf.get(seg.id) ?? seg.idx + 1}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* MOYEU CENTRAL FIXE — plaque émaillée noire, double cerclage or, titre.
@@ -546,51 +756,51 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               <div className="absolute pointer-events-none" style={{ top: '5%', left: '14%', width: '72%', height: '34%', borderRadius: '50%', background: 'linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 70%, transparent 100%)' }} />
               {/* Filet décoratif au-dessus du titre */}
               <span aria-hidden style={{ position: 'absolute', left: '50%', top: '9.5%', transform: 'translateX(-50%)', width: '26%', height: 1, background: `linear-gradient(90deg, transparent, ${GOLD.g2}, transparent)` }} />
-              <span style={{ fontFamily: 'var(--font-playfair), serif', fontWeight: 700, color: '#f7d875', fontSize: 'clamp(10px, 3.2vmin, 24px)', lineHeight: 1.1, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Roue&nbsp;de&nbsp;la</span>
+              <span style={{ fontFamily: 'var(--font-playfair), serif', fontWeight: 700, color: '#f7d875', fontSize: 'clamp(10px, 3.2vmin, 54px)', lineHeight: 1.1, letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>Roue&nbsp;de&nbsp;la</span>
+              {/* Or plein en relief (plus net qu'un dégradé sur le texte) */}
               <span style={{
-                fontFamily: 'var(--font-playfair), serif', fontWeight: 800, fontSize: 'clamp(13px, 4.6vmin, 34px)', lineHeight: 1.05, letterSpacing: '0.01em',
-                background: `linear-gradient(180deg, ${GOLD.ivory} 0%, #f7d875 48%, ${GOLD.g2} 82%, ${GOLD.g3} 100%)`,
-                WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.8))',
+                fontFamily: 'var(--font-playfair), serif', fontWeight: 800, fontSize: 'clamp(13px, 4.6vmin, 78px)', lineHeight: 1.05, letterSpacing: '0.01em',
+                color: '#f6d77a',
+                textShadow: `0 1px 0 ${GOLD.g3}, 0 2px 3px rgba(0,0,0,0.85), 0 0 14px rgba(212,175,55,0.35)`,
               }}>Destinée</span>
               {/* Ornement étoile — sous le pivot, dans la zone basse libre */}
-              <span style={{ position: 'absolute', left: '50%', top: '70%', transform: 'translateX(-50%)', color: GOLD.g2, fontSize: 'clamp(10px, 3vmin, 20px)', lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(246,196,83,0.65))' }}>✦</span>
+              <span style={{ position: 'absolute', left: '50%', top: '70%', transform: 'translateX(-50%)', color: GOLD.g2, fontSize: 'clamp(10px, 3vmin, 44px)', lineHeight: 1, filter: 'drop-shadow(0 0 5px rgba(246,196,83,0.65))' }}>✦</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* POPUP RÉSULTAT */}
+      {/* POPUP RÉSULTAT — temps 2 : après ~1,5 s d'illumination de la case sur la
+          roue, le défi s'affiche. Voile partiel : la roue reste visible derrière. */}
       <AnimatePresence>
         {showResult && result && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center z-50">
-            {/* Backdrop retardé pour laisser voir l'illumination + confettis sur la roue */}
-            <motion.div className="absolute inset-0" style={{ background: 'rgba(6,5,11,0.9)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.7 }} />
+            <motion.div className="absolute inset-0" style={{ background: 'rgba(6,5,11,0.62)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.5 }} />
             <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] h-[160%] pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.32) 0%, rgba(212,175,55,0.08) 28%, transparent 52%)' }}
               initial={{ opacity: 0 }}
-              animate={{ scale: [1, 1.4, 1], opacity: [0, 0.7, 0.4] }}
-              transition={{ duration: 2.4, delay: 0.7, repeat: Infinity, ease: 'easeInOut' }} />
+              animate={pulse({ scale: [1, 1.4, 1], opacity: [0, 0.7, 0.4] }, { opacity: 0.5 })}
+              transition={prefersReducedMotion ? { duration: 0.3, delay: 1.5 } : { duration: 2.4, delay: 1.5, repeat: Infinity, ease: 'easeInOut' }} />
 
-            <motion.div initial={{ scale: 0.6, y: 80, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
-              transition={{ type: 'spring', damping: 16, stiffness: 180, delay: 0.8 }} className="relative z-10 mx-4">
-              <div className="relative rounded-[28px] px-10 py-10 md:px-16 md:py-12 text-center max-w-lg"
+            <motion.div initial={{ scale: 0.7, y: 60, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 170, delay: 1.55 }} className="relative z-10 mx-4">
+              <div className="relative rounded-[18px] px-10 py-10 md:px-16 md:py-12 text-center max-w-lg"
                 style={{ background: 'linear-gradient(160deg, #16121f 0%, #0c0a14 55%, #08070e 100%)', boxShadow: '0 0 50px rgba(212,175,55,0.3), 0 30px 60px rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.55)' }}>
-                <motion.div className="absolute inset-0 rounded-[28px] pointer-events-none" style={{ border: '1px solid rgba(212,175,55,0.5)' }}
-                  animate={{ boxShadow: ['0 0 0 0 rgba(212,175,55,0)', '0 0 0 14px rgba(212,175,55,0.18)', '0 0 0 28px rgba(212,175,55,0)'] }}
-                  transition={{ duration: 2, repeat: Infinity }} />
+                <motion.div className="absolute inset-0 rounded-[18px] pointer-events-none" style={{ border: '1px solid rgba(212,175,55,0.5)' }}
+                  animate={pulse({ boxShadow: ['0 0 0 0 rgba(212,175,55,0)', '0 0 0 14px rgba(212,175,55,0.18)', '0 0 0 28px rgba(212,175,55,0)'] }, {})}
+                  transition={prefersReducedMotion ? { duration: 0 } : { duration: 2, repeat: Infinity }} />
 
-                {/* Numéro gagnant qui grossit dans un halo (couleur de la part) */}
+                {/* Numéro gagnant (numéro fixe de la case) dans un halo à sa couleur */}
                 {winningNumber !== null && (
                   <motion.div className="relative mx-auto mb-6 flex items-center justify-center"
                     style={{ width: 132, height: 132 }}
                     initial={{ scale: 0.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', damping: 11, stiffness: 160, delay: 0.12 }}>
+                    transition={{ type: 'spring', damping: 11, stiffness: 160, delay: 1.7 }}>
                     <motion.div className="absolute inset-0 rounded-full"
                       style={{ background: `radial-gradient(circle, ${winningGem.light}cc 0%, ${winningGem.base}55 45%, transparent 72%)` }}
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
+                      animate={pulse({ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }, { opacity: 0.85 })}
+                      transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }} />
                     <div className="relative flex items-center justify-center rounded-full"
                       style={{ width: 104, height: 104, background: `radial-gradient(circle at 38% 30%, ${winningGem.light} 0%, ${winningGem.base} 60%, ${winningGem.dark} 100%)`, boxShadow: `inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -4px 10px rgba(0,0,0,0.4), 0 0 30px ${winningGem.base}aa`, border: '2px solid rgba(212,175,55,0.85)' }}>
                       <span style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, fontSize: 56, color: '#fff', lineHeight: 1, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}>{winningNumber}</span>
@@ -598,19 +808,19 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                   </motion.div>
                 )}
 
-                <motion.p className="text-[#d4af37]/70 text-xs md:text-sm uppercase tracking-[0.4em] mb-3"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                  style={{ fontFamily: 'var(--font-playfair), serif' }}>Le destin a choisi</motion.p>
-                <motion.h2 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                <motion.p className="text-[#d4af37]/80 text-lg md:text-xl italic mb-2"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.75 }}
+                  style={{ fontFamily: 'var(--font-playfair), serif' }}>Le destin a choisi…</motion.p>
+                <motion.h2 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.85 }}
                   className="text-3xl md:text-4xl"
                   style={{
                     fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 700,
-                    background: 'linear-gradient(180deg, #fbf3d6 0%, #e7cd7e 50%, #c9a227 100%)',
-                    WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 2px 12px rgba(212,175,55,0.4))',
+                    color: '#f3d77a',
+                    textShadow: '0 1px 0 #8a6a14, 0 2px 14px rgba(212,175,55,0.35)',
+                    textWrap: 'balance',
                   }}>{result}</motion.h2>
 
-                <motion.div className="flex items-center justify-center gap-3 mt-7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+                <motion.div className="flex items-center justify-center gap-3 mt-7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}>
                   <span className="block h-px w-14" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.8))' }} />
                   <span className="text-[#d4af37] text-lg" style={{ filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.6))' }}>✦</span>
                   <span className="block h-px w-14" style={{ background: 'linear-gradient(270deg, transparent, rgba(212,175,55,0.8))' }} />
@@ -629,8 +839,8 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
             <motion.div className="absolute inset-0" style={{ background: 'rgba(5,4,9,0.94)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
             <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.22) 0%, transparent 50%)' }}
-              animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.7, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} />
+              animate={pulse({ scale: [1, 1.25, 1], opacity: [0.4, 0.7, 0.4] }, { opacity: 0.55 })}
+              transition={prefersReducedMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: 'easeInOut' }} />
             <motion.div className="relative z-10 text-center px-8" initial={{ scale: 0.6, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
               transition={{ type: 'spring', damping: 14 }}>
               <motion.div className="mx-auto mb-7 flex items-center justify-center rounded-full"
@@ -640,10 +850,9 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
               </motion.div>
               <motion.h1 className="text-5xl md:text-7xl mb-5" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                 style={{
-                  fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, letterSpacing: '0.04em',
-                  background: 'linear-gradient(180deg, #fbf3d6 0%, #e7cd7e 48%, #c9a227 100%)',
-                  WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 3px 18px rgba(212,175,55,0.4))',
+                  fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, letterSpacing: '0.02em',
+                  color: '#f3d77a',
+                  textShadow: '0 2px 0 #8a6a14, 0 3px 18px rgba(212,175,55,0.4)',
                 }}>
                 Félicitations
               </motion.h1>
@@ -651,7 +860,8 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                 style={{ fontFamily: 'var(--font-playfair), serif' }}>
                 Tous les défis ont été relevés
               </motion.p>
-              <motion.p className="text-sm text-[#d4af37]/55 uppercase tracking-[0.35em]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+              <motion.p className="text-base text-[#d4af37]/70 italic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+                style={{ fontFamily: 'var(--font-playfair), serif' }}>
                 La Roue de la Destinée est terminée
               </motion.p>
             </motion.div>
@@ -659,9 +869,6 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         )}
       </AnimatePresence>
 
-      <audio ref={audioRef} preload="auto">
-        <source src="/sounds/tick.mp3" type="audio/mpeg" />
-      </audio>
       {audioSettings?.url && <audio ref={customAudioRef} preload="auto" src={audioSettings.url} />}
     </div>
   )

@@ -9,12 +9,18 @@ import { GEMS, GOLD } from './wheel-theme'
 interface WheelPreviewProps {
   segments: WheelSegment[]
   size?: number
+  /** Numéros fixes des cases (id → n°), comme sur l'écran géant. Par défaut : 1, 2, 3… */
+  numberOf?: Map<string, number>
+  /** Roue immobile (vue de contrôle en partie) au lieu de la rotation lente décorative. */
+  still?: boolean
+  /** Case mise en évidence (résultat affiché sur l'écran géant). */
+  highlightId?: string | null
 }
 
 // Arrondi anti-mismatch d'hydratation (Math.cos/sin Node ≠ navigateur au dernier ULP)
 const rnd = (n: number) => Math.round(n * 1000) / 1000
 
-export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps) {
+export default function WheelPreview({ segments, size = 280, numberOf, still = false, highlightId = null }: WheelPreviewProps) {
   const [bulbPhase, setBulbPhase] = useState(0)
 
   // Scintillement des ampoules
@@ -125,8 +131,8 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
       {/* ROUE TOURNANTE */}
       <motion.svg
         width={size} height={size} viewBox="0 0 400 400"
-        initial={{ rotate: 0 }} animate={{ rotate: 360 }}
-        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+        initial={{ rotate: 0 }} animate={{ rotate: still ? 0 : 360 }}
+        transition={still ? { duration: 0 } : { duration: 25, repeat: Infinity, ease: 'linear' }}
         className="relative"
       >
         <defs>
@@ -170,6 +176,16 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
             stroke="rgba(0,0,0,0.35)" strokeWidth="1.2" />
         ))}
 
+        {/* Case du résultat affiché sur l'écran géant */}
+        {highlightId && wheelSegments.map((seg) => seg.id === highlightId ? (
+          <g key={`hl-${seg.id}`}>
+            <path d={seg.pathData} fill="rgba(255,255,255,0.3)" />
+            <path d={seg.pathData} fill="none" stroke="#ffffff" strokeWidth="5" />
+          </g>
+        ) : (
+          <path key={`dim-${seg.id}`} d={seg.pathData} fill="rgba(0,0,0,0.55)" />
+        ))}
+
         {/* Reflet glossy global + vernis périphérique */}
         <circle cx={cx} cy={cy} r={r} fill="url(#pgloss)" pointerEvents="none" />
         <circle cx={cx} cy={cy} r={r} fill="url(#prim-shade)" pointerEvents="none" />
@@ -202,13 +218,13 @@ export default function WheelPreview({ segments, size = 280 }: WheelPreviewProps
             <text x={seg.textX} y={seg.textY + 1.8}
               fill="rgba(0,0,0,0.55)" fontSize="30" textAnchor="middle" dominantBaseline="central"
               style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-              {i + 1}
+              {numberOf?.get(seg.id) ?? i + 1}
             </text>
             <text x={seg.textX} y={seg.textY}
               fill={GOLD.ivory} fontSize="30" textAnchor="middle" dominantBaseline="central"
               stroke="rgba(255,241,168,0.35)" strokeWidth="0.5"
               style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}>
-              {i + 1}
+              {numberOf?.get(seg.id) ?? i + 1}
             </text>
           </g>
         ))}
