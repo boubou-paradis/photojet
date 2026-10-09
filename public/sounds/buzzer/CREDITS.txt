@@ -1,0 +1,16 @@
+AnimaBuzz - sons par défaut (page animateur uniquement)
+Tous sous licence Creative Commons 0 (domaine public), vérifiée sur la page de chaque son le 2026-10-09.
+Fichiers : aperçus haute qualité (MP3) fournis par Freesound.
+
+ouverture.mp3        « simple power up.wav » par Tissman
+                     https://freesound.org/people/Tissman/sounds/455857/
+buzz.mp3             « Bright sfx hit » par xkeril
+                     https://freesound.org/people/xkeril/sounds/736849/
+bonne-reponse.mp3    « Quiz Gameshow Correct Ping 14 » par craigscottuk
+                     https://freesound.org/people/craigscottuk/sounds/644963/
+mauvaise-reponse.mp3 « buzzer2.wav » par hypocore
+                     https://freesound.org/people/hypocore/sounds/164089/
+nouvelle-manche.mp3  « Correct Bell » par Fupicat
+                     https://freesound.org/people/Fupicat/sounds/538147/
+
+Chaque son peut être remplacé par l'animateur (fichier gardé sur son PC, jamais envoyé au serveur).

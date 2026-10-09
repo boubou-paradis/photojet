@@ -79,11 +79,11 @@ const games = [
     image: '/images/games/animabuzz.png',
     description: 'Le buzzer live : le téléphone de vos invités devient un vrai buzzer de jeu',
     path: '/admin/jeux/buzzer',
-    // Grisée le temps de terminer le jeu (accessible par son adresse directe pour les tests).
-    available: false,
+    available: true,
     glowColor: 'rgba(168, 85, 247, 0.5)',
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
+    notice: '/animabuzz-regles.pdf',
     // Grand écran : seule sur la 2e ligne, centrée sous la Roue de la Destinée.
     gridClass: 'lg:col-start-3',
   },

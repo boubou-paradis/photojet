@@ -11,13 +11,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Monitor, Rocket } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, Monitor, Rocket } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer, { type BuzzerVisualState } from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
+import SoundsPanel from '@/components/buzzer/SoundsPanel'
 import { BUZZER_CSS } from '@/components/buzzer/styles'
+import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import { useAmbianceMusic } from '@/hooks/useAmbianceMusic'
+import { useBuzzerSounds } from '@/hooks/useBuzzerSounds'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import {
@@ -28,7 +34,7 @@ import {
   BUZZER_TIMERS_S,
   BUZZER_WINDOWS_MS,
 } from '@/lib/buzzer/constants'
-import type { GameAction } from '@/lib/buzzer/machine'
+import { remoteAction, type GameAction } from '@/lib/buzzer/machine'
 import type { BuzzerActiveState, BuzzerAdminPlayer, BuzzerMode, BuzzerRoundSummary, BuzzerState } from '@/lib/buzzer/types'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
@@ -103,6 +109,51 @@ export default function BuzzerAdminPage() {
   useEffect(() => {
     activeRef.current = active
   }, [active])
+
+  // Sons (sono du PC) et musique d'ambiance (même module que Matching).
+  // Jamais deux sources en même temps : la musique se coupe à l'ouverture
+  // des buzzers et reprend à la manche suivante si elle jouait.
+  const sounds = useBuzzerSounds()
+  const music = useAmbianceMusic()
+  const musicWasPlaying = useRef(false)
+  const lastSeen = useRef<{ phase: string; roundNo: number; attempt: number; priority: string | null } | null>(null)
+  const playSound = sounds.play
+  const pauseMusic = music.pause
+  const toggleMusic = music.toggle
+  const musicPlaying = music.playing
+  useEffect(() => {
+    if (!state) {
+      lastSeen.current = null
+      return
+    }
+    const prev = lastSeen.current
+    const now = { phase: state.phase, roundNo: state.roundNo, attempt: state.attempt, priority: state.priority?.unit ?? null }
+    lastSeen.current = now
+    // Premier état reçu (chargement, reprise après F5) : aucun son.
+    if (!prev || (prev.phase === now.phase && prev.roundNo === now.roundNo && prev.attempt === now.attempt && prev.priority === now.priority)) return
+
+    if (now.phase === 'open' && prev.phase !== 'open') {
+      if (musicPlaying) {
+        musicWasPlaying.current = true
+        pauseMusic()
+      }
+      // Réouverture après une mauvaise réponse : le son de la mauvaise réponse suffit.
+      playSound(prev.phase === 'buzzed' ? 'wrong' : 'open')
+    } else if (now.phase === 'buzzed' && prev.phase !== 'buzzed') {
+      playSound('buzz')
+    } else if (now.phase === 'buzzed' && prev.priority !== now.priority) {
+      playSound('wrong')
+    } else if (now.phase === 'closed' && prev.phase !== 'closed') {
+      if (state.outcome === 'won') playSound('right')
+      else if (prev.phase === 'buzzed') playSound('wrong')
+    } else if (now.phase === 'waiting' && now.roundNo !== prev.roundNo) {
+      playSound('round')
+      if (musicWasPlaying.current) {
+        musicWasPlaying.current = false
+        toggleMusic()
+      }
+    }
+  }, [state, playSound, pauseMusic, toggleMusic, musicPlaying])
 
   const applySnapshot = useCallback((result: AdminResult) => {
     if (result.state) apply(result.state)
@@ -255,6 +306,24 @@ export default function BuzzerAdminPage() {
     return () => clearTimeout(timer)
   }, [deadlineAt, offset, act])
 
+  // Télécommande de présentation : PageDown = action logique suivante,
+  // PageUp = mauvaise réponse. Jamais quitter, retirer ni rien de destructif.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  useRemoteControl({
+    active: active && remoteOn && !!state,
+    phase: state ? `${state.phase}|${state.roundNo}|${state.attempt}|${state.priority?.unit ?? ''}` : 'off',
+    onNext: async () => {
+      if (!state) return
+      const action = remoteAction(state, 'next')
+      if (action) await act(action)
+    },
+    onPrev: async () => {
+      if (!state) return
+      const action = remoteAction(state, 'prev')
+      if (action) await act(action)
+    },
+  })
+
   async function launch() {
     if (!session) return
     const teams = mode === 'team' ? teamsText.split('\n').map((t) => t.trim()).filter(Boolean) : []
@@ -339,7 +408,14 @@ export default function BuzzerAdminPage() {
               <p className="text-xs text-gray-500 mt-1">{session.name} · session {session.code}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} />
+            <a href="/animabuzz-regles.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
+              </Button>
+            </a>
             {active && (
               <>
                 <Button size="sm" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]">
@@ -357,6 +433,7 @@ export default function BuzzerAdminPage() {
 
       <main className="relative z-10 px-4 sm:px-8 py-6">
         {active && state ? (
+          <>
           <GamePanel
             state={state}
             players={players}
@@ -367,6 +444,11 @@ export default function BuzzerAdminPage() {
             onSettings={(args) => void act('settings', args)}
             onRemove={removePlayer}
           />
+          <div className="max-w-6xl mx-auto mt-4 grid lg:grid-cols-2 gap-4">
+            <SoundsPanel sounds={sounds} />
+            <AmbianceMusicControls music={music} inGame />
+          </div>
+          </>
         ) : active ? (
           <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" /></div>
         ) : (
@@ -381,6 +463,7 @@ export default function BuzzerAdminPage() {
             setTimerS={setTimerS}
             busy={busy}
             onLaunch={launch}
+            extras={<><SoundsPanel sounds={sounds} /><AmbianceMusicControls music={music} /></>}
           />
         )}
       </main>
@@ -403,6 +486,8 @@ interface SetupPanelProps {
   setTimerS: (n: number | null) => void
   busy: boolean
   onLaunch: () => void
+  /** Sons et musique d'ambiance, réglables avant le lancement. */
+  extras?: React.ReactNode
 }
 
 function SetupPanel(p: SetupPanelProps) {
@@ -471,6 +556,8 @@ function SetupPanel(p: SetupPanelProps) {
           </div>
         </div>
       </section>
+
+      {p.extras}
 
       <button
         onClick={p.onLaunch}
