@@ -168,11 +168,13 @@ export default function PillarPage() {
                   AnimaJet réunit plusieurs animations complémentaires que vous combinez selon le moment de la soirée. Chacune dispose de son guide dédié :
                 </p>
                 <div className="grid sm:grid-cols-2 gap-5 not-prose">
-                  {animations.map((a) => (
+                  {animations.map((a, i) => (
                     <Link
                       key={a.href}
                       href={a.href}
-                      className="card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col"
+                      className={`card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col${
+                        animations.length % 2 === 1 && i === animations.length - 1 ? " sm:col-span-2 sm:justify-self-center sm:w-[calc(50%-0.625rem)]" : ""
+                      }`}
                     >
                       <div className="relative aspect-[16/10] overflow-hidden">
                         <Image

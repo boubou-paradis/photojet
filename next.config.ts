@@ -48,6 +48,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   trailingSlash: false,
+  async redirects() {
+    return [
+      // URL accentuée tapée ou partagée à la main (404 avec des clics dans GSC)
+      { source: '/photo-myst%C3%A8re', destination: '/photo-mystere', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     default: "Logiciel d'animation interactive pour DJ et événements | AnimaJet",
     template: "%s | AnimaJet",
   },
-  description: "Animation interactive pour vos événements : quiz, blind test, partage photo en direct sur écran géant. Créé par un DJ pour les pros. Sans application.",
+  description: "Animation interactive pour vos événements : quiz, blind test, jeu des points communs, photos sur écran géant. Créé par un DJ pour les pros. Sans appli.",
   keywords: [
     "animation événement",
     "animation entreprise",
@@ -58,6 +58,8 @@ export const metadata: Metadata = {
     "jeux interactifs",
     "diaporama en direct",
     "quiz interactif",
+    "jeu des points communs",
+    "jeu brise-glace",
     "animation soirée",
     "QR code événement",
     "animation professionnelle",
@@ -87,7 +89,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AnimaJet - La plateforme d'animations interactives pour l'événementiel",
-    description: "Faites participer tous vos invités depuis leur téléphone : quiz, roue de la destinée, photo mystère, partage photo en direct sur écran géant. Sans application. Développé par un DJ animateur pour les pros. Essai gratuit 24h.",
+    description: "Faites participer tous vos invités depuis leur téléphone : quiz, roue de la destinée, photo mystère, jeu des points communs, partage photo en direct sur écran géant. Sans application. Développé par un DJ animateur pour les pros. Essai gratuit 24h.",
     images: [
       {
         url: "/images/animajet_logo_principal.png",
@@ -104,7 +106,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AnimaJet - Animations interactives pour l'événementiel",
-    description: "Vos invités participent depuis leur téléphone. Quiz, roue, partage photo en direct sur écran géant. Sans appli. Essai gratuit, 29,90€/mois.",
+    description: "Vos invités participent depuis leur téléphone. Quiz, roue, jeu des points communs, photos en direct sur écran géant. Sans appli. Essai gratuit, 29,90€/mois.",
     images: ["/images/animajet_logo_principal.png"],
     creator: "@animajet",
   },
