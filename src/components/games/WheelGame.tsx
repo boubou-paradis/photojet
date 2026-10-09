@@ -119,6 +119,12 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     [segments, usedSegmentIds]
   )
 
+  // Numéro FIXE de chaque case : sa position dans la liste complète. Il ne
+  // change pas quand des cases sont tirées (la roue ne renumérote plus), donc
+  // l'animateur et les invités gardent les mêmes repères toute la partie.
+  // Affichage seul : rotation, timing et choix de la case inchangés.
+  const numberOf = useMemo(() => new Map(segments.map((s, i) => [s.id, i + 1])), [segments])
+
   useEffect(() => {
     return () => {
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
@@ -197,7 +203,9 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
   // ─── RENDU ────────────────────────────────────────────────────────────────
   const winningIndex = spinToIndex
-  const winningNumber = winningIndex !== undefined ? winningIndex + 1 : null
+  const winningNumber = winningIndex !== undefined
+    ? (numberOf.get(availableSegments[winningIndex]?.id ?? '') ?? winningIndex + 1)
+    : null
   const winningGem = winningIndex !== undefined ? GEMS[winningIndex % GEMS.length] : GEMS[0]
 
   // Confettis dorés via canvas-confetti à l'apparition du résultat / de la fin
@@ -506,14 +514,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
                     <text x={seg.textX} y={seg.textY + 2.5}
                       fill="rgba(0,0,0,0.55)" fontSize="46" textAnchor="middle" dominantBaseline="central"
                       style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-                      {i + 1}
+                      {numberOf.get(seg.id) ?? i + 1}
                     </text>
                     <text x={seg.textX} y={seg.textY}
                       fill={GOLD.ivory} fontSize="46" textAnchor="middle" dominantBaseline="central"
                       filter="url(#numShadow)"
                       stroke="rgba(255,241,168,0.35)" strokeWidth="0.6"
                       style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontWeight: 800 }}>
-                      {i + 1}
+                      {numberOf.get(seg.id) ?? i + 1}
                     </text>
                   </g>
                 ))}

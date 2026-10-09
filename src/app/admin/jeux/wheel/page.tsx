@@ -319,11 +319,11 @@ export default function WheelPage() {
 
   function renderDrawOrderCard() {
     const list = effectiveOrder(drawOrder.order, segments).filter(s => availableSegments.some(a => a.id === s.id))
-    // Numéro actuel de chaque case sur la roue (les numéros se recalculent sur les cases restantes).
-    const wheelNumber = (id: string) => availableSegments.findIndex(a => a.id === id) + 1
+    // Numéro fixe de chaque case sur la roue (position dans la liste complète, comme sur l'écran géant).
+    const wheelNumber = (id: string) => segments.findIndex(s => s.id === id) + 1
     const next = list[0]
     // Ordre resté celui de la liste : chaque tirage prend la 1re case restante,
-    // donc la roue s'arrête TOUJOURS sur la case n°1.
+    // la roue s'arrête donc toujours au même endroit (cases 1, 2, 3… dans l'ordre).
     const followsList = list.length > 1 && list.every((seg, i) => seg.id === availableSegments[i]?.id)
     return (
       <div className="card-gold rounded-xl p-4">
@@ -354,7 +354,7 @@ export default function WheelPage() {
             </p>
             {followsList && (
               <p role="alert" className="text-xs text-orange-200 bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-2">
-                L’ordre suit encore la liste : la roue s’arrêtera toujours sur la case n°1. Réglez-le avec ▲▼ ou mélangez-le.
+                L’ordre suit encore la liste (cases 1, 2, 3… dans l’ordre) : la roue s’arrêtera toujours au même endroit. Réglez-le avec ▲▼ ou mélangez-le.
               </p>
             )}
             <button
