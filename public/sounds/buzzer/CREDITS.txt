@@ -4,8 +4,9 @@ Fichiers : aperçus haute qualité (MP3) fournis par Freesound.
 
 ouverture.mp3        « simple power up.wav » par Tissman
                      https://freesound.org/people/Tissman/sounds/455857/
-buzz.mp3             « Bright sfx hit » par xkeril
-                     https://freesound.org/people/xkeril/sounds/736849/
+buzz-poulet.wav      « Rubber chicken » par mixmasterdylan (un seul cri extrait de 2,90 à 3,80 s,
+                     volume normalisé, fondu de 12 ms)
+                     https://freesound.org/people/mixmasterdylan/sounds/521706/
 bonne-reponse.mp3    « Quiz Gameshow Correct Ping 14 » par craigscottuk
                      https://freesound.org/people/craigscottuk/sounds/644963/
 mauvaise-reponse.mp3 « buzzer2.wav » par hypocore
