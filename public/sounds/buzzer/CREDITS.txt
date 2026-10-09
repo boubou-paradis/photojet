@@ -2,8 +2,8 @@ AnimaBuzz - sons par défaut (page animateur uniquement)
 Tous sous licence Creative Commons 0 (domaine public), vérifiée sur la page de chaque son le 2026-10-09.
 Fichiers : aperçus haute qualité (MP3) fournis par Freesound.
 
-ouverture.mp3        « simple power up.wav » par Tissman
-                     https://freesound.org/people/Tissman/sounds/455857/
+ouverture-ninja.mp3  « Ninja Shout - Free Sound Effect » : fichier fourni par AnimaJet
+                     (licence non vérifiée par Claude, à confirmer par AnimaJet)
 buzz-poulet.wav      « Rubber chicken » par mixmasterdylan (un seul cri extrait de 2,90 à 3,80 s,
                      volume normalisé, fondu de 12 ms)
                      https://freesound.org/people/mixmasterdylan/sounds/521706/

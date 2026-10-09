@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type BuzzerSoundId = 'open' | 'buzz' | 'right' | 'wrong' | 'round'
 
 export const BUZZER_SOUNDS: { id: BuzzerSoundId; label: string; file: string }[] = [
-  { id: 'open', label: 'Ouverture des buzzers', file: '/sounds/buzzer/ouverture.mp3' },
+  { id: 'open', label: 'Ouverture des buzzers', file: '/sounds/buzzer/ouverture-ninja.mp3' },
   { id: 'buzz', label: 'Buzz', file: '/sounds/buzzer/buzz-poulet.wav' },
   { id: 'right', label: 'Bonne réponse', file: '/sounds/buzzer/bonne-reponse.mp3' },
   { id: 'wrong', label: 'Mauvaise réponse', file: '/sounds/buzzer/mauvaise-reponse.mp3' },
