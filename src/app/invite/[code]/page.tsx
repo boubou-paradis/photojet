@@ -121,6 +121,27 @@ export default function InvitePage() {
           }
         }
 
+        // AnimaBuzz : même QR que la session. Redirige seulement si AnimaBuzz
+        // est vraiment en direct (signal de vie, aucun autre jeu actif), sauf
+        // si l'invité a choisi « juste des photos ».
+        let skipBuzzer = photosOnly
+        try {
+          if (photosOnly) sessionStorage.setItem(`buzzer-photos-only-${code}`, '1')
+          skipBuzzer ||= sessionStorage.getItem(`buzzer-photos-only-${code}`) === '1'
+        } catch { /* navigation privée */ }
+        if (!skipBuzzer) {
+          const { data: buzzerSession } = await supabase
+            .from('sessions').select('buzzer_active').eq('code', code).single()
+          if (buzzerSession?.buzzer_active) {
+            const status = await fetch(`/api/buzzer/status?code=${encodeURIComponent(code)}`)
+              .then((r) => r.json()).catch(() => null)
+            if (status?.live) {
+              router.push(`/buzzer/join/${code}`)
+              return
+            }
+          }
+        }
+
         const { data, error } = await supabase
           .from('sessions')
           .select('*')

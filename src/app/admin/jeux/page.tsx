@@ -73,6 +73,20 @@ const games = [
     accentColor: 'text-[#D4AF37]',
     notice: '/matching-regles.pdf',
   },
+  {
+    id: 'buzzer',
+    name: 'AnimaBuzz',
+    image: '/images/games/animabuzz.png',
+    description: 'Le buzzer live : le téléphone de vos invités devient un vrai buzzer de jeu',
+    path: '/admin/jeux/buzzer',
+    // Grisée le temps de terminer le jeu (accessible par son adresse directe pour les tests).
+    available: false,
+    glowColor: 'rgba(168, 85, 247, 0.5)',
+    borderHover: 'hover:border-violet-400',
+    accentColor: 'text-violet-400',
+    // Grand écran : seule sur la 2e ligne, centrée sous la Roue de la Destinée.
+    gridClass: 'lg:col-start-3',
+  },
 ]
 
 export default function JeuxPage() {
@@ -221,12 +235,13 @@ export default function JeuxPage() {
                 group relative rounded-2xl cursor-pointer
                 transition-all duration-300 ease-out
                 ${game.available ? 'hover:scale-[1.03] hover:-translate-y-2' : 'opacity-50 cursor-not-allowed'}
+                ${'gridClass' in game ? game.gridClass : ''}
               `}
             >
               {/* Card */}
               <div className={`
                 relative rounded-2xl overflow-hidden aspect-[16/9]
-                border-2 border-white/5 ${game.available ? game.borderHover : ''}
+                border-2 border-white/5 ${game.available ? game.borderHover : 'grayscale opacity-60'}
                 transition-all duration-300 group-hover:brightness-110
               `}>
                 <Image

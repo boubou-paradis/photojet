@@ -22,6 +22,8 @@ import WheelGame from '@/components/games/WheelGame'
 import QuizGame from '@/components/games/QuizGame'
 import AffinityGame from '@/components/games/AffinityGame'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
+import BuzzerGame from '@/components/games/BuzzerGame'
+import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
@@ -870,6 +872,8 @@ export default function LivePage() {
   // Matching : statut serveur (signal de vie, aucun autre jeu), interrogé
   // seulement quand la ligne de session indique Matching actif.
   const affinityStatus = useAffinityStatus(code, session?.affinity_active === true)
+  // AnimaBuzz : même principe, interrogé seulement quand AnimaBuzz est lancé.
+  const buzzerStatus = useBuzzerStatus(code, session?.buzzer_active === true)
 
   const transitionType = session?.transition_type || 'fade'
   const currentItem = slideshowItems[currentIndex]
@@ -1327,6 +1331,12 @@ export default function LivePage() {
         isFinished={quizState?.isFinished ?? session.quiz_show_podium === true}
       />
     )
+  }
+
+  // AnimaBuzz : juste avant Matching (les deux s'excluent). Affiché seulement si
+  // le serveur confirme qu'il est en direct (signal de vie frais, aucun autre jeu).
+  if (session.buzzer_active && buzzerStatus.live) {
+    return <BuzzerGame session={session} status={buzzerStatus} />
   }
 
   // Matching : en dernier, juste avant le diaporama. Affiché seulement si le
