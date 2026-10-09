@@ -31,15 +31,16 @@ export function availableActions(state: BuzzerActiveState): GameAction[] {
 }
 
 /**
- * Télécommande. PageDown = action logique suivante, PageUp = mauvaise
- * réponse (seulement si quelqu'un a la main). Jamais d'action destructive.
+ * Télécommande. Quand quelqu'un a la main : PageDown = mauvaise réponse,
+ * PageUp = bonne réponse. Sinon PageDown = action logique suivante (ouvrir,
+ * nouvelle manche) et PageUp ne fait rien. Jamais d'action destructive.
  * `null` = la touche ne fait rien dans cet état.
  */
 export function remoteAction(state: BuzzerActiveState, key: 'next' | 'prev'): 'open' | 'right' | 'wrong' | 'new_round' | null {
   if (state.paused) return null
-  if (key === 'prev') return state.phase === 'buzzed' && state.priority ? 'wrong' : null
+  if (key === 'prev') return state.phase === 'buzzed' && state.priority ? 'right' : null
   if (state.phase === 'waiting') return 'open'
-  if (state.phase === 'buzzed' && state.priority) return 'right'
+  if (state.phase === 'buzzed' && state.priority) return 'wrong'
   if (state.phase === 'closed') return 'new_round'
   return null
 }

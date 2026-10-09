@@ -26,9 +26,9 @@ const buzzed = (patch: Partial<BuzzerActiveState> = {}) =>
   })
 
 describe('télécommande', () => {
-  it('PageDown : ouvrir, bonne réponse, nouvelle manche', () => {
+  it('PageDown : ouvrir, mauvaise réponse, nouvelle manche', () => {
     expect(remoteAction(state({ phase: 'waiting' }), 'next')).toBe('open')
-    expect(remoteAction(buzzed(), 'next')).toBe('right')
+    expect(remoteAction(buzzed(), 'next')).toBe('wrong')
     expect(remoteAction(state({ phase: 'closed', outcome: 'won' }), 'next')).toBe('new_round')
   })
   it('PageDown ne fait rien buzzers ouverts sans buzz, en lobby ou en test', () => {
@@ -36,8 +36,8 @@ describe('télécommande', () => {
     expect(remoteAction(state({ phase: 'lobby' }), 'next')).toBeNull()
     expect(remoteAction(state({ phase: 'test' }), 'next')).toBeNull()
   })
-  it('PageUp = mauvaise réponse seulement si quelqu’un a la main', () => {
-    expect(remoteAction(buzzed(), 'prev')).toBe('wrong')
+  it('PageUp = bonne réponse seulement si quelqu’un a la main', () => {
+    expect(remoteAction(buzzed(), 'prev')).toBe('right')
     expect(remoteAction(state({ phase: 'open' }), 'prev')).toBeNull()
     expect(remoteAction(state({ phase: 'closed' }), 'prev')).toBeNull()
   })

@@ -306,8 +306,9 @@ export default function BuzzerAdminPage() {
     return () => clearTimeout(timer)
   }, [deadlineAt, offset, act])
 
-  // Télécommande de présentation : PageDown = action logique suivante,
-  // PageUp = mauvaise réponse. Jamais quitter, retirer ni rien de destructif.
+  // Télécommande de présentation : quand un joueur a la main, PageDown =
+  // mauvaise réponse et PageUp = bonne réponse ; sinon PageDown = action
+  // logique suivante. Jamais quitter, retirer ni rien de destructif.
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({
     active: active && remoteOn && !!state,
