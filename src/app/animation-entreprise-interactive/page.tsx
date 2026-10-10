@@ -67,6 +67,7 @@ const content: AnimationDetailContent = {
     { label: 'Le Bon Ordre (jeu d\'équipe)', href: '/le-bon-ordre' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
+    { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Pour l\'événementiel', href: '/animation-evenementielle-interactive' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],

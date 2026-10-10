@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           '/play/',
           '/join/',
           '/matching/',
+          '/buzzer/',
           '/album/',
           '/trial/',
         ],

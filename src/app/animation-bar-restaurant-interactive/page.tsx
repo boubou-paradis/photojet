@@ -67,6 +67,7 @@ const content: AnimationDetailContent = {
     { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
+    { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Pour l\'événementiel', href: '/animation-evenementielle-interactive' },
   ],
 }

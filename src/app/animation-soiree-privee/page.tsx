@@ -54,6 +54,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz & blind test', href: '/quiz-interactif' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
+    { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Anniversaire', href: '/animation-anniversaire' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },

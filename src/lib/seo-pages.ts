@@ -30,6 +30,7 @@ export const SEO_PAGES: SeoPage[] = [
   { slug: 'photo-mystere', label: 'Photo Mystère', blurb: 'Une photo se dévoile case par case, à qui devinera le premier.', category: 'animation', priority: 0.8 },
   { slug: 'le-bon-ordre', label: 'Le Bon Ordre', blurb: 'Le jeu de classement qui oppose deux équipes en direct.', category: 'animation', priority: 0.8 },
   { slug: 'jeu-points-communs', label: 'Matching', blurb: 'Le jeu des points communs : chacun découvre qui a répondu comme lui.', category: 'animation', priority: 0.8 },
+  { slug: 'jeu-buzzer', label: 'AnimaBuzz', blurb: 'Le buzzer live : le téléphone de chaque invité devient un vrai buzzer de jeu.', category: 'animation', priority: 0.8 },
   { slug: 'partage-photo-evenement', label: 'Partage photo en direct', blurb: 'Les invités envoient leurs photos, elles s’affichent en direct.', category: 'animation', priority: 0.8 },
   { slug: 'borne-photo', label: 'Borne photo', blurb: 'Une borne photo virtuelle, sans matériel à louer.', category: 'animation', priority: 0.8 },
 

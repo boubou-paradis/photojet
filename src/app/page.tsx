@@ -61,6 +61,12 @@ const animations = [
     desc: 'Le jeu des points communs : chacun répond depuis son téléphone et découvre à la fin qui a répondu comme lui.',
   },
   {
+    name: 'AnimaBuzz',
+    img: '/images/games/animabuzz.png',
+    href: '/jeu-buzzer',
+    desc: 'Le buzzer live : le téléphone de chaque invité devient un vrai buzzer, le plus rapide prend la main sur l\'écran géant.',
+  },
+  {
     name: 'Partage photo en direct',
     img: '/photo-qr-partage.png',
     href: '/partage-photo-evenement',
@@ -156,7 +162,7 @@ const jsonLd = {
       featureList: [
         'Photos et messages en direct',
         'Diaporama HD temps réel',
-        '5 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching)',
+        '6 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz)',
         'QR codes personnalisés',
         'Borne photo intégrée',
         'Personnalisation logo et arrière-plan',
@@ -223,7 +229,7 @@ const pricingFeatures = [
   'Photos et messages illimités',
   'Diaporama en direct HD',
   'Borne photo intégrée',
-  '5 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching)',
+  '6 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz)',
   'QR codes personnalisés',
   'Personnalisation logo + arrière-plan',
   'Modération des contenus',

@@ -70,6 +70,7 @@ const content: AnimationDetailContent = {
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
+    { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
   ],
