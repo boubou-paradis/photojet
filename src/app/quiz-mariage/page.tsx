@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['quiz mariage', 'quiz des mariés', 'quiz pour les mariés', 'quiz connaissez-vous les mariés', 'jeu mariage interactif', 'quiz interactif mariage', 'quiz mariage smartphone'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Quiz Mariage Interactif | AnimaJet',
     description: 'Le quiz des mariés sur écran géant : vos invités répondent depuis leur téléphone, le classement s\'affiche en direct.',
     url: URL,

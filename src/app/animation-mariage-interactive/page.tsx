@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     canonical: URL,
   },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Mariage interactif : tous vos invités jouent | AnimaJet',
     description: "Du vin d'honneur à la soirée, faites jouer toute la salle : quiz des mariés, blind test et photos en direct sur grand écran. Sans appli. Essai gratuit 24h.",
     url: URL,

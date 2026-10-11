@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['photo mystère', 'jeu photo deviner', 'jeu image cachée', 'animation photo événement', 'jeu interactif soirée', 'devine la photo'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: "Photo Mystère : devinez l'image le premier ! | AnimaJet",
     description: "L'image se dévoile case par case sur écran géant : le premier qui la reconnaît gagne la manche. Vos propres photos, toute la salle joue. Essai gratuit 24h.",
     url: URL,

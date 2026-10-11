@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     canonical: URL,
   },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Animation Camping Interactive | AnimaJet',
     description: 'Quiz, jeux interactifs et partage photo en direct. Faites participer tous vos vacanciers depuis leur téléphone.',
     url: URL,

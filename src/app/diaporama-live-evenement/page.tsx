@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['diaporama live', 'diaporama événement', 'photos écran géant', 'diaporama soirée entreprise', 'mur de photos live', 'diaporama soirée temps réel'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Diaporama en direct sur écran géant | AnimaJet',
     description: 'Les photos de vos invités s\'affichent en direct sur grand écran, toute la soirée.',
     url: URL,

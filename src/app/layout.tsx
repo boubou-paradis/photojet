@@ -92,10 +92,10 @@ export const metadata: Metadata = {
     description: "Faites participer tous vos invités depuis leur téléphone : quiz, roue de la destinée, photo mystère, jeu des points communs, partage photo en direct sur écran géant. Sans application. Développé par un DJ animateur pour les pros. Essai gratuit 24h.",
     images: [
       {
-        url: "/images/animajet_logo_principal.png",
+        url: "/images/og-animajet.jpg",
         width: 1200,
         height: 630,
-        alt: "AnimaJet - Animation interactive pour événements",
+        alt: "AnimaJet — Les animations interactives qui font vibrer vos événements",
       },
     ],
     url: "https://animajet.fr",
@@ -107,7 +107,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AnimaJet - Animations interactives pour l'événementiel",
     description: "Vos invités participent depuis leur téléphone. Quiz, roue, jeu des points communs, photos en direct sur écran géant. Sans appli. Essai gratuit, 29,90€/mois.",
-    images: ["/images/animajet_logo_principal.png"],
+    images: ["/images/og-animajet.jpg"],
     creator: "@animajet",
   },
   // Favicon + icône Apple : convention fichiers Next.js (src/app/favicon.ico, icon.png, apple-icon.png)

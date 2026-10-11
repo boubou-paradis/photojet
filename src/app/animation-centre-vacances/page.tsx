@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['animation centre de vacances', 'animation colonie de vacances', 'veillée colo', 'animation club vacances', 'jeux veillée', 'animation centre de loisirs'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Animation Centre de Vacances | AnimaJet',
     description: 'Quiz, photos en direct et jeux interactifs pour des veillées inoubliables.',
     url: URL,

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['buzzer téléphone', 'buzzer quiz', 'buzzer en ligne', 'jeu de buzzer soirée', 'buzzer blind test', 'buzzer pour animateur', 'animation quiz mariage'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'AnimaBuzz : le buzzer live sur téléphone | AnimaJet',
     description: "Chaque invité buzze depuis son téléphone, l'écran géant affiche le plus rapide et les suivants. Idéal pour vos quiz, blind tests et jeux de soirée.",
     url: URL,

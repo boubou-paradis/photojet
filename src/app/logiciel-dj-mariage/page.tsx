@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['logiciel DJ mariage', 'logiciel animation mariage', 'animation DJ mariage', 'jeux DJ mariage', 'quiz mariage interactif', 'outil DJ mariage', 'application DJ mariage'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Logiciel DJ Mariage | AnimaJet',
     description: 'Quiz, blind test, photos en direct : le logiciel qui rend vos mariages inoubliables.',
     url: URL,

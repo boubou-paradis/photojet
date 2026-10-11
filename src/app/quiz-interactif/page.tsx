@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['quiz interactif', 'quiz interactif smartphone', 'quiz sans application événement', 'quiz événement interactif', 'quiz événement', 'quiz soirée', 'animation quiz', 'quiz écran géant', 'quiz smartphone', 'quiz QR code', 'blind test', 'blind test interactif', 'blind test musical', 'quiz mariage'],
   alternates: { canonical: URL },
   openGraph: {
-    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
+    images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
     title: 'Animation quiz interactif avec classement live | AnimaJet',
     description: 'Mariage, bar ou entreprise : lancez un quiz où toute la salle répond depuis son téléphone, classement en direct sur écran géant. Essai gratuit 24h.',
     url: URL,
