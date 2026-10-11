@@ -80,7 +80,7 @@ const content: BlogArticleContent = {
       id: 'pourquoi',
       heading: 'Pourquoi le blind test est l’animation reine des mariages',
       body: [
-        "Le blind test réunit ce qu'aucune autre animation ne parvient à combiner&nbsp;: il fait participer <em>tout le monde</em>, des enfants aux grands-parents, sans exiger de se lever, de danser ou de prendre le micro. Chacun a une chanson en tête, et la reconnaître avant les autres déclenche instantanément l'esprit de compétition et les éclats de rire.",
+        "Le blind test réunit ce qu'aucune autre animation ne parvient à combiner&nbsp;: il fait participer <em>tout le monde</em>, des enfants aux grands-parents, sans exiger de se lever, de danser ou de prendre le micro. Chacun a une chanson en tête, et la reconnaître avant les autres déclenche instantanément l'esprit de compétition et les éclats de rire. C'est tout le principe d'un <a href=\"/blind-test-mariage\">blind test mariage</a> interactif&nbsp;: chacun joue depuis sa place.",
         "C'est aussi l'animation la plus flexible du repas&nbsp;: elle se lance en trois minutes entre deux plats, ou en version longue pour lancer la soirée dansante. Bien construite, elle réchauffe la salle exactement au bon moment.",
       ],
     },

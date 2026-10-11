@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-evenementielle-interactive'
 
 export const metadata: Metadata = {
-  title: 'Animation Événementielle Interactive | Photos & Jeux en Direct',
-  description: 'Solution d\'animation événementielle interactive : photos en direct sur écran géant, 6 jeux interactifs (quiz, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz), QR codes personnalisés. Idéal pour tous types d\'événements. Essai gratuit 24h.',
+  title: 'Jeux interactifs pour agences événementielles',
+  description: 'Pour les agences et prestataires événementiels : jeux interactifs, photos en direct et QR codes à la marque du client, sans appli. Essai gratuit 24h.',
   keywords: [
     'animation événementielle',
     'animation interactive',
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
-    title: 'Animation Événementielle Interactive | AnimaJet',
-    description: 'Photos en direct, 6 jeux interactifs, QR codes personnalisés. La solution complète pour animer tous vos événements.',
+    title: 'Jeux interactifs pour agences événementielles | AnimaJet',
+    description: 'Pour les agences et prestataires événementiels : jeux interactifs, photos en direct et QR codes à la marque du client, sans appli. Essai gratuit 24h.',
     url: URL,
     type: 'website',
     locale: 'fr_FR',
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
 }
 
 const content: AnimationDetailContent = {
-  eyebrow: 'ANIMATION ÉVÉNEMENTIELLE INTERACTIVE',
-  title: 'La solution complète pour',
-  highlight: 'animer tous vos événements',
+  eyebrow: 'POUR LES AGENCES ÉVÉNEMENTIELLES',
+  title: 'La solution interactive des',
+  highlight: 'agences événementielles',
   intro: "Photos en direct sur écran géant, six jeux interactifs (quiz, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz) et QR codes personnalisés : AnimaJet est la boîte à outils des professionnels qui orchestrent des événements et veulent faire participer leur public, sans application.",
   image: '/photo-qr-partage.png',
   what: [
@@ -71,7 +71,7 @@ const content: AnimationDetailContent = {
 
 const jsonLd = buildAnimationJsonLd({
   name: 'Animation Événementielle Interactive AnimaJet',
-  description: 'Solution d\'animation événementielle interactive : photos en direct, 6 jeux interactifs et QR codes personnalisés sur écran géant, sans application.',
+  description: 'Solution interactive pour les agences et prestataires événementiels : 6 jeux interactifs, photos en direct sur écran géant et QR codes à la marque du client, sans application.',
   url: URL,
   serviceType: 'Animation événementielle',
   faq: content.faq,

@@ -111,7 +111,7 @@ const content: BlogArticleContent = {
       id: 'musique',
       heading: 'Musique et goûts (7 questions)',
       body: [
-        "Un pont naturel vers la soirée dansante. Ces questions annoncent l'ambiance et se marient très bien avec une manche de blind test.",
+        "Un pont naturel vers la soirée dansante. Ces questions annoncent l'ambiance et se marient très bien avec une manche de blind test&nbsp;: voyez notre <a href=\"/blind-test-mariage\">blind test mariage</a> sur écran géant.",
         "<ul><li>Quelle est la chanson de leur premier slow&nbsp;?</li><li>Quel artiste les mariés iraient-ils voir en concert sans hésiter&nbsp;?</li><li>Quel style de musique met le marié de bonne humeur&nbsp;?</li><li>Quelle chanson la mariée chante-t-elle (faux) sous la douche&nbsp;?</li><li>Quel film les mariés peuvent-ils regarder en boucle&nbsp;?</li><li>Quelle sera la chanson de leur ouverture de bal&nbsp;?</li><li>Quel tube fera lever toute la salle ce soir&nbsp;?</li></ul>",
       ],
     },
