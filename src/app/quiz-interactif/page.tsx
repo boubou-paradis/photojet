@@ -4,14 +4,14 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/quiz-interactif'
 
 export const metadata: Metadata = {
-  title: 'Animation Quiz Interactif sur Écran Géant',
-  description: 'Lancez une animation quiz interactif : vos invités répondent depuis leur téléphone, buzzer et classement en direct sur écran géant. Essai gratuit 24h.',
+  title: 'Animation quiz interactif avec classement live',
+  description: 'Mariage, bar ou entreprise : lancez un quiz où toute la salle répond depuis son téléphone, classement en direct sur écran géant. Essai gratuit 24h.',
   keywords: ['quiz interactif', 'quiz interactif smartphone', 'quiz sans application événement', 'quiz événement interactif', 'quiz événement', 'quiz soirée', 'animation quiz', 'quiz écran géant', 'quiz smartphone', 'quiz QR code', 'blind test', 'blind test interactif', 'blind test musical', 'quiz mariage'],
   alternates: { canonical: URL },
   openGraph: {
     images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
-    title: 'Animation Quiz Interactif sur Écran Géant | AnimaJet',
-    description: 'Vos invités répondent depuis leur téléphone, le classement s\'affiche en direct sur écran géant.',
+    title: 'Animation quiz interactif avec classement live | AnimaJet',
+    description: 'Mariage, bar ou entreprise : lancez un quiz où toute la salle répond depuis son téléphone, classement en direct sur écran géant. Essai gratuit 24h.',
     url: URL,
     type: 'website',
     locale: 'fr_FR',
@@ -57,6 +57,7 @@ const content: AnimationDetailContent = {
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
+    { label: 'Idées de questions pour un quiz de mariage', href: '/blog/50-questions-quiz-mariage' },
   ],
 }
 

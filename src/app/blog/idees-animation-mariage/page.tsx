@@ -136,7 +136,7 @@ const content: BlogArticleContent = {
         {
           heading: "Le quiz des mariés (version « Elle & Lui » sur écran géant)",
           body: [
-            "Le grand classique revisité&nbsp;: des questions sur le couple, et les invités votent depuis leur téléphone pour savoir s'ils connaissent vraiment les mariés. Le suspense monte sur l'écran à chaque réponse. C'est l'animation idéale entre l'entrée et le plat — voyez le <a href=\"/quiz-mariage\">quiz de mariage</a> en détail.",
+            "Le grand classique revisité&nbsp;: des questions sur le couple, et les invités votent depuis leur téléphone pour savoir s'ils connaissent vraiment les mariés. Le suspense monte sur l'écran à chaque réponse. C'est l'animation idéale entre l'entrée et le plat — voyez le <a href=\"/quiz-mariage\">quiz de mariage</a> en détail, et piochez dans nos <a href=\"/blog/50-questions-quiz-mariage\">50 questions pour un quiz de mariage</a>.",
           ],
         },
         {

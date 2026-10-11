@@ -4,8 +4,8 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-mariage-interactive'
 
 export const metadata: Metadata = {
-  title: 'Animation Mariage Interactive : jeux & photos',
-  description: 'Quiz musical, photos en direct sur écran géant, jeux interactifs : l\'animation pour mariage qui fait participer tous vos invités. Essai gratuit 24h.',
+  title: 'Mariage interactif : tous vos invités jouent',
+  description: "Du vin d'honneur à la soirée, faites jouer toute la salle : quiz des mariés, blind test et photos en direct sur grand écran. Sans appli. Essai gratuit 24h.",
   keywords: [
     'animation mariage',
     'animation de mariage',
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
-    title: 'Animation Mariage Interactive | AnimaJet',
-    description: 'Photos en direct, quiz musical, jeux interactifs. L\'animation parfaite pour votre mariage.',
+    title: 'Mariage interactif : tous vos invités jouent | AnimaJet',
+    description: "Du vin d'honneur à la soirée, faites jouer toute la salle : quiz des mariés, blind test et photos en direct sur grand écran. Sans appli. Essai gratuit 24h.",
     url: URL,
     type: 'website',
     locale: 'fr_FR',
@@ -73,6 +73,7 @@ const content: AnimationDetailContent = {
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
+    { label: '50 questions pour votre quiz de mariage', href: '/blog/50-questions-quiz-mariage' },
   ],
 }
 

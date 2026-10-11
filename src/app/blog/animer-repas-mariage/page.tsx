@@ -141,7 +141,7 @@ const content: BlogArticleContent = {
         {
           heading: 'Le quiz des mariés',
           body: [
-            "Le format roi du repas&nbsp;: des questions sur le couple, les invités votent depuis leur table, le suspense monte à l'écran. Parfait juste après l'entrée. Voir le <a href=\"/quiz-mariage\">quiz de mariage</a> en détail.",
+            "Le format roi du repas&nbsp;: des questions sur le couple, les invités votent depuis leur table, le suspense monte à l'écran. Parfait juste après l'entrée. Voir le <a href=\"/quiz-mariage\">quiz de mariage</a> en détail. Besoin d'inspiration&nbsp;? Voici <a href=\"/blog/50-questions-quiz-mariage\">50 questions de quiz de mariage</a>.",
           ],
         },
         {

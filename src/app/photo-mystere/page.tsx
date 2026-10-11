@@ -4,14 +4,14 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/photo-mystere'
 
 export const metadata: Metadata = {
-  title: 'Jeu Photo Mystère : la photo cachée à deviner',
-  description: "Découvrez Photo Mystère, le jeu où l'image se dévoile case par case sur écran géant : le premier qui la reconnaît gagne la manche. Essai gratuit 24h !",
+  title: "Photo Mystère : devinez l'image le premier !",
+  description: "L'image se dévoile case par case sur écran géant : le premier qui la reconnaît gagne la manche. Vos propres photos, toute la salle joue. Essai gratuit 24h.",
   keywords: ['photo mystère', 'jeu photo deviner', 'jeu image cachée', 'animation photo événement', 'jeu interactif soirée', 'devine la photo'],
   alternates: { canonical: URL },
   openGraph: {
     images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
-    title: 'Jeu Photo Mystère : la photo cachée à deviner | AnimaJet',
-    description: "Une image se dévoile case par case sur l'écran géant, le premier à la reconnaître crie la réponse et remporte la manche.",
+    title: "Photo Mystère : devinez l'image le premier ! | AnimaJet",
+    description: "L'image se dévoile case par case sur écran géant : le premier qui la reconnaît gagne la manche. Vos propres photos, toute la salle joue. Essai gratuit 24h.",
     url: URL,
     type: 'website',
     locale: 'fr_FR',

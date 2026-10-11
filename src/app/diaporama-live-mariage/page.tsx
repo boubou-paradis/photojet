@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['diaporama live mariage', 'diaporama mariage en direct', 'photo invités grand écran mariage', 'partage photo mariage QR code', 'mur de photos mariage', 'projection photo mariage temps réel', 'slideshow mariage interactif'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Diaporama Live Mariage sur Écran Géant | AnimaJet',
     description: 'Les photos de vos invités s\'affichent en direct sur grand écran pendant tout le mariage, du vin d\'honneur à la soirée.',
     url: URL,

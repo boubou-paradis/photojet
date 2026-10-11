@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   keywords: ['borne photo', 'photobooth', 'borne photo mariage', 'borne selfie', 'photobooth impression', 'borne photo événement', 'photobooth connecté'],
   alternates: { canonical: URL },
   openGraph: {
+    images: [{ url: '/images/animajet_logo_principal.png', width: 1200, height: 630, alt: 'AnimaJet - Animation interactive pour événements' }],
     title: 'Borne Photo Connectée | AnimaJet',
     description: 'Le photobooth nouvelle génération : impression instantanée et album partagé.',
     url: URL,
