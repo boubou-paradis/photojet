@@ -1,6 +1,6 @@
 # AnimaJet
 
-> Plateforme SaaS française d'animations interactives pour les pros de l'événementiel (DJ, animateurs, mariages, entreprises, bars, campings). Les invités participent depuis leur téléphone — quiz, blind test, roue de la destinée, photo mystère, partage et impression photo — et tout s'affiche en direct sur écran géant. Sans application à installer. Abonnement 29,90 €/mois (sans engagement), Pass Événement 14,90 € le week-end, essai gratuit 24h en semaine. Éditeur : MG Events Animation. Site en français.
+> Plateforme SaaS française d'animations interactives pour les pros de l'événementiel (DJ, animateurs, mariages, entreprises, bars, campings). Les invités participent depuis leur téléphone — quiz, blind test, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz, partage et impression photo — et tout s'affiche en direct sur écran géant. Sans application à installer. Abonnement 29,90 €/mois (sans engagement), Pass Événement 14,90 € le week-end, essai gratuit 24h en semaine. Éditeur : MG Events Animation. Site en français.
 
 ## Fonctionnalités & animations
 
@@ -11,6 +11,8 @@
 - [Roue de la Destinée](https://animajet.fr/roue-de-la-destinee): roue jackpot premium (gages, lots, défis) sur écran géant.
 - [Photo Mystère](https://animajet.fr/photo-mystere): une photo se dévoile peu à peu, le premier qui devine gagne.
 - [Le Bon Ordre](https://animajet.fr/le-bon-ordre): jeu de classement qui oppose deux équipes en direct.
+- [Matching](https://animajet.fr/jeu-points-communs): le jeu des points communs, chacun découvre qui a répondu comme lui.
+- [AnimaBuzz](https://animajet.fr/jeu-buzzer): le téléphone de chaque invité devient un vrai buzzer de jeu.
 - [Partage photo en direct](https://animajet.fr/partage-photo-evenement): les invités envoient leurs photos, affichées en direct sur écran géant.
 - [Borne photo](https://animajet.fr/borne-photo): borne photo virtuelle, sans matériel à louer.
 - [Impression photo sur place](https://animajet.fr/impression-photo-evenement): les invités impriment leurs souvenirs pendant l'événement.

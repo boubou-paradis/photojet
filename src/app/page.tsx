@@ -27,6 +27,7 @@ import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
 import { toast } from 'sonner'
+import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
 
 // LES ANIMATIONS DISPONIBLES — uniquement les fonctionnalités réelles
 const animations = [
@@ -162,7 +163,7 @@ const jsonLd = {
       featureList: [
         'Photos et messages en direct',
         'Diaporama HD temps réel',
-        '6 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz)',
+        `${GAMES_COUNT} jeux interactifs (${GAME_NAMES})`,
         'QR codes personnalisés',
         'Borne photo intégrée',
         'Personnalisation logo et arrière-plan',
@@ -229,7 +230,7 @@ const pricingFeatures = [
   'Photos et messages illimités',
   'Diaporama en direct HD',
   'Borne photo intégrée',
-  '6 jeux interactifs (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz)',
+  `${GAMES_COUNT} jeux interactifs (${GAME_NAMES})`,
   'QR codes personnalisés',
   'Personnalisation logo + arrière-plan',
   'Modération des contenus',

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import { GAMES_COUNT, GAMES_COUNT_WORDS, GAME_NAMES, GAME_NAMES_AND } from '@/lib/games-catalog'
 
 const URL = 'https://animajet.fr/animation-evenementielle-interactive'
 
@@ -33,7 +34,7 @@ const content: AnimationDetailContent = {
   eyebrow: 'POUR LES AGENCES ÉVÉNEMENTIELLES',
   title: 'La solution interactive des',
   highlight: 'agences événementielles',
-  intro: "Photos en direct sur écran géant, six jeux interactifs (quiz, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz) et QR codes personnalisés : AnimaJet est la boîte à outils des professionnels qui orchestrent des événements et veulent faire participer leur public, sans application.",
+  intro: `Photos en direct sur écran géant, ${GAMES_COUNT_WORDS} jeux interactifs (${GAME_NAMES}) et QR codes personnalisés : AnimaJet est la boîte à outils des professionnels qui orchestrent des événements et veulent faire participer leur public, sans application.`,
   image: '/photo-qr-partage.png',
   what: [
     "Quel que soit l'événement — lancement de produit, festival, soirée de gala, inauguration ou événement grand public — l'enjeu est le même : capter l'attention et faire vivre quelque chose au public plutôt que de le laisser spectateur. AnimaJet regroupe en une seule plateforme tout ce qu'il faut pour cela : du partage photo en direct qui anime l'écran géant aux jeux interactifs qui mettent l'assistance en mouvement.",
@@ -47,7 +48,7 @@ const content: AnimationDetailContent = {
     { title: 'Pilotez en temps réel', desc: 'Vous gardez la main sur le rythme du début à la fin.' },
   ],
   benefits: [
-    { emoji: '🎮', title: '6 jeux interactifs', desc: 'Quiz, roue de la destinée, photo mystère, le bon ordre, Matching et AnimaBuzz.' },
+    { emoji: '🎮', title: `${GAMES_COUNT} jeux interactifs`, desc: `${GAME_NAMES_AND}.` },
     { emoji: '📸', title: 'Photos en direct', desc: 'L\'écran géant s\'anime des clichés du public, en temps réel.' },
     { emoji: '🏷️', title: 'Personnalisable à la marque', desc: 'Logo et couleurs de l\'événement ou du client sur tous les écrans.' },
     { emoji: '🧰', title: 'Une seule plateforme', desc: 'Remplace plusieurs outils par une solution unique et fiable.' },
