@@ -71,7 +71,7 @@ const content: AnimationDetailContent = {
 
 const jsonLd = buildAnimationJsonLd({
   name: 'Animation Événementielle Interactive AnimaJet',
-  description: 'Solution interactive pour les agences et prestataires événementiels : 6 jeux interactifs, photos en direct sur écran géant et QR codes à la marque du client, sans application.',
+  description: 'Solution interactive pour les agences et prestataires événementiels : des jeux interactifs, photos en direct sur écran géant et QR codes à la marque du client, sans application.',
   url: URL,
   serviceType: 'Animation événementielle',
   faq: content.faq,
