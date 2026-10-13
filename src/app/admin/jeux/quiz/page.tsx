@@ -1981,7 +1981,13 @@ export default function QuizPage() {
   }
 
   const currentQuestion = questions[currentQuestionIndex]
-  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore).slice(0, 10)
+  // Classement complet (admin uniquement) : tous les joueurs, rang partagé en cas d'égalité (1, 1, 3).
+  // L'écran géant (QuizGame) garde son propre classement, inchangé.
+  const sortedParticipants = [...participants].sort((a, b) => b.totalScore - a.totalScore)
+  const ranks: number[] = []
+  sortedParticipants.forEach((p, i) => {
+    ranks.push(i > 0 && p.totalScore === sortedParticipants[i - 1].totalScore ? ranks[i - 1] : i + 1)
+  })
   const totalAnswers = answerStats.reduce((a, b) => a + b, 0)
 
   // Télécommande de présentation : PageDown déclenche le bouton affiché
@@ -3237,6 +3243,11 @@ export default function QuizPage() {
                   <Trophy className="h-5 w-5 text-[#D4AF37]" />
                 </div>
                 <h3 className="text-white font-bold text-lg">Classement</h3>
+                {sortedParticipants.length > 0 && (
+                  <span className="ml-auto text-xs text-[#6B6B70]">
+                    {sortedParticipants.length} joueur{sortedParticipants.length > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
 
               {sortedParticipants.length === 0 ? (
@@ -3245,33 +3256,35 @@ export default function QuizPage() {
                   <p>En attente des joueurs...</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                // Hauteur limitée + défilement : le reste de la page n'est pas poussé vers le bas
+                <div className="space-y-2 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#D4AF37]/20 scrollbar-track-transparent">
                   {sortedParticipants.map((p, index) => (
                     <motion.div
                       key={p.odientId}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      // Décalage d'apparition plafonné : avec 200 joueurs, la dernière ligne ne doit pas attendre 10 s
+                      transition={{ delay: Math.min(index, 10) * 0.05 }}
                       className={`flex items-center gap-3 rounded-xl p-3 transition-all duration-200 ${
-                        index === 0
+                        ranks[index] === 1
                           ? 'bg-gradient-to-r from-[#FFD700]/20 to-transparent border border-[#FFD700]/30'
-                          : index === 1
+                          : ranks[index] === 2
                           ? 'bg-gradient-to-r from-[#C0C0C0]/15 to-transparent border border-[#C0C0C0]/20'
-                          : index === 2
+                          : ranks[index] === 3
                           ? 'bg-gradient-to-r from-[#CD7F32]/15 to-transparent border border-[#CD7F32]/20'
                           : 'bg-[#1A1A1E]/80 border border-transparent hover:border-[rgba(255,255,255,0.05)]'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                        index === 0
+                      <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-sm ${
+                        ranks[index] === 1
                           ? 'bg-[#FFD700]/30 text-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.3)]'
-                          : index === 1
+                          : ranks[index] === 2
                           ? 'bg-[#C0C0C0]/20 text-[#C0C0C0]'
-                          : index === 2
+                          : ranks[index] === 3
                           ? 'bg-[#CD7F32]/20 text-[#CD7F32]'
                           : 'bg-[#2E2E33] text-[#6B6B70]'
                       }`}>
-                        {index + 1}
+                        {ranks[index]}
                       </div>
                       <span className="text-white flex-1 truncate font-medium">{p.odientName}</span>
                       <span className="text-[#D4AF37] font-bold">{p.totalScore} pts</span>
