@@ -847,13 +847,13 @@ export default function Home() {
               className="card-float rounded-3xl p-8 md:p-12 border-[#D4AF37]/20"
             >
               <div className="grid md:grid-cols-[1fr_1.4fr] gap-8 md:gap-12 items-center">
-                {/* Visuel — à remplacer par une photo du fondateur en prestation */}
+                {/* Visuel — photo du fondateur en prestation */}
                 <div className="relative aspect-square rounded-2xl overflow-hidden border border-[#D4AF37]/20">
                   <Image
-                    src="/images/hero-animajet.png"
+                    src="/images/moi dj.png"
                     alt="Fondateur d'AnimaJet, DJ animateur en prestation"
                     fill
-                    className="object-cover"
+                    className="object-cover object-[center_35%]"
                     sizes="(max-width: 768px) 100vw, 40vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/60 to-transparent" />
