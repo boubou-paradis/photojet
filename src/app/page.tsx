@@ -177,6 +177,7 @@ const jsonLd = {
       logo: 'https://animajet.fr/images/animajet_logo_principal.png',
       sameAs: [
         'https://www.facebook.com/profile.php?id=61585844578617',
+        'https://www.youtube.com/channel/UCV4Gm6NsSXyRX8_sU7sPRVQ',
       ],
       contactPoint: {
         '@type': 'ContactPoint',
@@ -412,6 +413,21 @@ export default function Home() {
         >
           <Facebook className="h-5 w-5" />
           <span className="text-sm font-medium hidden sm:inline">Suivez-nous</span>
+        </motion.a>
+        <motion.a
+          href="https://www.youtube.com/channel/UCV4Gm6NsSXyRX8_sU7sPRVQ"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Chaîne YouTube AnimaJet"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.575 }}
+          className="flex items-center gap-2 px-4 py-2 bg-[#FF0000] hover:bg-[#E60000] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+          <span className="text-sm font-medium hidden sm:inline">YouTube</span>
         </motion.a>
         <motion.a
           href="https://chat.whatsapp.com/J8SuTrkzsAS0YFMxFhLdC4"
