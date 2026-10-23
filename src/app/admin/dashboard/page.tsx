@@ -1045,7 +1045,11 @@ fetch(${JSON.stringify(imageUrl)})
     if (!selectedSession) return
 
     const inviteUrl = getInviteUrl(selectedSession.code)
-    const logoUrl = selectedSession.custom_logo || '/images/animajet_logo_principal.png'
+    // custom_logo est un chemin du Storage (logos/…) : même conversion en lien public
+    // que le diaporama ; adresse complète aussi pour le logo par défaut.
+    const logoUrl = selectedSession.custom_logo
+      ? getPhotoUrl(selectedSession.custom_logo)
+      : `${window.location.origin}/images/animajet_logo_principal.png`
     const eventName = selectedSession.name || 'Événement'
 
     // Récupérer le SVG du QR code existant dans la page
@@ -1106,8 +1110,11 @@ fetch(${JSON.stringify(imageUrl)})
             }
 
             .logo {
-              width: 200px;
+              max-width: 200px;
+              max-height: 45mm;
+              width: auto;
               height: auto;
+              object-fit: contain;
               margin-bottom: 4mm;
             }
 
