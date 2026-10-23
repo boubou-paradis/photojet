@@ -12,7 +12,7 @@ describe('fitStage', () => {
 
   it('horizontal : le template laisse libre la colonne des boutons à droite', () => {
     const r = fitStage(1080, 810, true, 1800, 1200)
-    expect(r.x + r.w).toBeLessThanOrEqual(1080 - 216)
+    expect(r.x + r.w).toBeLessThanOrEqual(1080 - 244)
     expect(r.w / r.h).toBeCloseTo(1.5)
     expect(r.y).toBeGreaterThanOrEqual(16)
     expect(r.y + r.h).toBeLessThanOrEqual(810 - 16)

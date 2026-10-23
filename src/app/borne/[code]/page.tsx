@@ -831,29 +831,31 @@ export default function BornePage() {
               </button>
             </div>
 
-            {/* Choix de l'invité : avec ou sans cadre */}
+            {/* Choix de l'invité : avec ou sans cadre. Vertical : barre centrée entre le
+                cadre et le bouton photo ; horizontal : colonne de droite, sous « PRENDRE UNE
+                PHOTO ». Jamais par-dessus le bouton, du téléphone à la grande tablette. */}
             {orientationFrame && frame.guestChoice && (
               <div
                 role="group"
                 aria-label="Choix du cadre"
-                className="pointer-events-auto absolute bottom-16 left-6 w-44 flex flex-col gap-1 p-1.5 rounded-2xl border border-[#D4AF37]/40 bg-[#1A1A1E]/90 backdrop-blur-sm landscape:left-auto landscape:right-6 landscape:bottom-6"
+                className="pointer-events-auto absolute bottom-[206px] left-1/2 -translate-x-1/2 w-[min(20rem,calc(100%-2rem))] flex gap-1 p-1 rounded-2xl border border-[#D4AF37]/40 bg-[#1A1A1E]/90 backdrop-blur-sm landscape:bottom-auto landscape:top-[min(calc(50%+124px),calc(100%-4rem))] landscape:left-auto landscape:right-4 landscape:translate-x-0 landscape:w-56"
               >
                 <button
                   type="button"
                   aria-pressed={withFrame}
                   onClick={() => setWithFrame(true)}
-                  className={`h-14 px-3 rounded-xl flex items-center gap-2 text-base font-bold transition-colors ${withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
+                  className={`flex-1 h-12 px-2 rounded-xl flex items-center justify-center gap-1.5 text-sm font-bold whitespace-nowrap transition-colors ${withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
                 >
-                  <Frame className="h-5 w-5" />
+                  <Frame className="h-4 w-4 shrink-0 landscape:hidden" />
                   Avec cadre
                 </button>
                 <button
                   type="button"
                   aria-pressed={!withFrame}
                   onClick={() => setWithFrame(false)}
-                  className={`h-14 px-3 rounded-xl flex items-center gap-2 text-base font-semibold transition-colors ${!withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
+                  className={`flex-1 h-12 px-2 rounded-xl flex items-center justify-center gap-1.5 text-sm font-semibold whitespace-nowrap transition-colors ${!withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
                 >
-                  <ImageIcon className="h-5 w-5" />
+                  <ImageIcon className="h-4 w-4 shrink-0 landscape:hidden" />
                   Sans cadre
                 </button>
               </div>

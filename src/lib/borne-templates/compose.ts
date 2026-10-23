@@ -17,7 +17,7 @@ export interface Rect {
 
 /** Place réservée aux boutons : bandeau bas en vertical, colonne droite en horizontal. */
 const BOTTOM_RESERVED = 300
-const RIGHT_RESERVED = 216
+const RIGHT_RESERVED = 244
 const MARGIN = 16
 
 /** Rectangle du template à l'écran (le plus grand possible hors zone des boutons). */
