@@ -14,11 +14,15 @@ import {
   Printer,
   Lock,
   Delete,
+  Frame,
+  ImageIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { compressImage } from '@/lib/image-utils'
+import { useBorneFrame, type LoadedFrame } from '@/components/animabooth/useBorneFrame'
+import { composeFramedPhoto, fitStage, zoneOnScreen } from '@/lib/borne-templates/compose'
 
 type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'compressing' | 'uploading' | 'success' | 'printing'
 
@@ -110,9 +114,27 @@ export default function BornePage() {
   // Orientation de l'écran, et orientation au moment où le flux caméra a été ouvert
   const [isLandscape, setIsLandscape] = useState<boolean | null>(null)
   const streamLandscapeRef = useRef<boolean | null>(null)
+  // Cadre AnimaBooth : relu à chaque retour caméra ; choix de l'invité ; cadre figé
+  // au lancement du compte à rebours (un changement de dernière seconde ne compte pas)
+  const [frameRefresh, setFrameRefresh] = useState(0)
+  const [withFrame, setWithFrame] = useState(true)
+  const [lockedFrame, setLockedFrame] = useState<LoadedFrame | null>(null)
+  const [capturedFramed, setCapturedFramed] = useState(false)
+  const lockedFrameRef = useRef<LoadedFrame | null>(null)
+  const [view, setView] = useState({ w: 0, h: 0 })
   const supabase = createClient()
 
   useEffect(() => { sessionRef.current = session }, [session])
+
+  const frame = useBorneFrame(session ? borneCode : undefined, frameRefresh)
+
+  // Taille de l'écran, pour placer le cadre
+  useEffect(() => {
+    const update = () => setView({ w: window.innerWidth, h: window.innerHeight })
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   // Generate or retrieve device ID
   useEffect(() => {
@@ -312,6 +334,10 @@ export default function BornePage() {
     setCountdown(sessionRef.current?.borne_countdown_duration || 3)
     setIsRocketLaunching(false)
     setLastActionWasPrint(false)
+    lockedFrameRef.current = null
+    setLockedFrame(null)
+    setWithFrame(true)
+    setFrameRefresh((k) => k + 1)
     setState('camera')
   }, [])
 
@@ -355,16 +381,30 @@ export default function BornePage() {
     }
 
     try {
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-
-      // Mirror if using front camera
-      if (facingMode === 'user') {
-        ctx.translate(canvas.width, 0)
-        ctx.scale(-1, 1)
+      const framed = lockedFrameRef.current
+      let composed = false
+      if (framed) {
+        // Photo + cadre aux dimensions du template ; en cas d'échec, photo sans cadre
+        try {
+          composeFramedPhoto(canvas, video, framed.img, framed.width, framed.height, framed.zone, facingMode === 'user')
+          composed = true
+        } catch (err) {
+          console.warn('[AnimaBooth] composition impossible, photo sans cadre', err)
+        }
       }
 
-      ctx.drawImage(video, 0, 0)
+      if (!composed) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+
+        // Mirror if using front camera
+        if (facingMode === 'user') {
+          ctx.translate(canvas.width, 0)
+          ctx.scale(-1, 1)
+        }
+
+        ctx.drawImage(video, 0, 0)
+      }
 
       canvas.toBlob(
         (blob) => {
@@ -373,6 +413,7 @@ export default function BornePage() {
             const objectUrl = URL.createObjectURL(blob)
             capturedImageUrlRef.current = objectUrl
             setCapturedBlob(blob)
+            setCapturedFramed(composed)
             setCapturedImage(objectUrl)
             setState('preview')
           } else {
@@ -380,7 +421,7 @@ export default function BornePage() {
           }
         },
         'image/jpeg',
-        0.9
+        composed ? 0.92 : 0.9
       )
     } catch {
       setTimeout(() => resetToCamera(), 2000)
@@ -413,6 +454,9 @@ export default function BornePage() {
 
   function startCountdown() {
     if (!session) return
+
+    lockedFrameRef.current = liveFrame
+    setLockedFrame(liveFrame)
 
     if (session.borne_countdown) {
       setCountdown(session.borne_countdown_duration)
@@ -608,6 +652,17 @@ export default function BornePage() {
     }
   }, [session?.borne_lock_enabled])
 
+  // Cadre à afficher : celui de l'orientation de la tablette, sinon l'autre
+  // (un seul template sert dans les deux sens) ; aucun si l'invité a choisi « Sans cadre ».
+  const landscapeNow = isLandscape ?? (view.w > view.h)
+  const orientationFrame = frame.enabled
+    ? (landscapeNow ? frame.landscape ?? frame.portrait : frame.portrait ?? frame.landscape)
+    : null
+  const liveFrame = orientationFrame && (withFrame || !frame.guestChoice) ? orientationFrame : null
+  const shownFrame = state === 'countdown' ? lockedFrame : state === 'camera' ? liveFrame : null
+  const stage = shownFrame && view.w > 0 ? fitStage(view.w, view.h, landscapeNow, shownFrame.width, shownFrame.height) : null
+  const zoneRect = stage && shownFrame ? zoneOnScreen(stage, shownFrame.width, shownFrame.zone) : null
+
   if (state === 'loading') {
     return (
       <div className="fixed inset-0 bg-[#1A1A1E] flex items-center justify-center">
@@ -664,7 +719,20 @@ export default function BornePage() {
         className={`absolute inset-0 w-full h-full object-cover ${
           facingMode === 'user' ? 'scale-x-[-1]' : ''
         } ${(state === 'camera' || state === 'countdown') ? 'block' : 'hidden'}`}
+        style={zoneRect ? { left: zoneRect.x, top: zoneRect.y, width: zoneRect.w, height: zoneRect.h, right: 'auto', bottom: 'auto' } : undefined}
       />
+
+      {/* Cadre AnimaBooth posé sur la vidéo (la vidéo remplit la zone transparente) */}
+      {shownFrame && stage && (
+        // eslint-disable-next-line @next/next/no-img-element -- PNG du template chargé en blob:
+        <img
+          src={shownFrame.src}
+          alt=""
+          draggable={false}
+          className="absolute pointer-events-none select-none"
+          style={{ left: stage.x, top: stage.y, width: stage.w, height: stage.h }}
+        />
+      )}
 
       {/* Camera View Overlay - Controls only shown in camera state */}
       <AnimatePresence>
@@ -676,7 +744,7 @@ export default function BornePage() {
             className="absolute inset-0 pointer-events-none z-10"
           >
             {/* Event name */}
-            {session?.borne_show_event_name && (
+            {session?.borne_show_event_name && !liveFrame && (
               <div className="absolute top-8 left-0 right-0 text-center landscape:px-48">
                 <div className="inline-block px-6 py-3 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full border border-[#D4AF37]/30">
                   <h1 className="text-2xl font-bold text-white">
@@ -708,6 +776,34 @@ export default function BornePage() {
                 </span>
               </button>
             </div>
+
+            {/* Choix de l'invité : avec ou sans cadre */}
+            {orientationFrame && frame.guestChoice && (
+              <div
+                role="group"
+                aria-label="Choix du cadre"
+                className="pointer-events-auto absolute bottom-16 left-6 w-44 flex flex-col gap-1 p-1.5 rounded-2xl border border-[#D4AF37]/40 bg-[#1A1A1E]/90 backdrop-blur-sm landscape:left-auto landscape:right-6 landscape:bottom-6"
+              >
+                <button
+                  type="button"
+                  aria-pressed={withFrame}
+                  onClick={() => setWithFrame(true)}
+                  className={`h-14 px-3 rounded-xl flex items-center gap-2 text-base font-bold transition-colors ${withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
+                >
+                  <Frame className="h-5 w-5" />
+                  Avec cadre
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!withFrame}
+                  onClick={() => setWithFrame(false)}
+                  className={`h-14 px-3 rounded-xl flex items-center gap-2 text-base font-semibold transition-colors ${!withFrame ? 'bg-[#D4AF37] text-[#1A1A1E]' : 'text-gray-200'}`}
+                >
+                  <ImageIcon className="h-5 w-5" />
+                  Sans cadre
+                </button>
+              </div>
+            )}
 
           </motion.div>
         )}
@@ -746,7 +842,7 @@ export default function BornePage() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-[#1A1A1E]"
           >
-            <div className="absolute inset-4 flex items-center justify-center landscape:right-48">
+            <div className={['absolute inset-4 flex items-center justify-center landscape:right-48', capturedFramed && 'portrait:bottom-[210px]'].filter(Boolean).join(' ')}>
               <img
                 src={capturedImage}
                 alt="Captured"

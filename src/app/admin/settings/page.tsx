@@ -1521,7 +1521,7 @@ export default function SettingsPage() {
             </div>
           </motion.div>
 
-          {/* Borne Photo - pleine largeur */}
+          {/* AnimaBooth (borne photo) - pleine largeur */}
           <motion.div
             whileHover={{ scale: 1.001 }}
             className="card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
@@ -1532,7 +1532,7 @@ export default function SettingsPage() {
                   <Tablet className="h-4 w-4 text-[#D4AF37]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Borne Photo</h3>
+                  <h3 className="text-sm font-semibold text-white">AnimaBooth</h3>
                   <p className="text-xs text-[#6B6B70]">Paramètres de la tablette</p>
                 </div>
               </div>

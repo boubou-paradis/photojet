@@ -2228,7 +2228,7 @@ fetch(${JSON.stringify(imageUrl)})
                       onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
                     >
                       <Tablet className="h-3.5 w-3.5 mr-1.5" />
-                      Borne photo
+                      AnimaBooth
                       {selectedSession.borne_enabled && borneConnection?.is_online && (
                         <span className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                       )}

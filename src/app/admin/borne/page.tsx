@@ -7,7 +7,6 @@ import { motion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import {
   ArrowLeft,
-  Tablet,
   Wifi,
   WifiOff,
   Copy,
@@ -28,11 +27,15 @@ import { Session, BorneConnection } from '@/types/database'
 import { toast } from 'sonner'
 import { getBorneUrl } from '@/lib/utils'
 import { fetchUserSessions, pickSession } from '@/lib/session-select'
+import { buzzerFontVars } from '@/components/buzzer/fonts'
+import AnimaBoothLogo from '@/components/animabooth/AnimaBoothLogo'
+import AnimaBoothTemplates from '@/components/animabooth/AnimaBoothTemplates'
 
 export default function BornePage() {
   const [, setSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [borneConnection, setBorneConnection] = useState<BorneConnection | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const router = useRouter()
@@ -59,6 +62,7 @@ export default function BornePage() {
         return
       }
 
+      setUserId(user.id)
       const data = await fetchUserSessions(supabase, user.id)
       setSessions(data)
       setSelectedSession(pickSession(data, searchParams.get('session')))
@@ -137,7 +141,7 @@ export default function BornePage() {
         borne_qr_code: borneQrCode,
       })
 
-      toast.success(newEnabled ? 'Borne activée' : 'Borne désactivée')
+      toast.success(newEnabled ? 'AnimaBooth activé' : 'AnimaBooth désactivé')
     } catch (err) {
       toast.error('Erreur lors de la mise à jour')
       console.error(err)
@@ -208,7 +212,7 @@ export default function BornePage() {
       <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -239,17 +243,17 @@ export default function BornePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
+    <div className={`min-h-screen bg-[#0D0D0F] overflow-hidden ${buzzerFontVars}`}>
       {/* Animated background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
       </div>
 
       {/* Header */}
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -260,21 +264,11 @@ export default function BornePage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#D4AF37]/20 blur-xl rounded-full" />
-                <Image
-                  src="/images/animajet_logo_principal.png"
-                  alt="AnimaJet"
-                  width={50}
-                  height={50}
-                  className="relative z-10 drop-shadow-lg"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Tablet className="h-5 w-5 text-[#D4AF37]" />
-                <h1 className="text-xl font-bold text-white">Borne Photo</h1>
-              </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div>
+              <h1 className="sr-only">AnimaBooth</h1>
+              <AnimaBoothLogo variant="small" subtitle={false} size="24px" />
+              <p className="text-xs text-gray-500 mt-1">{selectedSession.name} · session {selectedSession.code}</p>
             </div>
           </div>
           <Button
@@ -308,7 +302,7 @@ export default function BornePage() {
           >
             <Image
               src="/images/borne-photo.png"
-              alt="Borne photo"
+              alt="AnimaBooth, la borne photo d’AnimaJet"
               width={220}
               height={220}
               className="rounded-2xl object-contain"
@@ -316,7 +310,7 @@ export default function BornePage() {
           </div>
           <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
             <Sparkles className="h-5 w-5 text-[#D4AF37]" />
-            Configuration Borne
+            Configuration AnimaBooth
             <Sparkles className="h-5 w-5 text-[#D4AF37]" />
           </h2>
           <p className="text-gray-500 text-sm mt-2">{selectedSession.name}</p>
@@ -329,12 +323,12 @@ export default function BornePage() {
         >
           {/* Enable/Disable Card */}
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37]/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37]/20 to-violet-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-[#D4AF37]/30 transition-all">
               <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
               <div className="p-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Activer la borne photo</h3>
+                  <h3 className="text-lg font-semibold text-white">Activer AnimaBooth</h3>
                   <p className="text-sm text-gray-500 mt-1">
                     Transformez une tablette en borne photo
                   </p>
@@ -364,9 +358,9 @@ export default function BornePage() {
                   transition={{ delay: 0.1 }}
                   className="relative group"
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-cyan-400/30 transition-all h-full">
-                    <div className="h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+                  <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-white/10 overflow-hidden hover:border-violet-400/30 transition-all h-full">
+                    <div className="h-1 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
                     <div className="p-4 border-b border-white/5">
                       <h3 className="text-base font-semibold text-white">QR Code connexion</h3>
                       <p className="text-xs text-gray-500 mt-0.5">
@@ -390,7 +384,7 @@ export default function BornePage() {
                               variant="outline"
                               size="sm"
                               onClick={copyBorneLink}
-                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-[#b16cff]"
                             >
                               <Copy className="h-3.5 w-3.5 mr-1.5" />
                               Copier
@@ -401,7 +395,7 @@ export default function BornePage() {
                               onClick={() =>
                                 window.open(`/borne/${selectedSession.borne_qr_code}`, '_blank')
                               }
-                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                              className="flex-1 h-10 text-xs border-white/10 text-white hover:bg-white/5 hover:text-[#b16cff]"
                             >
                               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                               Ouvrir
@@ -411,7 +405,7 @@ export default function BornePage() {
                               size="sm"
                               onClick={regenerateBorneQr}
                               disabled={saving}
-                              className="h-10 w-10 p-0 border-white/10 text-white hover:bg-white/5 hover:text-cyan-400"
+                              className="h-10 w-10 p-0 border-white/10 text-white hover:bg-white/5 hover:text-[#b16cff]"
                             >
                               <RefreshCw className={`h-3.5 w-3.5 ${saving ? 'animate-spin' : ''}`} />
                             </Button>
@@ -498,6 +492,15 @@ export default function BornePage() {
                   </div>
                 </motion.div>
               </div>
+
+              {/* Templates (cadres photo) */}
+              {userId && (
+                <AnimaBoothTemplates
+                  session={selectedSession}
+                  userId={userId}
+                  onSessionChange={(patch) => setSelectedSession((s) => (s ? { ...s, ...patch } : s))}
+                />
+              )}
 
               {/* Installation Guide */}
               <motion.div

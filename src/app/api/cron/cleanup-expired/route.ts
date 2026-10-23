@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendDataDeletionWarningEmail } from '@/lib/resend'
 import { stripe } from '@/lib/stripe'
+import { listUserTemplateFiles } from '@/lib/borne-templates/server'
 
 const GRACE_PERIOD_DAYS = 30
 const TRIAL_GRACE_DAYS = 7 // Essais gratuits non convertis : purge 7 jours après expiration
@@ -452,6 +453,29 @@ async function deleteUserData(
 
   await supabase
     .from('saved_mysteries')
+    .delete()
+    .eq('user_id', userId)
+
+  // 10d. Templates AnimaBooth (bibliothèque borne_templates) + leurs fichiers.
+  // Toutes les sessions sont déjà supprimées (étape 6) : plus rien ne les
+  // référence. On vide tout le dossier borne-templates/<user_id>/, y compris
+  // les fichiers d'imports abandonnés qui n'ont jamais eu de ligne.
+  const { data: borneTemplates } = await supabase
+    .from('borne_templates')
+    .select('storage_path')
+    .eq('user_id', userId)
+  let borneTemplatePaths = (borneTemplates || [])
+    .map((t: { storage_path: string }) => t.storage_path)
+    .filter(Boolean) as string[]
+  try {
+    borneTemplatePaths = Array.from(new Set([...borneTemplatePaths, ...(await listUserTemplateFiles(supabase, userId))]))
+  } catch (e) {
+    console.error('[Cron cleanup] Borne templates list error:', e instanceof Error ? e.message : e)
+  }
+  filesDeleted += await removeFromPhotos(supabase, borneTemplatePaths)
+
+  await supabase
+    .from('borne_templates')
     .delete()
     .eq('user_id', userId)
 

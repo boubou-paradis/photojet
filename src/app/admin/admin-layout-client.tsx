@@ -21,7 +21,7 @@ import { toast } from 'sonner'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/admin/borne', label: 'Borne Photo', icon: Tablet },
+  { href: '/admin/borne', label: 'AnimaBooth', icon: Tablet },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ]
 

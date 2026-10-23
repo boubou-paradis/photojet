@@ -109,6 +109,11 @@ export interface Session {
   borne_show_event_name: boolean
   borne_lock_enabled: boolean
   borne_lock_code: string
+  // Cadre AnimaBooth (templates PNG de la bibliothèque borne_templates)
+  borne_template_enabled: boolean
+  borne_template_portrait_id: string | null
+  borne_template_landscape_id: string | null
+  borne_template_guest_choice: boolean
   // Customization settings
   background_type: BackgroundType
   background_color: string
@@ -300,6 +305,22 @@ export interface SavedMystery {
   name: string
   photos: SavedMysteryPhoto[] // même structure que sessions.mystery_photos
   reveal_audio_url?: string | null // même valeur que sessions.mystery_reveal_audio
+  created_at: string
+  updated_at: string
+}
+
+// Template AnimaBooth (cadre PNG transparent) de la bibliothèque personnelle
+export interface BorneTemplate {
+  id: string
+  user_id: string
+  name: string
+  storage_path: string // borne-templates/<user_id>/<uuid>.png dans le bucket photos
+  orientation: 'portrait' | 'landscape'
+  width: number
+  height: number
+  photo_zones: { x: number; y: number; w: number; h: number }[] // 1 zone pour l'instant
+  file_size: number
+  source: 'import' | 'animajet'
   created_at: string
   updated_at: string
 }
