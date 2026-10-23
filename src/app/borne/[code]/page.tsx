@@ -23,8 +23,9 @@ import { Session } from '@/types/database'
 import { compressImage } from '@/lib/image-utils'
 import { useBorneFrame, type LoadedFrame } from '@/components/animabooth/useBorneFrame'
 import { composeFramedPhoto, fitStage, zoneOnScreen } from '@/lib/borne-templates/compose'
+import { WELCOME_DEFAULT_MESSAGE, WELCOME_IDLE_MS } from '@/lib/borne-templates/constants'
 
-type BorneState = 'loading' | 'error' | 'camera' | 'countdown' | 'preview' | 'compressing' | 'uploading' | 'success' | 'printing'
+type BorneState = 'loading' | 'error' | 'welcome' | 'camera' | 'countdown' | 'preview' | 'compressing' | 'uploading' | 'success' | 'printing'
 
 // Rocket Button Component with takeoff animation
 function RocketButton({ onClick, disabled, isLaunching }: { onClick: () => void; disabled?: boolean; isLaunching?: boolean }) {
@@ -122,6 +123,8 @@ export default function BornePage() {
   const [capturedFramed, setCapturedFramed] = useState(false)
   const lockedFrameRef = useRef<LoadedFrame | null>(null)
   const [view, setView] = useState({ w: 0, h: 0 })
+  // Écran d'accueil (optionnel) : dernière activité sur l'écran caméra
+  const lastActivityRef = useRef(0)
   const supabase = createClient()
 
   useEffect(() => { sessionRef.current = session }, [session])
@@ -166,7 +169,7 @@ export default function BornePage() {
 
         setSession(data)
         setFacingMode(data.borne_default_camera === 'front' ? 'user' : 'environment')
-        setState('camera')
+        setState(data.borne_welcome_enabled ? 'welcome' : 'camera')
       } catch {
         setError('Erreur de connexion')
         setState('error')
@@ -262,8 +265,8 @@ export default function BornePage() {
   }, [facingMode])
 
   useEffect(() => {
-    // Start camera for both camera and countdown states
-    if ((state === 'camera' || state === 'countdown') && session) {
+    // Start camera for both camera and countdown states (et l'accueil : caméra prête au toucher)
+    if ((state === 'camera' || state === 'countdown' || state === 'welcome') && session) {
       // Check if stream exists and is still active
       const streamActive = streamRef.current &&
         streamRef.current.getTracks().some(track => track.readyState === 'live')
@@ -338,8 +341,30 @@ export default function BornePage() {
     setLockedFrame(null)
     setWithFrame(true)
     setFrameRefresh((k) => k + 1)
+    lastActivityRef.current = Date.now()
     setState('camera')
   }, [])
+
+  // Fin du passage d'un invité : retour à l'accueil s'il est activé, sinon caméra
+  const finishGuest = useCallback(() => {
+    resetToCamera()
+    if (sessionRef.current?.borne_welcome_enabled) setState('welcome')
+  }, [resetToCamera])
+
+  // Écran caméra laissé sans activité : retour à l'accueil
+  useEffect(() => {
+    if (state !== 'camera' || !session?.borne_welcome_enabled) return
+    lastActivityRef.current = Date.now()
+    const markActivity = () => { lastActivityRef.current = Date.now() }
+    window.addEventListener('pointerdown', markActivity)
+    const timer = setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= WELCOME_IDLE_MS) setState('welcome')
+    }, 5000)
+    return () => {
+      window.removeEventListener('pointerdown', markActivity)
+      clearInterval(timer)
+    }
+  }, [state, session?.borne_welcome_enabled])
 
   // Capture photo with proper error handling
   const capturePhoto = useCallback((retryCount = 0) => {
@@ -448,9 +473,9 @@ export default function BornePage() {
   useEffect(() => {
     if (state !== 'success') return
     const delay = (sessionRef.current?.borne_return_delay ?? 5) * 1000
-    const timer = setTimeout(() => resetToCamera(), delay)
+    const timer = setTimeout(() => finishGuest(), delay)
     return () => clearTimeout(timer)
-  }, [state, resetToCamera])
+  }, [state, finishGuest])
 
   function startCountdown() {
     if (!session) return
@@ -607,7 +632,7 @@ export default function BornePage() {
     }
 
     if (printReturnTimeoutRef.current) clearTimeout(printReturnTimeoutRef.current)
-    printReturnTimeoutRef.current = setTimeout(() => resetToCamera(), (sessionRef.current?.borne_return_delay ?? 5) * 1000)
+    printReturnTimeoutRef.current = setTimeout(() => finishGuest(), (sessionRef.current?.borne_return_delay ?? 5) * 1000)
   }
 
   // Handle PIN keypress
@@ -733,6 +758,35 @@ export default function BornePage() {
           style={{ left: stage.x, top: stage.y, width: stage.w, height: stage.h }}
         />
       )}
+
+      {/* Écran d'accueil (optionnel) : un toucher lance la caméra */}
+      <AnimatePresence>
+        {state === 'welcome' && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={resetToCamera}
+            className="absolute inset-0 z-20 bg-[#1A1A1E] flex flex-col items-center justify-center gap-10 px-8 text-center"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#D4AF37_0%,transparent_65%)] opacity-10 pointer-events-none" />
+            {session?.borne_show_event_name && (
+              <h1 className="relative text-4xl landscape:text-3xl font-bold text-white max-w-3xl">{session.name}</h1>
+            )}
+            <motion.div
+              className="relative w-40 h-40 rounded-full bg-gold-gradient flex items-center justify-center shadow-2xl glow-gold-lg"
+              animate={{ scale: [1, 1.06, 1] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Camera className="h-20 w-20 text-[#1A1A1E]" />
+            </motion.div>
+            <p className="relative text-3xl landscape:text-2xl font-semibold text-gold-gradient max-w-2xl leading-snug">
+              {session?.borne_welcome_message?.trim() || WELCOME_DEFAULT_MESSAGE}
+            </p>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Camera View Overlay - Controls only shown in camera state */}
       <AnimatePresence>

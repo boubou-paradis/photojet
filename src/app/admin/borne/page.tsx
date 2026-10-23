@@ -30,6 +30,7 @@ import { fetchUserSessions, pickSession } from '@/lib/session-select'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
 import AnimaBoothLogo from '@/components/animabooth/AnimaBoothLogo'
 import AnimaBoothTemplates from '@/components/animabooth/AnimaBoothTemplates'
+import WelcomeSettings from '@/components/animabooth/WelcomeSettings'
 
 export default function BornePage() {
   const [, setSessions] = useState<Session[]>([])
@@ -501,6 +502,12 @@ export default function BornePage() {
                   onSessionChange={(patch) => setSelectedSession((s) => (s ? { ...s, ...patch } : s))}
                 />
               )}
+
+              {/* Écran d'accueil de la tablette */}
+              <WelcomeSettings
+                session={selectedSession}
+                onSessionChange={(patch) => setSelectedSession((s) => (s ? { ...s, ...patch } : s))}
+              />
 
               {/* Installation Guide */}
               <motion.div

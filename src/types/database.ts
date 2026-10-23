@@ -114,6 +114,9 @@ export interface Session {
   borne_template_portrait_id: string | null
   borne_template_landscape_id: string | null
   borne_template_guest_choice: boolean
+  // Écran d'accueil AnimaBooth (optionnel)
+  borne_welcome_enabled: boolean
+  borne_welcome_message: string | null
   // Customization settings
   background_type: BackgroundType
   background_color: string

@@ -22,6 +22,12 @@ export const TEMPLATE_MAX_PIXELS = 40_000_000
 export const NO_TRANSPARENCY_MESSAGE =
   "Ce fichier n'a pas de zone transparente pour la photo. Utilisez la version PNG transparente du template."
 
+/** Écran d'accueil de la borne. */
+export const WELCOME_DEFAULT_MESSAGE = "Touchez l'écran pour prendre une photo"
+export const WELCOME_MESSAGE_MAX = 80
+/** Retour automatique à l'accueil après ce délai sans activité sur l'écran caméra. */
+export const WELCOME_IDLE_MS = 60_000
+
 export type TemplateOrientation = 'portrait' | 'landscape'
 
 export interface PhotoZone {
