@@ -542,6 +542,9 @@ export default function BornePage() {
                         </ol>
                       </div>
                     </div>
+                    <p className="text-sm text-gray-400 mt-6">
+                      Si vous aviez déjà installé la borne sur l&apos;écran d&apos;accueil, supprimez-la puis réinstallez-la pour pouvoir l&apos;utiliser à l&apos;horizontale.
+                    </p>
                   </div>
                 </div>
               </motion.div>

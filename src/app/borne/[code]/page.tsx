@@ -107,6 +107,9 @@ export default function BornePage() {
   const captureRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const printReturnTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const sessionRef = useRef(session)
+  // Orientation de l'écran, et orientation au moment où le flux caméra a été ouvert
+  const [isLandscape, setIsLandscape] = useState<boolean | null>(null)
+  const streamLandscapeRef = useRef<boolean | null>(null)
   const supabase = createClient()
 
   useEffect(() => { sessionRef.current = session }, [session])
@@ -225,6 +228,7 @@ export default function BornePage() {
       })
 
       streamRef.current = stream
+      streamLandscapeRef.current = window.matchMedia('(orientation: landscape)').matches
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
@@ -250,6 +254,43 @@ export default function BornePage() {
       }
     }
   }, [state, session, startCamera])
+
+  // Suivre la rotation de la tablette (vertical ↔ horizontal)
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)')
+    const update = () => setIsLandscape(mq.matches)
+    update()
+    if (mq.addEventListener) {
+      mq.addEventListener('change', update)
+      return () => mq.removeEventListener('change', update)
+    }
+    // Safari < 14
+    mq.addListener(update)
+    return () => mq.removeListener(update)
+  }, [])
+
+  // Après une rotation : si le navigateur n'a pas fait pivoter le flux caméra lui-même,
+  // on le relance. Uniquement sur l'écran caméra (jamais pendant le compte à rebours) ;
+  // une rotation faite pendant le décompte / l'aperçu / le résultat est traitée au retour caméra.
+  useEffect(() => {
+    if (state !== 'camera' || isLandscape === null) return
+    if (streamLandscapeRef.current === null || streamLandscapeRef.current === isLandscape) return
+
+    const timer = setTimeout(() => {
+      const video = videoRef.current
+      const stream = streamRef.current
+      if (!video || !stream || !stream.getTracks().some((track) => track.readyState === 'live')) return
+
+      if (video.videoWidth > 0 && (video.videoWidth > video.videoHeight) === isLandscape) {
+        // Flux déjà dans le bon sens
+        streamLandscapeRef.current = isLandscape
+      } else {
+        startCamera()
+      }
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [state, isLandscape, startCamera])
 
   // Cleanup au unmount
   useEffect(() => {
@@ -636,7 +677,7 @@ export default function BornePage() {
           >
             {/* Event name */}
             {session?.borne_show_event_name && (
-              <div className="absolute top-8 left-0 right-0 text-center">
+              <div className="absolute top-8 left-0 right-0 text-center landscape:px-48">
                 <div className="inline-block px-6 py-3 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full border border-[#D4AF37]/30">
                   <h1 className="text-2xl font-bold text-white">
                     {session.name}
@@ -648,13 +689,13 @@ export default function BornePage() {
             {/* Camera switch button */}
             <button
               onClick={toggleCamera}
-              className="pointer-events-auto absolute top-8 right-8 p-4 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full text-[#D4AF37] hover:bg-[#242428] transition-colors border border-[#D4AF37]/30"
+              className="pointer-events-auto absolute top-8 right-8 landscape:right-24 p-4 bg-[#1A1A1E]/80 backdrop-blur-sm rounded-full text-[#D4AF37] hover:bg-[#242428] transition-colors border border-[#D4AF37]/30"
             >
               <RefreshCw className="h-8 w-8" />
             </button>
 
             {/* Capture button */}
-            <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-auto">
+            <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-auto landscape:inset-y-0 landscape:left-auto landscape:right-16 landscape:items-center">
               <button
                 onClick={startCountdown}
                 className="group relative"
@@ -705,7 +746,7 @@ export default function BornePage() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-[#1A1A1E]"
           >
-            <div className="absolute inset-4 flex items-center justify-center">
+            <div className="absolute inset-4 flex items-center justify-center landscape:right-48">
               <img
                 src={capturedImage}
                 alt="Captured"
@@ -723,7 +764,7 @@ export default function BornePage() {
                 </div>
               </div>
             ) : (
-              <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6">
+              <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-6 landscape:inset-y-0 landscape:left-auto landscape:right-4 landscape:w-40 landscape:justify-center landscape:text-center">
                 {/* Error display */}
                 {error && (
                   <div className="px-4 py-2 rounded font-mono text-sm bg-red-500/20 text-red-400">
@@ -731,7 +772,7 @@ export default function BornePage() {
                   </div>
                 )}
                 {/* Main action buttons */}
-                <div className="flex items-center gap-10">
+                <div className="flex items-center gap-10 landscape:flex-col landscape:gap-5">
                   {/* Reprendre button */}
                   <div className="flex flex-col items-center gap-2">
                     <Button
