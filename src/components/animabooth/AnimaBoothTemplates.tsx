@@ -8,18 +8,17 @@
 // Lecture et réglages de session via le client navigateur (RLS) ; import
 // et suppression via les routes serveur, qui contrôlent les fichiers.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Camera, Frame, Loader2, Upload } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Camera, FileText, Frame, Loader2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { createClient } from '@/lib/supabase'
 import { getPublicUrl } from '@/lib/image-utils'
-import { TEMPLATES_PER_USER, type TemplateOrientation } from '@/lib/borne-templates/constants'
+import { TEMPLATES_NOTICE_URL, TEMPLATES_PER_USER, type TemplateOrientation } from '@/lib/borne-templates/constants'
 import type { BorneTemplate, Session } from '@/types/database'
 import FrameStage, { SamplePhoto } from './FrameStage'
 import TemplateImportDialog from './TemplateImportDialog'
-import TemplatePresets from './TemplatePresets'
 
 type TemplateSettings = Pick<
   Session,
@@ -37,6 +36,8 @@ interface AnimaBoothTemplatesProps {
   session: Session
   userId: string
   onSessionChange: (patch: Partial<TemplateSettings>) => void
+  /** Bloc affiché à côté du réglage du cadre sur grand écran (écran d'accueil). */
+  aside?: ReactNode
 }
 
 const SLOT_COLUMN = {
@@ -66,7 +67,7 @@ function Thumb({ template, className }: { template: BorneTemplate; className?: s
   )
 }
 
-export default function AnimaBoothTemplates({ session, userId, onSessionChange }: AnimaBoothTemplatesProps) {
+export default function AnimaBoothTemplates({ session, userId, onSessionChange, aside }: AnimaBoothTemplatesProps) {
   const supabase = useMemo(() => createClient(), [])
   const [templates, setTemplates] = useState<BorneTemplate[] | null>(null)
   const [usage, setUsage] = useState<SessionUsage[]>([])
@@ -76,7 +77,6 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
   const [deleting, setDeleting] = useState(false)
   const [picking, setPicking] = useState<TemplateOrientation | null>(null)
   const [saving, setSaving] = useState(false)
-  const [presetsOpen, setPresetsOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
@@ -181,18 +181,35 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
     <div className="space-y-6">
       {/* Bibliothèque */}
       <section className={cardClass}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className={iconTile}><Frame className="h-6 w-6 text-[#D4AF37]" /></div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Mes templates photo</h2>
-              <p className="text-sm text-[#9a94b5] mt-0.5 max-w-xl leading-relaxed">
-                Utilisez vos templates au format PNG transparent (10×15, vertical ou horizontal). Vous pouvez en trouver sur des sites spécialisés ou en créer dans Canva.
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className={iconTile}><Frame className="h-6 w-6 text-[#D4AF37]" /></div>
+          <div>
+            <h2 className="text-xl font-bold text-white">Mes templates photo</h2>
+            <p className="text-sm text-[#9a94b5] mt-0.5 leading-relaxed">
+              Utilisez vos templates au format PNG transparent (10×15, vertical ou horizontal). Vous pouvez en trouver sur des sites spécialisés ou en créer dans Canva.
+            </p>
+            <p className="text-xs text-[#9a94b5] mt-0.5">Bibliothèque partagée entre toutes vos sessions.</p>
           </div>
-          <p className="text-xs text-[#9a94b5]">Partagés entre toutes vos sessions</p>
         </div>
+
+        <a
+          href={TEMPLATES_NOTICE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#D4AF37]/60 bg-gradient-to-r from-[#D4AF37]/15 to-[#D4AF37]/5 px-4 py-3 hover:border-[#D4AF37] transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <FileText className="h-6 w-6 shrink-0 text-[#D4AF37]" />
+            <span>
+              <span className="block text-sm font-bold text-white">Créer vos templates : notice AnimaJet</span>
+              <span className="block text-xs text-[#9a94b5]">Le prompt ChatGPT prêt à copier, en vertical et en horizontal.</span>
+            </span>
+          </span>
+          <span className="h-10 px-4 rounded-xl text-sm font-bold bg-gradient-to-b from-[#fbe7a3] to-[#D4AF37] text-[#0a0a14] flex items-center gap-2 whitespace-nowrap">
+            <FileText className="h-4 w-4" />
+            Ouvrir la notice (PDF)
+          </span>
+        </a>
 
         <input
           ref={fileInput}
@@ -205,14 +222,14 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           }}
         />
 
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3">
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => { e.preventDefault(); setDragOver(false); chooseFile(e.dataTransfer.files?.[0]) }}
-            className={`min-h-[260px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 p-4 text-[#D4AF37] font-semibold transition-colors ${
+            className={`min-h-[210px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 p-4 text-[#D4AF37] font-semibold transition-colors ${
               dragOver ? 'border-[#D4AF37] bg-[#D4AF37]/15' : 'border-[#D4AF37]/50 bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10'
             }`}
           >
@@ -222,7 +239,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           </button>
 
           {templates === null && (
-            <div className="min-h-[260px] rounded-xl border border-white/10 flex items-center justify-center">
+            <div className="min-h-[210px] rounded-xl border border-white/10 flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-[#D4AF37]" />
             </div>
           )}
@@ -236,19 +253,19 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
                 key={t.id}
                 className={`rounded-xl border p-3 flex flex-col gap-2 ${activeHere ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 bg-white/[0.02]'}`}
               >
-                <div className="h-40 rounded-lg bg-[#0D0D0F] flex items-center justify-center overflow-hidden p-2">
+                <div className="h-32 rounded-lg bg-[#0D0D0F] flex items-center justify-center overflow-hidden p-2">
                   <Thumb template={t} className={t.orientation === 'portrait' ? 'h-full' : 'w-full'} />
                 </div>
                 <p className="text-sm font-semibold text-white truncate" title={t.name}>{t.name}</p>
                 <p className="text-xs text-[#9a94b5]">{t.orientation === 'portrait' ? 'Vertical' : 'Horizontal'} · {t.width} × {t.height} px</p>
-                <p className={`text-xs ${activeHere ? 'text-[#D4AF37]' : 'text-[#9a94b5]'}`}>
-                  {activeHere ? 'Actif sur cette session' : others > 0 ? `Utilisé par ${others} autre${others > 1 ? 's' : ''} session${others > 1 ? 's' : ''}` : 'Non utilisé'}
-                </p>
-                <div className="mt-auto flex justify-end">
+                <div className="mt-auto flex items-center justify-between gap-2">
+                  <p className={`text-xs ${activeHere ? 'text-[#D4AF37]' : 'text-[#9a94b5]'}`}>
+                    {activeHere ? 'Actif ici' : others > 0 ? `Utilisé par ${others} autre${others > 1 ? 's' : ''} session${others > 1 ? 's' : ''}` : 'Non utilisé'}
+                  </p>
                   <button
                     type="button"
                     onClick={() => setToDelete(t)}
-                    className="px-2.5 py-1 rounded-md text-xs border border-white/10 text-gray-200 hover:border-red-400/50 hover:text-red-300"
+                    className="shrink-0 px-2 py-0.5 rounded-md text-xs border border-white/10 text-gray-200 hover:border-red-400/50 hover:text-red-300"
                   >
                     Supprimer
                   </button>
@@ -258,18 +275,9 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           })}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b16cff]/30 bg-violet-500/[0.08] px-4 py-3">
-          <p className="text-sm text-gray-200">Pas encore de template ? Partez d&apos;un modèle AnimaJet et personnalisez le texte (prénoms, date).</p>
-          <button
-            type="button"
-            onClick={() => setPresetsOpen(true)}
-            className="h-10 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-b from-[#b16cff] to-[#7c3aed] whitespace-nowrap"
-          >
-            Voir les modèles AnimaJet
-          </button>
-        </div>
       </section>
 
+      <div className={aside ? 'grid gap-6 min-[1800px]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start' : ''}>
       {/* Cadre de la session */}
       <section className={cardClass}>
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -277,7 +285,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
             <div className={iconTile}><Camera className="h-6 w-6 text-[#D4AF37]" /></div>
             <div>
               <h2 className="text-xl font-bold text-white">Cadre pour cette session</h2>
-              <p className="text-sm text-[#9a94b5] mt-0.5">Les changements s&apos;appliquent dès la photo suivante sur la tablette.</p>
+              <p className="text-sm text-[#9a94b5] mt-0.5">S&apos;applique dès la photo suivante. Un seul template suffit : il sert dans les deux orientations.</p>
             </div>
           </div>
           <label className="flex items-center gap-3 text-white font-semibold cursor-pointer">
@@ -296,7 +304,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           </p>
         )}
 
-        <div className="mt-5 grid md:grid-cols-2 gap-4">
+        <div className="mt-4 grid md:grid-cols-2 gap-3">
           {(['portrait', 'landscape'] as const).map((o) => {
             const chosen = o === 'portrait' ? portrait : landscape
             return (
@@ -304,7 +312,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
                 key={o}
                 className={`rounded-xl border p-4 flex gap-4 items-center ${chosen ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 bg-white/[0.02]'}`}
               >
-                <div className="w-28 h-28 shrink-0 rounded-md bg-[#0D0D0F] flex items-center justify-center overflow-hidden p-1">
+                <div className="w-24 h-24 shrink-0 rounded-md bg-[#0D0D0F] flex items-center justify-center overflow-hidden p-1">
                   {chosen ? (
                     <Thumb template={chosen} className={chosen.orientation === 'portrait' ? 'h-full' : 'w-full'} />
                   ) : (
@@ -312,7 +320,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
                   )}
                 </div>
                 <div className="flex flex-col gap-2 min-w-0">
-                  <p className="text-xs uppercase tracking-wider font-semibold text-[#9a94b5]">
+                  <p className="text-xs uppercase tracking-wider font-semibold text-[#9a94b5] whitespace-nowrap">
                     Tablette en {o === 'portrait' ? 'vertical' : 'horizontal'}
                   </p>
                   <p className="text-base font-semibold text-white truncate">{chosen ? chosen.name : 'Aucun template'}</p>
@@ -342,7 +350,7 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           })}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-6 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <div className="mt-3 flex items-center justify-between gap-6 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
           <div>
             <p className="text-white font-semibold">Laisser les invités choisir « avec » ou « sans » cadre</p>
             <p className="text-sm text-[#9a94b5] mt-0.5">Désactivé : toutes les photos sont prises avec le cadre.</p>
@@ -355,23 +363,11 @@ export default function AnimaBoothTemplates({ session, userId, onSessionChange }
           />
         </div>
 
-        <p className="mt-4 text-sm text-[#9a94b5] leading-relaxed">
-          Un seul template choisi ? AnimaBooth l&apos;utilise dans les deux orientations : la photo garde toujours le format du template, donc l&apos;impression 10×15 reste nette.
-        </p>
       </section>
+      {aside}
+      </div>
 
       <TemplateImportDialog file={importFile} onClose={() => setImportFile(null)} onImported={onImported} />
-
-      <TemplatePresets
-        open={presetsOpen}
-        defaultNames={session.name}
-        remaining={TEMPLATES_PER_USER - (templates?.length ?? 0)}
-        onClose={() => setPresetsOpen(false)}
-        onAdded={(added) => {
-          setTemplates((list) => [...added.slice().reverse(), ...(list ?? [])])
-          setPresetsOpen(false)
-        }}
-      />
 
       {/* Choix d'un template pour un emplacement */}
       <Dialog open={picking !== null} onOpenChange={(open) => { if (!open) setPicking(null) }}>

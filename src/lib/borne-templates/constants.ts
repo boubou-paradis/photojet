@@ -53,6 +53,9 @@ export interface BorneFrameConfig {
   landscape: BorneFrameTemplate | null
 }
 
+/** Notice PDF « créer ses templates » (dossier public). */
+export const TEMPLATES_NOTICE_URL = '/Notice-AnimaJet-templates-photobooth.pdf'
+
 export function templatePath(userId: string, id: string): string {
   return `${TEMPLATES_PREFIX}/${userId}/${id}.png`
 }

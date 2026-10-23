@@ -2,7 +2,7 @@
 // Code propriétaire - Reproduction interdite.
 
 // AnimaBooth : bibliothèque de templates.
-// POST   { id, name, source? } : contrôle le PNG déjà envoyé (voir upload-url), puis
+// POST   { id, name } : contrôle le PNG déjà envoyé (voir upload-url), puis
 //        l'ajoute à la bibliothèque. Refusé → le fichier est supprimé.
 // DELETE ?id=…     : retire le template des sessions qui l'utilisent, puis
 //        supprime la ligne et le fichier (référencé nulle part ailleurs).
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 })
   }
-  const { id, name, source } = (body ?? {}) as { id?: unknown; name?: unknown; source?: unknown }
+  const { id, name } = (body ?? {}) as { id?: unknown; name?: unknown }
   const cleanName = typeof name === 'string' ? name.trim() : ''
   if (!isUuid(id) || cleanName.length === 0 || cleanName.length > TEMPLATE_NAME_MAX) {
     return NextResponse.json({ error: 'Nom du template invalide (1 à 80 caractères).' }, { status: 400 })
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       height,
       photo_zones: [zone],
       file_size: blob.size,
-      source: source === 'animajet' ? 'animajet' : 'import',
+      source: 'import',
     })
     .select('*')
     .single()

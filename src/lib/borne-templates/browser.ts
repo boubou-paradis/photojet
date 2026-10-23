@@ -50,8 +50,7 @@ export async function analyzeTemplateFile(file: File): Promise<AnalyzeResult> {
  */
 export async function uploadTemplate(
   file: Blob,
-  name: string,
-  source: 'import' | 'animajet' = 'import'
+  name: string
 ): Promise<{ template: BorneTemplate; warnings: string[] }> {
   const auth = await fetch('/api/borne/templates/upload-url', { method: 'POST' })
   const slot = await auth.json()
@@ -65,7 +64,7 @@ export async function uploadTemplate(
   const res = await fetch('/api/borne/templates', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: slot.id, name, source }),
+    body: JSON.stringify({ id: slot.id, name }),
   })
   const body = await res.json()
   if (!res.ok) throw new Error(body.error ?? "Enregistrement impossible pour l'instant, réessayez.")
