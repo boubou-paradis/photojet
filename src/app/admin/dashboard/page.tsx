@@ -633,10 +633,25 @@ export default function DashboardPage() {
 @page{margin:0}
 body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh}
 img{max-width:100%;max-height:100vh;object-fit:contain}
+.rot{display:none}
+@media (orientation:portrait){.land .orig{display:none}.land .rot{display:block}}
 </style>
 </head>
 <body>
 <script>
+// Photo horizontale sur papier vertical (10×15) : version tournée de 90°,
+// affichée seulement si la page imprimée est verticale (media query évaluée
+// sur le papier). Papier horizontal ou photo verticale : rien ne change.
+function show(img,rotated){
+  document.body.innerHTML='';
+  if(rotated){
+    document.body.className='land';
+    img.className='orig';
+    rotated.className='rot';
+    document.body.appendChild(rotated);
+  }
+  document.body.appendChild(img);
+}
 fetch(${JSON.stringify(imageUrl)})
   .then(function(r){return r.ok?r.blob():Promise.reject('http')})
   .then(function(blob){
@@ -644,8 +659,8 @@ fetch(${JSON.stringify(imageUrl)})
     var url=URL.createObjectURL(blob);
     var img=document.createElement('img');
     img.onload=function(){
-      document.body.innerHTML='';
-      document.body.appendChild(img);
+      var go=function(rotated){
+      show(img,rotated);
       setTimeout(function(){
         window.print();
         window.onafterprint=function(){
@@ -653,6 +668,22 @@ fetch(${JSON.stringify(imageUrl)})
           parent.postMessage('animajet-print-done:${requestId}','*');
         };
       },500);
+      };
+      if(img.naturalWidth<=img.naturalHeight){go(null);return}
+      // En cas d'échec de la rotation : impression de l'image d'origine, comme avant
+      try{
+        var c=document.createElement('canvas');
+        c.width=img.naturalHeight;c.height=img.naturalWidth;
+        var x=c.getContext('2d');
+        x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(img,0,0);
+        c.toBlob(function(b){
+          if(!b){go(null);return}
+          var r=document.createElement('img');
+          r.onload=function(){go(r)};
+          r.onerror=function(){go(null)};
+          r.src=URL.createObjectURL(b);
+        },'image/jpeg',0.95);
+      }catch(e){go(null)}
     };
     img.onerror=function(){parent.postMessage('animajet-print-error:Erreur image','*')};
     img.src=url;
