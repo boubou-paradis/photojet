@@ -294,7 +294,7 @@ export default function BornePage() {
       </header>
 
       <main className="relative z-10 px-4 sm:px-8 py-6">
-        <div className={selectedSession.borne_enabled ? 'grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)] items-start' : 'max-w-xl mx-auto'}>
+        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)] items-start">
           {/* Colonne tablette : activation, connexion, verrouillage, réglages */}
           <div className="space-y-4">
             <section className="card-gold rounded-xl p-4 flex items-center justify-between gap-4">
@@ -315,8 +315,18 @@ export default function BornePage() {
               </div>
             </section>
 
-            {selectedSession.borne_enabled && (
-              <>
+            {!selectedSession.borne_enabled && (
+              <p className="rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-4 py-3 text-sm text-[#fde68a]">
+                Activez AnimaBooth avec l&apos;interrupteur ci-dessus pour configurer la tablette, vos templates et l&apos;écran d&apos;accueil.
+              </p>
+            )}
+
+            {/* Tant que la borne n'est pas activée : tout est visible mais grisé et inactif */}
+            <div
+              inert={!selectedSession.borne_enabled}
+              aria-disabled={!selectedSession.borne_enabled}
+              className={`space-y-4 transition-opacity ${selectedSession.borne_enabled ? '' : 'opacity-40 grayscale select-none'}`}
+            >
                 {/* QR code + statut de la tablette */}
                 <section className="card-gold rounded-xl p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -334,6 +344,9 @@ export default function BornePage() {
                       </span>
                     )}
                   </div>
+                  {!selectedSession.borne_qr_code && (
+                    <p className="mt-4 text-sm text-[#9a94b5]">Le QR code de connexion apparaîtra dès l&apos;activation.</p>
+                  )}
                   {selectedSession.borne_qr_code && (
                     <div className="mt-4 flex gap-4 items-center">
                       <div className="bg-white p-2.5 rounded-lg shrink-0">
@@ -535,13 +548,15 @@ export default function BornePage() {
                     </p>
                   </div>
                 </details>
-              </>
-            )}
+            </div>
           </div>
 
-          {/* Colonne cadres et écran d'accueil */}
-          {selectedSession.borne_enabled && (
-            <div className="space-y-6 min-w-0">
+          {/* Colonne cadres et écran d'accueil (grisée tant que la borne n'est pas activée) */}
+          <div
+            inert={!selectedSession.borne_enabled}
+            aria-disabled={!selectedSession.borne_enabled}
+            className={`space-y-6 min-w-0 transition-opacity ${selectedSession.borne_enabled ? '' : 'opacity-40 grayscale select-none'}`}
+          >
               {userId && (
                 <AnimaBoothTemplates
                   session={selectedSession}
@@ -555,8 +570,7 @@ export default function BornePage() {
                   }
                 />
               )}
-            </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
