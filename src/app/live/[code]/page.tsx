@@ -479,15 +479,25 @@ export default function LivePage() {
       filteredPhotos = photos.slice(-15)
     }
 
-    // If no photos and no messages, return empty
-    if (filteredPhotos.length === 0 && approvedMessages.length === 0) {
+    // Aucune photo : les affiches défilent en boucle (en alternance avec les
+    // messages s'il y en a), sinon messages seuls, sinon écran d'attente.
+    if (filteredPhotos.length === 0) {
+      const hasMessages = messagesEnabled && approvedMessages.length > 0
+      if (promoActive) {
+        const promoItems: SlideshowItem[] = promoAffiches.map((path, index) => ({ type: 'promo' as const, data: { path, index } }))
+        if (!hasMessages) return promoItems
+        const items: SlideshowItem[] = []
+        const count = Math.max(promoItems.length, approvedMessages.length)
+        for (let i = 0; i < count; i++) {
+          items.push({ type: 'message', data: approvedMessages[i % approvedMessages.length] })
+          items.push(promoItems[i % promoItems.length])
+        }
+        return items
+      }
+      if (hasMessages) {
+        return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
+      }
       return []
-    }
-
-    // If only messages (no photos), show all messages
-    // (les affiches ne s'intercalent que dans le flux de photos)
-    if (filteredPhotos.length === 0 && messagesEnabled && approvedMessages.length > 0) {
-      return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
     }
 
     // If messages disabled or no messages AND no promo → show only photos (comportement historique)
@@ -814,6 +824,14 @@ export default function LivePage() {
   useEffect(() => {
     slideshowItemsRef.current = slideshowItems
   }, [slideshowItems])
+
+  // La liste peut raccourcir (ex. 3 affiches en boucle puis 1re photo) :
+  // sans ce recalage, l'index pointerait hors liste et l'écran resterait vide.
+  useEffect(() => {
+    if (slideshowItems.length > 0 && currentIndex >= slideshowItems.length) {
+      setCurrentIndex(0)
+    }
+  }, [currentIndex, slideshowItems.length])
 
   // Compute current item type for duration
   const currentItemType = slideshowItems[currentIndex]?.type || 'photo'

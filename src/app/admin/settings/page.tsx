@@ -75,7 +75,7 @@ export default function SettingsPage() {
   const bgInputRef = useRef<HTMLInputElement>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const promoInputRef = useRef<HTMLInputElement>(null)
-  const MAX_PROMO_AFFICHES = 5
+  const MAX_PROMO_AFFICHES = 20
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
