@@ -413,46 +413,53 @@ export default function SettingsPage() {
   }
 
   async function handleUploadPromo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !selectedSession) return
+    const files = Array.from(e.target.files ?? [])
+    if (promoInputRef.current) promoInputRef.current.value = ''
+    if (files.length === 0 || !selectedSession) return
 
-    // Validation : JPG/PNG, max 5 Mo
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      toast.error('Format non supporté : utilisez JPG ou PNG')
-      if (promoInputRef.current) promoInputRef.current.value = ''
-      return
+    // Validation : JPG/PNG, max 5 Mo — les fichiers refusés sont ignorés, les autres envoyés
+    const valid = files.filter((f) => ['image/jpeg', 'image/png'].includes(f.type) && f.size <= 5 * 1024 * 1024)
+    const rejected = files.length - valid.length
+    if (rejected > 0) {
+      toast.error(`${rejected} fichier${rejected > 1 ? 's' : ''} ignoré${rejected > 1 ? 's' : ''} : JPG ou PNG de 5 Mo maximum`)
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Affiche trop lourde (max 5 Mo)')
-      if (promoInputRef.current) promoInputRef.current.value = ''
-      return
-    }
-    if (formData.promo_affiches.length >= MAX_PROMO_AFFICHES) {
+
+    const remaining = MAX_PROMO_AFFICHES - formData.promo_affiches.length
+    if (remaining <= 0) {
       toast.error(`Maximum ${MAX_PROMO_AFFICHES} affiches`)
-      if (promoInputRef.current) promoInputRef.current.value = ''
       return
     }
+    const toUpload = valid.slice(0, remaining)
+    if (valid.length > remaining) {
+      toast.error(`Maximum ${MAX_PROMO_AFFICHES} affiches : ${valid.length - remaining} non ajoutée${valid.length - remaining > 1 ? 's' : ''}`)
+    }
+    if (toUpload.length === 0) return
 
     setUploadingPromo(true)
-    try {
-      const fileExt = file.name.split('.').pop()
-      const filePath = `promos/${selectedSession.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    let added = 0
+    // Envoi un par un, dans l'ordre de sélection → ordre de défilement préservé
+    for (const file of toUpload) {
+      try {
+        const fileExt = file.name.split('.').pop()
+        const filePath = `promos/${selectedSession.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(filePath, file, { upsert: true })
+        const { error: uploadError } = await supabase.storage
+          .from('photos')
+          .upload(filePath, file, { upsert: true })
 
-      if (uploadError) throw uploadError
+        if (uploadError) throw uploadError
 
-      // Append à la fin → préserve l'ordre d'upload (défilement cyclique ordonné)
-      setFormData((prev) => ({ ...prev, promo_affiches: [...prev.promo_affiches, filePath] }))
-      toast.success('Affiche promotionnelle ajoutée')
-    } catch (err) {
-      toast.error('Erreur lors de l\'upload')
-      console.error(err)
-    } finally {
-      setUploadingPromo(false)
-      if (promoInputRef.current) promoInputRef.current.value = ''
+        // Append à la fin → préserve l'ordre d'upload (défilement cyclique ordonné)
+        setFormData((prev) => ({ ...prev, promo_affiches: [...prev.promo_affiches, filePath] }))
+        added++
+      } catch (err) {
+        toast.error(`Erreur lors de l'upload de ${file.name}`)
+        console.error(err)
+      }
+    }
+    setUploadingPromo(false)
+    if (added > 0) {
+      toast.success(added > 1 ? `${added} affiches promotionnelles ajoutées` : 'Affiche promotionnelle ajoutée')
     }
   }
 
@@ -1250,7 +1257,7 @@ export default function SettingsPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-[#6B6B70]">
-                      Les affiches défilent en boucle, dans l&apos;ordre d&apos;ajout
+                      Les affiches défilent en boucle, dans l&apos;ordre d&apos;ajout. Tant qu&apos;aucune photo n&apos;est arrivée, elles défilent seules.
                     </p>
                   </div>
 
@@ -1263,6 +1270,7 @@ export default function SettingsPage() {
                         ref={promoInputRef}
                         type="file"
                         accept="image/jpeg,image/png"
+                        multiple
                         onChange={handleUploadPromo}
                         className="hidden"
                       />
@@ -1279,16 +1287,16 @@ export default function SettingsPage() {
                         ) : (
                           <Plus className="h-4 w-4 mr-1" />
                         )}
-                        Ajouter une affiche
+                        Ajouter des affiches
                       </Button>
                     </div>
 
                     {formData.promo_affiches.length === 0 ? (
                       <p className="text-xs text-[#6B6B70] py-4 text-center border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
-                        Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max 5 Mo).
+                        Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max 5 Mo), plusieurs à la fois si besoin.
                       </p>
                     ) : (
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
                         {formData.promo_affiches.map((path, i) => (
                           <div key={path} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-[#D4AF37]/20 bg-[#2E2E33]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
