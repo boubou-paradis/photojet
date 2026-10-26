@@ -15,6 +15,13 @@ export const ADMIN_CSS = `
 .ava-box h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--champagne);font-weight:800;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .ava-box h4 small{letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600;font-size:12px}
 .ava-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+.ava-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.9fr);gap:16px;align-items:start}
+.ava-ed .ava-fld:last-child{margin-bottom:0}
+.ava-ed .c1{display:grid;gap:16px;min-width:0}
+.ava-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.ava-top .ava-act-row{flex-wrap:nowrap}
+.ava-top .ava-sub{text-align:right;max-width:340px}
+.ava-top .ava-act{min-height:48px;padding:12px 24px}
 .ava-fld{display:grid;gap:5px;margin-bottom:12px}
 .ava-fld label,.ava-fld .lbl{font-size:12.5px;font-weight:700;color:var(--muted)}
 .ava-in{width:100%;background:#0b0918;border:1px solid #2e2852;border-radius:10px;padding:10px 12px;color:var(--ivory);font:inherit;font-size:14px;min-height:42px}
@@ -33,18 +40,20 @@ textarea.ava-in{min-height:58px;resize:vertical}
 .ava-sw[aria-checked="true"]{background:var(--violet)}
 .ava-sw[aria-checked="true"]::after{left:21px;background:#fff}
 .ava-reco{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--gold);border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:2px}
-.ava-clist{display:grid;gap:8px}
-.ava-ci{display:grid;grid-template-columns:18px 58px 54px minmax(0,1fr) auto;gap:10px;align-items:start;padding:9px 10px;border-radius:12px;background:#0b0918;border:1px solid #241f40;transition:border-color .15s,background .15s}
+.ava-clist{display:grid;gap:6px}
+.ava-ci{display:grid;grid-template-columns:14px 46px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 10px;border-radius:12px;background:#0b0918;border:1px solid #241f40;transition:border-color .15s,background .15s}
 .ava-ci.drag{border-color:var(--gold);background:#17123a;box-shadow:0 12px 30px -10px rgba(124,58,237,.8)}
-.ava-ci .hd{color:#5c5590;cursor:grab;font-size:14px;line-height:1;letter-spacing:-2px;padding-top:24px;user-select:none}
-.ava-ci .pic{position:relative;width:58px;border:0;padding:0;border-radius:9px;overflow:hidden;cursor:pointer;background:none}
+.ava-ci .hd{color:#5c5590;cursor:grab;font-size:14px;line-height:1;letter-spacing:-2px;user-select:none}
+.ava-ci .pic{position:relative;width:46px;border:0;padding:0;border-radius:9px;overflow:hidden;cursor:pointer;background:none}
 .ava-ci .pic .ini{font-size:20px}
 .ava-ci .pic .ov{position:absolute;inset:auto 0 0 0;z-index:2;font-size:10px;font-weight:800;text-align:center;padding:3px 0;background:rgba(10,10,20,.75);color:var(--champagne)}
 .ava-ci .pic.busy::before{content:"";position:absolute;inset:0;z-index:3;background:rgba(10,10,20,.6)}
-.ava-ci .nb{text-align:center;font-family:var(--f-stage);font-weight:900;color:var(--gold)}
-.ava-ci .tx{min-width:0;display:grid;gap:6px}
+.ava-ci .nb{width:58px;flex:none;text-align:center;font-family:var(--f-stage);font-weight:900;color:var(--gold)}
+.ava-ci .tx{min-width:0;display:grid;gap:5px}
+.ava-ci .l1{display:flex;gap:6px;min-width:0}
 .ava-ci .extra{display:flex;gap:6px;align-items:center}
-.ava-ci .extra .ava-in{width:64px;text-align:center}
+.ava-ci .extra .desc{flex:1;min-width:0}
+.ava-ci .extra .emo{width:64px;flex:none;text-align:center}
 .ava-color{width:36px;height:36px;border-radius:9px;border:1px solid #2e2852;padding:2px;background:#0b0918;cursor:pointer}
 .ava-color.auto{opacity:.35}
 .ava-ci .ac{display:grid;grid-template-columns:repeat(2,32px);gap:4px}
@@ -114,6 +123,7 @@ textarea.ava-in{min-height:58px;resize:vertical}
 .ava-ring .big{font-family:var(--f-stage);font-weight:900;font-size:22px}
 .ava-cancel{border:1px solid #4b4473;background:none;border-radius:12px;padding:12px 18px;font-weight:800;min-height:48px;cursor:pointer}
 .ava-cancel:hover{border-color:var(--ivory)}
-@media (max-width:900px){.ava-cols{grid-template-columns:1fr}.ava-kpis{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.ava-ci{grid-template-columns:58px minmax(0,1fr) auto}.ava-ci .hd,.ava-ci .nbw{display:none}}
+@media (max-width:1280px){.ava-ed{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}.ava-ed .chx{grid-column:2;grid-row:1 / span 2}}
+@media (max-width:900px){.ava-cols,.ava-ed{grid-template-columns:1fr}.ava-ed .chx{grid-column:auto;grid-row:auto}.ava-kpis{grid-template-columns:1fr 1fr}.ava-top .ava-sub{text-align:left}}
+@media (max-width:520px){.ava-ci{grid-template-columns:46px minmax(0,1fr) auto}.ava-ci .hd{display:none}.ava-ci .extra{flex-wrap:wrap}}
 `

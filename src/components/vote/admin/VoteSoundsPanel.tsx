@@ -5,15 +5,17 @@
 
 // Réglage des sons d'AnimaVote (page animateur) : activer ou couper,
 // écouter, remplacer par un fichier personnel (gardé sur ce PC), revenir
-// au son par défaut.
+// au son par défaut. Liste repliée par défaut pour garder la page courte.
 
 import { useRef, useState } from 'react'
-import { Play, RotateCcw, Upload, Volume2, VolumeX } from 'lucide-react'
+import { ChevronDown, Play, RotateCcw, Upload, Volume2, VolumeX } from 'lucide-react'
 import { VOTE_SOUNDS, type VoteSoundId, type VoteSounds } from '@/hooks/useVoteSounds'
 
 export default function VoteSoundsPanel({ sounds }: { sounds: VoteSounds }) {
   const inputs = useRef<Partial<Record<VoteSoundId, HTMLInputElement | null>>>({})
   const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const customCount = Object.keys(sounds.custom).length
 
   async function onFile(id: VoteSoundId, file: File | undefined) {
     if (!file) return
@@ -25,8 +27,22 @@ export default function VoteSoundsPanel({ sounds }: { sounds: VoteSounds }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 style={{ margin: 0 }}>Sons</h4>
-          <p className="ava-sub" style={{ marginTop: 4 }}>Joués sur ce PC (votre sono), jamais sur l’écran géant ni sur les téléphones.</p>
+          <p className="ava-sub" style={{ marginTop: 4 }}>
+            Joués sur ce PC (votre sono), jamais sur l’écran géant ni sur les téléphones.
+            {customCount > 0 && ` ${customCount} son${customCount > 1 ? 's' : ''} personnel${customCount > 1 ? 's' : ''}.`}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="ava-sounds-list"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-[#D4AF37]/40"
+        >
+          Personnaliser
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
         <button
           type="button"
           role="switch"
@@ -37,9 +53,10 @@ export default function VoteSoundsPanel({ sounds }: { sounds: VoteSounds }) {
           {sounds.enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           {sounds.enabled ? 'Sons activés' : 'Sons coupés'}
         </button>
+        </div>
       </div>
 
-      <ul className="mt-3 divide-y divide-white/5">
+      <ul id="ava-sounds-list" className="mt-3 divide-y divide-white/5" hidden={!open}>
         {VOTE_SOUNDS.map((s) => {
           const mine = sounds.custom[s.id]
           return (

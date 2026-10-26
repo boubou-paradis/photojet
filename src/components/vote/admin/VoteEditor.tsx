@@ -8,7 +8,7 @@
 // photo recadrée en 4:5 avec l'outil de recadrage existant). Ne fait aucun
 // appel lui-même : la page enregistre le brouillon et envoie la photo.
 
-import { useRef, useState, type DragEvent } from 'react'
+import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ChevronDown, ChevronUp, Copy, ImageOff, ImagePlus, Trash2, X } from 'lucide-react'
 import CandidatePhoto from '@/components/vote/CandidateVisual'
 import { VOTE_COUNTDOWNS_S, VOTE_LIMITS } from '@/lib/vote/constants'
@@ -76,6 +76,8 @@ interface VoteEditorProps {
   /** Clé du choix dont la photo est en cours d'envoi. */
   uploadingKey: string | null
   onPickPhoto: (key: string, file: File) => void
+  /** Bloc affiché sous « Le vote » (panneau des sons). */
+  aside?: ReactNode
 }
 
 function Seg<T extends string | number>({ value, options, onChange, label }: { value: T; options: { v: T; label: React.ReactNode }[]; onChange: (v: T) => void; label: string }) {
@@ -92,7 +94,7 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} className="ava-sw" onClick={() => onChange(!checked)} />
 }
 
-export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto }: VoteEditorProps) {
+export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto, aside }: VoteEditorProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const pickFor = useRef<string | null>(null)
   const [dragKey, setDragKey] = useState<string | null>(null)
@@ -133,8 +135,9 @@ export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto 
   }
 
   return (
-    <div className="ava-cols">
-      <div className="ava-box">
+    <div className="ava-ed">
+      <div className="c1">
+      <div className="ava-box txt">
         <h4>Le vote</h4>
         <div className="ava-fld">
           <label htmlFor="av-title">Titre</label>
@@ -152,6 +155,12 @@ export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto 
           <label htmlFor="av-thanks">Message après le vote (facultatif)</label>
           <textarea id="av-thanks" className="ava-in" value={draft.thanks ?? ''} maxLength={VOTE_LIMITS.thanksMaxLength} placeholder="Merci ! Les résultats seront révélés dans quelques instants." onChange={(e) => set('thanks', e.target.value)} />
         </div>
+      </div>
+      {aside}
+      </div>
+
+      <div className="ava-box set">
+        <h4>Réglages</h4>
         <div className="ava-fld">
           <span className="lbl">Présentation sur les téléphones</span>
           <Seg<VoteDisplayMode> label="Présentation" value={draft.displayMode} onChange={(v) => set('displayMode', v)} options={[{ v: 'photo', label: 'Photo' }, { v: 'card', label: 'Carte' }, { v: 'text', label: 'Texte' }]} />
@@ -178,7 +187,7 @@ export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto 
         </div>
       </div>
 
-      <div className="ava-box">
+      <div className="ava-box chx">
         <h4>Choix <small>{draft.displayMode === 'photo' ? 'Photo recadrée en 4:5' : draft.displayMode === 'card' ? 'Emoji et couleur affichés' : 'Nom seul'}</small></h4>
         <input
           ref={fileRef}
@@ -226,14 +235,14 @@ export default function VoteEditor({ draft, onChange, uploadingKey, onPickPhoto 
                 <CandidatePhoto candidate={{ ...c, label: c.label || '?' }} clean />
                 <span className="ov">{uploadingKey === c.key ? 'Envoi…' : c.imageUrl ? 'Changer' : <ImagePlus className="h-3.5 w-3.5 inline" />}</span>
               </button>
-              <div className="nbw">
-                <input className="ava-in sm nb" value={c.number ?? ''} maxLength={VOTE_LIMITS.numberMaxLength} placeholder="N°" aria-label="Numéro" onChange={(e) => setCandidate(c.key, { number: e.target.value })} />
-              </div>
               <div className="tx">
-                <input className="ava-in sm" value={c.label} maxLength={VOTE_LIMITS.labelMaxLength} placeholder={`Choix ${i + 1}`} aria-label="Nom" onChange={(e) => setCandidate(c.key, { label: e.target.value })} />
-                <input className="ava-in sm" value={c.description ?? ''} maxLength={VOTE_LIMITS.descriptionMaxLength} placeholder="Description (facultatif)" aria-label="Description" onChange={(e) => setCandidate(c.key, { description: e.target.value })} />
+                <div className="l1">
+                  <input className="ava-in sm nb" value={c.number ?? ''} maxLength={VOTE_LIMITS.numberMaxLength} placeholder="N°" aria-label="Numéro" onChange={(e) => setCandidate(c.key, { number: e.target.value })} />
+                  <input className="ava-in sm" value={c.label} maxLength={VOTE_LIMITS.labelMaxLength} placeholder={`Choix ${i + 1}`} aria-label="Nom" onChange={(e) => setCandidate(c.key, { label: e.target.value })} />
+                </div>
                 <div className="extra">
-                  <input className="ava-in sm" value={c.emoji ?? ''} maxLength={VOTE_LIMITS.emojiMaxLength} placeholder="Emoji" aria-label="Emoji" onChange={(e) => setCandidate(c.key, { emoji: e.target.value })} />
+                  <input className="ava-in sm desc" value={c.description ?? ''} maxLength={VOTE_LIMITS.descriptionMaxLength} placeholder="Description (facultatif)" aria-label="Description" onChange={(e) => setCandidate(c.key, { description: e.target.value })} />
+                  <input className="ava-in sm emo" value={c.emoji ?? ''} maxLength={VOTE_LIMITS.emojiMaxLength} placeholder="Emoji" aria-label="Emoji" onChange={(e) => setCandidate(c.key, { emoji: e.target.value })} />
                   <input type="color" className={`ava-color${c.color ? '' : ' auto'}`} title={c.color ? 'Couleur' : 'Couleur automatique (cliquer pour choisir)'} value={c.color ?? '#7c3aed'} aria-label="Couleur" onChange={(e) => setCandidate(c.key, { color: e.target.value })} />
                   {c.color && <button type="button" className="ava-ic" onClick={() => setCandidate(c.key, { color: null })} aria-label="Retirer la couleur" title="Couleur automatique"><X className="h-3.5 w-3.5" /></button>}
                   {c.imageUrl && <button type="button" className="ava-ic danger" onClick={() => setCandidate(c.key, { imageUrl: null })} aria-label="Retirer la photo" title="Retirer la photo"><ImageOff className="h-3.5 w-3.5" /></button>}

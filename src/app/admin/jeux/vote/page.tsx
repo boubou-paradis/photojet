@@ -456,8 +456,10 @@ export default function VoteAdminPage() {
   const editing = editorMode !== null && (!active || editorMode !== 'setup')
   const problem = draftProblem(draft)
 
+  // Hauteur de l'écran moins la barre admin (65 px) et le pied de page (30 px) :
+  // la préparation tient sans défilement sur un écran d'ordinateur.
   return (
-    <div className={`av-root min-h-screen bg-[#0D0D0F] ${voteFontVars}`}>
+    <div className={`av-root min-h-[calc(100dvh-95px)] bg-[#0D0D0F] ${voteFontVars}`}>
       <style>{VOTE_CSS + ADMIN_CSS}</style>
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
@@ -502,29 +504,31 @@ export default function VoteAdminPage() {
       </header>
 
       <main className="ava relative z-10 px-4 sm:px-8 py-6">
-        <div className="ava-grid mx-auto" style={{ maxWidth: 1240 }}>
+        <div className="ava-grid mx-auto" style={{ maxWidth: editing ? 1920 : 1240 }}>
           {editing ? (
             <>
-              <StepPills current={0} />
-              <VoteEditor draft={draft} onChange={changeDraft} uploadingKey={uploadingKey} onPickPhoto={(key, file) => void pickPhoto(key, file)} />
-              <div className="ava-act-row">
-                {editorMode === 'setup' ? (
-                  <>
-                    <button type="button" className="ava-act go" onClick={() => void launch()} disabled={busy || problem !== null || uploadingKey !== null}>
-                      {busy ? 'LANCEMENT…' : 'PASSER AU LOBBY'}
-                    </button>
-                    <span className="ava-sub">{problem ?? 'Affiche le QR sur l’écran géant. Les téléphones attendent l’ouverture du vote.'}</span>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" className="ava-act go" onClick={() => void saveEditor()} disabled={busy || problem !== null || uploadingKey !== null}>
-                      {editorMode === 'new' ? 'AFFICHER CE NOUVEAU VOTE' : 'ENREGISTRER LES MODIFICATIONS'}
-                    </button>
-                    <button type="button" className="ava-cancel" onClick={() => setEditorMode(null)} disabled={busy}>Annuler</button>
-                    <span className="ava-sub">{problem ?? (editorMode === 'new' ? 'Mêmes participants, même QR : les téléphones reçoivent le nouveau bulletin.' : 'Les téléphones et l’écran géant se mettent à jour.')}</span>
-                  </>
-                )}
+              <div className="ava-top">
+                <StepPills current={0} />
+                <div className="ava-act-row">
+                  {editorMode === 'setup' ? (
+                    <>
+                      <span className="ava-sub">{problem ?? 'Affiche le QR sur l’écran géant. Les téléphones attendent l’ouverture du vote.'}</span>
+                      <button type="button" className="ava-act go" onClick={() => void launch()} disabled={busy || problem !== null || uploadingKey !== null}>
+                        {busy ? 'LANCEMENT…' : 'PASSER AU LOBBY'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="ava-sub">{problem ?? (editorMode === 'new' ? 'Mêmes participants, même QR : les téléphones reçoivent le nouveau bulletin.' : 'Les téléphones et l’écran géant se mettent à jour.')}</span>
+                      <button type="button" className="ava-cancel" onClick={() => setEditorMode(null)} disabled={busy}>Annuler</button>
+                      <button type="button" className="ava-act go" onClick={() => void saveEditor()} disabled={busy || problem !== null || uploadingKey !== null}>
+                        {editorMode === 'new' ? 'AFFICHER CE NOUVEAU VOTE' : 'ENREGISTRER LES MODIFICATIONS'}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
+              <VoteEditor draft={draft} onChange={changeDraft} uploadingKey={uploadingKey} onPickPhoto={(key, file) => void pickPhoto(key, file)} aside={<VoteSoundsPanel sounds={sounds} />} />
             </>
           ) : active && state ? (
             <>
@@ -546,7 +550,7 @@ export default function VoteAdminPage() {
           ) : (
             <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" /></div>
           )}
-          <VoteSoundsPanel sounds={sounds} />
+          {!editing && <VoteSoundsPanel sounds={sounds} />}
         </div>
       </main>
 
