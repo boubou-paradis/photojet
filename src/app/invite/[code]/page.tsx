@@ -142,6 +142,27 @@ export default function InvitePage() {
           }
         }
 
+        // AnimaVote : même QR que la session. Redirige seulement si AnimaVote
+        // est vraiment en direct (signal de vie, aucun autre jeu actif), sauf
+        // si l'invité a choisi « juste des photos ».
+        let skipVote = photosOnly
+        try {
+          if (photosOnly) sessionStorage.setItem(`vote-photos-only-${code}`, '1')
+          skipVote ||= sessionStorage.getItem(`vote-photos-only-${code}`) === '1'
+        } catch { /* navigation privée */ }
+        if (!skipVote) {
+          const { data: voteSession } = await supabase
+            .from('sessions').select('vote_active').eq('code', code).single()
+          if (voteSession?.vote_active) {
+            const status = await fetch(`/api/vote/status?code=${encodeURIComponent(code)}`)
+              .then((r) => r.json()).catch(() => null)
+            if (status?.live) {
+              router.push(`/vote/${code}`)
+              return
+            }
+          }
+        }
+
         const { data, error } = await supabase
           .from('sessions')
           .select('*')

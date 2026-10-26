@@ -206,6 +206,9 @@ export interface Session {
   // AnimaBuzz (identifiant technique buzzer) : seul drapeau public. Joueurs,
   // buzz et état vivent dans les tables buzzer_* (serveur uniquement).
   buzzer_active?: boolean
+  // AnimaVote (identifiant technique vote) : seul drapeau public. Choix,
+  // bulletins et état vivent dans les tables vote_* (serveur uniquement).
+  vote_active?: boolean
 }
 
 // Mystery Photo types

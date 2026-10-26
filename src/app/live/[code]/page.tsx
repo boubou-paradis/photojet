@@ -24,6 +24,8 @@ import AffinityGame from '@/components/games/AffinityGame'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
 import BuzzerGame from '@/components/games/BuzzerGame'
 import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
+import VoteGame from '@/components/games/VoteGame'
+import { useVoteStatus } from '@/hooks/useVoteStatus'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
@@ -892,6 +894,8 @@ export default function LivePage() {
   const affinityStatus = useAffinityStatus(code, session?.affinity_active === true)
   // AnimaBuzz : même principe, interrogé seulement quand AnimaBuzz est lancé.
   const buzzerStatus = useBuzzerStatus(code, session?.buzzer_active === true)
+  // AnimaVote : même principe, interrogé seulement quand AnimaVote est lancé.
+  const voteStatus = useVoteStatus(code, session?.vote_active === true)
 
   const transitionType = session?.transition_type || 'fade'
   const currentItem = slideshowItems[currentIndex]
@@ -1349,6 +1353,12 @@ export default function LivePage() {
         isFinished={quizState?.isFinished ?? session.quiz_show_podium === true}
       />
     )
+  }
+
+  // AnimaVote : juste avant AnimaBuzz (les jeux s'excluent). Affiché seulement si
+  // le serveur confirme qu'il est en direct (signal de vie frais, aucun autre jeu).
+  if (session.vote_active && voteStatus.live) {
+    return <VoteGame session={session} status={voteStatus} />
   }
 
   // AnimaBuzz : juste avant Matching (les deux s'excluent). Affiché seulement si

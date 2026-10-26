@@ -87,6 +87,18 @@ const games = [
     // Grand écran : seule sur la 2e ligne, centrée sous la Roue de la Destinée.
     gridClass: 'lg:col-start-3',
   },
+  {
+    id: 'vote',
+    name: 'AnimaVote',
+    image: '/images/games/animavote.png',
+    description: 'Le vote live : vos invités élisent leur favori depuis leur téléphone',
+    path: '/admin/jeux/vote',
+    // Prochainement : ouvert à la fin de la Phase 3.
+    available: false,
+    glowColor: 'rgba(212, 175, 55, 0.5)',
+    borderHover: 'hover:border-[#D4AF37]',
+    accentColor: 'text-[#D4AF37]',
+  },
 ]
 
 export default function JeuxPage() {

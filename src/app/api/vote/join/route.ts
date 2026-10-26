@@ -86,5 +86,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: NO_GAME }, { status: 409 })
   }
 
+  // Compteur « participants connectés » de l'écran géant : diffusé sur le canal
+  // de l'écran seulement (les téléphones n'en ont pas besoin). Attendu : une
+  // requête Supabase non attendue ne part jamais. Échec sans gravité (l'écran relit).
+  const { error: notifyError } = await admin.rpc('vote_notify_tally', { p_session_id: session.id })
+  if (notifyError) console.error('[AnimaVote] diffusion arrivée :', notifyError.message)
+
   return NextResponse.json({ sessionId: session.id, participantId: result.participantId as string, token, resumed: false })
 }
