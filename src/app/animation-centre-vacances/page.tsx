@@ -55,6 +55,7 @@ const content: AnimationDetailContent = {
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
+    { label: 'AnimaVote', href: '/jeu-vote' },
     { label: 'Campings & vacances', href: '/animation-camping-interactive' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },
   ],

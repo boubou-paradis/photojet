@@ -19,6 +19,7 @@ const animations = [
   { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
   { label: 'Matching', href: '/jeu-points-communs' },
   { label: 'AnimaBuzz', href: '/jeu-buzzer' },
+  { label: 'AnimaVote', href: '/jeu-vote' },
   { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
   { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
   { label: 'Diaporama live', href: '/diaporama-live-evenement' },

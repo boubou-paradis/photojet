@@ -68,6 +68,7 @@ const content: AnimationDetailContent = {
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
+    { label: 'AnimaVote', href: '/jeu-vote' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Idées de soirées camping (blog)', href: '/blog/animation-camping-soiree' },
   ],

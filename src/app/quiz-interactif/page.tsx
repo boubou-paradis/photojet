@@ -56,6 +56,7 @@ const content: AnimationDetailContent = {
     { label: 'Le Bon Ordre', href: '/le-bon-ordre' },
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
+    { label: 'AnimaVote', href: '/jeu-vote' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
     { label: 'Idées de questions pour un quiz de mariage', href: '/blog/50-questions-quiz-mariage' },
   ],

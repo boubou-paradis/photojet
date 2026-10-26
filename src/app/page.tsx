@@ -68,6 +68,12 @@ const animations = [
     desc: 'Le buzzer live : le téléphone de chaque invité devient un vrai buzzer, le plus rapide prend la main sur l\'écran géant.',
   },
   {
+    name: 'AnimaVote',
+    img: '/images/games/animavote.png',
+    href: '/jeu-vote',
+    desc: 'Le vote live : les invités élisent leur favori depuis leur téléphone, résultats en direct ou révélés en podium.',
+  },
+  {
     name: 'Partage photo en direct',
     img: '/photo-qr-partage.png',
     href: '/partage-photo-evenement',
