@@ -1,0 +1,16 @@
+AnimaVote - sons par défaut (page animateur uniquement)
+Tous sous licence Creative Commons 0 (domaine public), vérifiée sur la page de chaque son le 2026-10-26.
+Fichiers : aperçus haute qualité (MP3) fournis par Freesound, recoupés et normalisés.
+
+ouverture-carillon.mp3  « GASP_Chimes_Success_4.wav » par Rob_Marion
+                        https://freesound.org/people/Rob_Marion/sounds/541985/
+tic.mp3                 « ticking of the clock 01.wav » par blukotek (un seul tic extrait)
+                        https://freesound.org/people/blukotek/sounds/412751/
+fermeture-gong.mp3      « Gong 1_1 » par Joao_Janz (volume relevé)
+                        https://freesound.org/people/Joao_Janz/sounds/482646/
+roulement-tambour.mp3   « Drum Roll Please.wav » par Scheffler (extrait de 2,3 à 7,6 s)
+                        https://freesound.org/people/Scheffler/sounds/201211/
+fanfare-gagnant.mp3     « Clean and Pompous Fanfare Trumpet.mp3 » par joepayne
+                        https://freesound.org/people/joepayne/sounds/413203/
+
+Chaque son peut être remplacé par l'animateur (fichier gardé sur son PC, jamais envoyé au serveur).

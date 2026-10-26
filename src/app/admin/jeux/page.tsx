@@ -84,8 +84,9 @@ const games = [
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
     notice: '/animabuzz-regles.pdf',
-    // Grand écran : seule sur la 2e ligne, centrée sous la Roue de la Destinée.
-    gridClass: 'lg:col-start-3',
+    // Grand écran : 2e ligne avec AnimaVote, la paire centrée sous la Roue de
+    // la Destinée (décalage d'une demi-colonne + demi-gouttière, gap-6 = 1,5rem).
+    gridClass: 'lg:col-start-3 lg:-translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'vote',
@@ -93,11 +94,14 @@ const games = [
     image: '/images/games/animavote.png',
     description: 'Le vote live : vos invités élisent leur favori depuis leur téléphone',
     path: '/admin/jeux/vote',
-    // Prochainement : ouvert à la fin de la Phase 3.
-    available: false,
+    available: true,
     glowColor: 'rgba(212, 175, 55, 0.5)',
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
+    notice: '/animavote-regles.pdf',
+    // Tablette (3 colonnes) : seule sur la dernière ligne, centrée.
+    // Grand écran : même décalage qu'AnimaBuzz, la paire reste centrée.
+    gridClass: 'md:col-start-2 lg:col-start-auto lg:-translate-x-[calc(50%+0.75rem)]',
   },
 ]
 

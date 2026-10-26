@@ -256,9 +256,9 @@ export default function VotePhonePage() {
       </div>
     )
   } else if (!event || screen === 'waiting') {
-    content = <Waiting event={event} />
+    content = <Waiting event={event} photosHref={photosHref} />
   } else if (screen === 'voted' && myBallot) {
-    content = <Voted event={event} ballot={myBallot} already={alreadyFor === event.id} />
+    content = <Voted event={event} ballot={myBallot} already={alreadyFor === event.id} photosHref={photosHref} />
   } else if (screen === 'closed') {
     content = <EndState title="Le vote est terminé" text="Regarde l’écran géant pour découvrir les résultats." icon="closed" />
   } else {
@@ -297,7 +297,7 @@ function Head({ event, text }: { event: VoteEvent | null; text?: string | null }
   )
 }
 
-function Waiting({ event }: { event: VoteEvent | null }) {
+function Waiting({ event, photosHref }: { event: VoteEvent | null; photosHref: string }) {
   const thumbs = event ? [...event.candidates].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 6) : []
   return (
     <>
@@ -317,6 +317,7 @@ function Waiting({ event }: { event: VoteEvent | null }) {
             {thumbs.map((c) => <div key={c.id}><CandidatePhoto candidate={c} clean /></div>)}
           </div>
         )}
+        <a href={photosHref} className="avp-link">Partager des photos</a>
       </div>
     </>
   )
@@ -435,7 +436,7 @@ function SmallCheck() {
   )
 }
 
-function Voted({ event, ballot, already }: { event: VoteEvent; ballot: VoteMyBallot; already: boolean }) {
+function Voted({ event, ballot, already, photosHref }: { event: VoteEvent; ballot: VoteMyBallot; already: boolean; photosHref: string }) {
   const chosen: VoteCandidate | null = ballot.candidateId ? event.candidates.find((c) => c.id === ballot.candidateId) ?? null : null
   const choice = ballot.blank ? 'vote blanc' : chosen ? candidateName(chosen) : 'enregistré'
   return (
@@ -469,6 +470,7 @@ function Voted({ event, ballot, already }: { event: VoteEvent; ballot: VoteMyBal
         {LOCK}
       </div>
       <div className="avp-watch"><span className="av-spin" aria-hidden />Regarde l’écran géant pour découvrir le résultat.</div>
+      <a href={photosHref} className="avp-link">Partager des photos</a>
     </div>
   )
 }

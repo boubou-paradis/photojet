@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, LogOut, Monitor } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, LogOut, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import AnimaVoteLogo from '@/components/vote/AnimaVoteLogo'
@@ -21,13 +21,18 @@ import CandidatePhoto, { candidateName } from '@/components/vote/CandidateVisual
 import { voteFontVars } from '@/components/vote/fonts'
 import { VOTE_CSS } from '@/components/vote/styles'
 import { ADMIN_CSS } from '@/components/vote/admin/styles'
+import VoteSoundsPanel from '@/components/vote/admin/VoteSoundsPanel'
+import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import VoteEditor, { DEFAULT_DRAFT, draftProblem, toEditorDraft, toPayload, type EditorDraft } from '@/components/vote/admin/VoteEditor'
 import PhotoCropModal from '@/app/admin/jeux/mystery/PhotoCropModal'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { useVoteChannel } from '@/hooks/useVoteChannel'
+import { useVoteSounds } from '@/hooks/useVoteSounds'
+import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { compressImage, validateImageFile } from '@/lib/image-utils'
 import { VOTE_HEARTBEAT_INTERVAL_MS } from '@/lib/vote/constants'
-import { availableActions, closingRemainingMs, primaryAction } from '@/lib/vote/machine'
+import { REMOTE_CONFIRM_MS, availableActions, closingRemainingMs, primaryAction, remoteAction, remoteNeedsConfirm } from '@/lib/vote/machine'
+import { countdownTickSecond, voteSoundCue, type VoteStepMark } from '@/lib/vote/sounds'
 import { computeRanking, lastRevealStep, participationPercent, revealPlan, type Ranking, type RevealStep } from '@/lib/vote/results'
 import type { VoteActiveState, VoteDraft, VoteEvent, VoteResults, VoteState } from '@/lib/vote/types'
 import { createClient } from '@/lib/supabase'
@@ -304,6 +309,74 @@ export default function VoteAdminPage() {
     }
   }, [closesAt, offset, act])
 
+  // ---------- Sons (PC animateur = la sono) ----------
+  const sounds = useVoteSounds()
+  const playSound = sounds.play
+  const event = state?.event ?? null
+  const results = state?.results ?? tally
+  const ranking = useMemo(() => (event ? computeRanking(event.candidates, results) : null), [event, results])
+  const plan = useMemo(() => (event && ranking ? revealPlan(event.revealMode, ranking) : []), [event, ranking])
+  const lastStep = event && ranking ? lastRevealStep(event.revealMode, ranking) : 0
+  const stepKind = event?.status === 'revealed' ? plan[Math.min(event.revealStep, plan.length - 1)]?.kind : undefined
+
+  const stepMarkRef = useRef<VoteStepMark | null>(null)
+  const eventId = event?.id
+  const eventStatus = event?.status
+  const eventRevealStep = event?.revealStep
+  useEffect(() => {
+    if (!eventId || !eventStatus || eventRevealStep === undefined) {
+      stepMarkRef.current = null
+      return
+    }
+    const mark: VoteStepMark = { eventId, status: eventStatus, revealStep: eventRevealStep, stepKind }
+    const cue = voteSoundCue(stepMarkRef.current, mark)
+    stepMarkRef.current = mark
+    if (cue) playSound(cue)
+  }, [eventId, eventStatus, eventRevealStep, stepKind, playSound])
+
+  // Tic à chaque seconde du compte à rebours de fermeture.
+  const tickSecond = closesAt ? countdownTickSecond(Date.parse(closesAt) - (now + offset)) : null
+  const countdownS = event?.countdownS ?? 0
+  useEffect(() => {
+    if (tickSecond !== null && tickSecond <= countdownS) playSound('tick')
+  }, [tickSecond, countdownS, playSound])
+
+  // ---------- Télécommande de présentation ----------
+  // PageDown = action logique suivante (ouvrir, fermer, révéler, étape
+  // suivante). Fermer demande un second appui dans les 3 s. PageUp : rien.
+  const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  const remotePhase = event ? `${event.id}|${event.status}|${event.revealStep}|${event.closesAt ?? ''}` : 'off'
+  const confirmRef = useRef<{ phase: string; until: number } | null>(null)
+  const [confirm, setConfirm] = useState<{ phase: string; until: number } | null>(null)
+  useEffect(() => {
+    if (!confirm) return
+    const timer = setTimeout(() => setConfirm(null), Math.max(0, confirm.until - Date.now()))
+    return () => clearTimeout(timer)
+  }, [confirm])
+  useRemoteControl({
+    active: active && remoteOn && !!event && editorMode === null,
+    phase: remotePhase,
+    isBlocked: () => crop !== null,
+    onNext: async () => {
+      if (!state?.event) return
+      const action = remoteAction(state, lastStep)
+      if (!action) return
+      if (remoteNeedsConfirm(action)) {
+        const armed = confirmRef.current
+        if (!armed || armed.phase !== remotePhase || Date.now() > armed.until) {
+          const next = { phase: remotePhase, until: Date.now() + REMOTE_CONFIRM_MS }
+          confirmRef.current = next
+          setConfirm(next)
+          return
+        }
+      }
+      confirmRef.current = null
+      setConfirm(null)
+      await act(action, action === 'reveal_next' ? { from: state.event.revealStep } : {})
+    },
+  })
+  const confirmShown = confirm !== null && confirm.phase === remotePhase
+
   async function launch() {
     if (!session) return
     const problem = draftProblem(draft)
@@ -404,18 +477,27 @@ export default function VoteAdminPage() {
               <p className="text-xs text-gray-500 mt-1">{session.name} · session {session.code}</p>
             </div>
           </div>
-          {active && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]">
-                <Monitor className="h-4 w-4 mr-2" />
-                Écran géant
+          <div className="flex flex-wrap items-center gap-2">
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} />
+            <a href="/animavote-regles.pdf" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
+                <FileText className="h-4 w-4 mr-2" />
+                Notice
               </Button>
-              <Button size="sm" onClick={quit} disabled={busy} className="bg-red-600 text-white font-semibold hover:bg-red-500 border border-red-400/60 shadow-[0_0_14px_rgba(220,38,38,0.45)]">
-                <LogOut className="h-4 w-4 mr-2" />
-                Quitter AnimaVote
-              </Button>
-            </div>
-          )}
+            </a>
+            {active && (
+              <>
+                <Button size="sm" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]">
+                  <Monitor className="h-4 w-4 mr-2" />
+                  Écran géant
+                </Button>
+                <Button size="sm" onClick={quit} disabled={busy} className="bg-red-600 text-white font-semibold hover:bg-red-500 border border-red-400/60 shadow-[0_0_14px_rgba(220,38,38,0.45)]">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Quitter AnimaVote
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -445,18 +527,26 @@ export default function VoteAdminPage() {
               </div>
             </>
           ) : active && state ? (
-            <Pilot
-              state={state}
-              tally={tally}
-              busy={busy}
-              serverNow={now + offset}
-              onAction={(a, args) => void act(a, args)}
-              onEdit={() => setEditorMode('edit')}
-              onNewVote={() => setEditorMode('new')}
-            />
+            <>
+              {confirmShown && (
+                <div className="ava-say" role="status" style={{ borderColor: '#e0409a', color: '#ffd0e6' }}>
+                  Télécommande : appuyez encore pour <b>&nbsp;FERMER LE VOTE</b>
+                </div>
+              )}
+              <Pilot
+                state={state}
+                tally={tally}
+                busy={busy}
+                serverNow={now + offset}
+                onAction={(a, args) => void act(a, args)}
+                onEdit={() => setEditorMode('edit')}
+                onNewVote={() => setEditorMode('new')}
+              />
+            </>
           ) : (
             <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" /></div>
           )}
+          <VoteSoundsPanel sounds={sounds} />
         </div>
       </main>
 
