@@ -18,6 +18,7 @@ import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer, { type BuzzerVisualState } from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
 import SoundsPanel from '@/components/buzzer/SoundsPanel'
+import PrepEditor, { PrepModeChooser } from '@/components/buzzer/prep/PrepEditor'
 import { BUZZER_CSS } from '@/components/buzzer/styles'
 import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
@@ -25,6 +26,7 @@ import { useAmbianceMusic } from '@/hooks/useAmbianceMusic'
 import { useBuzzerSounds } from '@/hooks/useBuzzerSounds'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
+import { useBuzzerPrepDraft } from '@/hooks/useBuzzerPrepDraft'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import {
   BUZZER_DEFAULT_TIMER_S,
@@ -94,6 +96,9 @@ export default function BuzzerAdminPage() {
   const [teamsText, setTeamsText] = useState('')
   const [windowMs, setWindowMs] = useState<number>(BUZZER_DEFAULT_WINDOW_MS)
   const [timerS, setTimerS] = useState<number | null>(BUZZER_DEFAULT_TIMER_S)
+
+  // Manches préparées : liste de la session, enregistrée automatiquement.
+  const prep = useBuzzerPrepDraft(session?.id ?? null)
 
   const channel = useBuzzerChannel(active && session ? session.id : null)
   const { apply } = channel
@@ -465,6 +470,14 @@ export default function BuzzerAdminPage() {
             setTimerS={setTimerS}
             busy={busy}
             onLaunch={launch}
+            prep={prep.loaded ? (
+              <>
+                <PrepModeChooser enabled={prep.draft.enabled} onChange={(enabled) => prep.setDraft((d) => ({ ...d, enabled }))} />
+                {prep.draft.enabled && (
+                  <PrepEditor sessionId={session.id} draft={prep.draft} setDraft={prep.setDraft} status={prep.status} error={prep.error} />
+                )}
+              </>
+            ) : null}
             extras={<><SoundsPanel sounds={sounds} /><AmbianceMusicControls music={music} /></>}
           />
         )}
@@ -488,6 +501,8 @@ interface SetupPanelProps {
   setTimerS: (n: number | null) => void
   busy: boolean
   onLaunch: () => void
+  /** Choix du mode et préparation des manches (au-dessus des réglages). */
+  prep?: React.ReactNode
   /** Sons et musique d'ambiance, réglables avant le lancement. */
   extras?: React.ReactNode
 }
@@ -507,6 +522,8 @@ function SetupPanel(p: SetupPanelProps) {
 
   return (
     <div className="space-y-6">
+      {p.prep}
+
       {/* Réglages (même disposition que le Quiz et Matching : pleine largeur) */}
       <section className="card-gold rounded-xl p-6">
         <div className="flex items-center gap-3">
