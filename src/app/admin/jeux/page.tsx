@@ -76,7 +76,7 @@ const games = [
   {
     id: 'buzzer',
     name: 'AnimaBuzz',
-    image: '/images/games/animabuzz.png',
+    image: '/images/games/animabuzz-xtreme.png',
     description: 'Le buzzer live : le téléphone de vos invités devient un vrai buzzer de jeu',
     path: '/admin/jeux/buzzer',
     available: true,

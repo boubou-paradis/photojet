@@ -23,7 +23,7 @@ const content: AnimationDetailContent = {
   title: 'AnimaBuzz,',
   highlight: 'le buzzer live sur téléphone',
   intro: "Plus besoin de matériel : le téléphone de chaque invité devient un vrai buzzer de jeu. Vous ouvrez les buzzers, toute la salle appuie, et l'écran géant affiche en un éclair qui a été le plus rapide. Parfait pour un blind test, un quiz animé au micro ou n'importe quel jeu de rapidité.",
-  image: '/images/games/animabuzz.png',
+  image: '/images/games/animabuzz-xtreme.png',
   what: [
     "AnimaBuzz est un buzzer de jeu qui tourne sur les téléphones de vos invités. Ils scannent le QR code de la soirée, choisissent un pseudo (et leur équipe si vous jouez par équipes), et leur écran se transforme en gros bouton à presser, sans application ni compte.",
     "Vous gardez la main sur le déroulé : vous posez la question au micro, vous ouvrez les buzzers, et le premier qui appuie s'affiche sur l'écran géant avec son et animation. Les joueurs suivants sont classés eux aussi : en cas de mauvaise réponse, le 2e prend la main, sans avoir à relancer.",

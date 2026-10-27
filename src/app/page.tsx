@@ -63,7 +63,7 @@ const animations = [
   },
   {
     name: 'AnimaBuzz',
-    img: '/images/games/animabuzz.png',
+    img: '/images/games/animabuzz-xtreme.png',
     href: '/jeu-buzzer',
     desc: 'Le buzzer live : le téléphone de chaque invité devient un vrai buzzer, le plus rapide prend la main sur l\'écran géant.',
   },
