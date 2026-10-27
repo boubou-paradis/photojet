@@ -9,6 +9,8 @@
 // privé (pseudos et écarts déjà destinés à l'écran) et les compteurs du statut.
 // Manches préparées : scènes dédiées (question, révélation, vote), sinon
 // les scènes du mode libre, inchangées.
+// Classement : affiché à la demande de l'animateur (jamais par-dessus des
+// buzzers ouverts) et à la fin des manches préparées s'il y a des points.
 
 import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
@@ -17,6 +19,7 @@ import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
 import { prepRoundLabel, renderPrepScene } from '@/components/buzzer/live/PrepScenes'
+import ScoreBoard, { SCOREBOARD_CSS } from '@/components/buzzer/live/ScoreBoard'
 import { STAGE_CSS } from '@/components/buzzer/live/stageStyles'
 import { PREP_STAGE_CSS } from '@/components/buzzer/prep/prepStyles'
 import { BUZZER_CSS } from '@/components/buzzer/styles'
@@ -24,6 +27,7 @@ import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
 import type { BuzzerLiveStatus } from '@/hooks/useBuzzerStatus'
 import { windowEndsAt } from '@/lib/buzzer/machine'
 import type { PrepActiveState } from '@/lib/buzzer/prep-flow'
+import { hasAnyPoints, type ScoresActiveState } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState } from '@/lib/buzzer/types'
 import { getInviteUrl } from '@/lib/utils'
 import type { Session } from '@/types/database'
@@ -49,10 +53,11 @@ const CONFETTI = Array.from({ length: 46 }, (_, i) => ({
 }))
 
 export default function BuzzerGame({ session, status }: BuzzerGameProps) {
-  const channel = useBuzzerChannel(status.sessionId, { withPrep: true })
+  const channel = useBuzzerChannel(status.sessionId, { withPrep: true, withScores: true })
   const { refresh } = channel
   const state = channel.state?.active ? channel.state : null
   const prep = state && channel.prep?.active ? channel.prep : null
+  const scores = state && channel.scores?.active ? channel.scores : null
   const [isFullscreen, setIsFullscreen] = useState(false)
   const isMac = useSyncExternalStore(noopSubscribe, detectMac, () => false)
   const [now, setNow] = useState(() => Date.now())
@@ -113,9 +118,9 @@ export default function BuzzerGame({ session, status }: BuzzerGameProps) {
 
   return (
     <div className={`bzs ${buzzerFontVars}`} data-fullscreen={isFullscreen || undefined}>
-      <style>{BUZZER_CSS + STAGE_CSS + PREP_STAGE_CSS}</style>
+      <style>{BUZZER_CSS + STAGE_CSS + PREP_STAGE_CSS + SCOREBOARD_CSS}</style>
       <div className="bzs-stage">
-        <Scene session={session} status={status} state={state} prep={prep} serverNow={now + offset} />
+        <Scene session={session} status={status} state={state} prep={prep} scores={scores} serverNow={now + offset} />
       </div>
       <button onClick={toggleFullscreen} className="bzs-fs" aria-label={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
         {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
@@ -136,11 +141,17 @@ function Top({ round, right }: { round?: string; right: string }) {
   )
 }
 
-function Scene({ session, status, state, prep, serverNow }: { session: Session; status: BuzzerLiveStatus; state: BuzzerActiveState | null; prep: PrepActiveState | null; serverNow: number }) {
+function Scene({ session, status, state, prep, scores, serverNow }: { session: Session; status: BuzzerLiveStatus; state: BuzzerActiveState | null; prep: PrepActiveState | null; scores: ScoresActiveState | null; serverNow: number }) {
   const players = `${status.playerCount} ${state?.mode === 'team' ? 'téléphone' : 'joueur'}${status.playerCount > 1 ? 's' : ''}`
   const round = prep ? prepRoundLabel(prep) : state && state.roundNo > 0 ? `Manche ${state.roundNo}` : undefined
   // Numéro affiché : celui de la liste en manches préparées (une manche passée ne compte pas de buzz).
   const roundNo = prep ? prep.roundIndex + 1 : state?.roundNo ?? 0
+
+  // ---------- Classement (jamais pendant des buzzers ouverts ni le test) ----------
+  if (state && scores && !['open', 'buzzed', 'test'].includes(state.phase)) {
+    if (scores.shown) return <ScoreBoard scores={scores} title={prep?.step === 'end' ? 'Classement final' : 'Classement'} />
+    if (prep?.step === 'end' && hasAnyPoints(scores)) return <ScoreBoard scores={scores} title="Classement final" />
+  }
 
   // ---------- Lobby (ou état pas encore reçu) ----------
   if (!state || state.phase === 'lobby') {

@@ -15,6 +15,7 @@ export const PREP_LIMITS = {
   nameMaxLength: 80,
   questionMaxLength: 160,
   answerMaxLength: 120,
+  maxRoundPoints: 100,
   voteQuestionMaxLength: 120,
   choiceMaxLength: 40,
   minChoices: 2,
@@ -52,6 +53,8 @@ export interface PrepRound {
   audioStart: number | null
   audioEnd: number | null
   vote: PrepVote | null
+  /** Points d'une bonne réponse pour cette manche (0 à 100) ; absent = barème de la partie. */
+  points?: number | null
 }
 
 export interface PrepSettings {
@@ -96,7 +99,7 @@ export function newRoundId(): string {
 }
 
 export function emptyRound(): PrepRound {
-  return { id: newRoundId(), question: null, answer: null, imagePath: null, audioPath: null, audioName: null, audioStart: null, audioEnd: null, vote: null }
+  return { id: newRoundId(), question: null, answer: null, imagePath: null, audioPath: null, audioName: null, audioStart: null, audioEnd: null, vote: null, points: null }
 }
 
 /** Préfixe des médias d'un compte (tout chemin hors de ce préfixe est refusé). */
@@ -213,6 +216,14 @@ export function parseRound(raw: unknown, n: number, userId: string, strict = fal
   const vote = parseVote(r.vote, n, strict)
   if (!vote.ok) return vote
 
+  let points: number | null = null
+  if (r.points !== undefined && r.points !== null) {
+    if (typeof r.points !== 'number' || !Number.isInteger(r.points) || r.points < 0 || r.points > PREP_LIMITS.maxRoundPoints) {
+      return { ok: false, error: `Manche ${n} : points de 0 à ${PREP_LIMITS.maxRoundPoints}.` }
+    }
+    points = r.points
+  }
+
   return {
     ok: true,
     value: {
@@ -225,6 +236,7 @@ export function parseRound(raw: unknown, n: number, userId: string, strict = fal
       audioStart,
       audioEnd,
       vote: vote.value,
+      points,
     },
   }
 }

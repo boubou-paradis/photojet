@@ -118,3 +118,18 @@ describe('balayage des médias', () => {
     expect(selectOrphanMedia(files, new Set([audio]), now, day)).toEqual(['buzzer-media/u/s/vieux.mp3'])
   })
 })
+
+describe('points d’une manche', () => {
+  it('facultatifs, entiers de 0 à 100', () => {
+    const ok = (points: unknown) => parsePrepDraft({ rounds: [{ ...emptyRound(), question: 'Q', points }] }, USER)
+    const none = ok(undefined)
+    expect(none.ok && none.value.rounds[0].points).toBe(null)
+    const five = ok(5)
+    expect(five.ok && five.value.rounds[0].points).toBe(5)
+    expect(ok(0).ok).toBe(true)
+    expect(ok(101).ok).toBe(false)
+    expect(ok(-1).ok).toBe(false)
+    expect(ok(2.5).ok).toBe(false)
+    expect(ok('3').ok).toBe(false)
+  })
+})

@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   let sessionsReset = 0
   let playersDeleted = 0
   let prepDeleted = 0
+  let scoresDeleted = 0
   let filesDeleted = 0
   let error: string | null = null
 
@@ -88,6 +89,18 @@ export async function GET(request: NextRequest) {
     const { count: prepCount, error: prepError } = await orphanPrep
     if (prepError) throw new Error(prepError.message)
     prepDeleted = prepCount ?? 0
+
+    // 3 bis. Points d'une partie qui n'existe plus (vieux de plus de 23 h).
+    let orphanScores = admin.from('buzzer_score_events').delete({ count: 'exact' }).lt('created_at', cutoff)
+    if (notLive) orphanScores = orphanScores.not('game_id', 'in', notLive)
+    const { count: scoresCount, error: scoresError } = await orphanScores
+    if (scoresError) throw new Error(scoresError.message)
+    scoresDeleted = scoresCount ?? 0
+
+    let orphanScoreState = admin.from('buzzer_score_state').delete().lt('updated_at', cutoff)
+    if (notLive) orphanScoreState = orphanScoreState.not('game_id', 'in', notLive)
+    const { error: scoreStateError } = await orphanScoreState
+    if (scoreStateError) throw new Error(scoreStateError.message)
   } catch (e) {
     error = e instanceof Error ? e.message : String(e)
     console.error('[Cron purge-buzzer]', error)
@@ -116,13 +129,13 @@ export async function GET(request: NextRequest) {
   const { error: logError } = await admin.from('purge_log').insert({
     kind: 'buzzer',
     files_deleted: filesDeleted,
-    reason: `sessions=${sessionsReset} joueurs=${playersDeleted} manches=${prepDeleted} medias=${filesDeleted}`,
+    reason: `sessions=${sessionsReset} joueurs=${playersDeleted} manches=${prepDeleted} points=${scoresDeleted} medias=${filesDeleted}`,
     error,
   })
   if (logError) console.error('[Cron purge-buzzer] purge_log :', logError.message)
 
   return NextResponse.json(
-    { success: !error, sessionsReset, playersDeleted, prepDeleted, filesDeleted, logged: !logError, error },
+    { success: !error, sessionsReset, playersDeleted, prepDeleted, scoresDeleted, filesDeleted, logged: !logError, error },
     { status: error ? 500 : 200 },
   )
 }

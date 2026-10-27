@@ -9,12 +9,14 @@
 // au retour du réseau et toutes les 30 s par sécurité : jamais à chaque message.
 // Donne aussi le décalage d'horloge avec le serveur.
 // `withPrep` : suit aussi les manches préparées (événement « prep » du même
-// canal, relu dans la même requête). Sans cette option : comportement inchangé.
+// canal, relu dans la même requête). `withScores` : suit aussi les points
+// (événement « scores »). Sans ces options : comportement inchangé.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { buzzerTopic } from '@/lib/buzzer/constants'
 import { isNewer } from '@/lib/buzzer/machine'
 import { isNewerPrep, type PrepState } from '@/lib/buzzer/prep-flow'
+import { isNewerScores, type ScoresState } from '@/lib/buzzer/scores'
 import type { BuzzerState } from '@/lib/buzzer/types'
 import { clockOffset } from '@/lib/affinity/clock'
 import { createClient } from '@/lib/supabase'
@@ -33,16 +35,22 @@ export interface BuzzerChannel {
   /** Manches préparées (option `withPrep` seulement, sinon null). */
   prep: PrepState | null
   applyPrep: (next: PrepState) => void
+  /** Points et classement (option `withScores` seulement, sinon null). */
+  scores: ScoresState | null
+  applyScores: (next: ScoresState) => void
 }
 
-export function useBuzzerChannel(sessionId: string | null | undefined, options: { withPrep?: boolean } = {}): BuzzerChannel {
+export function useBuzzerChannel(sessionId: string | null | undefined, options: { withPrep?: boolean; withScores?: boolean } = {}): BuzzerChannel {
   const withPrep = options.withPrep === true
+  const withScores = options.withScores === true
   const [state, setState] = useState<BuzzerState | null>(null)
   const [prep, setPrep] = useState<PrepState | null>(null)
   const [clockOffsetMs, setClockOffsetMs] = useState(0)
   const [connected, setConnected] = useState(false)
   const stateRef = useRef<BuzzerState | null>(null)
   const prepRef = useRef<PrepState | null>(null)
+  const [scores, setScores] = useState<ScoresState | null>(null)
+  const scoresRef = useRef<ScoresState | null>(null)
 
   const apply = useCallback((next: BuzzerState) => {
     if (!isNewer(next, stateRef.current)) return
@@ -56,13 +64,19 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
     setPrep(next)
   }, [])
 
+  const applyScores = useCallback((next: ScoresState) => {
+    if (!isNewerScores(next, scoresRef.current)) return
+    scoresRef.current = next
+    setScores(next)
+  }, [])
+
   const refresh = useCallback(async () => {
     if (!sessionId) return
     try {
       const startedAt = Date.now()
-      const res = await fetch(`/api/buzzer/state?session=${encodeURIComponent(sessionId)}${withPrep ? '&prep=1' : ''}`, { cache: 'no-store' })
+      const res = await fetch(`/api/buzzer/state?session=${encodeURIComponent(sessionId)}${withPrep ? '&prep=1' : ''}${withScores ? '&scores=1' : ''}`, { cache: 'no-store' })
       if (!res.ok) return
-      const { prep: prepData, ...rest } = (await res.json()) as BuzzerState & { prep?: PrepState }
+      const { prep: prepData, scores: scoresData, ...rest } = (await res.json()) as BuzzerState & { prep?: PrepState; scores?: ScoresState }
       const data = rest as BuzzerState
       setClockOffsetMs(clockOffset(data.serverNow, startedAt, Date.now()))
       // Même règle que l'état : une diffusion plus récente arrivée pendant la requête est gardée.
@@ -70,6 +84,11 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
       if (prepData && (!cur || !prepData.active || !cur.active || prepData.v >= cur.v || prepData.serverNow > cur.serverNow)) {
         prepRef.current = prepData
         setPrep(prepData)
+      }
+      const curScores = scoresRef.current
+      if (scoresData && (!curScores || !scoresData.active || !curScores.active || scoresData.v >= curScores.v || scoresData.serverNow > curScores.serverNow)) {
+        scoresRef.current = scoresData
+        setScores(scoresData)
       }
       // Relecture complète : elle fait foi, même à version égale (partie quittée puis relancée).
       if (!stateRef.current || !data.active || !stateRef.current.active || data.v >= stateRef.current.v || data.serverNow > stateRef.current.serverNow) {
@@ -79,7 +98,7 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
     } catch {
       /* réseau instable : on garde le dernier état connu */
     }
-  }, [sessionId, withPrep])
+  }, [sessionId, withPrep, withScores])
 
   useEffect(() => {
     if (!sessionId) return
@@ -88,6 +107,7 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
       .channel(buzzerTopic(sessionId), { config: { private: true } })
       .on('broadcast', { event: 'state' }, ({ payload }) => apply(payload as BuzzerState))
     if (withPrep) channel = channel.on('broadcast', { event: 'prep' }, ({ payload }) => applyPrep(payload as PrepState))
+    if (withScores) channel = channel.on('broadcast', { event: 'scores' }, ({ payload }) => applyScores(payload as ScoresState))
     channel.subscribe((status) => {
         const ok = status === 'SUBSCRIBED'
         setConnected(ok)
@@ -112,7 +132,11 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
       window.removeEventListener('online', onOnline)
       void supabase.removeChannel(channel)
     }
-  }, [sessionId, withPrep, apply, applyPrep, refresh])
+  }, [sessionId, withPrep, withScores, apply, applyPrep, applyScores, refresh])
 
-  return { state, clockOffsetMs, connected, refresh, apply, prep: withPrep ? prep : null, applyPrep }
+  return {
+    state, clockOffsetMs, connected, refresh, apply,
+    prep: withPrep ? prep : null, applyPrep,
+    scores: withScores ? scores : null, applyScores,
+  }
 }

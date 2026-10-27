@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BUZZER_OFFLINE_AFTER_MS } from '@/lib/buzzer/constants'
+import { awardScores } from '@/lib/buzzer/scores-server'
 import { BuzzerActionError, getBuzzerAdmin, loadPublicState, mapAdminError, requireSessionOwner } from '@/lib/buzzer/server'
 import type { BuzzerAdminPlayer, BuzzerOutcome, BuzzerRoundSummary } from '@/lib/buzzer/types'
 import { parseAdminRequest } from '@/lib/buzzer/validation'
@@ -89,7 +90,9 @@ export async function POST(request: Request) {
       if (mapped) throw mapped
       throw new Error(error.message)
     }
-    return NextResponse.json({ ok: true, state: data }, { headers: { 'Cache-Control': 'no-store' } })
+    // Bonne réponse : points au gagnant (sans jamais faire échouer l'action).
+    const scores = action === 'right' ? await awardScores(admin, sessionId, 'award_round') : null
+    return NextResponse.json({ ok: true, state: data, ...(scores ? { scores } : {}) }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     if (e instanceof BuzzerActionError) return NextResponse.json({ error: e.message }, { status: e.status })
     console.error(`[AnimaBuzz] action ${action} :`, e instanceof Error ? e.message : e)

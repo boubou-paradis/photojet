@@ -41,16 +41,19 @@ export const PHONE_CSS = `
 .bzp-teams button{font:600 4.4cqw var(--font-inter),sans-serif;color:#f4f1ff;text-align:center;border:1px solid rgba(255,255,255,.14);border-radius:3cqw;padding:3cqw 1cqw;background:rgba(255,255,255,.04);cursor:pointer;overflow:hidden;text-overflow:ellipsis}
 .bzp-teams button[aria-pressed="true"]{border-color:#a855f7;background:rgba(168,85,247,.22);box-shadow:0 0 0 1px #a855f7 inset}
 .bzp-error{align-self:stretch;font:500 4.2cqw/1.35 var(--font-inter),sans-serif;color:#fde68a;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:3cqw;padding:2.6cqw 3.4cqw}
+.bzp-score{margin-top:2cqw;font:600 4cqw var(--font-inter),sans-serif;color:#f3d77a;font-variant-numeric:tabular-nums;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.35);border-radius:999px;padding:1cqw 3.6cqw}
 .bzp-error button{font:inherit;color:#fff;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer}
 `
 
 interface PhoneFrameProps {
   /** Pseudo ou équipe affiché en haut à droite. */
   me?: string | null
+  /** Points et rang (« 12 pts · 2e »), quand la partie compte des points. */
+  score?: string | null
   children: ReactNode
 }
 
-export default function PhoneFrame({ me, children }: PhoneFrameProps) {
+export default function PhoneFrame({ me, score, children }: PhoneFrameProps) {
   return (
     <div className={`bzp ${buzzerFontVars}`}>
       <style>{BUZZER_CSS + PHONE_CSS}</style>
@@ -59,6 +62,7 @@ export default function PhoneFrame({ me, children }: PhoneFrameProps) {
           <AnimaBuzzLogo variant="small" subtitle={false} size="7cqw" />
           {me && <span className="bzp-me">{me}</span>}
         </div>
+        {score && <span className="bzp-score" data-testid="my-score">{score}</span>}
         {children}
       </div>
     </div>

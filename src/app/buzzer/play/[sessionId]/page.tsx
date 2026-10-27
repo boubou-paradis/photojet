@@ -22,6 +22,7 @@ import { useWakeLock } from '@/hooks/useWakeLock'
 import { BUZZER_PING_INTERVAL_MS } from '@/lib/buzzer/constants'
 import { phoneView, windowEndsAt, type MyBuzz, type PhoneScreen } from '@/lib/buzzer/machine'
 import { findStoredPlayerBySession, forgetPlayer, type StoredBuzzerPlayer } from '@/lib/buzzer/player-storage'
+import { findMyScore, formatPoints, formatRank, hasAnyPoints, isTied } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState, BuzzerMe, BuzzResult } from '@/lib/buzzer/types'
 import { createClient } from '@/lib/supabase'
 
@@ -72,10 +73,11 @@ export default function BuzzerPlayPage() {
   const [sending, setSending] = useState(false)
   const [, setTick] = useState(0)
 
-  const channel = useBuzzerChannel(player ? sessionId : null, { withPrep: true })
+  const channel = useBuzzerChannel(player ? sessionId : null, { withPrep: true, withScores: true })
   const { refresh, apply } = channel
   const state = channel.state?.active ? channel.state : null
   const prep = state && channel.prep?.active ? channel.prep : null
+  const scores = state && channel.scores?.active ? channel.scores : null
 
   const buzzerRef = useRef<HTMLDivElement>(null)
   const sendingRef = useRef(false)
@@ -240,6 +242,8 @@ export default function BuzzerPlayPage() {
 
   // ---------- Rendu ----------
   const me = player?.label ?? null
+  const mine = scores && player && hasAnyPoints(scores) ? findMyScore(scores, player.unit) : null
+  const score = mine && scores ? `${formatPoints(mine.points)} · ${formatRank(mine.rank, isTied(scores, mine))}` : null
 
   if (gone) {
     return (
@@ -264,7 +268,7 @@ export default function BuzzerPlayPage() {
 
   if (player && prep?.vote && (prep.step === 'vote_open' || prep.step === 'vote_closed')) {
     return (
-      <PhoneFrame me={me}>
+      <PhoneFrame me={me} score={score}>
         <PhoneVote player={player} vote={prep.vote} step={prep.step} onGone={reloadMe} refresh={refresh} />
       </PhoneFrame>
     )
@@ -275,7 +279,7 @@ export default function BuzzerPlayPage() {
   const copy = screenCopy(screen, { team, rank: view.rank, gapMs: view.gapMs, leader: view.leader, reopened: state.attempt > 1 })
 
   return (
-    <PhoneFrame me={me}>
+    <PhoneFrame me={me} score={score}>
       <span className={`bzp-pill ${copy.pill[0]}`} role="status"><i />{copy.pill[1]}</span>
       <div className="bzp-stage">
         <Buzzer ref={buzzerRef} state={copy.buzzer} label={copy.label} size="min(72cqw, 44dvh)" />

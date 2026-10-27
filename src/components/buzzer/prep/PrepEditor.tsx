@@ -329,6 +329,7 @@ function RoundChips({ round }: { round: PrepRound }) {
       )}
       {round.imagePath && <span className={`${chip} border-white/15 text-gray-300`}>Image</span>}
       {round.vote && <span className={`${chip} border-violet-400/60 text-violet-200`}>Vote de la salle</span>}
+      {typeof round.points === 'number' && <span className={`${chip} border-[#D4AF37]/50 text-[#D4AF37]`}>{round.points} pt{round.points > 1 ? 's' : ''}</span>}
     </span>
   )
 }
@@ -449,6 +450,27 @@ function RoundForm({ round, index, uploads, onChange, onUpload, onDuplicate, onR
             onChange={(e) => onChange({ answer: e.target.value })}
           />
           <p className="text-xs text-[#9a94b5]">Vue par vous seul pendant la manche, révélée sur l’écran géant après « Bonne réponse ».</p>
+          <label htmlFor={`pts-${round.id}`} className="flex flex-wrap items-center gap-2 text-sm text-gray-300 mt-1">
+            Points de la manche
+            <input
+              id={`pts-${round.id}`}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={PREP_LIMITS.maxRoundPoints}
+              step={1}
+              className="w-20 rounded-xl bg-[#111114] border border-white/10 focus:border-[#D4AF37] outline-none px-3 py-2 text-white text-sm tabular-nums"
+              value={typeof round.points === 'number' ? round.points : ''}
+              placeholder="—"
+              onChange={(e) => {
+                const raw = e.target.value.trim()
+                const n = Math.round(Number(raw))
+                if (raw === '') onChange({ points: null })
+                else if (Number.isFinite(n)) onChange({ points: Math.min(Math.max(n, 0), PREP_LIMITS.maxRoundPoints) })
+              }}
+            />
+            <span className="text-xs text-[#9a94b5]">Vide = le barème de la partie (réglable en jeu).</span>
+          </label>
         </div>
 
         {/* Image */}

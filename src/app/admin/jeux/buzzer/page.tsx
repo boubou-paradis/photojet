@@ -11,6 +11,8 @@
 // Manches préparées : la liste est figée au lancement (/api/buzzer/prep-admin),
 // l'extrait de la manche est joué sur ce PC, coupé au buzz et repris après
 // une mauvaise réponse. Le mode libre reste celui d'avant.
+// Points : donnés par le serveur après une bonne réponse (ou un bon vote) ;
+// barème, corrections et classement via /api/buzzer/scores.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -20,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer, { type BuzzerVisualState } from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
+import ScoresPanel from '@/components/buzzer/ScoresPanel'
 import SoundsPanel from '@/components/buzzer/SoundsPanel'
 import PrepEditor, { PrepModeChooser } from '@/components/buzzer/prep/PrepEditor'
 import PrepGamePanel, { isVoteOnly } from '@/components/buzzer/prep/PrepGamePanel'
@@ -44,6 +47,7 @@ import {
 import { remoteAction, type GameAction } from '@/lib/buzzer/machine'
 import type { PrepRound } from '@/lib/buzzer/prep'
 import { prepRemoteAction, type PrepAction, type PrepState } from '@/lib/buzzer/prep-flow'
+import type { ScoreAction, ScoresState } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState, BuzzerAdminPlayer, BuzzerMode, BuzzerRoundSummary, BuzzerState } from '@/lib/buzzer/types'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
@@ -58,6 +62,7 @@ interface AdminResult {
   state?: BuzzerState
   players?: BuzzerAdminPlayer[]
   rounds?: BuzzerRoundSummary[]
+  scores?: ScoresState
 }
 
 const OTHER_GAME_FLAGS = ['quiz_active', 'quiz_lobby_visible', 'lineup_active', 'wheel_active', 'mystery_photo_active', 'affinity_active'] as const
@@ -79,6 +84,7 @@ interface PrepResult {
   prep?: PrepState
   rounds?: PrepRound[] | null
   total?: number
+  scores?: ScoresState
 }
 
 async function callPrep(sessionId: string, action: PrepAction | 'check' | 'snapshot'): Promise<PrepResult> {
@@ -109,6 +115,20 @@ async function callAdmin(sessionId: string, action: AdminAction, args: Record<st
   }
 }
 
+async function callScores(sessionId: string, action: ScoreAction, args: Record<string, unknown> = {}): Promise<{ ok: boolean; error?: string; scores?: ScoresState }> {
+  try {
+    const res = await fetch('/api/buzzer/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, action, args }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string; scores?: ScoresState }
+    return { ...body, ok: res.ok }
+  } catch {
+    return { ok: false, error: 'Connexion impossible, réessayez.' }
+  }
+}
+
 export default function BuzzerAdminPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -131,10 +151,11 @@ export default function BuzzerAdminPage() {
   // Manches préparées : liste de la session, enregistrée automatiquement.
   const prep = useBuzzerPrepDraft(session?.id ?? null)
 
-  const channel = useBuzzerChannel(active && session ? session.id : null, { withPrep: true })
-  const { apply, applyPrep } = channel
+  const channel = useBuzzerChannel(active && session ? session.id : null, { withPrep: true, withScores: true })
+  const { apply, applyPrep, applyScores } = channel
   const state = active && channel.state?.active ? channel.state : null
   const prepState = state && channel.prep?.active ? channel.prep : null
+  const scoresState = state && channel.scores?.active ? channel.scores : null
   // Manches figées de la partie (réponses, extraits) : pour cette page seulement.
   const [prepRounds, setPrepRounds] = useState<PrepRound[] | null>(null)
   const prepRound = prepState && prepRounds ? prepRounds[prepState.roundIndex] : undefined
@@ -304,14 +325,19 @@ export default function BuzzerAdminPage() {
         if (result.state && 'active' in result.state) apply(result.state)
       }
     }
-    const snap = async () => applySnapshot(await callAdmin(sessionId, 'snapshot'))
+    const snap = async () => {
+      applySnapshot(await callAdmin(sessionId, 'snapshot'))
+      // Classement relu avec les joueurs (un nouvel inscrit y apparaît à 0 point).
+      const sc = await callScores(sessionId, 'snapshot')
+      if (sc.ok && sc.scores) applyScores(sc.scores)
+    }
     const beatTimer = setInterval(beat, BUZZER_HEARTBEAT_INTERVAL_MS)
     const snapTimer = setInterval(snap, SNAPSHOT_MS)
     return () => {
       clearInterval(beatTimer)
       clearInterval(snapTimer)
     }
-  }, [active, session?.id, apply, applySnapshot])
+  }, [active, session?.id, apply, applySnapshot, applyScores])
 
   // ---------- Actions ----------
   const act = useCallback(async (action: AdminAction, args: Record<string, unknown> = {}, quiet = false) => {
@@ -324,13 +350,26 @@ export default function BuzzerAdminPage() {
         return result
       }
       if (result.state) apply(result.state)
+      if (result.scores) applyScores(result.scores)
       // File, joueurs et historique relus tout de suite (sans attendre la relecture périodique).
       void callAdmin(session.id, 'snapshot').then(applySnapshot)
       return result
     } finally {
       if (!quiet) setBusy(false)
     }
-  }, [session, apply, applySnapshot])
+  }, [session, apply, applyScores, applySnapshot])
+
+  // ---------- Points ----------
+  const actScores = useCallback(async (action: ScoreAction, args: Record<string, unknown> = {}) => {
+    if (!session) return
+    const result = await callScores(session.id, action, args)
+    if (!result.ok) {
+      toast.error(result.error ?? 'Action impossible')
+      return
+    }
+    if (result.scores) applyScores(result.scores)
+    if (action === 'reset') toast.success('Points remis à zéro')
+  }, [session, applyScores])
 
   // ---------- Manches préparées ----------
   const actPrep = useCallback(async (action: PrepAction) => {
@@ -345,12 +384,13 @@ export default function BuzzerAdminPage() {
       if (result.state) apply(result.state)
       if (result.prep) applyPrep(result.prep)
       if (result.rounds) setPrepRounds(result.rounds)
+      if (result.scores) applyScores(result.scores)
       void callAdmin(session.id, 'snapshot').then(applySnapshot)
       return result
     } finally {
       setBusy(false)
     }
-  }, [session, apply, applyPrep, applySnapshot])
+  }, [session, apply, applyPrep, applyScores, applySnapshot])
 
   // Manches figées relues après un rechargement (ou si la liste a changé de taille).
   const prepActive = !!prepState
@@ -669,6 +709,14 @@ export default function BuzzerAdminPage() {
             onSettings={(args) => void act('settings', args)}
             onRemove={removePlayer}
           />
+          <div className="mt-4">
+            <ScoresPanel
+              scores={scoresState}
+              team={state.mode === 'team'}
+              showVotePoints={!!prepState && state.mode === 'solo'}
+              onAction={(a, args) => void actScores(a, args)}
+            />
+          </div>
           <div className="mt-4 grid lg:grid-cols-2 gap-4 items-start">
             <SoundsPanel sounds={sounds} />
             <AmbianceMusicControls music={music} inGame />

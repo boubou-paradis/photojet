@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PREP_ACTIONS, type PrepAction } from '@/lib/buzzer/prep-flow'
 import { parseRoundsForLaunch, type PrepRound } from '@/lib/buzzer/prep'
+import { awardScores } from '@/lib/buzzer/scores-server'
 import { BuzzerActionError, getBuzzerAdmin, mapAdminError, requireSessionOwner } from '@/lib/buzzer/server'
 import { isUuid } from '@/lib/buzzer/validation'
 
@@ -98,7 +99,14 @@ export async function POST(request: Request) {
       throw new Error(error.message)
     }
     const result = data as { state: unknown; prep: unknown }
-    return NextResponse.json({ ok: true, state: result.state, prep: result.prep, ...(rounds ? { rounds } : {}) }, { headers: noStore })
+    // Points : bonne réponse au gagnant, bon vote à chaque bon votant
+    // (sans jamais faire échouer l'action de jeu).
+    const award = a === 'right' ? 'award_round' : a === 'vote_close' ? 'award_vote' : null
+    const scores = award ? await awardScores(admin, sessionId, award) : null
+    return NextResponse.json(
+      { ok: true, state: result.state, prep: result.prep, ...(rounds ? { rounds } : {}), ...(scores ? { scores } : {}) },
+      { headers: noStore },
+    )
   } catch (e) {
     if (e instanceof BuzzerActionError) return NextResponse.json({ error: e.message }, { status: e.status })
     console.error(`[AnimaBuzz] manches ${a} :`, e instanceof Error ? e.message : e)

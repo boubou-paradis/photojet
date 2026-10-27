@@ -106,6 +106,9 @@ export default function PrepGamePanel({ state, prep, rounds, extract, busy, resu
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm tracking-wider text-[#D4AF37]" style={displayFont}>{ended ? `${prep.total} MANCHE${prep.total > 1 ? 'S' : ''}` : `MANCHE ${n} / ${prep.total}`}</span>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusTone}`} role="status">{status}</span>
+            {!ended && typeof round?.points === 'number' && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#D4AF37]/50 text-[#D4AF37]">Manche à {round.points} pt{round.points > 1 ? 's' : ''}</span>
+            )}
           </div>
           {!ended && (
             <p className="text-white text-xl sm:text-2xl leading-tight break-words" style={displayFont}>
