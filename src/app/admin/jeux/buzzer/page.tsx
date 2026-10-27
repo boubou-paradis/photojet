@@ -8,6 +8,9 @@
 // (fonction SQL sous verrou) ; cette page n'écrit rien elle-même.
 // F5 ou onglet fermé = PAUSE (rien n'est effacé) : la partie reprend à la
 // réouverture. Effacement seulement sur « Quitter AnimaBuzz ».
+// Manches préparées : la liste est figée au lancement (/api/buzzer/prep-admin),
+// l'extrait de la manche est joué sur ce PC, coupé au buzz et repris après
+// une mauvaise réponse. Le mode libre reste celui d'avant.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -19,6 +22,7 @@ import Buzzer, { type BuzzerVisualState } from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
 import SoundsPanel from '@/components/buzzer/SoundsPanel'
 import PrepEditor, { PrepModeChooser } from '@/components/buzzer/prep/PrepEditor'
+import PrepGamePanel, { isVoteOnly } from '@/components/buzzer/prep/PrepGamePanel'
 import { BUZZER_CSS } from '@/components/buzzer/styles'
 import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
@@ -27,6 +31,7 @@ import { useBuzzerSounds } from '@/hooks/useBuzzerSounds'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
 import { useBuzzerPrepDraft } from '@/hooks/useBuzzerPrepDraft'
+import { usePrepExtract } from '@/hooks/usePrepExtract'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import {
   BUZZER_DEFAULT_TIMER_S,
@@ -37,6 +42,8 @@ import {
   BUZZER_WINDOWS_MS,
 } from '@/lib/buzzer/constants'
 import { remoteAction, type GameAction } from '@/lib/buzzer/machine'
+import type { PrepRound } from '@/lib/buzzer/prep'
+import { prepRemoteAction, type PrepAction, type PrepState } from '@/lib/buzzer/prep-flow'
 import type { BuzzerActiveState, BuzzerAdminPlayer, BuzzerMode, BuzzerRoundSummary, BuzzerState } from '@/lib/buzzer/types'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
@@ -63,6 +70,30 @@ const SNAPSHOT_MS = 4000
 const windowLabel = (ms: number) => (ms === 0 ? 'Verrouillage immédiat' : `Fenêtre ${(ms / 1000).toString().replace('.', ',')} s`)
 const timerLabel = (s: number | null) => (s === null ? 'Sans chrono' : `Chrono ${s} s`)
 const formatGap = (ms: number) => (ms === 0 ? '0,00 s' : `+${(ms / 1000).toFixed(2).replace('.', ',')} s`)
+
+interface PrepResult {
+  ok: boolean
+  status: number
+  error?: string
+  state?: BuzzerState
+  prep?: PrepState
+  rounds?: PrepRound[] | null
+  total?: number
+}
+
+async function callPrep(sessionId: string, action: PrepAction | 'check' | 'snapshot'): Promise<PrepResult> {
+  try {
+    const res = await fetch('/api/buzzer/prep-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, action }),
+    })
+    const body = (await res.json().catch(() => ({}))) as Omit<PrepResult, 'ok' | 'status'>
+    return { ...body, ok: res.ok, status: res.status }
+  } catch {
+    return { ok: false, status: 0, error: 'Connexion impossible, réessayez.' }
+  }
+}
 
 async function callAdmin(sessionId: string, action: AdminAction, args: Record<string, unknown> = {}): Promise<AdminResult> {
   try {
@@ -100,9 +131,13 @@ export default function BuzzerAdminPage() {
   // Manches préparées : liste de la session, enregistrée automatiquement.
   const prep = useBuzzerPrepDraft(session?.id ?? null)
 
-  const channel = useBuzzerChannel(active && session ? session.id : null)
-  const { apply } = channel
+  const channel = useBuzzerChannel(active && session ? session.id : null, { withPrep: true })
+  const { apply, applyPrep } = channel
   const state = active && channel.state?.active ? channel.state : null
+  const prepState = state && channel.prep?.active ? channel.prep : null
+  // Manches figées de la partie (réponses, extraits) : pour cette page seulement.
+  const [prepRounds, setPrepRounds] = useState<PrepRound[] | null>(null)
+  const prepRound = prepState && prepRounds ? prepRounds[prepState.roundIndex] : undefined
 
   const activeRef = useRef(false)
   // État des autres jeux au lancement : AnimaBuzz ne se coupe que sur un
@@ -121,6 +156,11 @@ export default function BuzzerAdminPage() {
   const sounds = useBuzzerSounds()
   const music = useAmbianceMusic()
   const musicWasPlaying = useRef(false)
+  // Manche préparée avec extrait : pas de son d'ouverture (l'extrait démarre).
+  const prepAudioRef = useRef(false)
+  useEffect(() => {
+    prepAudioRef.current = !!prepRound?.audioPath && prepState?.step !== 'end'
+  }, [prepRound, prepState?.step])
   const lastSeen = useRef<{ phase: string; roundNo: number; attempt: number; priority: string | null } | null>(null)
   const playSound = sounds.play
   const pauseMusic = music.pause
@@ -143,7 +183,8 @@ export default function BuzzerAdminPage() {
         pauseMusic()
       }
       // Réouverture après une mauvaise réponse : le son de la mauvaise réponse suffit.
-      playSound(prev.phase === 'buzzed' ? 'wrong' : 'open')
+      if (prev.phase === 'buzzed') playSound('wrong')
+      else if (!prepAudioRef.current) playSound('open')
     } else if (now.phase === 'buzzed' && prev.phase !== 'buzzed') {
       playSound('buzz')
     } else if (now.phase === 'buzzed' && prev.priority !== now.priority) {
@@ -291,6 +332,146 @@ export default function BuzzerAdminPage() {
     }
   }, [session, apply, applySnapshot])
 
+  // ---------- Manches préparées ----------
+  const actPrep = useCallback(async (action: PrepAction) => {
+    if (!session) return null
+    setBusy(true)
+    try {
+      const result = await callPrep(session.id, action)
+      if (!result.ok) {
+        toast.error(result.error ?? 'Action impossible')
+        return result
+      }
+      if (result.state) apply(result.state)
+      if (result.prep) applyPrep(result.prep)
+      if (result.rounds) setPrepRounds(result.rounds)
+      void callAdmin(session.id, 'snapshot').then(applySnapshot)
+      return result
+    } finally {
+      setBusy(false)
+    }
+  }, [session, apply, applyPrep, applySnapshot])
+
+  // Manches figées relues après un rechargement (ou si la liste a changé de taille).
+  const prepActive = !!prepState
+  const prepTotal = prepState?.total ?? 0
+  const needRounds = prepActive && (!prepRounds || prepRounds.length !== prepTotal)
+  const sessionIdForPrep = session?.id
+  useEffect(() => {
+    if (!needRounds || !sessionIdForPrep) return
+    let cancelled = false
+    void callPrep(sessionIdForPrep, 'snapshot').then((result) => {
+      if (cancelled || !result.ok) return
+      if (result.prep) applyPrep(result.prep)
+      if (result.rounds) setPrepRounds(result.rounds)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [needRounds, sessionIdForPrep, applyPrep])
+
+  // Vote de la salle : compteur relu toutes les 2 s (aucune diffusion par vote).
+  const { refresh: refreshChannel } = channel
+  const prepVoteOpen = prepState?.step === 'vote_open'
+  useEffect(() => {
+    if (!prepVoteOpen) return
+    const timer = setInterval(() => void refreshChannel(), 2000)
+    return () => clearInterval(timer)
+  }, [prepVoteOpen, refreshChannel])
+
+  // Extrait de la manche : chargé à l'avance (et le suivant préchargé).
+  const extract = usePrepExtract()
+  const { load: loadExtract, preload: preloadExtract, playFromStart, resume: resumeExtract, pause: pauseExtract, stop: stopExtract } = extract
+  const nextRound = prepState && prepRounds ? prepRounds[prepState.roundIndex + 1] : undefined
+  const extractPath = prepState?.step !== 'end' ? prepRound?.audioPath ?? null : null
+  const extractStart = prepRound?.audioStart ?? null
+  const extractEnd = prepRound?.audioEnd ?? null
+  useEffect(() => {
+    loadExtract(extractPath ? { path: extractPath, start: extractStart, end: extractEnd } : null)
+  }, [extractPath, extractStart, extractEnd, loadExtract])
+  const nextExtractPath = nextRound?.audioPath ?? null
+  useEffect(() => {
+    preloadExtract(nextExtractPath)
+  }, [nextExtractPath, preloadExtract])
+
+  // Musique de la manche : lancée avec la manche, coupée au buzz, reprise
+  // après une mauvaise réponse (et après la bonne si le réglage le demande).
+  // Les événements « state » et « prep » arrivent séparément : chaque règle
+  // ci-dessous tient compte des deux ordres d'arrivée possibles.
+  const resumeAfterRight = prep.draft.settings.resumeAfterRight
+  const prepSeen = useRef<{ step: string; idx: number; phase: string; attempt: number } | null>(null)
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Manche dont la reprise après la bonne réponse est déjà programmée.
+  const rightResumed = useRef<number | null>(null)
+  useEffect(() => {
+    const now = prepState && state ? { step: prepState.step, idx: prepState.roundIndex, phase: state.phase, attempt: state.attempt } : null
+    const prev = prepSeen.current
+    prepSeen.current = now
+    if (prev && now && prev.step === now.step && prev.idx === now.idx && prev.phase === now.phase && prev.attempt === now.attempt) return
+    if (!prev && !now) return
+    const cancelResume = () => {
+      if (resumeTimer.current) {
+        clearTimeout(resumeTimer.current)
+        resumeTimer.current = null
+      }
+    }
+    const later = (ms: number) => {
+      cancelResume()
+      resumeTimer.current = setTimeout(() => {
+        resumeTimer.current = null
+        resumeExtract()
+      }, ms)
+    }
+    // Manches arrêtées, manche suivante, vote ou fin : l'extrait s'arrête
+    // (et la musique d'ambiance reprend si elle jouait).
+    if (!now || now.step === 'ready' || now.step === 'vote_open' || now.step === 'end') {
+      cancelResume()
+      stopExtract()
+      if (now && prev && (now.step !== prev.step || now.idx !== prev.idx) && musicWasPlaying.current) {
+        musicWasPlaying.current = false
+        toggleMusic()
+      }
+      return
+    }
+    // Premier état reçu (chargement, F5) : rien ne démarre tout seul.
+    if (!prev || prev.idx !== now.idx) return
+    if (now.step === 'question') {
+      // La manche démarre au premier état « question + ouvert » qui ne suit ni
+      // un buzz ni une pause de l'animateur (ceux-là reprennent sans revenir au début).
+      const started = prev.step === 'question' && ['open', 'buzzed', 'waiting'].includes(prev.phase)
+      if (now.phase === 'open' && !started) {
+        rightResumed.current = null
+        playFromStart()
+      } else if (now.phase === 'open' && prev.phase === 'waiting') resumeExtract()
+      else if (now.phase === 'open' && prev.phase === 'buzzed') later(900)
+      else if (now.phase === 'buzzed' || now.phase === 'waiting') {
+        // Buzz (même pendant le délai de reprise) ou pause : la musique se coupe.
+        cancelResume()
+        pauseExtract()
+      } else if (now.phase === 'closed' && state?.outcome !== 'won') {
+        cancelResume()
+        pauseExtract()
+      }
+    } else if (now.step === 'reveal') {
+      // Bonne réponse (« right ») : reprise une seule fois par manche si le réglage le demande.
+      const won = state?.outcome === 'won' || now.phase === 'buzzed'
+      if (won && resumeAfterRight && rightResumed.current !== now.idx && (prev.step === 'question' || prev.step === 'reveal')) {
+        rightResumed.current = now.idx
+        later(1300)
+      }
+    }
+  }, [prepState, state, resumeAfterRight, playFromStart, resumeExtract, pauseExtract, stopExtract, toggleMusic])
+
+  useEffect(() => () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current)
+  }, [])
+
+  async function stopPrep() {
+    if (!window.confirm('Revenir au mode libre ? Les manches s’arrêtent ; les joueurs restent connectés.')) return
+    const result = await actPrep('stop')
+    if (result?.ok) toast.success('Retour au mode libre')
+  }
+
   // Fin de la fenêtre après le 1er buzz : relecture de la file complète (suivants et écarts).
   const windowEnd = state?.phase === 'buzzed' && state.firstBuzzAt ? Date.parse(state.firstBuzzAt) + state.windowMs : null
   const sessionIdForWindow = session?.id
@@ -315,26 +496,40 @@ export default function BuzzerAdminPage() {
   // mauvaise réponse et PageUp = bonne réponse ; sinon PageDown = action
   // logique suivante. Jamais quitter, retirer ni rien de destructif.
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Manches préparées : même mapping, PageDown suit l'enchaînement des manches.
+  const runRemote = async (key: 'next' | 'prev') => {
+    if (!state) return
+    if (prepState) {
+      const action = prepRemoteAction(state, prepState, key, { voteOnly: isVoteOnly(prepRound) })
+      if (action === 'open') await act('open')
+      else if (action) await actPrep(action)
+      return
+    }
+    const action = remoteAction(state, key)
+    if (action) await act(action)
+  }
   useRemoteControl({
     active: active && remoteOn && !!state,
-    phase: state ? `${state.phase}|${state.roundNo}|${state.attempt}|${state.priority?.unit ?? ''}` : 'off',
-    onNext: async () => {
-      if (!state) return
-      const action = remoteAction(state, 'next')
-      if (action) await act(action)
-    },
-    onPrev: async () => {
-      if (!state) return
-      const action = remoteAction(state, 'prev')
-      if (action) await act(action)
-    },
+    phase: state ? `${state.phase}|${state.roundNo}|${state.attempt}|${state.priority?.unit ?? ''}|${prepState ? `${prepState.step}:${prepState.roundIndex}` : ''}` : 'off',
+    onNext: () => runRemote('next'),
+    onPrev: () => runRemote('prev'),
   })
 
   async function launch() {
     if (!session) return
     const teams = mode === 'team' ? teamsText.split('\n').map((t) => t.trim()).filter(Boolean) : []
+    const withPrep = prep.draft.enabled
     setBusy(true)
     try {
+      // Manches préparées : la liste enregistrée doit être jouable AVANT de lancer.
+      if (withPrep) {
+        await prep.flush()
+        const check = await callPrep(session.id, 'check')
+        if (!check.ok) {
+          toast.error(check.error ?? 'Liste de manches impossible à lancer')
+          return
+        }
+      }
       const result = await callAdmin(session.id, 'launch', { mode, teams, windowMs, timerS })
       if (!result.ok) {
         toast.error(result.error ?? 'Lancement impossible')
@@ -347,8 +542,18 @@ export default function BuzzerAdminPage() {
       setRounds([])
       setActive(true)
       setLastBeat(Date.now())
+      if (withPrep) {
+        const started = await callPrep(session.id, 'start')
+        if (started.ok) {
+          if (started.state) apply(started.state)
+          if (started.prep) applyPrep(started.prep)
+          if (started.rounds) setPrepRounds(started.rounds)
+        } else {
+          toast.error(`${started.error ?? 'Manches impossibles à lancer.'} La partie continue en mode libre.`)
+        }
+      }
       window.open(`/live/${session.code}`, 'photojet-live')
-      toast.success('Lobby AnimaBuzz affiché sur l’écran géant')
+      toast.success(withPrep ? 'Lobby affiché : la 1re manche est prête' : 'Lobby AnimaBuzz affiché sur l’écran géant')
     } finally {
       setBusy(false)
     }
@@ -442,6 +647,19 @@ export default function BuzzerAdminPage() {
         {active && state ? (
           <>
           <GamePanel
+            primary={prepState ? (
+              <PrepGamePanel
+                state={state}
+                prep={prepState}
+                rounds={prepRounds}
+                extract={extract}
+                busy={busy}
+                resumeAfterRight={resumeAfterRight}
+                onPrep={(a) => void actPrep(a)}
+                onFree={(a) => void act(a)}
+                onStop={() => void stopPrep()}
+              />
+            ) : undefined}
             state={state}
             players={players}
             rounds={rounds}
@@ -598,6 +816,8 @@ function SetupPanel(p: SetupPanelProps) {
 // ---------------------------------------------------------------------
 
 interface GamePanelProps {
+  /** Manches préparées : remplace le bloc de commandes du mode libre. */
+  primary?: React.ReactNode
   state: BuzzerActiveState
   players: BuzzerAdminPlayer[]
   rounds: BuzzerRoundSummary[]
@@ -614,7 +834,7 @@ const violetBtn = `${primaryClass} bg-gradient-to-b from-[#b16cff] to-[#7c3aed] 
 const smallBtn = 'px-3 py-2 rounded-lg text-sm border border-white/10 text-gray-200 hover:border-[#D4AF37]/40 disabled:opacity-40'
 const displayFont = { fontFamily: 'var(--font-bz-display), "Arial Black", sans-serif' } as const
 
-function GamePanel({ state, players, rounds, busy, lastBeat, onAction, onSettings, onRemove }: GamePanelProps) {
+function GamePanel({ primary, state, players, rounds, busy, lastBeat, onAction, onSettings, onRemove }: GamePanelProps) {
   const online = players.filter((p) => p.online).length
   const testedCount = players.filter((p) => p.tested).length
   const canEditSettings = ['lobby', 'test', 'waiting', 'closed'].includes(state.phase)
@@ -725,17 +945,19 @@ function GamePanel({ state, players, rounds, busy, lastBeat, onAction, onSetting
         )}
       </div>
 
-      <div className="grid lg:grid-cols-[1.25fr_1fr_1fr] gap-4">
-        <section className="card-gold rounded-xl p-4 flex flex-col gap-3 min-w-0">
-          <div className="flex items-center gap-4">
-            <Buzzer state={visual} size="84px" mini label={state.phase === 'buzzed' ? '1er' : undefined} />
-            <div className="min-w-0">
-              <p className="text-white text-lg truncate" style={displayFont}>{title}</p>
-              <p className="text-sm text-[#9a94b5]">{subtitle}</p>
+      <div className={`grid gap-4 ${primary ? 'lg:grid-cols-[1.9fr_1fr_1fr]' : 'lg:grid-cols-[1.25fr_1fr_1fr]'}`}>
+        {primary ?? (
+          <section className="card-gold rounded-xl p-4 flex flex-col gap-3 min-w-0">
+            <div className="flex items-center gap-4">
+              <Buzzer state={visual} size="84px" mini label={state.phase === 'buzzed' ? '1er' : undefined} />
+              <div className="min-w-0">
+                <p className="text-white text-lg truncate" style={displayFont}>{title}</p>
+                <p className="text-sm text-[#9a94b5]">{subtitle}</p>
+              </div>
             </div>
-          </div>
-          {controls}
-        </section>
+            {controls}
+          </section>
+        )}
 
         <section className="card-gold rounded-xl p-4 flex flex-col gap-3 min-w-0">
           <h2 className="text-xs uppercase tracking-wider text-[#9a94b5] font-semibold">File de la manche</h2>

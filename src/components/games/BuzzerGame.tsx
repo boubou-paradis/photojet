@@ -7,6 +7,8 @@
 // objet que sur la carte promo et les téléphones, en très grand. Lisible à
 // 10 m. Ne reçoit que des données publiques : l'état diffusé sur le canal
 // privé (pseudos et écarts déjà destinés à l'écran) et les compteurs du statut.
+// Manches préparées : scènes dédiées (question, révélation, vote), sinon
+// les scènes du mode libre, inchangées.
 
 import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
@@ -14,11 +16,14 @@ import QRCode from 'react-qr-code'
 import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'
+import { prepRoundLabel, renderPrepScene } from '@/components/buzzer/live/PrepScenes'
 import { STAGE_CSS } from '@/components/buzzer/live/stageStyles'
+import { PREP_STAGE_CSS } from '@/components/buzzer/prep/prepStyles'
 import { BUZZER_CSS } from '@/components/buzzer/styles'
 import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
 import type { BuzzerLiveStatus } from '@/hooks/useBuzzerStatus'
 import { windowEndsAt } from '@/lib/buzzer/machine'
+import type { PrepActiveState } from '@/lib/buzzer/prep-flow'
 import type { BuzzerActiveState } from '@/lib/buzzer/types'
 import { getInviteUrl } from '@/lib/utils'
 import type { Session } from '@/types/database'
@@ -44,9 +49,10 @@ const CONFETTI = Array.from({ length: 46 }, (_, i) => ({
 }))
 
 export default function BuzzerGame({ session, status }: BuzzerGameProps) {
-  const channel = useBuzzerChannel(status.sessionId)
+  const channel = useBuzzerChannel(status.sessionId, { withPrep: true })
   const { refresh } = channel
   const state = channel.state?.active ? channel.state : null
+  const prep = state && channel.prep?.active ? channel.prep : null
   const [isFullscreen, setIsFullscreen] = useState(false)
   const isMac = useSyncExternalStore(noopSubscribe, detectMac, () => false)
   const [now, setNow] = useState(() => Date.now())
@@ -87,6 +93,14 @@ export default function BuzzerGame({ session, status }: BuzzerGameProps) {
     return () => clearInterval(timer)
   }, [ticking])
 
+  // Vote de la salle : le compteur est relu toutes les 2 s (aucune diffusion par vote).
+  const voteOpen = prep?.step === 'vote_open'
+  useEffect(() => {
+    if (!voteOpen) return
+    const timer = setInterval(() => void refresh(), 2000)
+    return () => clearInterval(timer)
+  }, [voteOpen, refresh])
+
   // Fin de la fenêtre après le 1er buzz : on relit la file complète (suivants et écarts).
   const windowEnd = state?.phase === 'buzzed' ? windowEndsAt(state) : null
   const offset = channel.clockOffsetMs
@@ -99,9 +113,9 @@ export default function BuzzerGame({ session, status }: BuzzerGameProps) {
 
   return (
     <div className={`bzs ${buzzerFontVars}`} data-fullscreen={isFullscreen || undefined}>
-      <style>{BUZZER_CSS + STAGE_CSS}</style>
+      <style>{BUZZER_CSS + STAGE_CSS + PREP_STAGE_CSS}</style>
       <div className="bzs-stage">
-        <Scene session={session} status={status} state={state} serverNow={now + offset} />
+        <Scene session={session} status={status} state={state} prep={prep} serverNow={now + offset} />
       </div>
       <button onClick={toggleFullscreen} className="bzs-fs" aria-label={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
         {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
@@ -122,9 +136,11 @@ function Top({ round, right }: { round?: string; right: string }) {
   )
 }
 
-function Scene({ session, status, state, serverNow }: { session: Session; status: BuzzerLiveStatus; state: BuzzerActiveState | null; serverNow: number }) {
+function Scene({ session, status, state, prep, serverNow }: { session: Session; status: BuzzerLiveStatus; state: BuzzerActiveState | null; prep: PrepActiveState | null; serverNow: number }) {
   const players = `${status.playerCount} ${state?.mode === 'team' ? 'téléphone' : 'joueur'}${status.playerCount > 1 ? 's' : ''}`
-  const round = state && state.roundNo > 0 ? `Manche ${state.roundNo}` : undefined
+  const round = prep ? prepRoundLabel(prep) : state && state.roundNo > 0 ? `Manche ${state.roundNo}` : undefined
+  // Numéro affiché : celui de la liste en manches préparées (une manche passée ne compte pas de buzz).
+  const roundNo = prep ? prep.roundIndex + 1 : state?.roundNo ?? 0
 
   // ---------- Lobby (ou état pas encore reçu) ----------
   if (!state || state.phase === 'lobby') {
@@ -174,6 +190,12 @@ function Scene({ session, status, state, serverNow }: { session: Session; status
         </div>
       </>
     )
+  }
+
+  // ---------- Manches préparées (sinon : scènes du mode libre ci-dessous) ----------
+  if (prep) {
+    const scene = renderPrepScene({ state, prep, serverNow })
+    if (scene) return scene
   }
 
   // ---------- Attente ----------
@@ -267,7 +289,7 @@ function Scene({ session, status, state, serverNow }: { session: Session; status
         <div className="bzs-callout">
           <div className="eyebrow">Bonne réponse</div>
           <div className={`name gold${state.winner.length > 9 ? ' long' : ''}`}>{state.winner.toUpperCase()}</div>
-          <div className="meta">remporte la manche {state.roundNo}</div>
+          <div className="meta">remporte la manche {roundNo}</div>
         </div>
       </div>
     )
@@ -281,7 +303,7 @@ function Scene({ session, status, state, serverNow }: { session: Session; status
       <div className="bzs-center"><Buzzer state="late" size="29cqw" /></div>
       <div className="bzs-banner bottom">
         <div className="bzs-headline dim">{cancelled ? 'Manche annulée' : allBlocked ? 'Personne n’a trouvé !' : 'Personne n’a buzzé !'}</div>
-        <div className="bzs-sub">{cancelled ? 'Préparez-vous pour la suivante' : `Manche ${state.roundNo} notée sans réponse`}</div>
+        <div className="bzs-sub">{cancelled ? 'Préparez-vous pour la suivante' : `Manche ${roundNo} notée sans réponse`}</div>
       </div>
     </>
   )

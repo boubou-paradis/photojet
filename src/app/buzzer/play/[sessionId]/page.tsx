@@ -9,12 +9,14 @@
 // Vercel), puis l'animation locale démarre. Le rang n'est affiché qu'une
 // fois renvoyé par le serveur. Connexion gardée chaude par un ping toutes
 // les 20 s. Reprise après rechargement, coupure ou veille : /api/buzzer/me.
+// Manches préparées : pendant le vote de la salle, l'écran de vote remplace le buzzer.
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import Buzzer, { type BuzzerVisualState } from '@/components/buzzer/Buzzer'
 import PhoneFrame from '@/components/buzzer/phone/PhoneFrame'
+import PhoneVote from '@/components/buzzer/phone/PhoneVote'
 import { useBuzzerChannel } from '@/hooks/useBuzzerChannel'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { BUZZER_PING_INTERVAL_MS } from '@/lib/buzzer/constants'
@@ -70,9 +72,10 @@ export default function BuzzerPlayPage() {
   const [sending, setSending] = useState(false)
   const [, setTick] = useState(0)
 
-  const channel = useBuzzerChannel(player ? sessionId : null)
+  const channel = useBuzzerChannel(player ? sessionId : null, { withPrep: true })
   const { refresh, apply } = channel
   const state = channel.state?.active ? channel.state : null
+  const prep = state && channel.prep?.active ? channel.prep : null
 
   const buzzerRef = useRef<HTMLDivElement>(null)
   const sendingRef = useRef(false)
@@ -105,6 +108,10 @@ export default function BuzzerPlayPage() {
     if (player) void loadMe(player)
   }, [player, loadMe])
 
+  const reloadMe = useCallback(() => {
+    if (player) void loadMe(player)
+  }, [player, loadMe])
+
   // Fin de partie : pas d'inscription sur ce téléphone, joueur refusé, ou partie quittée par l'animateur.
   const gone: Gone | null =
     storedJson === '' ? { title: 'Rejoins la partie', text: 'Scanne le QR code affiché sur l’écran géant.' }
@@ -133,6 +140,12 @@ export default function BuzzerPlayPage() {
     if (state.phase === 'open' && lastPhase.current !== 'open') vibrate(20)
     lastPhase.current = state.phase
   }, [state])
+
+  // Ouverture du vote de la salle : petite vibration.
+  const voteId = prep?.step === 'vote_open' ? prep.vote?.id ?? null : null
+  useEffect(() => {
+    if (voteId) vibrate([20, 40, 20])
+  }, [voteId])
 
   useEffect(() => {
     if (!player || isGone) return
@@ -245,6 +258,14 @@ export default function BuzzerPlayPage() {
     return (
       <PhoneFrame me={me}>
         <div className="bzp-stage"><Loader2 className="h-8 w-8 animate-spin text-[#d4af37]" /></div>
+      </PhoneFrame>
+    )
+  }
+
+  if (player && prep?.vote && (prep.step === 'vote_open' || prep.step === 'vote_closed')) {
+    return (
+      <PhoneFrame me={me}>
+        <PhoneVote player={player} vote={prep.vote} step={prep.step} onGone={reloadMe} refresh={refresh} />
       </PhoneFrame>
     )
   }
