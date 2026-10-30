@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
-import { compressImage, extensionForMimeType, generateSessionCode } from '@/lib/image-utils'
+import { compressImage, extensionForMimeType, generateSessionCode, MAX_FILE_SIZE } from '@/lib/image-utils'
 import { toast } from 'sonner'
 import { fetchUserSessions, pickSession } from '@/lib/session-select'
 
@@ -77,6 +77,7 @@ export default function SettingsPage() {
   const promoInputRef = useRef<HTMLInputElement>(null)
   const MAX_PROMO_AFFICHES = 20
   const PROMO_COMPRESSION = { maxSizeMB: 1.5, maxWidthOrHeight: 2560, initialQuality: 0.9 }
+  const PROMO_MAX_MB = MAX_FILE_SIZE / (1024 * 1024)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -418,11 +419,11 @@ export default function SettingsPage() {
     if (promoInputRef.current) promoInputRef.current.value = ''
     if (files.length === 0 || !selectedSession) return
 
-    // Validation : JPG/PNG, max 5 Mo — les fichiers refusés sont ignorés, les autres envoyés
-    const valid = files.filter((f) => ['image/jpeg', 'image/png'].includes(f.type) && f.size <= 5 * 1024 * 1024)
+    // Validation : JPG/PNG, taille limitée avant compression — les fichiers refusés sont ignorés, les autres envoyés
+    const valid = files.filter((f) => ['image/jpeg', 'image/png'].includes(f.type) && f.size <= MAX_FILE_SIZE)
     const rejected = files.length - valid.length
     if (rejected > 0) {
-      toast.error(`${rejected} fichier${rejected > 1 ? 's' : ''} ignoré${rejected > 1 ? 's' : ''} : JPG ou PNG de 5 Mo maximum`)
+      toast.error(`${rejected} fichier${rejected > 1 ? 's' : ''} ignoré${rejected > 1 ? 's' : ''} : JPG ou PNG de ${PROMO_MAX_MB} Mo maximum`)
     }
 
     const remaining = MAX_PROMO_AFFICHES - formData.promo_affiches.length
@@ -1297,7 +1298,7 @@ export default function SettingsPage() {
 
                     {formData.promo_affiches.length === 0 ? (
                       <p className="text-xs text-[#6B6B70] py-4 text-center border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
-                        Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max 5 Mo), plusieurs à la fois si besoin.
+                        Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max {PROMO_MAX_MB} Mo), plusieurs à la fois si besoin.
                       </p>
                     ) : (
                       <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
