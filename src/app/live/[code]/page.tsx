@@ -26,6 +26,7 @@ import BuzzerGame from '@/components/games/BuzzerGame'
 import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
 import VoteGame from '@/components/games/VoteGame'
 import { useVoteStatus } from '@/hooks/useVoteStatus'
+import { usePromoPreload } from '@/hooks/usePromoPreload'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
@@ -458,6 +459,17 @@ export default function LivePage() {
     return []
   }, [wheelState?.segments, session?.wheel_segments])
 
+  // Affiches promotionnelles : préchargées, seules les affiches chargées sont montrées.
+  const promoPaths = useMemo(
+    () => (session?.promo_enabled === true ? parseJsonArray<string>(session?.promo_affiches) : []),
+    [session?.promo_enabled, session?.promo_affiches]
+  )
+  const { ready: promoImages, failed: promoFailed } = usePromoPreload(promoPaths, getStorageUrl)
+  // Nombre de tours complets du diaporama : la rotation des affiches continue
+  // d'un tour à l'autre, sinon seules les premières passeraient.
+  const [promoTour, setPromoTour] = useState(0)
+  const [timerTick, setTimerTick] = useState(0)
+
   // Build slideshow items list - interleaving messages with photos
   const slideshowItems = useMemo((): SlideshowItem[] => {
     const messagesEnabled = session?.messages_enabled ?? true
@@ -465,13 +477,11 @@ export default function LivePage() {
     const slideshowMode = session?.slideshow_mode || 'all'
     const approvedMessages = messages.filter(m => m.status === 'approved')
 
-    // Affiches promotionnelles : actives uniquement si activées ET au moins 1 affiche.
-    // L'ordre du tableau = ordre de défilement cyclique. Index dérivé de la position
-    // des photos (donc déterministe et stable après rechargement).
-    const promoEnabled = session?.promo_enabled === true
+    // Affiches promotionnelles : actives uniquement si activées ET au moins 1 affiche
+    // disponible. L'ordre du tableau = ordre de défilement cyclique.
     const promoFrequency = session?.promo_frequency || 10
-    const promoAffiches: string[] = promoEnabled ? parseJsonArray<string>(session?.promo_affiches) : []
-    const promoActive = promoEnabled && promoAffiches.length > 0
+    const promoAffiches = promoPaths.filter((path) => !promoFailed.has(path))
+    const promoActive = promoAffiches.length > 0
 
     // Filter photos based on slideshow mode
     let filteredPhotos = [...photos]
@@ -510,8 +520,16 @@ export default function LivePage() {
     // Interleave photos with messages and/or promo affiches
     const items: SlideshowItem[] = []
     let msgIdx = 0
-    let promoSlot = 0
     const hasMessages = messagesEnabled && approvedMessages.length > 0
+    // Chaque tour reprend la rotation là où le précédent l'a laissée
+    const promoSlotsPerTour = Math.max(1, Math.floor(filteredPhotos.length / promoFrequency))
+    const firstPromoSlot = promoTour * promoSlotsPerTour
+    let promoSlot = firstPromoSlot
+    const addPromo = () => {
+      const afficheIndex = promoSlot % promoAffiches.length
+      items.push({ type: 'promo', data: { path: promoAffiches[afficheIndex], index: afficheIndex } })
+      promoSlot++
+    }
 
     filteredPhotos.forEach((photo, idx) => {
       items.push({ type: 'photo', data: photo })
@@ -524,9 +542,7 @@ export default function LivePage() {
 
       // Insert une affiche promo après chaque bloc de 'promoFrequency' photos
       if (promoActive && (idx + 1) % promoFrequency === 0) {
-        const afficheIndex = promoSlot % promoAffiches.length
-        items.push({ type: 'promo', data: { path: promoAffiches[afficheIndex], index: afficheIndex } })
-        promoSlot++
+        addPromo()
       }
     })
 
@@ -535,8 +551,13 @@ export default function LivePage() {
       items.push({ type: 'message', data: approvedMessages[0] })
     }
 
+    // Moins de photos que la fréquence : une affiche en fin de tour
+    if (promoActive && promoSlot === firstPromoSlot) {
+      addPromo()
+    }
+
     return items
-  }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode, session?.promo_enabled, session?.promo_frequency, session?.promo_affiches])
+  }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode, promoPaths, promoFailed, promoTour, session?.promo_frequency])
 
   // Get current item duration
   const getCurrentDuration = useCallback(() => {
@@ -835,27 +856,48 @@ export default function LivePage() {
     }
   }, [currentIndex, slideshowItems.length])
 
+  const promoImagesRef = useRef(promoImages)
+  useEffect(() => {
+    promoImagesRef.current = promoImages
+  }, [promoImages])
+
   // Compute current item type for duration
-  const currentItemType = slideshowItems[currentIndex]?.type || 'photo'
+  const slideItem = slideshowItems[currentIndex]
+  const currentItemType = slideItem?.type || 'photo'
   const itemsCount = slideshowItems.length
+  // Affiche pas encore chargée : le minuteur ne démarre qu'une fois visible
+  const promoPending = slideItem?.type === 'promo' && !promoImages.has(slideItem.data.path)
 
   useEffect(() => {
     if (itemsCount <= 1) return
 
-    const duration = currentItemType === 'message'
-      ? (session?.messages_duration || 8) * 1000
-      : (session?.transition_duration || 5) * 1000
+    const duration = promoPending
+      ? 1000
+      : currentItemType === 'message'
+        ? (session?.messages_duration || 8) * 1000
+        : (session?.transition_duration || 5) * 1000
 
     const timeout = setTimeout(() => {
-      setCurrentIndex((prev) => {
-        const items = slideshowItemsRef.current
-        if (items.length === 0) return 0
-        return (prev + 1) % items.length
-      })
+      const items = slideshowItemsRef.current
+      if (items.length === 0) {
+        setCurrentIndex(0)
+        return
+      }
+      // Élément suivant, en sautant les affiches pas encore chargées
+      for (let step = 1; step < items.length; step++) {
+        const position = currentIndex + step
+        const item = items[position % items.length]
+        if (item.type === 'promo' && !promoImagesRef.current.has(item.data.path)) continue
+        if (position >= items.length) setPromoTour((tour) => tour + 1)
+        setCurrentIndex(position % items.length)
+        return
+      }
+      // Rien d'autre à montrer pour l'instant : on réessaie
+      setTimerTick((tick) => tick + 1)
     }, duration)
 
     return () => clearTimeout(timeout)
-  }, [currentIndex, currentItemType, itemsCount, session?.transition_duration, session?.messages_duration])
+  }, [currentIndex, currentItemType, promoPending, timerTick, itemsCount, session?.transition_duration, session?.messages_duration])
 
   const toggleFullscreen = async () => {
     if (isMac) {
@@ -956,6 +998,13 @@ export default function LivePage() {
     large:   { waiting: 180, bar: 100, fullscreen: 90 },
   }
   const qrSizes = qrSizeMap[session?.qr_size as keyof typeof qrSizeMap] || qrSizeMap.medium
+
+  // Affiche à l'écran : barre et logo s'effacent, rien ne la recouvre. Le QR
+  // passe dans le coin et les marges lui réservent sa place.
+  const promoImage = currentItem?.type === 'promo' ? promoImages.get(currentItem.data.path) : undefined
+  const showingPromo = promoImage !== undefined
+  const cornerQrSize = showingPromo ? qrSizes.bar : qrSizes.fullscreen
+  const promoSideMargin = session?.show_qr_on_screen ? qrSizes.bar + 62 : 24
 
   // QR Code component with pulse animation
   const renderQRCode = (size: number = 80) => (
@@ -1409,7 +1458,7 @@ export default function LivePage() {
       </motion.button>
 
       {/* Universal logo overlay */}
-      {showLogo && (
+      {showLogo && !showingPromo && (
         <div
           className={[
             'absolute z-30 pointer-events-none',
@@ -1467,7 +1516,7 @@ export default function LivePage() {
           <AnimatePresence mode="wait">
             {currentItem?.type === 'message' ? (
               <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} />
-            ) : currentItem?.type === 'promo' ? (
+            ) : currentItem?.type === 'promo' && promoImage ? (
               <motion.div
                 key={`promo-${currentIndex}-${currentItem.data.index}`}
                 variants={transitions[transitionType]}
@@ -1475,19 +1524,23 @@ export default function LivePage() {
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-                className="absolute inset-0 flex items-center justify-center p-6 z-10"
+                className="absolute inset-0 flex items-center justify-center py-6 z-10"
+                style={{ paddingInline: promoSideMargin }}
               >
                 <motion.div
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="relative"
+                  className="relative w-full flex items-center justify-center"
                 >
                   <img
                     src={getStorageUrl(currentItem.data.path) || ''}
                     alt="Affiche promotionnelle"
-                    className="max-w-full max-h-[90vh] object-contain"
+                    decoding="sync"
                     style={{
+                      // Remplit l'écran, sans dépasser 2x la taille d'origine pour rester net
+                      width: `min(calc(90vh * ${promoImage.width / promoImage.height}), 100%, ${promoImage.width * 2}px)`,
+                      height: 'auto',
                       borderRadius: '12px',
                       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.2)',
                     }}
@@ -1525,7 +1578,7 @@ export default function LivePage() {
           </AnimatePresence>
 
           {/* QR Code toujours visible en plein écran (coin bas droit) */}
-          {session.show_qr_on_screen && !showUI && isFullscreen && (
+          {session.show_qr_on_screen && (showingPromo || (!showUI && isFullscreen)) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1534,7 +1587,7 @@ export default function LivePage() {
             >
               <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10">
                 <div className="bg-white p-1.5 rounded-lg">
-                  <QRCode value={getInviteUrl(code)} size={qrSizes.fullscreen} />
+                  <QRCode value={getInviteUrl(code)} size={cornerQrSize} />
                 </div>
                 <p className="text-xs text-center text-white/70 mt-1 font-mono">#{code}</p>
               </div>
@@ -1545,8 +1598,8 @@ export default function LivePage() {
           <motion.div
             initial={false}
             animate={{
-              opacity: showUI ? 1 : 0,
-              y: showUI ? 0 : 20
+              opacity: showUI && !showingPromo ? 1 : 0,
+              y: showUI && !showingPromo ? 0 : 20
             }}
             transition={{ duration: 0.3 }}
             className="absolute bottom-0 left-0 right-0 z-20"
@@ -1598,7 +1651,7 @@ export default function LivePage() {
           {/* Progress bar */}
           <motion.div
             initial={false}
-            animate={{ opacity: showUI ? 1 : 0 }}
+            animate={{ opacity: showUI && !showingPromo ? 1 : 0 }}
             transition={{ duration: 0.3 }}
             className="absolute bottom-0 left-0 right-0 h-1 z-30"
           >

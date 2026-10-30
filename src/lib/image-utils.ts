@@ -93,7 +93,8 @@ export async function validateImageFile(file: File): Promise<ImageValidationResu
 
 export async function compressImage(
   file: File,
-  onProgress?: (progress: CompressionProgress) => void
+  onProgress?: (progress: CompressionProgress) => void,
+  overrides?: { maxSizeMB: number; maxWidthOrHeight: number; initialQuality: number }
 ): Promise<File> {
   const options = {
     maxSizeMB: 1,
@@ -101,6 +102,7 @@ export async function compressImage(
     useWebWorker: true,
     fileType: 'image/jpeg' as const,
     initialQuality: 0.85,
+    ...overrides,
     onProgress: (progress: number) => {
       onProgress?.({ stage: 'compressing', progress })
     }

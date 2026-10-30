@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
-import { generateSessionCode } from '@/lib/image-utils'
+import { compressImage, extensionForMimeType, generateSessionCode } from '@/lib/image-utils'
 import { toast } from 'sonner'
 import { fetchUserSessions, pickSession } from '@/lib/session-select'
 
@@ -76,6 +76,7 @@ export default function SettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
   const promoInputRef = useRef<HTMLInputElement>(null)
   const MAX_PROMO_AFFICHES = 20
+  const PROMO_COMPRESSION = { maxSizeMB: 1.5, maxWidthOrHeight: 2560, initialQuality: 0.9 }
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -440,12 +441,15 @@ export default function SettingsPage() {
     // Envoi un par un, dans l'ordre de sélection → ordre de défilement préservé
     for (const file of toUpload) {
       try {
-        const fileExt = file.name.split('.').pop()
-        const filePath = `promos/${selectedSession.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        // Allège les affiches lourdes : elles doivent charger vite sur le réseau de la salle
+        const toSend = file.size > PROMO_COMPRESSION.maxSizeMB * 1024 * 1024
+          ? await compressImage(file, undefined, PROMO_COMPRESSION)
+          : file
+        const filePath = `promos/${selectedSession.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${extensionForMimeType(toSend.type)}`
 
         const { error: uploadError } = await supabase.storage
           .from('photos')
-          .upload(filePath, file, { upsert: true })
+          .upload(filePath, toSend, { upsert: true })
 
         if (uploadError) throw uploadError
 
