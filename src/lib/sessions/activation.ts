@@ -50,3 +50,15 @@ export function joinSessionNames(others: ActiveSessionInfo[]): string {
   if (names.length <= 1) return names[0] ?? ''
   return `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`
 }
+
+export function quoteSessionNames(others: ActiveSessionInfo[]): string {
+  return joinSessionNames(others.map((s) => ({ ...s, name: `“${s.name || 'Événement'}”` })))
+}
+
+/** Au-delà de cette longueur, le nom reste dans le texte et le bouton dit « Basculer ». */
+const MAX_NAME_IN_BUTTON = 24
+
+export function switchButtonLabel(targetName: string): string {
+  const name = targetName.trim()
+  return name && name.length <= MAX_NAME_IN_BUTTON ? `Activer ${name}` : 'Basculer'
+}

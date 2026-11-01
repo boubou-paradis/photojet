@@ -2,7 +2,7 @@
 // Code propriétaire - Reproduction interdite.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hasOpenGame, isExemptUser, joinSessionNames } from '../activation'
+import { hasOpenGame, isExemptUser, joinSessionNames, quoteSessionNames, switchButtonLabel } from '../activation'
 import { activateUserSession, reactivateLatestSessionIfNone } from '../server'
 
 const OWNER = 'aaaaaaaa-0000-0000-0000-000000000000'
@@ -66,6 +66,20 @@ describe('règles pures', () => {
     expect(joinSessionNames([s('A')])).toBe('A')
     expect(joinSessionNames([s('A'), s('B'), s('C')])).toBe('A, B et C')
   })
+
+  it('met chaque nom de session entre guillemets', () => {
+    const s = (name: string) => ({ id: name, name, busy: false })
+    expect(quoteSessionNames([s('Nouvel événement')])).toBe('“Nouvel événement”')
+    expect(quoteSessionNames([s('A'), s('B'), s('C')])).toBe('“A”, “B” et “C”')
+    expect(quoteSessionNames([s('')])).toBe('“Événement”')
+  })
+
+  it('bouton court : le nom seulement s\'il tient, jamais les deux noms', () => {
+    expect(switchButtonLabel('Mariage')).toBe('Activer Mariage')
+    expect(switchButtonLabel('x'.repeat(24))).toBe(`Activer ${'x'.repeat(24)}`)
+    expect(switchButtonLabel('x'.repeat(25))).toBe('Basculer')
+    expect(switchButtonLabel('  ')).toBe('Basculer')
+  })
 })
 
 describe('activateUserSession', () => {
@@ -76,6 +90,15 @@ describe('activateUserSession', () => {
     expect(result).toEqual({ status: 'activated', deactivated: [] })
     expect(admin.rpc).not.toHaveBeenCalled()
     expect(admin.updates).toHaveLength(1)
+  })
+
+  it.each([['absente', undefined], ['vide', '']])('variable d\'exemption %s : tout compte passe par le contrôle', async (_label, value) => {
+    if (value !== undefined) process.env.SESSION_RULE_EXEMPT_USER_IDS = value
+    const admin = fakeAdmin({ rpc: { data: { status: 'activated', deactivated: ['a'] } } })
+    const result = await activateUserSession(admin.client, OWNER, 's', ['a'])
+    expect(admin.rpc).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({ status: 'activated', deactivated: ['a'] })
+    expect(admin.updates).toHaveLength(0)
   })
 
   it('erreur de la fonction SQL : on active quand même et on journalise', async () => {

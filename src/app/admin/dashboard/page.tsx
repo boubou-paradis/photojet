@@ -23,6 +23,7 @@ import {
   Download,
   Trash2,
   Image as ImageIcon,
+  Info,
   Plus,
   Copy,
   ExternalLink,
@@ -1492,14 +1493,14 @@ fetch(${JSON.stringify(imageUrl)})
       </div>
 
       <header className="relative z-[60] bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
-        <div className="w-full px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="w-full px-6 py-3 flex flex-wrap items-center justify-between gap-y-2">
+          <div className="flex items-center gap-2 max-w-full max-xl:overflow-x-auto">
             {/* Session Cards - Horizontal */}
             {sessions.map((session) => (
               <div
                 key={session.id}
                 onClick={() => setSelectedSession(session)}
-                className={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
+                className={`relative flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
                   selectedSession?.id === session.id
                     ? 'bg-[#1A1A1E] border-[#D4AF37]/50 shadow-lg shadow-[#D4AF37]/10'
                     : 'bg-[#1A1A1E]/50 border-white/10 hover:border-white/20 opacity-60 hover:opacity-100'
@@ -1554,7 +1555,7 @@ fetch(${JSON.stringify(imageUrl)})
               </div>
             ))}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-w-full max-xl:overflow-x-auto">
             <a
               href="https://chat.whatsapp.com/J8SuTrkzsAS0YFMxFhLdC4"
               target="_blank"
@@ -1596,7 +1597,6 @@ fetch(${JSON.stringify(imageUrl)})
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle session
             </Button>
-            <span className="hidden lg:inline text-[11px] text-gray-500">Une seule session active à la fois</span>
             {selectedSession && (
               <>
                 <Button
@@ -1638,6 +1638,10 @@ fetch(${JSON.stringify(imageUrl)})
             )}
           </div>
         </div>
+        <p className="flex items-center gap-1 px-6 pb-2 -mt-1 text-[11px] text-gray-500 whitespace-nowrap">
+          <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
+          Une seule session active à la fois.
+        </p>
       </header>
 
       <main className="relative z-10 flex-1 overflow-hidden">
