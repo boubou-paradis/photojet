@@ -311,6 +311,8 @@ export interface SavedMystery {
   name: string
   photos: SavedMysteryPhoto[] // même structure que sessions.mystery_photos
   reveal_audio_url?: string | null // même valeur que sessions.mystery_reveal_audio
+  grid?: MysteryPhotoGrid | null // null : jeu sauvegardé avant l'ajout de la colonne
+  speed?: MysteryPhotoSpeed | null // null : jeu sauvegardé avant l'ajout de la colonne
   created_at: string
   updated_at: string
 }

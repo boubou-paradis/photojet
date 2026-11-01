@@ -269,6 +269,34 @@ export function checkAccess(
 }
 
 // ============================================
+// Filigrane : compte en essai gratuit (non converti)
+// ============================================
+
+export type TrialSubscriptionRow = Pick<
+  Subscription,
+  'status' | 'stripe_subscription_id' | 'pass_validity_until'
+>
+
+/**
+ * Vrai pour un compte qui n'a jamais payé, que son essai soit en cours ou expiré.
+ * Distinct de checkAccess : après 24 h le statut passe à `expired` et un essai
+ * Stripe avec carte est aussi `trialing`, or seul l'essai sans paiement est visé.
+ */
+export function isFreeTrialAccount(
+  userRole: string | null | undefined,
+  subscriptions: TrialSubscriptionRow[]
+): boolean {
+  if (userRole === 'owner' || subscriptions.length === 0) return false
+  return !subscriptions.some(
+    (s) =>
+      !!s.stripe_subscription_id ||
+      !!s.pass_validity_until ||
+      s.status === 'active' ||
+      s.status === 'weekend_pass'
+  )
+}
+
+// ============================================
 // Email template
 // ============================================
 

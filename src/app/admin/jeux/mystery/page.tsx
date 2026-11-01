@@ -20,6 +20,8 @@ import {
   FileText,
   VolumeX,
   Trash2,
+  Download,
+  FileUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -37,7 +39,21 @@ import { Session, MysteryPhotoGrid, MysteryPhotoSpeed, SavedMystery, SavedMyster
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
+import { TransferError } from '@/lib/games/mystery-transfer/format'
+import {
+  applyImport,
+  checkExportAccess,
+  exportGame,
+  isValidGrid,
+  isValidSpeed,
+  readGameSnapshot,
+  type GameSnapshot,
+  type PreparedImport,
+  type TransferProgress,
+} from '@/lib/games/mystery-transfer/transfer'
+import { SUBSCRIBE_HREF } from '@/lib/watermark/constants'
 import PhotoCropModal from './PhotoCropModal'
+import { MysteryExportModal, MysteryImportModal } from './MysteryTransferModals'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
@@ -95,6 +111,11 @@ export default function MysteryPage() {
   const [savingMystery, setSavingMystery] = useState(false)
   const [savedMysteries, setSavedMysteries] = useState<SavedMystery[]>([])
   const [loadingSavedMysteries, setLoadingSavedMysteries] = useState(false)
+
+  // Export / import d'une partie complète dans un fichier .zip
+  const [exportSnapshot, setExportSnapshot] = useState<GameSnapshot | null>(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -646,6 +667,10 @@ export default function MysteryPage() {
         toast.error('Session expirée, reconnectez-vous')
         return
       }
+      if (!session) return
+      // Grille et vitesse relues en base : le menu déroulant peut ne pas être
+      // enregistré, et c'est la valeur en base que le jeu utilise.
+      const { grid, speed } = await readGameSnapshot(supabase, session.id)
       const photosToSave: SavedMysteryPhoto[] = validPhotos.map((p) => ({
         url: p.url,
         audioUrl: p.audioUrl || null,
@@ -657,6 +682,8 @@ export default function MysteryPage() {
           name,
           photos: photosToSave,
           reveal_audio_url: revealAudio?.url || null,
+          grid,
+          speed,
         })
 
       if (error) throw error
@@ -722,10 +749,21 @@ export default function MysteryPage() {
     } else {
       setRevealAudio(null)
     }
+
+    // Un jeu sauvegardé avant l'ajout de ces colonnes n'a ni grille ni vitesse :
+    // la session garde alors les siennes, comme auparavant.
+    const savedGrid = isValidGrid(saved.grid) ? saved.grid : null
+    const savedSpeed = isValidSpeed(saved.speed) ? saved.speed : null
     await supabase
       .from('sessions')
-      .update({ mystery_reveal_audio: saved.reveal_audio_url || null })
+      .update({
+        mystery_reveal_audio: saved.reveal_audio_url || null,
+        ...(savedGrid && { mystery_photo_grid: savedGrid }),
+        ...(savedSpeed && { mystery_photo_speed: savedSpeed }),
+      })
       .eq('id', session.id)
+    if (savedGrid) setMysteryPhotoGrid(savedGrid)
+    if (savedSpeed) setMysteryPhotoSpeed(savedSpeed)
 
     setShowLoadMysteryModal(false)
     const count = saved.photos?.length ?? 0
@@ -744,6 +782,123 @@ export default function MysteryPage() {
     } catch (err) {
       console.error('Error deleting saved mystery:', err)
       toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  // === Export / import d'une partie complète (.zip) ===
+
+  function transfersBusy(): boolean {
+    if (uploading !== null || uploadingAudio !== null || uploadingRevealAudio) {
+      toast.error('Patientez la fin de l\'upload')
+      return true
+    }
+    return false
+  }
+
+  async function openExportModal() {
+    if (!session || transfersBusy()) return
+    try {
+      const access = await checkExportAccess()
+      if (access.blocked) {
+        toast.error(access.message, {
+          action: { label: 'Voir les offres', onClick: () => router.push(SUBSCRIBE_HREF) },
+        })
+        return
+      }
+      const snapshot = await readGameSnapshot(supabase, session.id)
+      if (snapshot.photos.length === 0) {
+        toast.error('Ajoutez au moins une photo avant d\'exporter')
+        return
+      }
+      setExportSnapshot(snapshot)
+    } catch (err) {
+      console.error('Error opening mystery export:', err)
+      toast.error(err instanceof TransferError ? err.message : 'Erreur lors de la préparation de l\'export')
+    }
+  }
+
+  async function handleExport(name: string, onProgress: TransferProgress) {
+    if (!session) return
+    const { blob, fileName } = await exportGame({ supabase, sessionId: session.id, name, onProgress })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    setExportSnapshot(null)
+    toast.success('Partie exportée')
+  }
+
+  async function openImportModal() {
+    if (!session || transfersBusy()) return
+    try {
+      const { active } = await readGameSnapshot(supabase, session.id)
+      if (active) {
+        toast.error('Une partie est en cours. Quittez-la avant d\'importer')
+        return
+      }
+      setShowImportModal(true)
+    } catch (err) {
+      console.error('Error opening mystery import:', err)
+      toast.error(err instanceof TransferError ? err.message : 'Erreur lors de la préparation de l\'import')
+    }
+  }
+
+  // Renvoie false si l'animateur renonce à remplacer sa partie.
+  async function handleImport(prepared: PreparedImport, onProgress: TransferProgress): Promise<boolean> {
+    if (!session) return false
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new TransferError('Session expirée, reconnectez-vous')
+
+    const current = await readGameSnapshot(supabase, session.id)
+    const hasGame = current.photos.length > 0 || current.revealAudio !== null
+    if (hasGame && !window.confirm('Importer cette partie remplacera les photos et les audios actuels. Continuer ?')) {
+      return false
+    }
+
+    setImporting(true)
+    try {
+      const result = await applyImport({
+        supabase,
+        sessionId: session.id,
+        userId: user.id,
+        prepared,
+        filterPathsSafeToDelete,
+        onProgress,
+      })
+
+      const photoSlots: (PhotoSlot | null)[] = Array(20).fill(null)
+      result.photos.forEach((photo, index) => {
+        const slot: PhotoSlot = {
+          url: photo.url,
+          preview: supabase.storage.from('photos').getPublicUrl(photo.url).data.publicUrl,
+        }
+        if (photo.audioUrl) {
+          slot.audioUrl = photo.audioUrl
+          slot.audioPreview = supabase.storage.from('photos').getPublicUrl(photo.audioUrl).data.publicUrl
+        }
+        photoSlots[index] = slot
+      })
+      setPhotos(photoSlots)
+      setRevealAudio(
+        result.revealAudio
+          ? {
+              url: result.revealAudio,
+              preview: supabase.storage.from('photos').getPublicUrl(result.revealAudio).data.publicUrl,
+            }
+          : null
+      )
+      setMysteryPhotoGrid(result.grid)
+      setMysteryPhotoSpeed(result.speed)
+      setCurrentRound(1)
+      setTotalRounds(result.photos.length)
+      setRevealedTiles([])
+      setShowImportModal(false)
+      toast.success(`Partie « ${prepared.manifest.name} » importée`)
+      return true
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -1041,13 +1196,18 @@ export default function MysteryPage() {
   }
 
   // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
-  useLeaveGuard(gameActive)
+  useLeaveGuard(gameActive || importing)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({
     active: gameActive && remoteOn,
     phase: `${currentRound}|${isPlaying}`,
-    isBlocked: () => croppingIndex !== null || showSaveMysteryModal || showLoadMysteryModal,
+    isBlocked: () =>
+      croppingIndex !== null ||
+      showSaveMysteryModal ||
+      showLoadMysteryModal ||
+      exportSnapshot !== null ||
+      showImportModal,
     onNext: async () => {
       const state = await readRoundState()
       if (!state) return
@@ -1160,6 +1320,23 @@ export default function MysteryPage() {
             >
               <span aria-hidden>📂</span>
               Charger
+            </button>
+            <button
+              onClick={openExportModal}
+              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
+              title="Exporter cette partie dans un fichier à partager"
+            >
+              <Download className="h-4 w-4" />
+              Exporter
+            </button>
+            <button
+              onClick={openImportModal}
+              disabled={gameActive}
+              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={gameActive ? 'Quittez la partie en cours pour importer' : 'Importer une partie depuis un fichier'}
+            >
+              <FileUp className="h-4 w-4" />
+              Importer
             </button>
             <button
               onClick={clearAllData}
@@ -1595,6 +1772,18 @@ export default function MysteryPage() {
           onCancel={closeCropModal}
           onConfirm={handleCropConfirm}
         />
+      )}
+
+      {exportSnapshot && (
+        <MysteryExportModal
+          snapshot={exportSnapshot}
+          onClose={() => setExportSnapshot(null)}
+          onExport={handleExport}
+        />
+      )}
+
+      {showImportModal && (
+        <MysteryImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />
       )}
 
       {/* Modale : Sauvegarder le jeu dans la bibliothèque */}
