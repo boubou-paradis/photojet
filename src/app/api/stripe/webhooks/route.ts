@@ -9,6 +9,7 @@ import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail, sendRenewal
 import { computePassValidityUntil } from '@/lib/weekend-pass'
 import { createClient } from '@supabase/supabase-js'
 import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
+import { reactivateLatestSessionIfNone } from '@/lib/sessions/server'
 
 // Convert Stripe timestamp to ISO string with fallback
 function safeTimestampToISO(
@@ -389,7 +390,7 @@ async function updateExistingUser(
 
   let userSessionCode = sessionCode
   if (existingSession) {
-    await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', userId)
+    await reactivateLatestSessionIfNone(getSupabaseAdmin(), userId)
     userSessionCode = existingSession.code
   } else {
     // No existing session — create one with the generated code
@@ -482,7 +483,7 @@ async function handleWeekendPassCompleted(session: Stripe.Checkout.Session) {
 
     if (existingSession) {
       sessionCode = existingSession.code
-      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+      await reactivateLatestSessionIfNone(supabase, userId)
     } else {
       sessionCode = await generateUniqueSessionCode()
       await supabase.from('sessions').insert({
@@ -542,7 +543,7 @@ async function handleWeekendPassCompleted(session: Stripe.Checkout.Session) {
     await supabase.from('subscriptions').insert(subData)
   }
 
-  await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+  await reactivateLatestSessionIfNone(supabase, userId)
 
   console.log(`[Webhook] Weekend pass activated for ${email}, valid until ${passValidityUntil.toISOString()}`)
   await sendWeekendPassEmail({ to: email, password, sessionCode, validUntil: passValidityUntil })
@@ -623,7 +624,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Reactivate sessions when subscription becomes active again
   // (renewal email is sent by handlePaymentSucceeded to avoid duplicates)
   if (newStatus === 'active' && previousStatus !== 'active') {
-    await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+    await reactivateLatestSessionIfNone(getSupabaseAdmin(), data.user_id)
     console.log(`[Webhook] subscription.updated: reactivated sessions for user ${data.user_id} (${previousStatus} → active)`)
   }
 
@@ -780,7 +781,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     .eq('id', data.id)
 
   // ALWAYS ensure sessions are active when payment succeeds
-  await getSupabaseAdmin().from('sessions').update({ is_active: true }).eq('user_id', data.user_id)
+  await reactivateLatestSessionIfNone(getSupabaseAdmin(), data.user_id)
 
   // Send renewal confirmation email for all non-first payments
   // (first payment = subscription_create for new user, already handled above with early return)

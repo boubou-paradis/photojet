@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { reactivateLatestSessionIfNone } from '@/lib/sessions/server'
 
 const getSupabaseAdmin = () =>
   createClient(
@@ -117,11 +118,8 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // ── 4. Réactiver toutes les sessions de l'utilisateur ───────────
-  await supabase
-    .from('sessions')
-    .update({ is_active: true })
-    .eq('user_id', userId)
+  // ── 4. Réactiver la session la plus récente si aucune n'est active ──
+  await reactivateLatestSessionIfNone(supabase, userId)
 
   // ── 5. Generate magic link so user can set their password ─────
   let magicLink: string | null = null

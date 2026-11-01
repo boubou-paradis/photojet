@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import { sendRenewalConfirmationEmail } from '@/lib/resend'
+import { reactivateLatestSessionIfNone } from '@/lib/sessions/server'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -323,7 +324,7 @@ export async function GET(request: NextRequest) {
 
     // Reactivate existing sessions or note there are none
     if (dbStatus === 'active') {
-      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+      await reactivateLatestSessionIfNone(supabase, userId)
     } else if (await shouldDeactivateSessions(supabase, userId, dbStatus)) {
       sessionsDeactivated = true
       await supabase.from('sessions').update({ is_active: false }).eq('user_id', userId)
@@ -346,7 +347,7 @@ export async function GET(request: NextRequest) {
       .eq('id', dbSub.id)
 
     if (dbStatus === 'active') {
-      await supabase.from('sessions').update({ is_active: true }).eq('user_id', userId)
+      await reactivateLatestSessionIfNone(supabase, userId)
     } else if (await shouldDeactivateSessions(supabase, userId, dbStatus)) {
       sessionsDeactivated = true
       await supabase.from('sessions').update({ is_active: false }).eq('user_id', userId)

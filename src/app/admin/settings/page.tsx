@@ -45,6 +45,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
+import SessionSwitchDialog from '@/components/SessionSwitchDialog'
+import type { ActiveSessionInfo } from '@/lib/sessions/activation'
+import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
 import { compressImage, extensionForMimeType, generateSessionCode, MAX_FILE_SIZE } from '@/lib/image-utils'
 import { toast } from 'sonner'
@@ -69,6 +72,8 @@ export default function SettingsPage() {
   const [printerStatus, setPrinterStatus] = useState<'unknown' | 'ready' | 'error'>('unknown')
   const [testingPrint, setTestingPrint] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [togglingActive, setTogglingActive] = useState(false)
+  const [activeConflict, setActiveConflict] = useState<ActiveSessionInfo[] | null>(null)
   const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingPromo, setUploadingPromo] = useState(false)
@@ -262,6 +267,39 @@ export default function SettingsPage() {
     isInitialLoad.current = true
   }, [selectedSession?.id])
 
+  // Activation et désactivation passent par la route serveur. Si elle ne répond
+  // pas, on écrit comme avant : une panne ne bloque jamais un abonné.
+  async function changeSessionState(active: boolean, confirmedIds?: string[]) {
+    if (!selectedSession) return
+
+    setTogglingActive(true)
+    try {
+      let result = null
+      try {
+        result = await requestSessionState({ sessionId: selectedSession.id, active, confirmedIds })
+      } catch (err) {
+        console.error('Activation via la route impossible, écriture directe :', err)
+        const { error } = await supabase
+          .from('sessions')
+          .update({ is_active: active })
+          .eq('id', selectedSession.id)
+        if (error) throw error
+      }
+
+      if (result?.status === 'conflict') {
+        setActiveConflict(result.others)
+        return
+      }
+      setActiveConflict(null)
+      setFormData((prev) => ({ ...prev, is_active: active }))
+    } catch (err) {
+      toast.error('Erreur lors de la modification')
+      console.error(err)
+    } finally {
+      setTogglingActive(false)
+    }
+  }
+
   async function autoSave() {
     if (!selectedSession) return
 
@@ -276,7 +314,6 @@ export default function SettingsPage() {
           qr_size: formData.qr_size,
           transition_type: formData.transition_type,
           transition_duration: formData.transition_duration,
-          is_active: formData.is_active,
           // Borne settings
           borne_countdown: formData.borne_countdown,
           borne_countdown_duration: formData.borne_countdown_duration,
@@ -586,6 +623,13 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <SessionSwitchDialog
+              others={activeConflict}
+              targetName={formData.name}
+              busy={togglingActive}
+              onCancel={() => setActiveConflict(null)}
+              onConfirm={() => changeSessionState(true, activeConflict?.map((session) => session.id))}
+            />
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -698,9 +742,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   checked={formData.is_active}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, is_active: checked }))
-                  }
+                  disabled={togglingActive}
+                  aria-label="Session active"
+                  onCheckedChange={(checked) => changeSessionState(checked)}
                 />
               </div>
             </div>

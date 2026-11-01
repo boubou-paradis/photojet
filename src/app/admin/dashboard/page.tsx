@@ -9,6 +9,7 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import QRCode from 'react-qr-code'
 import { useTrialWatermark } from '@/components/TrialWatermark'
+import { requestSessionState } from '@/lib/sessions/client'
 import {
   SUBSCRIBE_HREF,
   TRIAL_DOWNLOAD_ERROR_CODE,
@@ -864,7 +865,7 @@ fetch(${JSON.stringify(imageUrl)})
     return Date.now().toString().slice(-6)
   }
 
-  const MAX_SESSIONS = 3
+  const MAX_SESSIONS = 4
 
   async function createNewSession() {
     try {
@@ -900,7 +901,8 @@ fetch(${JSON.stringify(imageUrl)})
           transition_type: 'fade',
           transition_duration: 5,
           slideshow_mode: 'all',
-          is_active: true,
+          // Inactive à la création : la route l'active juste après si la règle le permet.
+          is_active: false,
           user_id: user.id,
           album_qr_code: null,
           // Borne defaults
@@ -964,9 +966,21 @@ fetch(${JSON.stringify(imageUrl)})
         .single()
 
       if (error) throw error
-      setSessions((prev) => [data, ...prev])
-      setSelectedSession(data)
-      toast.success('Session créée')
+
+      let isActive = true
+      try {
+        const result = await requestSessionState({ sessionId: data.id, active: true })
+        isActive = result.status !== 'conflict'
+      } catch (err) {
+        // Une panne ne bloque pas : la session est activée comme avant.
+        console.error('Activation via la route impossible, écriture directe :', err)
+        await supabase.from('sessions').update({ is_active: true }).eq('id', data.id)
+      }
+
+      const created = { ...data, is_active: isActive }
+      setSessions((prev) => [created, ...prev])
+      setSelectedSession(created)
+      toast.success(isActive ? 'Session créée' : "Session créée, inactive. Vous pouvez la préparer et l'activer dans les Paramètres.")
     } catch (err) {
       toast.error('Erreur lors de la création')
       console.error(err)
@@ -1582,6 +1596,7 @@ fetch(${JSON.stringify(imageUrl)})
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle session
             </Button>
+            <span className="hidden lg:inline text-[11px] text-gray-500">Une seule session active à la fois</span>
             {selectedSession && (
               <>
                 <Button
