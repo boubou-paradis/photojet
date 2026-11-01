@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import { createClient } from '@supabase/supabase-js'
+import { isTrialAccount } from '@/lib/watermark/access'
+import { TRIAL_DOWNLOAD_ERROR_CODE, TRIAL_DOWNLOAD_MESSAGE } from '@/lib/watermark/constants'
 
 // Génération du ZIP : laisser plus de temps pour les gros albums
 export const runtime = 'nodejs'
@@ -26,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Get session first
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select('id, name, album_enabled')
+      .select('id, name, album_enabled, user_id')
       .eq('code', sessionCode)
       .single()
 
@@ -36,6 +38,13 @@ export async function POST(request: NextRequest) {
 
     if (!session.album_enabled) {
       return NextResponse.json({ error: 'Album is disabled' }, { status: 403 })
+    }
+
+    if (await isTrialAccount(supabase, session.user_id)) {
+      return NextResponse.json(
+        { error: TRIAL_DOWNLOAD_MESSAGE, code: TRIAL_DOWNLOAD_ERROR_CODE },
+        { status: 403 }
+      )
     }
 
     // Build photos query

@@ -10,6 +10,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import AdminLayoutClient from './admin-layout-client'
 import { isWeekendPassAvailable } from '@/lib/weekend-pass'
+import { isTrialAccount } from '@/lib/watermark/access'
 
 function createAdminClient() {
   return createClient(
@@ -43,7 +44,7 @@ export default async function AdminLayout({
     const supabaseAdmin = createAdminClient()
     const { data: dbToken } = await supabaseAdmin
       .from('trial_tokens')
-      .select('id, expires_at')
+      .select('id, email, expires_at')
       .eq('token', trialToken)
       .single()
 
@@ -51,10 +52,17 @@ export default async function AdminLayout({
       redirect('/?access=expired')
     }
 
+    const { data: trialProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .eq('email', dbToken.email)
+      .maybeSingle()
+
     return (
       <AdminLayoutClient
         isTrialUser={true}
         trialExpiresAt={trialExpires}
+        showWatermarkNotice={await isTrialAccount(supabaseAdmin, trialProfile?.id ?? null)}
       >
         {children}
       </AdminLayoutClient>
@@ -147,6 +155,7 @@ export default async function AdminLayout({
       <AdminLayoutClient
         isTrialUser={true}
         trialExpiresAt={trial_end}
+        showWatermarkNotice={await isTrialAccount(supabaseAdmin, user.id)}
       >
         {children}
       </AdminLayoutClient>

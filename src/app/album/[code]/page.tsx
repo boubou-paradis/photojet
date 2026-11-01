@@ -20,6 +20,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session, Photo } from '@/types/database'
+import {
+  SUBSCRIBE_HREF,
+  TRIAL_DOWNLOAD_MESSAGE,
+  watermarkedPhotoUrl,
+  type WatermarkWidth,
+} from '@/lib/watermark/constants'
 
 // Composant image avec gestion du chargement et des erreurs
 function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
@@ -106,6 +112,7 @@ export default function AlbumPage() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([])
+  const [trialWatermark, setTrialWatermark] = useState(false)
 
   // Password protection
   const [isUnlocked, setIsUnlocked] = useState(false)
@@ -128,6 +135,7 @@ export default function AlbumPage() {
         }
 
         setSession(sessionData)
+        setTrialWatermark(sessionData.watermark === true)
 
         // If no password required, auto-unlock
         if (!sessionData.album_password) {
@@ -174,6 +182,10 @@ export default function AlbumPage() {
   function getPhotoUrl(storagePath: string) {
     const { data } = supabase.storage.from('photos').getPublicUrl(storagePath)
     return data.publicUrl
+  }
+
+  function getDisplayUrl(photo: Photo, largeur?: WatermarkWidth) {
+    return trialWatermark ? watermarkedPhotoUrl(photo.id, largeur) : getPhotoUrl(photo.storage_path)
   }
 
   function toggleSelect(photoId: string) {
@@ -410,6 +422,20 @@ export default function AlbumPage() {
 
       {/* Actions bar */}
       <div className="sticky top-0 bg-[#0D0D0F]/90 backdrop-blur-xl z-40 p-4 border-b border-white/5">
+        {trialWatermark ? (
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-center sm:text-left">
+            <p className="text-sm text-gray-300 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-[#D4AF37] shrink-0" />
+              {TRIAL_DOWNLOAD_MESSAGE}
+            </p>
+            <a
+              href={SUBSCRIBE_HREF}
+              className="shrink-0 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#0D0D0F] font-semibold shadow-lg shadow-[#D4AF37]/20"
+            >
+              S&apos;abonner
+            </a>
+          </div>
+        ) : (
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             {photos.length > 0 && (
@@ -458,6 +484,7 @@ export default function AlbumPage() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       <main className="max-w-6xl mx-auto px-4 py-8 relative z-10">
@@ -494,7 +521,7 @@ export default function AlbumPage() {
               >
                 {/* Image with loading/error handling */}
                 <GalleryImage
-                  src={getPhotoUrl(photo.storage_path)}
+                  src={getDisplayUrl(photo, 800)}
                   alt={`Photo ${index + 1}`}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -503,7 +530,7 @@ export default function AlbumPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-20" />
 
                 {/* Selection checkbox (clic = sélectionner, sans ouvrir la lightbox) */}
-                <button
+                {!trialWatermark && <button
                   type="button"
                   aria-label={selectedPhotos.includes(photo.id) ? 'Désélectionner' : 'Sélectionner'}
                   title={selectedPhotos.includes(photo.id) ? 'Désélectionner' : 'Sélectionner'}
@@ -520,20 +547,22 @@ export default function AlbumPage() {
                   {selectedPhotos.includes(photo.id) && (
                     <Check className="h-4 w-4 text-[#0D0D0F]" />
                   )}
-                </button>
+                </button>}
 
                 {/* Download button on hover */}
-                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-30">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      downloadSingle(photo)
-                    }}
-                    className="bg-white/90 backdrop-blur-sm text-[#0D0D0F] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-[#D4AF37] transition-colors shadow-lg"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-                </div>
+                {!trialWatermark && (
+                  <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-30">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        downloadSingle(photo)
+                      }}
+                      className="bg-white/90 backdrop-blur-sm text-[#0D0D0F] px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-[#D4AF37] transition-colors shadow-lg"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </motion.div>
@@ -572,7 +601,7 @@ export default function AlbumPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              src={getPhotoUrl(photos[currentPhotoIndex].storage_path)}
+              src={getDisplayUrl(photos[currentPhotoIndex], 1920)}
               alt={`Photo ${currentPhotoIndex + 1}`}
               className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
@@ -592,6 +621,7 @@ export default function AlbumPage() {
               <span className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
                 {currentPhotoIndex + 1} / {photos.length}
               </span>
+              {!trialWatermark && <>
               <Button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -617,6 +647,7 @@ export default function AlbumPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Télécharger
               </Button>
+              </>}
             </div>
           </motion.div>
         )}

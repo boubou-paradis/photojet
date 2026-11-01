@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import { TrialWatermarkProvider } from '@/components/TrialWatermark'
+import { isTrialCode } from '@/lib/watermark/access'
 
 export async function generateMetadata({
   params,
@@ -28,10 +30,19 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-export default function BorneLayout({
+export default async function BorneLayout({
   children,
+  params,
 }: {
   children: React.ReactNode
+  params: Promise<{ code: string }>
 }) {
-  return children
+  const { code } = await params
+  const watermark = await isTrialCode(code, 'borne')
+
+  return (
+    <TrialWatermarkProvider code={code} kind="borne" initial={watermark}>
+      {children}
+    </TrialWatermarkProvider>
+  )
 }

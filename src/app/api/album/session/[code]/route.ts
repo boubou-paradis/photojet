@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isTrialAccount } from '@/lib/watermark/access'
 
 export async function GET(
   _request: NextRequest,
@@ -18,7 +19,7 @@ export async function GET(
 
   const { data: session, error } = await supabase
     .from('sessions')
-    .select('id, code, name, album_enabled, album_password, created_at')
+    .select('id, code, name, album_enabled, album_password, created_at, user_id')
     .eq('code', code)
     .single()
 
@@ -26,5 +27,8 @@ export async function GET(
     return NextResponse.json({ error: 'Session not found' }, { status: 404 })
   }
 
-  return NextResponse.json(session)
+  const { user_id: userId, ...album } = session
+  const watermark = await isTrialAccount(supabase, userId)
+
+  return NextResponse.json({ ...album, watermark })
 }

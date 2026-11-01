@@ -27,6 +27,8 @@ import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
 import VoteGame from '@/components/games/VoteGame'
 import { useVoteStatus } from '@/hooks/useVoteStatus'
 import { usePromoPreload } from '@/hooks/usePromoPreload'
+import { TrialSlideshowBand, useTrialWatermark } from '@/components/TrialWatermark'
+import { watermarkedPhotoUrl } from '@/lib/watermark/constants'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
@@ -319,6 +321,7 @@ const logoSizes = {
 export default function LivePage() {
   const params = useParams()
   const code = params.code as string
+  const trialWatermark = useTrialWatermark()
 
   const [session, setSession] = useState<Session | null>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -1433,6 +1436,8 @@ export default function LivePage() {
       {/* Background */}
       {renderBackground()}
 
+      {trialWatermark && <TrialSlideshowBand />}
+
       {/* New photo notification */}
       <NewPhotoNotification show={showNewPhotoNotification} />
 
@@ -1564,7 +1569,9 @@ export default function LivePage() {
                   className="relative"
                 >
                   <img
-                    src={getStorageUrl(currentItem.data.storage_path) || ''}
+                    src={trialWatermark
+                      ? watermarkedPhotoUrl(currentItem.data.id, 1920)
+                      : getStorageUrl(currentItem.data.storage_path) || ''}
                     alt="Photo"
                     className="max-w-full max-h-[90vh] object-contain"
                     style={{

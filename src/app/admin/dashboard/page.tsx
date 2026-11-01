@@ -8,6 +8,13 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import QRCode from 'react-qr-code'
+import { useTrialWatermark } from '@/components/TrialWatermark'
+import {
+  SUBSCRIBE_HREF,
+  TRIAL_DOWNLOAD_ERROR_CODE,
+  TRIAL_DOWNLOAD_MESSAGE,
+  watermarkedPhotoUrl,
+} from '@/lib/watermark/constants'
 import {
   CheckCircle,
   Settings,
@@ -214,6 +221,7 @@ export default function DashboardPage() {
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const trialWatermark = useTrialWatermark()
 
   // Ref pour éviter les stale closures dans les listeners async
   const selectedSessionRef = useRef<Session | null>(null)
@@ -608,7 +616,7 @@ export default function DashboardPage() {
       if (!data) return
       photo = data as Photo
     }
-    await executePrint(getPhotoUrl(photo.storage_path), request.id)
+    await executePrint(getPrintUrl(photo), request.id)
   }
 
   function executePrint(imageUrl: string, requestId: string) {
@@ -724,7 +732,7 @@ fetch(${JSON.stringify(imageUrl)})
   async function handlePrintRequest(request: PrintRequest & { photo?: Photo }) {
     if (!request.photo) return
     setActionLoading(request.id)
-    await executePrint(getPhotoUrl(request.photo.storage_path), request.id)
+    await executePrint(getPrintUrl(request.photo), request.id)
     setActionLoading(null)
   }
 
@@ -1320,6 +1328,16 @@ fetch(${JSON.stringify(imageUrl)})
         body: JSON.stringify({ sessionCode: selectedSession.code })
       })
 
+      if (response.status === 403) {
+        const body = await response.json().catch(() => null)
+        if (body?.code === TRIAL_DOWNLOAD_ERROR_CODE) {
+          toast.error(TRIAL_DOWNLOAD_MESSAGE, {
+            action: { label: "S'abonner", onClick: () => { window.location.href = SUBSCRIBE_HREF } },
+          })
+          return
+        }
+      }
+
       if (!response.ok) {
         throw new Error('Erreur lors du téléchargement')
       }
@@ -1398,6 +1416,17 @@ fetch(${JSON.stringify(imageUrl)})
       toast.error('Erreur lors de la modification')
       console.error(err)
     }
+  }
+
+  function getThumbnailUrl(photo: Photo) {
+    return trialWatermark ? watermarkedPhotoUrl(photo.id, 800) : getPhotoUrl(photo.storage_path)
+  }
+
+  // Horodatée pour qu'une copie en cache ne survive pas à un abonnement
+  function getPrintUrl(photo: Photo) {
+    return trialWatermark
+      ? `${window.location.origin}${watermarkedPhotoUrl(photo.id)}?t=${Date.now()}`
+      : getPhotoUrl(photo.storage_path)
   }
 
   function getPhotoUrl(storagePath: string) {
@@ -1874,7 +1903,7 @@ fetch(${JSON.stringify(imageUrl)})
                           >
                             <div className="aspect-square rounded-xl overflow-hidden bg-[#2E2E33] border border-[rgba(255,255,255,0.1)] transition-all duration-200 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_4px_20px_rgba(212,175,55,0.2)]">
                               <img
-                                src={getPhotoUrl(photo.storage_path)}
+                                src={getThumbnailUrl(photo)}
                                 alt="Photo"
                                 className="w-full h-full object-cover"
                               />
@@ -2093,7 +2122,7 @@ fetch(${JSON.stringify(imageUrl)})
                                     <div className="w-14 h-14 rounded-lg overflow-hidden bg-[#2E2E33] flex-shrink-0">
                                       {pr.photo && (
                                         <img
-                                          src={getPhotoUrl(pr.photo.storage_path)}
+                                          src={getThumbnailUrl(pr.photo)}
                                           alt="Photo"
                                           className="w-full h-full object-cover"
                                         />
@@ -2178,7 +2207,7 @@ fetch(${JSON.stringify(imageUrl)})
                                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#2E2E33] flex-shrink-0">
                                       {pr.photo && (
                                         <img
-                                          src={getPhotoUrl(pr.photo.storage_path)}
+                                          src={getThumbnailUrl(pr.photo)}
                                           alt="Photo"
                                           className="w-full h-full object-cover"
                                         />

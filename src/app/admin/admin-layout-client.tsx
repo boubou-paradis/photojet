@@ -17,6 +17,8 @@ import AnimaJetLogo from '@/components/branding/AnimaJetLogo'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase'
 import { formatTimeRemaining } from '@/lib/trial'
+import { TrialWatermarkContext } from '@/components/TrialWatermark'
+import { TRIAL_ADMIN_NOTICE } from '@/lib/watermark/constants'
 import { toast } from 'sonner'
 
 const navItems = [
@@ -29,12 +31,14 @@ interface AdminLayoutClientProps {
   children: React.ReactNode
   isTrialUser?: boolean
   trialExpiresAt?: string | null
+  showWatermarkNotice?: boolean
 }
 
 export default function AdminLayoutClient({
   children,
   isTrialUser: serverIsTrialUser = false,
   trialExpiresAt: serverTrialExpiresAt = null,
+  showWatermarkNotice = false,
 }: AdminLayoutClientProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -197,9 +201,20 @@ export default function AdminLayoutClient({
         </nav>
       </header>
 
+      {showWatermarkNotice && (
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-center text-sm text-[#D4AF37] bg-[#D4AF37]/10 border-b border-[#D4AF37]/25">
+          <span>{TRIAL_ADMIN_NOTICE}</span>
+          <button onClick={handleSubscribe} className="font-semibold underline hover:text-[#F4D03F]">
+            S&apos;abonner
+          </button>
+        </div>
+      )}
+
       {/* Main Content - always rendered (server already verified access) */}
       <main className="w-full">
-        {children}
+        <TrialWatermarkContext.Provider value={showWatermarkNotice}>
+          {children}
+        </TrialWatermarkContext.Provider>
       </main>
 
       {/* Footer */}
