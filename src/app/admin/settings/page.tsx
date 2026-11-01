@@ -740,12 +740,17 @@ export default function SettingsPage() {
                     Désactivez pour empêcher les uploads
                   </p>
                 </div>
-                <Switch
-                  checked={formData.is_active}
-                  disabled={togglingActive}
-                  aria-label="Session active"
-                  onCheckedChange={(checked) => changeSessionState(checked)}
-                />
+                <div className="flex items-center gap-2">
+                  {togglingActive && (
+                    <Loader2 role="status" aria-label="Enregistrement" className="h-4 w-4 animate-spin text-[#D4AF37]" />
+                  )}
+                  <Switch
+                    checked={formData.is_active}
+                    disabled={togglingActive}
+                    aria-label="Session active"
+                    onCheckedChange={(checked) => changeSessionState(checked)}
+                  />
+                </div>
               </div>
             </div>
           </motion.div>
