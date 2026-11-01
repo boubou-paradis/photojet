@@ -19,6 +19,27 @@ type SelectionSource = 'camera' | 'gallery'
 // Nombre maximum de photos sélectionnables en une fois depuis la galerie
 const MAX_PHOTOS = 3
 
+type ClosedState = 'ended_album' | 'ended_no_album' | 'inactive'
+
+// Toute réponse inattendue, erreur ou délai dépassé donne null : /invite garde
+// alors son message « Session introuvable ».
+async function fetchClosedState(code: string): Promise<ClosedState | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 5000)
+  try {
+    const response = await fetch(`/api/invite/state/${encodeURIComponent(code)}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    const { state } = await response.json()
+    return state === 'ended_album' || state === 'ended_no_album' || state === 'inactive' ? state : null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function getUploadErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     const msg = err.message.toLowerCase()
@@ -65,6 +86,7 @@ export default function InvitePage() {
 
   const [uploadAttempt, setUploadAttempt] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [closedState, setClosedState] = useState<ClosedState | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -174,7 +196,11 @@ export default function InvitePage() {
 
         setSession(data)
       } catch {
-        setError('Session introuvable')
+        // Un invité ne peut pas lire une session inactive : le serveur dit
+        // seulement si l'événement est terminé ou pas actif.
+        const closed = await fetchClosedState(code)
+        if (closed) setClosedState(closed)
+        else setError('Session introuvable')
       } finally {
         setLoading(false)
       }
@@ -579,6 +605,68 @@ export default function InvitePage() {
           <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
           <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
         </div>
+      </div>
+    )
+  }
+
+  if (closedState) {
+    const ended = closedState !== 'inactive'
+    const hasAlbum = closedState === 'ended_album'
+    const Icon = ended ? CheckCircle : Clock
+    const goldButton = 'bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-[#0D0D0F] font-semibold'
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0F] p-4">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative w-full max-w-sm"
+        >
+          <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-3xl blur-xl" />
+          <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-2xl border border-[#D4AF37]/20 w-full overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D4AF37]/10 flex items-center justify-center border-2 border-[#D4AF37]/20">
+                <Icon className="h-10 w-10 text-[#D4AF37]" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                {ended ? 'Cet événement est terminé' : 'Cet événement n’est pas actif pour le moment'}
+              </h1>
+              <p className="text-gray-400 mb-6">
+                {ended ? (
+                  <>
+                    Merci d’y avoir participé&nbsp;!
+                    {hasAlbum && ' Retrouvez toutes les photos de l’événement dans l’album.'}
+                  </>
+                ) : (
+                  'Si l’événement n’a pas encore eu lieu, ce lien fonctionnera le jour J.'
+                )}
+              </p>
+              {hasAlbum ? (
+                <>
+                  <Button onClick={() => router.push(`/album/${code}`)} className={goldButton}>
+                    Voir l’album photo
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/')}
+                    className="block mx-auto mt-3 py-2 text-sm text-gray-400 underline underline-offset-4 hover:text-white"
+                  >
+                    Retour à l’accueil
+                  </button>
+                </>
+              ) : (
+                <Button onClick={() => router.push('/')} className={goldButton}>
+                  Retour à l’accueil
+                </Button>
+              )}
+            </div>
+            <div className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+          </div>
+        </motion.div>
       </div>
     )
   }
