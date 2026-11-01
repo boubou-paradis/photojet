@@ -85,7 +85,6 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    moderation_enabled: false,
     show_qr_on_screen: true,
     qr_size: 'medium' as QRSize,
     transition_type: 'fade' as TransitionType,
@@ -131,7 +130,6 @@ export default function SettingsPage() {
       setFormData({
         name: selectedSession.name,
         code: selectedSession.code,
-        moderation_enabled: false,
         show_qr_on_screen: selectedSession.show_qr_on_screen,
         qr_size: selectedSession.qr_size ?? 'medium',
         transition_type: selectedSession.transition_type,
@@ -274,7 +272,6 @@ export default function SettingsPage() {
         .update({
           name: formData.name,
           code: formData.code,
-          moderation_enabled: formData.moderation_enabled,
           show_qr_on_screen: formData.show_qr_on_screen,
           qr_size: formData.qr_size,
           transition_type: formData.transition_type,
