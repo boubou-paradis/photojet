@@ -25,6 +25,11 @@ export interface SessionVisibilityRow {
   quiz_lobby_visible: boolean | null
 }
 
+/** Garde uniquement les colonnes de la liste. */
+export function pickColumns(row: Record<string, unknown>, columns: readonly string[]): Record<string, unknown> {
+  return Object.fromEntries(columns.map((column) => [column, row[column]]))
+}
+
 /** Même condition que les règles de lecture publiques de `sessions`. */
 export function isPubliclyVisible(row: SessionVisibilityRow): boolean {
   return row.is_active === true || row.quiz_active === true || row.quiz_lobby_visible === true

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
 import { compressImage, validateImageFile, extensionForMimeType, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
-import { Session } from '@/types/database'
+import type { InviteSession } from '@/lib/public-api/columns'
 
 type TabType = 'photo' | 'message'
 type UploadStatus = 'idle' | 'success' | 'pending'
@@ -20,6 +20,20 @@ type SelectionSource = 'camera' | 'gallery'
 const MAX_PHOTOS = 3
 
 type ClosedState = 'ended_album' | 'ended_no_album' | 'inactive'
+
+interface InviteState {
+  session: InviteSession | null
+  quizLobby: boolean
+  affinityActive: boolean
+  buzzerActive: boolean
+  voteActive: boolean
+}
+
+// Une panne ou une session inconnue donne null.
+async function fetchInviteState(code: string): Promise<InviteState | null> {
+  const response = await fetch(`/api/public/invite/${encodeURIComponent(code)}`, { cache: 'no-store' }).catch(() => null)
+  return response?.ok ? ((await response.json()) as InviteState) : null
+}
 
 // Toute réponse inattendue, erreur ou délai dépassé donne null : /invite garde
 // alors son message « Session introuvable ».
@@ -55,7 +69,7 @@ export default function InvitePage() {
   const router = useRouter()
   const code = params.code as string
 
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<InviteSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('photo')
 
@@ -105,18 +119,15 @@ export default function InvitePage() {
   useEffect(() => {
     async function fetchSession() {
       try {
-        const { data: quizSession } = await supabase
-          .from('sessions')
-          .select('quiz_lobby_visible')
-          .eq('code', code)
-          .single()
+        const state = await fetchInviteState(code)
+        if (!state) throw new Error('session introuvable')
 
         // On ne détourne les invités vers le quiz QUE pendant le lobby
         // (phase d'inscription). Pas sur quiz_active : un flag resté bloqué
         // à true (onglet admin fermé en pleine partie, jamais « Arrêté »)
         // détournerait tous les invités photo vers le quiz pour le reste de
         // la soirée. Les retardataires rejoignent via le QR du lobby ou /join.
-        if (quizSession?.quiz_lobby_visible) {
+        if (state.quizLobby) {
           router.push(`/join/${code}`)
           return
         }
@@ -131,9 +142,7 @@ export default function InvitePage() {
         let skipMatching = photosOnly
         try { skipMatching ||= sessionStorage.getItem(`matching-photos-only-${code}`) === '1' } catch { /* idem */ }
         if (!skipMatching) {
-          const { data: matchingSession } = await supabase
-            .from('sessions').select('affinity_active').eq('code', code).single()
-          if (matchingSession?.affinity_active) {
+          if (state.affinityActive) {
             const status = await fetch(`/api/affinity/status?code=${encodeURIComponent(code)}`)
               .then((r) => r.json()).catch(() => null)
             if (status?.live && status.phase !== 'finished') {
@@ -152,9 +161,7 @@ export default function InvitePage() {
           skipBuzzer ||= sessionStorage.getItem(`buzzer-photos-only-${code}`) === '1'
         } catch { /* navigation privée */ }
         if (!skipBuzzer) {
-          const { data: buzzerSession } = await supabase
-            .from('sessions').select('buzzer_active').eq('code', code).single()
-          if (buzzerSession?.buzzer_active) {
+          if (state.buzzerActive) {
             const status = await fetch(`/api/buzzer/status?code=${encodeURIComponent(code)}`)
               .then((r) => r.json()).catch(() => null)
             if (status?.live) {
@@ -173,9 +180,7 @@ export default function InvitePage() {
           skipVote ||= sessionStorage.getItem(`vote-photos-only-${code}`) === '1'
         } catch { /* navigation privée */ }
         if (!skipVote) {
-          const { data: voteSession } = await supabase
-            .from('sessions').select('vote_active').eq('code', code).single()
-          if (voteSession?.vote_active) {
+          if (state.voteActive) {
             const status = await fetch(`/api/vote/status?code=${encodeURIComponent(code)}`)
               .then((r) => r.json()).catch(() => null)
             if (status?.live) {
@@ -185,16 +190,9 @@ export default function InvitePage() {
           }
         }
 
-        const { data, error } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('code', code)
-          .eq('is_active', true)
-          .single()
+        if (!state.session) throw new Error('session inactive')
 
-        if (error) throw error
-
-        setSession(data)
+        setSession(state.session)
       } catch {
         // Un invité ne peut pas lire une session inactive : le serveur dit
         // seulement si l'événement est terminé ou pas actif.
@@ -287,12 +285,7 @@ export default function InvitePage() {
     setUploadIndex(0)
 
     try {
-      const { data: freshSession } = await supabase
-        .from('sessions')
-        .select('moderation_enabled')
-        .eq('id', session.id)
-        .single()
-
+      const freshSession = (await fetchInviteState(code))?.session
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
@@ -396,12 +389,7 @@ export default function InvitePage() {
     setError(null)
 
     try {
-      const { data: freshSession } = await supabase
-        .from('sessions')
-        .select('moderation_enabled')
-        .eq('id', session.id)
-        .single()
-
+      const freshSession = (await fetchInviteState(code))?.session
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
 
@@ -466,11 +454,7 @@ export default function InvitePage() {
 
     try {
       // Vérifier la limite
-      const { data: freshSession } = await supabase
-        .from('sessions')
-        .select('print_enabled, print_mode, print_limit, print_count')
-        .eq('id', session.id)
-        .single()
+      const freshSession = (await fetchInviteState(code))?.session
 
       if (!freshSession?.print_enabled) {
         setError('L\'impression n\'est pas activée')
@@ -483,22 +467,13 @@ export default function InvitePage() {
       }
 
       // Upload la photo d'abord (même logique que handlePhotoUpload)
-      const { data: modSession } = await supabase
-        .from('sessions')
-        .select('moderation_enabled')
-        .eq('id', session.id)
-        .single()
-
-      const moderationEnabled = modSession?.moderation_enabled ?? false
-      const isApproved = !moderationEnabled
-
       const compressedFile = await compressImage(printFile, (progress) => {
         if (progress.progress !== undefined) {
           setCompressionProgress(Math.round(progress.progress * 100))
         }
       })
 
-      let photoData: { id: string } | null = null
+      let printed: { moderated: boolean } | null = null
       let lastPrintError: unknown = null
       for (let attempt = 0; attempt <= 2; attempt++) {
         if (attempt > 0) {
@@ -512,49 +487,34 @@ export default function InvitePage() {
             .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
           if (uploadError) throw uploadError
 
-          const { data: insertedPhoto, error: dbError } = await supabase
-            .from('photos')
-            .insert({
-              session_id: session.id,
-              storage_path: fileName,
-              status: isApproved ? 'approved' : 'pending',
-              uploader_name: uploaderName || null,
-              approved_at: isApproved ? new Date().toISOString() : null,
+          // Le serveur crée la photo et la demande, et décompte la limite.
+          const response = await fetch('/api/public/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: session.id,
+              storagePath: fileName,
+              guestName: uploaderName || null,
               source: 'invite',
-            })
-            .select()
-            .single()
-          if (dbError) throw dbError
+            }),
+          })
+          if (response.status === 409) {
+            setError('Limite d\'impressions atteinte')
+            return
+          }
+          if (!response.ok) throw new Error('Impression non enregistrée')
 
-          photoData = insertedPhoto
+          printed = (await response.json()) as { moderated: boolean }
           lastPrintError = null
           break
         } catch (err) {
           lastPrintError = err
         }
       }
-      if (lastPrintError || !photoData) throw lastPrintError ?? new Error('Upload échoué')
-
-      // Insérer la demande d'impression
-      const { error: printReqError } = await supabase
-        .from('print_requests')
-        .insert({
-          session_id: session.id,
-          photo_id: photoData.id,
-          guest_name: uploaderName || null,
-          status: 'pending',
-          printed_at: null,
-        })
-      if (printReqError) throw new Error('Demande d\'impression non envoyée : ' + printReqError.message)
-
-      // Incrémenter le compteur
-      await supabase
-        .from('sessions')
-        .update({ print_count: (freshSession.print_count ?? 0) + 1 })
-        .eq('id', session.id)
+      if (lastPrintError || !printed) throw lastPrintError ?? new Error('Upload échoué')
 
       setPrintRequested(true)
-      setPhotoUploadStatus(isApproved ? 'success' : 'pending')
+      setPhotoUploadStatus(printed.moderated ? 'pending' : 'success')
       previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
       previewUrlsRef.current = []
       setSelectedFiles([])
