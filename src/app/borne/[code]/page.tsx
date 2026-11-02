@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
-import { Session } from '@/types/database'
+import type { BorneSession } from '@/lib/public-api/columns'
 import { compressImage } from '@/lib/image-utils'
 import { useBorneFrame, type LoadedFrame } from '@/components/animabooth/useBorneFrame'
 import { composeFramedPhoto, fitStage, zoneOnScreen } from '@/lib/borne-templates/compose'
@@ -84,11 +84,17 @@ function RocketButton({ onClick, disabled, isLaunching }: { onClick: () => void;
   )
 }
 
+// Réglages publics de la borne. Une panne ou une borne fermée donne null.
+async function fetchBorneSession(borneCode: string): Promise<BorneSession | null> {
+  const response = await fetch(`/api/public/borne/${encodeURIComponent(borneCode)}`, { cache: 'no-store' }).catch(() => null)
+  return response?.ok ? ((await response.json()) as BorneSession) : null
+}
+
 export default function BornePage() {
   const params = useParams()
   const borneCode = params.code as string
 
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<BorneSession | null>(null)
   const [state, setState] = useState<BorneState>('loading')
   const [countdown, setCountdown] = useState(3)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
@@ -153,15 +159,9 @@ export default function BornePage() {
   useEffect(() => {
     async function fetchSession() {
       try {
-        const { data, error } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('borne_qr_code', borneCode)
-          .eq('is_active', true)
-          .eq('borne_enabled', true)
-          .single()
+        const data = await fetchBorneSession(borneCode)
 
-        if (error || !data) {
+        if (!data) {
           setError('Borne non trouvée ou désactivée')
           setState('error')
           return
@@ -179,62 +179,37 @@ export default function BornePage() {
     if (borneCode) {
       fetchSession()
     }
-  }, [borneCode, supabase])
+  }, [borneCode])
 
   // Register borne connection and send heartbeat
   useEffect(() => {
     if (!session || !deviceId) return
 
-    async function registerConnection() {
-      if (!session) return
+    const deviceType = /iPad|Macintosh/i.test(navigator.userAgent)
+      ? 'ipad'
+      : /Android/i.test(navigator.userAgent)
+      ? 'android_tablet'
+      : 'other'
 
-      const deviceType = /iPad|Macintosh/i.test(navigator.userAgent)
-        ? 'ipad'
-        : /Android/i.test(navigator.userAgent)
-        ? 'android_tablet'
-        : 'other'
+    const sendPresence = (online: boolean) =>
+      fetch(`/api/public/borne/${encodeURIComponent(borneCode)}/presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, deviceType, online }),
+        keepalive: !online,
+      }).catch((err) => console.error('Presence error:', err))
 
-      try {
-        await supabase.from('borne_connections').upsert(
-          {
-            session_id: session.id,
-            device_id: deviceId,
-            device_type: deviceType,
-            is_online: true,
-            last_seen: new Date().toISOString(),
-          },
-          { onConflict: 'session_id,device_id' }
-        )
-      } catch (err) {
-        console.error('Error registering connection:', err)
-      }
-    }
-
-    registerConnection()
+    sendPresence(true)
 
     // Heartbeat every 10 seconds
-    const heartbeat = setInterval(async () => {
-      try {
-        await supabase
-          .from('borne_connections')
-          .update({ is_online: true, last_seen: new Date().toISOString() })
-          .eq('session_id', session.id)
-          .eq('device_id', deviceId)
-      } catch (err) {
-        console.error('Heartbeat error:', err)
-      }
-    }, 10000)
+    const heartbeat = setInterval(() => sendPresence(true), 10000)
 
     // Mark offline on unmount
     return () => {
       clearInterval(heartbeat)
-      supabase
-        .from('borne_connections')
-        .update({ is_online: false })
-        .eq('session_id', session.id)
-        .eq('device_id', deviceId)
+      sendPresence(false)
     }
-  }, [session, deviceId, supabase])
+  }, [session?.id, deviceId, borneCode])
 
   // Initialize camera
   const startCamera = useCallback(async () => {
@@ -499,11 +474,7 @@ export default function BornePage() {
 
     try {
       // Re-fetch session to get latest moderation setting
-      const { data: freshSession } = await supabase
-        .from('sessions')
-        .select('moderation_enabled')
-        .eq('id', session.id)
-        .single()
+      const freshSession = await fetchBorneSession(borneCode)
 
       const moderationEnabled = freshSession?.moderation_enabled ?? false
       const isApproved = !moderationEnabled
@@ -572,19 +543,12 @@ export default function BornePage() {
     setState('compressing')
 
     try {
-      const { data: freshSession } = await supabase
-        .from('sessions')
-        .select('moderation_enabled, print_enabled, print_limit, print_count')
-        .eq('id', session.id)
-        .single()
+      const freshSession = await fetchBorneSession(borneCode)
 
       if (!freshSession?.print_enabled) { setState('preview'); return }
       if (freshSession.print_limit !== null && (freshSession.print_count ?? 0) >= freshSession.print_limit) {
         setState('preview'); return
       }
-
-      const moderationEnabled = freshSession?.moderation_enabled ?? false
-      const isApproved = !moderationEnabled
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })
       const compressedFile = await compressImage(file, (progress) => {
@@ -598,34 +562,20 @@ export default function BornePage() {
         .upload(fileName, compressedFile, { contentType: 'image/jpeg' })
       if (uploadError) throw uploadError
 
-      const { data: photoData, error: dbError } = await supabase
-        .from('photos')
-        .insert({
-          session_id: session.id,
-          storage_path: fileName,
-          status: isApproved ? 'approved' : 'pending',
-          source: 'borne',
-          approved_at: isApproved ? new Date().toISOString() : null,
-        })
-        .select()
-        .single()
-      if (dbError) throw dbError
-
-      // Créer la demande d'impression → récupérée par le dashboard admin via realtime
-      await supabase.from('print_requests').insert({
-        session_id: session.id,
-        photo_id: photoData.id,
-        guest_name: null,
-        status: 'pending',
-        printed_at: null,
+      // Le serveur crée la photo et la demande (récupérée par le dashboard admin via
+      // realtime) et décompte la limite.
+      const response = await fetch('/api/public/print', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, storagePath: fileName, guestName: null, source: 'borne' }),
       })
+      if (!response.ok) throw new Error('Impression non enregistrée')
+      const printed = (await response.json()) as { moderated: boolean; printCount: number }
 
-      const newCount = (freshSession.print_count ?? 0) + 1
-      await supabase.from('sessions').update({ print_count: newCount }).eq('id', session.id)
-      setSession({ ...session, print_count: newCount })
+      setSession({ ...session, print_count: printed.printCount })
 
       setLastActionWasPrint(true)
-      setLastUploadModerated(moderationEnabled)
+      setLastUploadModerated(printed.moderated)
       setState('success')
     } catch {
       setState('preview')
@@ -636,7 +586,7 @@ export default function BornePage() {
   }
 
   // Handle PIN keypress
-  const handleKeyPress = (key: number | 'delete' | null) => {
+  const handleKeyPress = async (key: number | 'delete' | null) => {
     if (key === 'delete') {
       setEnteredCode(prev => prev.slice(0, -1))
       setLockError(false)
@@ -646,7 +596,14 @@ export default function BornePage() {
 
       // Check if code is complete
       if (newCode.length === 4) {
-        if (newCode === session?.borne_lock_code) {
+        const response = await fetch(`/api/public/borne/${encodeURIComponent(borneCode)}/unlock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: newCode }),
+        }).catch(() => null)
+        const result = response?.ok ? ((await response.json()) as { unlocked: boolean }) : null
+
+        if (result?.unlocked) {
           // Correct code - redirect to dashboard
           window.location.href = '/admin/dashboard'
         } else {
