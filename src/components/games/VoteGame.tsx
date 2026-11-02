@@ -23,6 +23,7 @@ import type { VoteLiveStatus } from '@/hooks/useVoteStatus'
 import { closingRemainingMs } from '@/lib/vote/machine'
 import { computeRanking, participationPercent, revealPlan, type RankedCandidate, type Ranking } from '@/lib/vote/results'
 import type { VoteActiveState, VoteCandidate, VoteEvent } from '@/lib/vote/types'
+import { createPublicClient } from '@/lib/supabase'
 import { getInviteUrl } from '@/lib/utils'
 import type { LiveSession } from '@/lib/public-api/columns'
 
@@ -52,7 +53,7 @@ const BALLOTS = Array.from({ length: 14 }, (_, i) => ({
 }))
 
 export default function VoteGame({ session, status }: VoteGameProps) {
-  const channel = useVoteChannel(status.sessionId, 'screen')
+  const channel = useVoteChannel(status.sessionId, 'screen', undefined, createPublicClient)
   const { refresh } = channel
   const state = channel.state?.active ? channel.state : null
   const [isFullscreen, setIsFullscreen] = useState(false)

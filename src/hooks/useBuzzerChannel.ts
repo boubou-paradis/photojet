@@ -20,6 +20,7 @@ import { isNewerScores, type ScoresState } from '@/lib/buzzer/scores'
 import type { BuzzerState } from '@/lib/buzzer/types'
 import { clockOffset } from '@/lib/affinity/clock'
 import { createClient } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const SAFETY_REFRESH_MS = 30_000
 
@@ -40,7 +41,11 @@ export interface BuzzerChannel {
   applyScores: (next: ScoresState) => void
 }
 
-export function useBuzzerChannel(sessionId: string | null | undefined, options: { withPrep?: boolean; withScores?: boolean } = {}): BuzzerChannel {
+// Sur /live, ce canal doit partager le client des canaux permanents de la page : seul sur
+// sa connexion, son départ la coupe, et le jeu suivant ne peut plus s'inscrire (connect()
+// ne fait rien pendant une coupure). L'écran ne suivrait alors que la relecture de 30 s.
+export function useBuzzerChannel(sessionId: string | null | undefined, options: { withPrep?: boolean; withScores?: boolean; getClient?: () => SupabaseClient } = {}): BuzzerChannel {
+  const getClient = options.getClient ?? createClient
   const withPrep = options.withPrep === true
   const withScores = options.withScores === true
   const [state, setState] = useState<BuzzerState | null>(null)
@@ -102,7 +107,7 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
 
   useEffect(() => {
     if (!sessionId) return
-    const supabase = createClient()
+    const supabase = getClient()
     let channel = supabase
       .channel(buzzerTopic(sessionId), { config: { private: true } })
       .on('broadcast', { event: 'state' }, ({ payload }) => apply(payload as BuzzerState))
@@ -132,7 +137,7 @@ export function useBuzzerChannel(sessionId: string | null | undefined, options: 
       window.removeEventListener('online', onOnline)
       void supabase.removeChannel(channel)
     }
-  }, [sessionId, withPrep, withScores, apply, applyPrep, applyScores, refresh])
+  }, [sessionId, withPrep, withScores, apply, applyPrep, applyScores, refresh, getClient])
 
   return {
     state, clockOffsetMs, connected, refresh, apply,

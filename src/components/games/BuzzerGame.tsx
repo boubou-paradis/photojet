@@ -29,6 +29,7 @@ import { windowEndsAt } from '@/lib/buzzer/machine'
 import type { PrepActiveState } from '@/lib/buzzer/prep-flow'
 import { hasAnyPoints, type ScoresActiveState } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState } from '@/lib/buzzer/types'
+import { createPublicClient } from '@/lib/supabase'
 import { getInviteUrl } from '@/lib/utils'
 import type { LiveSession } from '@/lib/public-api/columns'
 
@@ -53,7 +54,7 @@ const CONFETTI = Array.from({ length: 46 }, (_, i) => ({
 }))
 
 export default function BuzzerGame({ session, status }: BuzzerGameProps) {
-  const channel = useBuzzerChannel(status.sessionId, { withPrep: true, withScores: true })
+  const channel = useBuzzerChannel(status.sessionId, { withPrep: true, withScores: true, getClient: createPublicClient })
   const { refresh } = channel
   const state = channel.state?.active ? channel.state : null
   const prep = state && channel.prep?.active ? channel.prep : null

@@ -17,6 +17,7 @@ import { isNewer } from '@/lib/vote/machine'
 import type { VoteState } from '@/lib/vote/types'
 import { clockOffset } from '@/lib/affinity/clock'
 import { createClient } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const SAFETY_REFRESH_MS = 30_000
 // Rattrapage après l'abonnement : le canal privé ne reçoit qu'au bout d'environ 1 s.
@@ -43,11 +44,16 @@ async function loadScreenState(sessionId: string): Promise<VoteState | null> {
 /**
  * @param load lecture complète pour les téléphones (/api/vote/me, qui donne
  * aussi MON bulletin) ; par défaut, lecture de l'écran géant.
+ * @param getClient client du canal ; par défaut, celui de la page. Voir la note de /live ci-dessous.
  */
+// Sur /live, ce canal doit partager le client des canaux permanents de la page : seul sur
+// sa connexion, son départ la coupe, et le jeu suivant ne peut plus s'inscrire (connect()
+// ne fait rien pendant une coupure). L'écran ne suivrait alors que la relecture de 30 s.
 export function useVoteChannel(
   sessionId: string | null | undefined,
   audience: VoteAudience,
   load?: () => Promise<VoteState | null>,
+  getClient: () => SupabaseClient = createClient,
 ): VoteChannel {
   const [state, setState] = useState<VoteState | null>(null)
   const [clockOffsetMs, setClockOffsetMs] = useState(0)
@@ -85,7 +91,7 @@ export function useVoteChannel(
 
   useEffect(() => {
     if (!sessionId) return
-    const supabase = createClient()
+    const supabase = getClient()
     const topic = audience === 'phone' ? voteTopic(sessionId) : voteLiveTopic(sessionId)
     let late: ReturnType<typeof setTimeout> | undefined
     const channel = supabase
@@ -118,7 +124,7 @@ export function useVoteChannel(
       window.removeEventListener('online', onOnline)
       void supabase.removeChannel(channel)
     }
-  }, [sessionId, audience, apply, refresh])
+  }, [sessionId, audience, apply, refresh, getClient])
 
   return { state, clockOffsetMs, connected, refresh, apply }
 }
