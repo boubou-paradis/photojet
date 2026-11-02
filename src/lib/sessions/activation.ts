@@ -34,6 +34,43 @@ export type ActivationResult =
   | { status: 'already_active' }
   | { status: 'deactivated' }
   | { status: 'conflict'; others: ActiveSessionInfo[] }
+  | { status: 'denied' }
+
+/** Code renvoyé par la route : les écrans ne repassent pas en écriture directe. */
+export const ACTIVATION_DENIED_CODE = 'no_access'
+export const ACTIVATION_DENIED_MESSAGE = 'Votre accès a expiré. Abonnez-vous pour réactiver cette session.'
+
+export interface ActivationAccessRow {
+  status: string
+  current_period_end: string | null
+  trial_end: string | null
+  pass_validity_until: string | null
+}
+
+// Mêmes règles que isSubscriptionValid (middleware), ligne par ligne : une seule
+// ligne valide suffit, comme dans le cron check-expiring.
+function isRowValid(row: ActivationAccessRow, now: Date, weekendBlocked: boolean): boolean {
+  if (row.status === 'weekend_pass') {
+    return !!row.pass_validity_until && now < new Date(row.pass_validity_until)
+  }
+  if (row.status === 'trialing') {
+    return !!row.trial_end && !weekendBlocked && now < new Date(row.trial_end)
+  }
+  if (row.status === 'active') {
+    return !row.current_period_end || now < new Date(row.current_period_end)
+  }
+  return false
+}
+
+export function hasActivationAccess(
+  role: string | null | undefined,
+  rows: ActivationAccessRow[],
+  now: Date,
+  weekendBlocked: boolean
+): boolean {
+  if (role === 'owner') return true
+  return rows.some((row) => isRowValid(row, now, weekendBlocked))
+}
 
 export function hasOpenGame(row: Record<string, unknown>): boolean {
   return GAME_ACTIVITY_COLUMNS.some((column) => row[column] === true)

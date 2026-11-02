@@ -971,7 +971,7 @@ fetch(${JSON.stringify(imageUrl)})
       let isActive = true
       try {
         const result = await requestSessionState({ sessionId: data.id, active: true })
-        isActive = result.status !== 'conflict'
+        isActive = result.status !== 'conflict' && result.status !== 'denied'
       } catch (err) {
         // Une panne ne bloque pas : la session est activée comme avant.
         console.error('Activation via la route impossible, écriture directe :', err)

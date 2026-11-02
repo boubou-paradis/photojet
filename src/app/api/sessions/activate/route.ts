@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { activateUserSession } from '@/lib/sessions/server'
+import { ACTIVATION_DENIED_CODE, ACTIVATION_DENIED_MESSAGE } from '@/lib/sessions/activation'
+import { activateUserSession, mayActivateSession } from '@/lib/sessions/server'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -42,6 +43,10 @@ export async function POST(request: NextRequest) {
       if (error) throw new Error(error.message)
       if (!data || data.length === 0) return NextResponse.json({ error: 'Session introuvable' }, { status: 404 })
       return NextResponse.json({ status: 'deactivated' })
+    }
+
+    if (!(await mayActivateSession(admin, user.id))) {
+      return NextResponse.json({ error: ACTIVATION_DENIED_MESSAGE, code: ACTIVATION_DENIED_CODE }, { status: 403 })
     }
 
     const result = await activateUserSession(admin, user.id, sessionId, confirmedIds ?? null)

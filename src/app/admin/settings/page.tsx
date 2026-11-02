@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
 import SessionSwitchDialog from '@/components/SessionSwitchDialog'
-import type { ActiveSessionInfo } from '@/lib/sessions/activation'
+import { ACTIVATION_DENIED_MESSAGE, type ActiveSessionInfo } from '@/lib/sessions/activation'
 import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
 import { compressImage, extensionForMimeType, generateSessionCode, MAX_FILE_SIZE } from '@/lib/image-utils'
@@ -288,6 +288,10 @@ export default function SettingsPage() {
 
       if (result?.status === 'conflict') {
         setActiveConflict(result.others)
+        return
+      }
+      if (result?.status === 'denied') {
+        toast.error(ACTIVATION_DENIED_MESSAGE)
         return
       }
       setActiveConflict(null)

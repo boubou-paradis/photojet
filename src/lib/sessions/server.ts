@@ -2,10 +2,12 @@
 // Code propriétaire - Reproduction interdite.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 import {
   BORNE_ONLINE_MINUTES,
   GAME_ACTIVITY_COLUMNS,
   RECENT_PHOTO_HOURS,
+  hasActivationAccess,
   hasOpenGame,
   isExemptUser,
   type ActivationResult,
@@ -18,6 +20,26 @@ type AdminClient = SupabaseClient<any, any, any>
 /** Le compte exempté est lu côté serveur uniquement. */
 export function isSessionRuleExempt(userId: string): boolean {
   return isExemptUser(userId, process.env.SESSION_RULE_EXEMPT_USER_IDS)
+}
+
+/**
+ * Un compte sans accès valide ne réactive pas de session. Une panne de lecture ne
+ * bloque jamais l'abonné : l'activation passe et l'erreur est journalisée.
+ */
+export async function mayActivateSession(admin: AdminClient, userId: string): Promise<boolean> {
+  try {
+    const [profile, subscriptions] = await Promise.all([
+      admin.from('user_profiles').select('role').eq('id', userId).maybeSingle(),
+      admin.from('subscriptions').select('status, current_period_end, trial_end, pass_validity_until').eq('user_id', userId),
+    ])
+    if (profile.error || subscriptions.error) {
+      throw new Error(profile.error?.message ?? subscriptions.error?.message)
+    }
+    return hasActivationAccess(profile.data?.role, subscriptions.data ?? [], new Date(), isWeekendPassAvailable())
+  } catch (err) {
+    console.error('[Sessions] Lecture de l\'accès impossible, activation autorisée:', err)
+    return true
+  }
 }
 
 async function forceActivate(admin: AdminClient, sessionId: string, userId: string): Promise<void> {
