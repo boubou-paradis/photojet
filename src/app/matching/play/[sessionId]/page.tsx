@@ -17,7 +17,7 @@ import { useAffinityCountdown } from '@/hooks/useAffinityCountdown'
 import { clockOffset } from '@/lib/affinity/clock'
 import { findStoredPlayerBySession, forgetPlayer, type StoredAffinityPlayer } from '@/lib/affinity/player-storage'
 import type { AffinityMatch, AffinityPhase, AffinityQuestion, AffinityRevealData } from '@/lib/affinity/types'
-import { createClient } from '@/lib/supabase'
+import { createPublicClient } from '@/lib/supabase'
 
 interface MeState {
   nickname: string
@@ -40,8 +40,6 @@ interface PublicState {
   affinity_reveal: AffinityRevealData | null
 }
 
-const PUBLIC_COLUMNS = 'affinity_active, affinity_phase, affinity_questions, affinity_current_question, affinity_deadline, affinity_reveal'
-
 type StoredEntry = { code: string; player: StoredAffinityPlayer }
 type Answer = { questionId: string; index: number | null; saving: boolean; saved: boolean; error: string | null }
 
@@ -50,7 +48,7 @@ const noopSubscribe = () => () => {}
 export default function MatchingPlayPage() {
   const params = useParams()
   const sessionId = String(params.sessionId ?? '')
-  const supabase = createClient()
+  const supabase = createPublicClient()
 
   const [me, setMe] = useState<MeState | null>(null)
   const [over, setOver] = useState(false)
@@ -115,8 +113,8 @@ export default function MatchingPlayPage() {
   useEffect(() => {
     if (!stored) return
     const load = async () => {
-      const { data } = await supabase.from('sessions').select(PUBLIC_COLUMNS).eq('id', sessionId).single()
-      if (data) applyPublic(data as PublicState, stored)
+      const res = await fetch(`/api/public/matching/${sessionId}`).catch(() => null)
+      if (res?.ok) applyPublic((await res.json()) as PublicState, stored)
       else void refreshMe(stored)
     }
     let timer: ReturnType<typeof setTimeout> | undefined
