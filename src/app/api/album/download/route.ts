@@ -13,7 +13,7 @@ const DOWNLOAD_CONCURRENCY = 8
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionCode, photoIds } = await request.json()
+    const { sessionCode, photoIds, password } = await request.json()
 
     if (!sessionCode) {
       return NextResponse.json({ error: 'Session code required' }, { status: 400 })
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Get session first
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select('id, name, album_enabled, user_id')
+      .select('id, name, album_enabled, album_password, user_id')
       .eq('code', sessionCode)
       .single()
 
@@ -38,6 +38,10 @@ export async function POST(request: NextRequest) {
 
     if (!session.album_enabled) {
       return NextResponse.json({ error: 'Album is disabled' }, { status: 403 })
+    }
+
+    if (session.album_password && password !== session.album_password) {
+      return NextResponse.json({ error: 'Mot de passe incorrect.' }, { status: 403 })
     }
 
     if (await isTrialAccount(supabase, session.user_id)) {

@@ -27,8 +27,9 @@ export async function GET(
     return NextResponse.json({ error: 'Session not found' }, { status: 404 })
   }
 
-  const { user_id: userId, ...album } = session
+  // Le mot de passe ne quitte jamais le serveur : la vérification se fait dans /api/album/photos
+  const { user_id: userId, album_password: albumPassword, ...album } = session
   const watermark = await isTrialAccount(supabase, userId)
 
-  return NextResponse.json({ ...album, watermark })
+  return NextResponse.json({ ...album, has_password: Boolean(albumPassword), watermark })
 }

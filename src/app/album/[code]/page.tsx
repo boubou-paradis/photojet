@@ -19,13 +19,21 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
-import { Session, Photo } from '@/types/database'
+import { Session } from '@/types/database'
 import {
   SUBSCRIBE_HREF,
   TRIAL_DOWNLOAD_MESSAGE,
   watermarkedPhotoUrl,
   type WatermarkWidth,
 } from '@/lib/watermark/constants'
+
+type AlbumSession = Pick<Session, 'id' | 'code' | 'name' | 'album_enabled' | 'created_at'> & {
+  has_password: boolean
+  watermark: boolean
+}
+
+// storage_path est null pour un compte d'essai : seule l'image filigranée est servie
+type AlbumPhoto = { id: string; storage_path: string | null }
 
 // Composant image avec gestion du chargement et des erreurs
 function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
@@ -104,8 +112,8 @@ export default function AlbumPage() {
   const params = useParams()
   const code = params.code as string
 
-  const [session, setSession] = useState<Session | null>(null)
-  const [photos, setPhotos] = useState<Photo[]>([])
+  const [session, setSession] = useState<AlbumSession | null>(null)
+  const [photos, setPhotos] = useState<AlbumPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -138,9 +146,9 @@ export default function AlbumPage() {
         setTrialWatermark(sessionData.watermark === true)
 
         // If no password required, auto-unlock
-        if (!sessionData.album_password) {
+        if (!sessionData.has_password) {
           setIsUnlocked(true)
-          await fetchPhotos(sessionData.id)
+          await fetchPhotos()
         }
       } catch {
         setError('Album introuvable')
@@ -154,29 +162,25 @@ export default function AlbumPage() {
     }
   }, [code])
 
-  async function fetchPhotos(sessionId: string) {
-    const { data: photosData, error: photosError } = await supabase
-      .from('photos')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('status', 'approved')
-      .order('uploaded_at', { ascending: false })
+  async function fetchPhotos(albumPassword?: string): Promise<boolean> {
+    const response = await fetch(`/api/album/photos/${code}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: albumPassword }),
+    })
+    if (!response.ok) return false
 
-    if (!photosError) {
-      setPhotos(photosData || [])
-    }
+    const body = (await response.json()) as { photos: AlbumPhoto[] }
+    setPhotos(body.photos)
+    return true
   }
 
-  function checkPassword() {
+  async function checkPassword() {
     if (!session) return
 
-    if (password === session.album_password) {
-      setIsUnlocked(true)
-      setPasswordError(false)
-      fetchPhotos(session.id)
-    } else {
-      setPasswordError(true)
-    }
+    const unlocked = await fetchPhotos(password).catch(() => false)
+    setIsUnlocked(unlocked)
+    setPasswordError(!unlocked)
   }
 
   function getPhotoUrl(storagePath: string) {
@@ -184,8 +188,10 @@ export default function AlbumPage() {
     return data.publicUrl
   }
 
-  function getDisplayUrl(photo: Photo, largeur?: WatermarkWidth) {
-    return trialWatermark ? watermarkedPhotoUrl(photo.id, largeur) : getPhotoUrl(photo.storage_path)
+  function getDisplayUrl(photo: AlbumPhoto, largeur?: WatermarkWidth) {
+    return trialWatermark || !photo.storage_path
+      ? watermarkedPhotoUrl(photo.id, largeur)
+      : getPhotoUrl(photo.storage_path)
   }
 
   function toggleSelect(photoId: string) {
@@ -204,7 +210,8 @@ export default function AlbumPage() {
     }
   }
 
-  async function downloadSingle(photo: Photo) {
+  async function downloadSingle(photo: AlbumPhoto) {
+    if (!photo.storage_path) return
     try {
       const url = getPhotoUrl(photo.storage_path)
       const response = await fetch(url)
@@ -229,6 +236,7 @@ export default function AlbumPage() {
         body: JSON.stringify({
           sessionCode: code,
           photoIds: photoIds,
+          password,
         }),
       })
 
@@ -331,7 +339,7 @@ export default function AlbumPage() {
   }
 
   // Password protection screen
-  if (session.album_password && !isUnlocked) {
+  if (session.has_password && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0D0D0F] p-4">
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
