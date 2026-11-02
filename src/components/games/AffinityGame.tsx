@@ -17,10 +17,10 @@ import QuestionScreen from '@/components/affinity/live/QuestionScreen'
 import RevealScreen from '@/components/affinity/live/RevealScreen'
 import type { AffinityLiveStatus } from '@/hooks/useAffinityStatus'
 import { getInviteUrl } from '@/lib/utils'
-import type { Session } from '@/types/database'
+import type { LiveSession } from '@/lib/public-api/columns'
 
 interface AffinityGameProps {
-  session: Session
+  session: LiveSession
   status: AffinityLiveStatus
 }
 

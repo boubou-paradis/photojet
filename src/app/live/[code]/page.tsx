@@ -13,8 +13,9 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users, Megaphone } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
-import { Session, Photo, Message, LogoPosition } from '@/types/database'
+import { createPublicClient } from '@/lib/supabase'
+import type { LiveMessage, LivePhoto, LiveSession } from '@/lib/public-api/columns'
+import { LogoPosition } from '@/types/database'
 import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
@@ -33,8 +34,8 @@ import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
 // Types for slideshow items
 type SlideshowItem =
-  | { type: 'photo'; data: Photo }
-  | { type: 'message'; data: Message }
+  | { type: 'photo'; data: LivePhoto }
+  | { type: 'message'; data: LiveMessage }
   | { type: 'promo'; data: { path: string; index: number } }
 
 // Rocket Animation Component
@@ -186,7 +187,13 @@ function NewPhotoNotification({ show }: { show: boolean }) {
 }
 
 // Message display component - SMS bubble style
-function MessageDisplay({ message }: { message: Message }) {
+interface LiveState {
+  session: LiveSession
+  photos: LivePhoto[]
+  messages: LiveMessage[]
+}
+
+function MessageDisplay({ message }: { message: LiveMessage }) {
   const content = message.content
   const length = content.length
 
@@ -323,9 +330,9 @@ export default function LivePage() {
   const code = params.code as string
   const trialWatermark = useTrialWatermark()
 
-  const [session, setSession] = useState<Session | null>(null)
-  const [photos, setPhotos] = useState<Photo[]>([])
-  const [messages, setMessages] = useState<Message[]>([])
+  const [session, setSession] = useState<LiveSession | null>(null)
+  const [photos, setPhotos] = useState<LivePhoto[]>([])
+  const [messages, setMessages] = useState<LiveMessage[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -335,7 +342,10 @@ export default function LivePage() {
   const previousPhotosCount = useRef(0)
   const hideUITimeout = useRef<NodeJS.Timeout | null>(null)
   const messageIndex = useRef(0)
-  const supabase = createClient()
+  const supabase = createPublicClient()
+  const refreshOrder = useRef(0)
+  const refreshApplied = useRef(0)
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Lineup game state (updated via broadcast from admin)
   const [lineupState, setLineupState] = useState<{
@@ -478,7 +488,6 @@ export default function LivePage() {
     const messagesEnabled = session?.messages_enabled ?? true
     const frequency = session?.messages_frequency || 4
     const slideshowMode = session?.slideshow_mode || 'all'
-    const approvedMessages = messages.filter(m => m.status === 'approved')
 
     // Affiches promotionnelles : actives uniquement si activées ET au moins 1 affiche
     // disponible. L'ordre du tableau = ordre de défilement cyclique.
@@ -497,33 +506,33 @@ export default function LivePage() {
     // Aucune photo : les affiches défilent en boucle (en alternance avec les
     // messages s'il y en a), sinon messages seuls, sinon écran d'attente.
     if (filteredPhotos.length === 0) {
-      const hasMessages = messagesEnabled && approvedMessages.length > 0
+      const hasMessages = messagesEnabled && messages.length > 0
       if (promoActive) {
         const promoItems: SlideshowItem[] = promoAffiches.map((path, index) => ({ type: 'promo' as const, data: { path, index } }))
         if (!hasMessages) return promoItems
         const items: SlideshowItem[] = []
-        const count = Math.max(promoItems.length, approvedMessages.length)
+        const count = Math.max(promoItems.length, messages.length)
         for (let i = 0; i < count; i++) {
-          items.push({ type: 'message', data: approvedMessages[i % approvedMessages.length] })
+          items.push({ type: 'message', data: messages[i % messages.length] })
           items.push(promoItems[i % promoItems.length])
         }
         return items
       }
       if (hasMessages) {
-        return approvedMessages.map(msg => ({ type: 'message' as const, data: msg }))
+        return messages.map(msg => ({ type: 'message' as const, data: msg }))
       }
       return []
     }
 
     // If messages disabled or no messages AND no promo → show only photos (comportement historique)
-    if ((!messagesEnabled || approvedMessages.length === 0) && !promoActive) {
+    if ((!messagesEnabled || messages.length === 0) && !promoActive) {
       return filteredPhotos.map(photo => ({ type: 'photo' as const, data: photo }))
     }
 
     // Interleave photos with messages and/or promo affiches
     const items: SlideshowItem[] = []
     let msgIdx = 0
-    const hasMessages = messagesEnabled && approvedMessages.length > 0
+    const hasMessages = messagesEnabled && messages.length > 0
     // Chaque tour reprend la rotation là où le précédent l'a laissée
     const promoSlotsPerTour = Math.max(1, Math.floor(filteredPhotos.length / promoFrequency))
     const firstPromoSlot = promoTour * promoSlotsPerTour
@@ -539,7 +548,7 @@ export default function LivePage() {
 
       // Insert a message after every 'frequency' photos
       if (hasMessages && (idx + 1) % frequency === 0) {
-        items.push({ type: 'message', data: approvedMessages[msgIdx % approvedMessages.length] })
+        items.push({ type: 'message', data: messages[msgIdx % messages.length] })
         msgIdx++
       }
 
@@ -551,7 +560,7 @@ export default function LivePage() {
 
     // If we have messages but none were inserted (less photos than frequency), add one at the end
     if (hasMessages && msgIdx === 0) {
-      items.push({ type: 'message', data: approvedMessages[0] })
+      items.push({ type: 'message', data: messages[0] })
     }
 
     // Moins de photos que la fréquence : une affiche en fin de tour
@@ -614,76 +623,58 @@ export default function LivePage() {
     }
   }, [isFullscreen, resetUITimer])
 
-  const fetchSession = useCallback(async () => {
+  // Session, photos et messages arrivent ensemble par le serveur. Une réponse en
+  // retard sur une réponse déjà affichée est ignorée. Une erreur garde l'écran tel
+  // quel : la relecture suivante rattrape.
+  const refresh = useCallback(async () => {
+    const order = ++refreshOrder.current
     try {
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('code', code)
-        .single()
+      const response = await fetch(`/api/public/live/${encodeURIComponent(code)}`, { cache: 'no-store' })
+      if (!response.ok) throw new Error(`Lecture impossible (${response.status})`)
+      const state = (await response.json()) as LiveState
+      if (order < refreshApplied.current) return
+      refreshApplied.current = order
 
-      if (error) throw error
-      setSession(data)
-    } catch (err) {
-      console.error('Error fetching session:', err)
-    }
-  }, [code, supabase])
-
-  const fetchPhotos = useCallback(async () => {
-    if (!session) return
-    try {
-      const { data, error } = await supabase
-        .from('photos')
-        .select('*')
-        .eq('session_id', session.id)
-        .eq('status', 'approved')
-        .order('approved_at', { ascending: true })
-
-      if (error) throw error
-
-      const newPhotos = data || []
+      setSession((prev) => (JSON.stringify(prev) === JSON.stringify(state.session) ? prev : state.session))
 
       // Show notification if new photo arrived
-      if (previousPhotosCount.current > 0 && newPhotos.length > previousPhotosCount.current) {
+      if (previousPhotosCount.current > 0 && state.photos.length > previousPhotosCount.current) {
         setShowNewPhotoNotification(true)
         setTimeout(() => setShowNewPhotoNotification(false), 3000)
       }
-      previousPhotosCount.current = newPhotos.length
+      previousPhotosCount.current = state.photos.length
 
-      setPhotos(newPhotos)
-    } catch (err) {
-      console.error('Error fetching photos:', err)
-    } finally {
+      setPhotos(state.photos)
+      setMessages(state.messages)
       setLoading(false)
-    }
-  }, [session, supabase])
-
-  const fetchMessages = useCallback(async () => {
-    if (!session) return
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('session_id', session.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      setMessages(data || [])
     } catch (err) {
-      console.error('Error fetching messages:', err)
+      console.error('Error refreshing live screen:', err)
     }
-  }, [session, supabase])
+  }, [code])
 
+  // Regroupe les signaux temps réel rapprochés en une seule relecture.
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimer.current) return
+    refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null
+      refresh()
+    }, 150)
+  }, [refresh])
+
+  // Relecture toutes les 5 secondes : filet si le temps réel décroche, et seule
+  // source pour les photos, dont les événements n'arrivent pas aux écrans anonymes.
   useEffect(() => {
-    fetchSession()
-  }, [fetchSession])
+    refresh()
+    const pollInterval = setInterval(refresh, 5000)
+    return () => {
+      clearInterval(pollInterval)
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
+      refreshTimer.current = null
+    }
+  }, [refresh])
 
   useEffect(() => {
     if (session) {
-      fetchPhotos()
-      fetchMessages()
-
       // Subscribe to photos changes
       const photosChannel = supabase
         .channel(`live-photos-${session.id}`)
@@ -695,9 +686,7 @@ export default function LivePage() {
             table: 'photos',
             filter: `session_id=eq.${session.id}`,
           },
-          () => {
-            fetchPhotos()
-          }
+          scheduleRefresh
         )
         .subscribe()
 
@@ -712,9 +701,7 @@ export default function LivePage() {
             table: 'messages',
             filter: `session_id=eq.${session.id}`,
           },
-          () => {
-            fetchMessages()
-          }
+          scheduleRefresh
         )
         .subscribe()
 
@@ -729,50 +716,17 @@ export default function LivePage() {
             table: 'sessions',
             filter: `id=eq.${session.id}`,
           },
-          async () => {
-            // Re-fetch the full session to get updated values
-            const { data } = await supabase
-              .from('sessions')
-              .select('*')
-              .eq('id', session.id)
-              .single()
-            if (data) {
-              setSession(data)
-            }
-          }
+          scheduleRefresh
         )
         .subscribe()
-
-      // Polling fallback: check session, photos, and messages every 5 seconds
-      const pollInterval = setInterval(async () => {
-        // Fetch session
-        const { data } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('id', session.id)
-          .single()
-        if (data) {
-          setSession((prev) => {
-            // Only update if something changed
-            if (JSON.stringify(prev) !== JSON.stringify(data)) {
-              return data
-            }
-            return prev
-          })
-        }
-        // Also poll for new photos and messages (fallback if realtime doesn't work)
-        fetchPhotos()
-        fetchMessages()
-      }, 5000)
 
       return () => {
         supabase.removeChannel(photosChannel)
         supabase.removeChannel(messagesChannel)
         supabase.removeChannel(sessionChannel)
-        clearInterval(pollInterval)
       }
     }
-  }, [session?.id, fetchPhotos, fetchMessages, supabase])
+  }, [session?.id, scheduleRefresh, supabase])
 
   // Subscribe to Lineup game broadcast channel for real-time sync
   useEffect(() => {
@@ -1072,13 +1026,7 @@ export default function LivePage() {
   // Check for mystery_photos (new multi-photo system) OR mystery_photo_url (legacy)
   if (session.mystery_photo_active && (session.mystery_photos || session.mystery_photo_url)) {
     return (
-      <MysteryPhotoGame
-        session={session}
-        onExit={() => {
-          // Re-fetch session to get updated state
-          fetchSession()
-        }}
-      />
+      <MysteryPhotoGame session={session} onExit={refresh} />
     )
   }
 

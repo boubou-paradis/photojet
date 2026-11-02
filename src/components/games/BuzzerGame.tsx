@@ -30,10 +30,10 @@ import type { PrepActiveState } from '@/lib/buzzer/prep-flow'
 import { hasAnyPoints, type ScoresActiveState } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState } from '@/lib/buzzer/types'
 import { getInviteUrl } from '@/lib/utils'
-import type { Session } from '@/types/database'
+import type { LiveSession } from '@/lib/public-api/columns'
 
 interface BuzzerGameProps {
-  session: Session
+  session: LiveSession
   status: BuzzerLiveStatus
 }
 
@@ -141,7 +141,7 @@ function Top({ round, right }: { round?: string; right: string }) {
   )
 }
 
-function Scene({ session, status, state, prep, scores, serverNow }: { session: Session; status: BuzzerLiveStatus; state: BuzzerActiveState | null; prep: PrepActiveState | null; scores: ScoresActiveState | null; serverNow: number }) {
+function Scene({ session, status, state, prep, scores, serverNow }: { session: LiveSession; status: BuzzerLiveStatus; state: BuzzerActiveState | null; prep: PrepActiveState | null; scores: ScoresActiveState | null; serverNow: number }) {
   const players = `${status.playerCount} ${state?.mode === 'team' ? 'téléphone' : 'joueur'}${status.playerCount > 1 ? 's' : ''}`
   const round = prep ? prepRoundLabel(prep) : state && state.roundNo > 0 ? `Manche ${state.roundNo}` : undefined
   // Numéro affiché : celui de la liste en manches préparées (une manche passée ne compte pas de buzz).

@@ -24,10 +24,10 @@ import { closingRemainingMs } from '@/lib/vote/machine'
 import { computeRanking, participationPercent, revealPlan, type RankedCandidate, type Ranking } from '@/lib/vote/results'
 import type { VoteActiveState, VoteCandidate, VoteEvent } from '@/lib/vote/types'
 import { getInviteUrl } from '@/lib/utils'
-import type { Session } from '@/types/database'
+import type { LiveSession } from '@/lib/public-api/columns'
 
 interface VoteGameProps {
-  session: Session
+  session: LiveSession
   status: VoteLiveStatus
 }
 
@@ -129,7 +129,7 @@ function Confetti() {
   )
 }
 
-function Scene({ session, state, serverNow }: { session: Session; state: VoteActiveState | null; serverNow: number }) {
+function Scene({ session, state, serverNow }: { session: LiveSession; state: VoteActiveState | null; serverNow: number }) {
   const event = state?.event ?? null
 
   if (!state || !event || event.status === 'lobby') return <Lobby session={session} event={event} participants={state?.participants ?? 0} />
@@ -209,7 +209,7 @@ function Scene({ session, state, serverNow }: { session: Session; state: VoteAct
 
 // ---------------------------------------------------------------------
 
-function Lobby({ session, event, participants }: { session: Session; event: VoteEvent | null; participants: number }) {
+function Lobby({ session, event, participants }: { session: LiveSession; event: VoteEvent | null; participants: number }) {
   const url = getInviteUrl(session.code)
   const floats = event ? [...event.candidates].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 8) : []
   return (
@@ -330,7 +330,7 @@ function HiddenCount({ total, participants }: { total: number; participants: num
   )
 }
 
-function SecondRound({ session, event, total, participants }: { session: Session; event: VoteEvent; total: number; participants: number }) {
+function SecondRound({ session, event, total, participants }: { session: LiveSession; event: VoteEvent; total: number; participants: number }) {
   const finalists = [...event.candidates].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 4)
   return (
     <div className="avs-scene">

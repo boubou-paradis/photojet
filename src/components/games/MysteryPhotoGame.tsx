@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import QRCode from 'react-qr-code'
-import { Session, MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
-import { createClient } from '@/lib/supabase'
+import { MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
+import { createClient, createPublicClient } from '@/lib/supabase'
+import type { LiveSession } from '@/lib/public-api/columns'
 import { getInviteUrl } from '@/lib/utils'
 
 interface MysteryPhotoGameProps {
-  session: Session
+  session: LiveSession
   onExit: () => void
 }
 
@@ -436,9 +437,16 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     setRevealedTiles(session.mystery_revealed_tiles || [])
   }, [])
 
+  // Le QR ne figure pas dans les événements reçus par un écran anonyme : il suit la
+  // session relue par /live.
+  useEffect(() => {
+    setShowQR(session.show_qr_on_screen ?? false)
+  }, [session.show_qr_on_screen])
+
   // Subscribe to session changes for real-time sync
   useEffect(() => {
-    const channel = supabase
+    const publicClient = createPublicClient()
+    const channel = publicClient
       .channel(`mystery-game-display-${session.id}`)
       .on(
         'postgres_changes',
@@ -449,7 +457,7 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           filter: `id=eq.${session.id}`,
         },
         (payload) => {
-          const updated = payload.new as Session
+          const updated = payload.new as LiveSession
           if (!updated.mystery_photo_active) {
             onExit()
             return
@@ -507,16 +515,14 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
           }
           setTotalRounds(updated.mystery_total_rounds || 1)
           setIsPlaying(updated.mystery_is_playing || false)
-          // Update QR code visibility
-          setShowQR(updated.show_qr_on_screen ?? false)
         }
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      publicClient.removeChannel(channel)
     }
-  }, [session.id, supabase, onExit])
+  }, [session.id, onExit])
 
   // Listen for winner animation broadcast
   useEffect(() => {
