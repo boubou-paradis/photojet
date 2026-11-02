@@ -11,7 +11,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Loader2, User, ArrowRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
 
 // Generate unique player ID
 function generatePlayerId(): string {
@@ -22,7 +21,6 @@ export default function JoinQuizPage() {
   const params = useParams()
   const router = useRouter()
   const sessionCode = params.sessionCode as string
-  const supabase = createClient()
 
   const [playerName, setPlayerName] = useState('')
   const [playerId, setPlayerId] = useState('')
@@ -48,27 +46,22 @@ export default function JoinQuizPage() {
       setPlayerName(savedName)
     }
 
-    // Check Supabase for the session
+    // Recherche la session par le serveur
     async function fetchSession() {
       let foundSession = false
 
       try {
-        const { data, error: fetchError } = await supabase
-          .from('sessions')
-          .select('id, quiz_lobby_visible, quiz_active, code')
-          .eq('code', sessionCode)
-          .single()
+        const response = await fetch(`/api/public/join/${encodeURIComponent(sessionCode)}`)
+        if (!response.ok) throw new Error('session introuvable')
 
-        if (fetchError) throw fetchError
+        const data = (await response.json()) as { sessionId: string; open: boolean }
 
-        if (data) {
-          // Check if quiz is running
-          if (data.quiz_lobby_visible || data.quiz_active) {
-            foundSession = true
-            setSessionId(data.id)
-          } else {
-            setError('Aucun quiz en cours pour cette session')
-          }
+        // Check if quiz is running
+        if (data.open) {
+          foundSession = true
+          setSessionId(data.sessionId)
+        } else {
+          setError('Aucun quiz en cours pour cette session')
         }
       } catch (err) {
         // Supabase inaccessible — pas de fallback localStorage en production
@@ -99,7 +92,7 @@ export default function JoinQuizPage() {
     }
 
     fetchSession()
-  }, [sessionCode, supabase])
+  }, [sessionCode])
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
