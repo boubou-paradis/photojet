@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { isTrialAccount } from '@/lib/watermark/access'
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params
@@ -11,6 +12,7 @@ export async function GET(
   if (!code) {
     return NextResponse.json({ error: 'Code required' }, { status: 400 })
   }
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +25,7 @@ export async function GET(
     .eq('code', code)
     .single()
 
+  if (error?.code === 'PGRST116') await recordCodeFailure(request, 'session', code)
   if (error || !session) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 })
   }

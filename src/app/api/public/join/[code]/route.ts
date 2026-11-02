@@ -5,10 +5,12 @@
 // `open` = lobby ouvert ou partie en cours.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { NO_STORE, getPublicAdmin, isPubliclyVisible, type SessionVisibilityRow } from '@/lib/public-api/server'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const { data, error } = await getPublicAdmin()
     .from('sessions')
@@ -19,6 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
   if (error) return NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
 
   const session = data as (SessionVisibilityRow & { id: string }) | null
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session || !isPubliclyVisible(session)) {
     return NextResponse.json({ error: 'Session introuvable.' }, { status: 404, headers: NO_STORE })
   }

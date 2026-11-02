@@ -8,6 +8,7 @@
 // le mur du lobby : affichés de toute façon sur l'écran géant.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { OTHER_GAME_FLAGS, getBuzzerAdmin, isAnimatorAlive, type OtherGameFlags } from '@/lib/buzzer/server'
 import { isSessionCode } from '@/lib/buzzer/validation'
 
@@ -18,6 +19,7 @@ const NO_STORE = { 'Cache-Control': 'no-store' }
 export async function GET(request: Request) {
   const code = new URL(request.url).searchParams.get('code')
   if (!isSessionCode(code)) return NextResponse.json({ error: 'Code de session invalide.' }, { status: 400 })
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = getBuzzerAdmin()
   const notLive = () =>
@@ -31,6 +33,7 @@ export async function GET(request: Request) {
     .maybeSingle()
   if (sessionError) return busy()
   const session = sessionData as StatusSessionRow | null
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session?.buzzer_active || OTHER_GAME_FLAGS.some((flag) => session[flag] === true)) return notLive()
 
   const { data: runtime, error: runtimeError } = await admin

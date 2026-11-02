@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import { createClient } from '@supabase/supabase-js'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { isTrialAccount } from '@/lib/watermark/access'
 import { TRIAL_DOWNLOAD_ERROR_CODE, TRIAL_DOWNLOAD_MESSAGE } from '@/lib/watermark/constants'
 
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     if (!sessionCode) {
       return NextResponse.json({ error: 'Session code required' }, { status: 400 })
     }
+    if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
     // Create Supabase client with service role for server-side operations
     const supabase = createClient(
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
       .eq('code', sessionCode)
       .single()
 
+    if (sessionError?.code === 'PGRST116') await recordCodeFailure(request, 'session', String(sessionCode))
     if (sessionError || !session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }

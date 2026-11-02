@@ -476,7 +476,7 @@ export default function BornePage() {
       // Re-fetch session to get latest moderation setting
       const freshSession = await fetchBorneSession(borneCode)
 
-      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const moderationEnabled = freshSession?.moderation_enabled ?? session.moderation_enabled
       const isApproved = !moderationEnabled
 
       const file = new File([capturedBlob], 'borne-photo.jpg', { type: 'image/jpeg' })

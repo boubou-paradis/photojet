@@ -2,6 +2,7 @@
 // Code propriétaire - Reproduction interdite.
 
 import { NextRequest, NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { createClient } from '@supabase/supabase-js'
 
 type InviteState = 'ended_album' | 'ended_no_album' | 'inactive' | 'not_found'
@@ -14,10 +15,11 @@ function reply(state: InviteState, status = 200) {
 // n'a pas accès à une session inactive. Elle ne renvoie que l'état, rien de la
 // session. Une session active ou une erreur donne « introuvable ».
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },
@@ -33,6 +35,7 @@ export async function GET(
     console.error('[Invite] Lecture de la session impossible:', error.message)
     return reply('not_found', 500)
   }
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session || session.is_active) return reply('not_found')
 
   // Mêmes photos que l'album : les approuvées seulement.

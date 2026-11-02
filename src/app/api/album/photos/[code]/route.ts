@@ -7,11 +7,13 @@
 // la page passe par l'image filigranée.
 
 import { NextRequest, NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { NO_STORE, getPublicAdmin } from '@/lib/public-api/server'
 import { isTrialAccount } from '@/lib/watermark/access'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
   const body = (await request.json().catch(() => ({}))) as { password?: unknown }
   const admin = getPublicAdmin()
   const busy = NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
@@ -22,6 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .eq('code', code)
     .maybeSingle()
   if (error) return busy
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session) return NextResponse.json({ error: 'Album introuvable.' }, { status: 404, headers: NO_STORE })
   if (session.album_enabled === false) {
     return NextResponse.json({ error: 'Album désactivé.' }, { status: 403, headers: NO_STORE })

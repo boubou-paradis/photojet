@@ -5,6 +5,7 @@
 // téléphone) ; seule son empreinte est stockée.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { AFFINITY_LIMITS } from '@/lib/affinity/constants'
 import {
   AFFINITY_SESSION_COLUMNS,
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
   const parsed = parseJoinRequest(body)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
   const { code, nickname, table, consent } = parsed.value
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = getAffinityAdmin()
 
@@ -43,6 +45,7 @@ export async function POST(request: Request) {
     .maybeSingle()
   if (sessionError) return busy()
   const session = sessionData as JoinSessionRow | null
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (
     !session ||
     !session.affinity_active ||

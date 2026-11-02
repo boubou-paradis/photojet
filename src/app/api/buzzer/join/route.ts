@@ -6,6 +6,7 @@
 // est stockée. Plafond de joueurs et pseudo unique vérifiés en base.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { BUZZER_LIMITS } from '@/lib/buzzer/constants'
 import { OTHER_GAME_FLAGS, getBuzzerAdmin, isAnimatorAlive, type OtherGameFlags } from '@/lib/buzzer/server'
 import { nicknameKey, parseJoinRequest, resolveTeam, suggestNickname } from '@/lib/buzzer/validation'
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   const parsed = parseJoinRequest(body)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
   const { code, nickname, team } = parsed.value
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = getBuzzerAdmin()
 
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
     .maybeSingle()
   if (sessionError) return busy()
   const session = sessionData as JoinSessionRow | null
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session?.buzzer_active || OTHER_GAME_FLAGS.some((flag) => session[flag] === true)) {
     return NextResponse.json({ error: NO_GAME }, { status: 409 })
   }

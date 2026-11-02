@@ -7,6 +7,7 @@
 // nouveau droit de vote après un rechargement. Plafond vérifié en base.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { VOTE_LIMITS } from '@/lib/vote/constants'
 import { OTHER_GAME_FLAGS, getVoteAdmin, isAnimatorAlive, type OtherGameFlags } from '@/lib/vote/server'
 import { parseJoinRequest } from '@/lib/vote/validation'
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   const parsed = parseJoinRequest(body)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
   const { code, previous } = parsed.value
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = getVoteAdmin()
 
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
     .maybeSingle()
   if (sessionError) return busy()
   const session = sessionData as JoinSessionRow | null
+  if (!session) await recordCodeFailure(request, 'session', code)
   if (!session?.vote_active || OTHER_GAME_FLAGS.some((flag) => session[flag] === true)) {
     return NextResponse.json({ error: NO_GAME }, { status: 409 })
   }

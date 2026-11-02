@@ -6,6 +6,7 @@
 // connecté garde l'accès à sa session désactivée, comme avec la lecture directe.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { LIVE_MESSAGE_COLUMNS, LIVE_PHOTO_COLUMNS, LIVE_SESSION_COLUMNS } from '@/lib/public-api/columns'
 import { NO_STORE, getPublicAdmin, isPubliclyVisible, pickColumns, type SessionVisibilityRow } from '@/lib/public-api/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -17,8 +18,9 @@ async function isOwner(userId: unknown): Promise<boolean> {
   return data.user?.id === userId
 }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
   const admin = getPublicAdmin()
   const busy = NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
 
@@ -30,6 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
   if (error) return busy
 
   const row = data as (SessionVisibilityRow & Record<string, unknown>) | null
+  if (!row) await recordCodeFailure(request, 'session', code)
   if (!row || !(isPubliclyVisible(row) || (await isOwner(row.user_id)))) {
     return NextResponse.json({ error: 'Session introuvable.' }, { status: 404, headers: NO_STORE })
   }

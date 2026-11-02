@@ -7,15 +7,17 @@
 // seulement s'ils appartiennent bien au propriétaire de la session.
 
 import { NextResponse } from 'next/server'
+import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { PHOTOS_BUCKET, getTemplatesAdmin } from '@/lib/borne-templates/server'
 import type { BorneFrameConfig, BorneFrameTemplate, PhotoZone } from '@/lib/borne-templates/constants'
 
 const OFF: BorneFrameConfig = { enabled: false, guestChoice: true, portrait: null, landscape: null }
 const noStore = { 'Cache-Control': 'no-store' }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(code)) return NextResponse.json(OFF, { status: 404, headers: noStore })
+  if (await isCodeLookupBlocked(request)) return tooManyCodeAttempts()
 
   const admin = getTemplatesAdmin()
   const { data: session } = await admin
@@ -25,6 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     .eq('is_active', true)
     .eq('borne_enabled', true)
     .maybeSingle()
+  if (!session) await recordCodeFailure(request, 'borne', code)
   if (!session) return NextResponse.json(OFF, { status: 404, headers: noStore })
 
   const ids = [session.borne_template_portrait_id, session.borne_template_landscape_id].filter(Boolean) as string[]

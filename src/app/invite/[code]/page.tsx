@@ -286,7 +286,7 @@ export default function InvitePage() {
 
     try {
       const freshSession = (await fetchInviteState(code))?.session
-      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const moderationEnabled = freshSession?.moderation_enabled ?? session.moderation_enabled
       const isApproved = !moderationEnabled
 
       let succeeded = 0
@@ -390,7 +390,7 @@ export default function InvitePage() {
 
     try {
       const freshSession = (await fetchInviteState(code))?.session
-      const moderationEnabled = freshSession?.moderation_enabled ?? false
+      const moderationEnabled = freshSession?.moderation_enabled ?? session.moderation_enabled
       const isApproved = !moderationEnabled
 
       const { error: dbError } = await supabase
