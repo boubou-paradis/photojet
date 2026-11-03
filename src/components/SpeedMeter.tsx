@@ -7,7 +7,38 @@ interface SpeedMeterProps {
   className?: string
 }
 
-type ConnectionQuality = 'poor' | 'medium' | 'excellent'
+type ConnectionQuality = 'poor' | 'medium' | 'good' | 'excellent'
+
+// Échelle non linéaire : graduations régulièrement espacées sur l'arc, pour que
+// les débits courants (2 à 25 Mbps) occupent l'essentiel du cadran.
+// Seuils adaptés à l'usage AnimaJet (envoi de photos, diaporama, jeux en direct).
+const SCALE_TICKS = [0, 2, 5, 10, 25, 50, 100]
+const POOR_BELOW = 2
+const MEDIUM_BELOW = 5
+const EXCELLENT_FROM = 25
+
+/** Position d'un débit sur l'arc, de 0 (gauche) à 1 (droite). */
+function scalePosition(speedValue: number): number {
+  const last = SCALE_TICKS.length - 1
+  if (speedValue <= 0) return 0
+  if (speedValue >= SCALE_TICKS[last]) return 1
+  for (let i = 0; i < last; i++) {
+    const lo = SCALE_TICKS[i], hi = SCALE_TICKS[i + 1]
+    if (speedValue <= hi) return (i + (speedValue - lo) / (hi - lo)) / last
+  }
+  return 1
+}
+
+/** Point de l'arc (centre 100,100) pour une position 0..1 et un rayon. */
+function arcPoint(position: number, radius: number): { x: number; y: number } {
+  const rad = Math.PI * (1 - position)
+  return { x: 100 + radius * Math.cos(rad), y: 100 - radius * Math.sin(rad) }
+}
+
+function arcPath(from: number, to: number, radius = 80): string {
+  const a = arcPoint(from, radius), b = arcPoint(to, radius)
+  return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${radius} ${radius} 0 0 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`
+}
 
 export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
   const [speed, setSpeed] = useState<number | null>(null)
@@ -50,8 +81,9 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
   }, [measureSpeed])
 
   const getQuality = (speedValue: number): ConnectionQuality => {
-    if (speedValue < 10) return 'poor'
-    if (speedValue < 30) return 'medium'
+    if (speedValue < POOR_BELOW) return 'poor'
+    if (speedValue < MEDIUM_BELOW) return 'medium'
+    if (speedValue < EXCELLENT_FROM) return 'good'
     return 'excellent'
   }
 
@@ -60,23 +92,22 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
   const qualityConfig = {
     poor: { label: 'Faible', color: '#E53935' },
     medium: { label: 'Moyenne', color: '#FF9800' },
+    good: { label: 'Bonne', color: '#4CAF50' },
     excellent: { label: 'Excellente', color: '#4CAF50' },
   }
 
-  // Calculate needle angle
-  // 0 Mbps = -90° (pointing left), 100 Mbps = +90° (pointing right)
-  const maxSpeed = 100
-  const clampedSpeed = Math.min(speed || 0, maxSpeed)
-  const needleAngle = -90 + (clampedSpeed / maxSpeed) * 180
+  // Aiguille : -90° (gauche) à +90° (droite) selon l'échelle non linéaire
+  const needleAngle = -90 + scalePosition(speed || 0) * 180
+  const poorEnd = scalePosition(POOR_BELOW)
+  const mediumEnd = scalePosition(MEDIUM_BELOW)
+  const lastTick = SCALE_TICKS.length - 1
 
   return (
     <div className={`card-gold rounded-xl ${className}`}>
-      <div className="p-2.5 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-            <Wifi className="h-3.5 w-3.5 text-[#D4AF37]" />
-          </div>
-          <span className="text-sm font-medium text-white">Connexion</span>
+      <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Wifi className="h-3.5 w-3.5 text-[#D4AF37]" />
+          <span className="text-xs font-semibold text-white">Connexion</span>
         </div>
         <button
           onClick={measureSpeed}
@@ -88,9 +119,9 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
         </button>
       </div>
 
-      <div className="p-3">
-        {/* Vintage Meter - reduced size */}
-        <div className="relative mx-auto" style={{ width: 150, height: 82 }}>
+      <div className="p-2 flex items-center gap-3">
+        {/* Cadran compact à gauche */}
+        <div className="relative flex-shrink-0" style={{ width: 116, height: 63 }}>
           <svg viewBox="0 0 200 110" className="w-full h-full overflow-visible">
             <defs>
               <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -116,35 +147,10 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
               strokeLinecap="round"
             />
 
-            {/* Red zone (0-10 Mbps) - 0° to 18° of 180° arc */}
-            <path
-              d="M 20 100 A 80 80 0 0 1 35.1 58.8"
-              fill="none"
-              stroke="#E53935"
-              strokeWidth="14"
-              strokeLinecap="round"
-              opacity="0.85"
-            />
-
-            {/* Orange zone (10-30 Mbps) - 18° to 54° of 180° arc */}
-            <path
-              d="M 35.1 58.8 A 80 80 0 0 1 76.1 27.0"
-              fill="none"
-              stroke="#FF9800"
-              strokeWidth="14"
-              strokeLinecap="round"
-              opacity="0.85"
-            />
-
-            {/* Green zone (30-100 Mbps) - 54° to 180° of 180° arc */}
-            <path
-              d="M 76.1 27.0 A 80 80 0 0 1 180 100"
-              fill="none"
-              stroke="#4CAF50"
-              strokeWidth="14"
-              strokeLinecap="round"
-              opacity="0.85"
-            />
+            {/* Zones : rouge < 2 Mbps, orange 2-5 Mbps, vert ≥ 5 Mbps */}
+            <path d={arcPath(0, poorEnd)} fill="none" stroke="#E53935" strokeWidth="14" strokeLinecap="round" opacity="0.85" />
+            <path d={arcPath(poorEnd, mediumEnd)} fill="none" stroke="#FF9800" strokeWidth="14" opacity="0.85" />
+            <path d={arcPath(mediumEnd, 1)} fill="none" stroke="#4CAF50" strokeWidth="14" strokeLinecap="round" opacity="0.85" />
 
             {/* Outer decorative border */}
             <path
@@ -156,10 +162,8 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
             />
 
             {/* Tick marks and labels */}
-            {[0, 25, 50, 75, 100].map((value) => {
-              // Angle: 0 Mbps = 180° (left), 100 Mbps = 0° (right)
-              const tickAngle = 180 - (value / 100) * 180
-              const rad = (tickAngle * Math.PI) / 180
+            {SCALE_TICKS.map((value, i) => {
+              const rad = Math.PI * (1 - i / lastTick)
               const cx = 100
               const cy = 100
               const innerR = 58
@@ -189,7 +193,7 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
                     y={labelY + 3}
                     textAnchor="middle"
                     fill="#B0B0B5"
-                    fontSize="9"
+                    fontSize="8"
                     fontWeight="bold"
                   >
                     {value}
@@ -199,9 +203,8 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
             })}
 
             {/* Minor tick marks */}
-            {[12.5, 37.5, 62.5, 87.5].map((value) => {
-              const tickAngle = 180 - (value / 100) * 180
-              const rad = (tickAngle * Math.PI) / 180
+            {SCALE_TICKS.slice(1).map((value, i) => {
+              const rad = Math.PI * (1 - (i + 0.5) / lastTick)
               const cx = 100
               const cy = 100
               const innerR = 62
@@ -245,8 +248,9 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
           </svg>
         </div>
 
-        {/* Digital display */}
-        <div className="text-center mt-2">
+        {/* Débit, qualité et ping à droite */}
+        <div className="flex-1 min-w-0 flex flex-col items-center">
+        <div className="text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1E] rounded-lg border border-[rgba(255,255,255,0.1)]">
             {testing ? (
               <span className="text-lg font-mono text-[#D4AF37] animate-pulse">--.-</span>
@@ -260,7 +264,7 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
         </div>
 
         {/* Quality indicator and ping in one row */}
-        <div className="flex items-center justify-center gap-3 mt-2">
+        <div className="flex items-center justify-center gap-3 mt-1.5">
           {quality && !testing && (
             <div className="flex items-center gap-1.5">
               <div
@@ -277,6 +281,7 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
               {ping}ms
             </span>
           )}
+        </div>
         </div>
       </div>
     </div>

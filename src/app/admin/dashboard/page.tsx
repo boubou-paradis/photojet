@@ -93,13 +93,17 @@ function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subsc
   const days = Math.floor(totalHours / 24)
   const hours = totalHours % 24
 
-  // Calculate progress (assuming 30-day subscription)
+  // Jauge du temps RESTANT sur la période (pleine au début, vide à l'échéance),
+  // visible dès le 1er jour quelle que soit la durée (mois ou an).
   const start = subscription.current_period_start
     ? new Date(subscription.current_period_start)
     : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000)
   const totalDuration = end.getTime() - start.getTime()
-  const elapsed = now.getTime() - start.getTime()
-  const progressPercent = isLifetime ? 100 : Math.max(0, Math.min(100, (elapsed / totalDuration) * 100))
+  const progressPercent = isLifetime
+    ? 100
+    : totalDuration > 0
+      ? Math.max(0, Math.min(100, (diff / totalDuration) * 100))
+      : 0
 
   // Determine status color
   // Un compte owner (accès à vie) n'est jamais expiré/critique/en alerte,
@@ -1502,7 +1506,7 @@ fetch(${JSON.stringify(imageUrl)})
   }
 
   return (
-    <div className="h-screen bg-[#0D0D0F] flex flex-col overflow-hidden relative">
+    <div className="h-screen lg:h-full bg-[#0D0D0F] flex flex-col overflow-hidden relative">
       {/* Animated background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
@@ -2315,197 +2319,106 @@ fetch(${JSON.stringify(imageUrl)})
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[320px] flex flex-col gap-2 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
-              {/* Actions rapides Card - Premium Style - EN HAUT */}
+            <div className="lg:w-[320px] flex flex-col gap-1.5 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+              {/* Actions rapides — une ligne (« Voir l'album » est dans le bloc QR) */}
               <div className="relative group flex-shrink-0">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
                   <div className="h-0.5 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
-                  <div className="px-2.5 py-1.5 border-b border-white/5">
-                    <h3 className="font-bold text-white text-xs">⚡ Actions rapides</h3>
-                  </div>
-                  <div className="p-2 space-y-1.5">
+                  <div className="p-2 flex gap-1.5">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-7 justify-start border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
+                      className="flex-1 min-w-0 h-7 px-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
                       onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
+                      title={selectedSession.borne_enabled ? (borneConnection?.is_online ? 'Borne en ligne' : 'Borne hors ligne') : undefined}
                     >
-                      <Tablet className="h-3.5 w-3.5 mr-1.5" />
-                      AnimaBooth
-                      {selectedSession.borne_enabled && borneConnection?.is_online && (
-                        <span className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                      <Tablet className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                      <span className="truncate">AnimaBooth</span>
+                      {selectedSession.borne_enabled && (
+                        borneConnection?.is_online
+                          ? <span className="ml-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
+                          : <WifiOff className="ml-1 h-2.5 w-2.5 text-gray-500 flex-shrink-0" />
                       )}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-7 justify-start border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[11px] font-medium"
-                      onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                    >
-                      <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
-                      Voir l&apos;album
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-7 justify-start border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-medium"
+                      className="flex-1 min-w-0 h-7 px-2 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-medium"
                       onClick={downloadAllPhotos}
                       disabled={downloading || approvedCount === 0}
                     >
                       {downloading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin flex-shrink-0" />
                       ) : (
-                        <Download className="h-3.5 w-3.5 mr-1.5" />
+                        <Download className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
                       )}
-                      {downloading ? 'Téléchargement...' : `Télécharger (${approvedCount})`}
+                      <span className="truncate">{downloading ? 'Téléchargement...' : `Télécharger (${approvedCount})`}</span>
                     </Button>
                   </div>
                 </div>
               </div>
 
-              {/* QR Code Card - Premium Gaming Style */}
+              {/* QR codes invités + album côte à côte */}
               <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-violet-500/30 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-[#D4AF37]/30 overflow-hidden">
                   <div className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
-                  <div className="px-2.5 py-1.5 border-b border-white/5">
-                    <h3 className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <span className="text-sm">📱</span>
-                      QR Code invités
-                    </h3>
-                  </div>
-                  <div className="p-2.5 flex flex-col items-center">
-                    <div className="relative" id="qr-invite">
-                      <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-lg blur-md" />
-                      <div className="relative bg-white p-2 rounded-lg shadow-xl shadow-black/50">
-                        <QRCode
-                          value={getInviteUrl(selectedSession.code)}
-                          size={100}
-                        />
+                  <div className="p-2 grid grid-cols-2 gap-2">
+                    {/* Invités */}
+                    <div className="flex flex-col items-center min-w-0">
+                      <h3 className="font-bold text-white text-[11px] flex items-center gap-1 self-start mb-1.5">
+                        <span>📱</span> Invités
+                      </h3>
+                      <div className="relative" id="qr-invite">
+                        <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-lg blur-md" />
+                        <div className="relative bg-white p-1.5 rounded-lg shadow-xl shadow-black/50">
+                          <QRCode value={getInviteUrl(selectedSession.code)} size={84} />
+                        </div>
+                      </div>
+                      <p className="text-base font-mono font-black mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
+                        #{selectedSession.code}
+                      </p>
+                      <div className="grid grid-cols-3 gap-1 mt-1 w-full">
+                        <Button variant="outline" size="sm" onClick={copyInviteLink} title="Copier le lien invités"
+                          className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => window.open(`/invite/${selectedSession.code}`, '_blank')} title="Ouvrir la page invités"
+                          className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={printQRCode} title="Imprimer le QR code"
+                          className="h-6 px-0 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50">
+                          <Printer className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
-                    <p className="text-lg font-mono font-black mt-2 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
-                      #{selectedSession.code}
-                    </p>
-                    <div className="flex gap-1.5 mt-2 w-full">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyInviteLink}
-                        className="flex-1 h-7 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copier
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          window.open(`/invite/${selectedSession.code}`, '_blank')
-                        }
-                        className="flex-1 h-7 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Ouvrir
-                      </Button>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={printQRCode}
-                      className="w-full mt-1.5 h-7 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50 text-[11px] font-semibold"
-                    >
-                      <Printer className="h-3 w-3 mr-1" />
-                      Imprimer
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* QR Code Album - Premium Style */}
-              <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-violet-500/20 group-hover:border-violet-500/40 overflow-hidden transition-all">
-                  <div className="h-0.5 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-                  <div className="px-2.5 py-1.5 border-b border-white/5">
-                    <div className="flex items-center gap-1.5">
-                      <FolderOpen className="h-3.5 w-3.5 text-violet-500" />
-                      <h3 className="font-bold text-white text-xs">Album post-event</h3>
-                    </div>
-                  </div>
-                  <div className="p-2.5 flex flex-col items-center">
-                    <div className="relative">
-                      <div className="absolute -inset-1 bg-violet-500/10 rounded-lg blur-md" />
-                      <div className="relative bg-white p-1.5 rounded-lg shadow-lg shadow-black/30">
-                        <QRCode
-                          value={getAlbumUrl(selectedSession.code)}
-                          size={70}
-                        />
+                    {/* Album post-event */}
+                    <div className="flex flex-col items-center min-w-0 border-l border-white/5 pl-2">
+                      <h3 className="font-bold text-white text-[11px] flex items-center gap-1 self-start mb-1.5">
+                        <FolderOpen className="h-3 w-3 text-violet-500" /> Album
+                      </h3>
+                      <div className="relative">
+                        <div className="absolute -inset-1 bg-violet-500/10 rounded-lg blur-md" />
+                        <div className="relative bg-white p-1.5 rounded-lg shadow-lg shadow-black/30">
+                          <QRCode value={getAlbumUrl(selectedSession.code)} size={84} />
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1.5 leading-6">
+                        <span className="text-violet-400 font-bold">{approvedCount}</span> photos
+                      </p>
+                      <div className="grid grid-cols-2 gap-1 mt-1 w-full">
+                        <Button variant="outline" size="sm" onClick={copyAlbumLink} title="Copier le lien de l'album"
+                          className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')} title="Voir l'album"
+                          className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos
-                    </p>
-                    <div className="flex gap-1.5 mt-1.5 w-full">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyAlbumLink}
-                        className="flex-1 h-6 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[10px] font-medium"
-                      >
-                        <Copy className="h-2.5 w-2.5 mr-1" />
-                        Copier
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')}
-                        className="flex-1 h-6 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[10px] font-medium"
-                      >
-                        <ExternalLink className="h-2.5 w-2.5 mr-1" />
-                        Voir
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations Card - Premium Style */}
-              <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-emerald-500/20 group-hover:border-emerald-500/30 overflow-hidden transition-all">
-                  <div className="h-0.5 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-                  <div className="px-2.5 py-1.5 border-b border-white/5">
-                    <h3 className="font-bold text-white text-xs">📋 Infos</h3>
-                  </div>
-                  <div className="p-2 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-gray-500">Événement</span>
-                      <span className="font-semibold text-white text-xs truncate ml-2">{selectedSession.name}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-gray-500">Créé le</span>
-                      <span className="font-semibold text-white text-xs">
-                        {new Date(selectedSession.created_at).toLocaleDateString('fr-FR')}
-                      </span>
-                    </div>
-                    {selectedSession.borne_enabled && (
-                      <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
-                        <span className="text-[10px] text-gray-500">Borne</span>
-                        {borneConnection?.is_online ? (
-                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 rounded-full">
-                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] text-emerald-400 font-medium">En ligne</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-500/10 rounded-full">
-                            <WifiOff className="h-2.5 w-2.5 text-gray-500" />
-                            <span className="text-[10px] text-gray-500">Hors ligne</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -41,6 +41,7 @@ export default function AdminLayoutClient({
   showWatermarkNotice = false,
 }: AdminLayoutClientProps) {
   const pathname = usePathname()
+  const isDashboard = pathname === '/admin/dashboard'
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -84,7 +85,9 @@ export default function AdminLayoutClient({
   const trialTimeRemaining = trialExpiresAt ? formatTimeRemaining(trialExpiresAt) : null
 
   return (
-    <div className="min-h-screen bg-[#1A1A1E]">
+    // Tableau de bord (grand écran) : en-tête + contenu + pied tiennent dans la hauteur
+    // de l'écran, sans barre de défilement de la page. Les autres pages défilent normalement.
+    <div className={`min-h-screen bg-[#1A1A1E] ${isDashboard ? 'lg:h-dvh lg:flex lg:flex-col lg:overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#1A1A1E]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -211,7 +214,7 @@ export default function AdminLayoutClient({
       )}
 
       {/* Main Content - always rendered (server already verified access) */}
-      <main className="w-full">
+      <main className={`w-full ${isDashboard ? 'lg:flex-1 lg:min-h-0' : ''}`}>
         <TrialWatermarkContext.Provider value={showWatermarkNotice}>
           {children}
         </TrialWatermarkContext.Provider>
