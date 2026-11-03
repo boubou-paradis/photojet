@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import { useTrialWatermark } from '@/components/TrialWatermark'
 import { requestSessionState } from '@/lib/sessions/client'
 import {

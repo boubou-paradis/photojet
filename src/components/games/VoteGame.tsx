@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import AnimaVoteLogo from '@/components/vote/AnimaVoteLogo'
 import CandidatePhoto, { candidateName } from '@/components/vote/CandidateVisual'
 import { voteFontVars } from '@/components/vote/fonts'

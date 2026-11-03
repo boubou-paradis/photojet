@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import { MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { createClient, createPublicClient } from '@/lib/supabase'
 import type { LiveSession } from '@/lib/public-api/columns'

@@ -11,6 +11,8 @@ import type { WatermarkCodeKind } from '@/lib/watermark/access'
 const RECHECK_MS = 60_000
 // Au-dessus du faux plein écran Mac (z-index 9999) et de tous les jeux
 const TOP_Z_INDEX = 2147483000
+// Marge autour d'un QR code laissée sans filigrane (zone de silence du QR)
+const QR_MARGIN = 16
 
 export const TrialWatermarkContext = createContext(false)
 
@@ -65,6 +67,66 @@ function TrialOverlay() {
     }
   }, [host])
 
+  // Les QR codes (marqués data-qr) doivent rester scannables : on découpe un
+  // trou dans le calque autour de chacun. Sondage léger, car les QR apparaissent
+  // avec des animations et changent de place d'un jeu à l'autre.
+  const layerRef = useRef<HTMLDivElement>(null)
+  const labelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!host) return
+    let last = ''
+    const update = () => {
+      const layer = layerRef.current
+      if (!layer) return
+      const w = window.innerWidth
+      const h = window.innerHeight
+      const rects = Array.from(document.querySelectorAll('[data-qr]'))
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width > 0 && r.height > 0)
+
+      // L'étiquette du coin s'efface si elle recouvre un QR code
+      const label = labelRef.current
+      if (label) {
+        const l = label.getBoundingClientRect()
+        const covers = rects.some(
+          (r) =>
+            r.left - QR_MARGIN < l.right &&
+            r.right + QR_MARGIN > l.left &&
+            r.top - QR_MARGIN < l.bottom &&
+            r.bottom + QR_MARGIN > l.top
+        )
+        label.style.visibility = covers ? 'hidden' : ''
+      }
+
+      const holes = rects.map((r) => {
+          const x = Math.max(0, Math.floor(r.left - QR_MARGIN))
+          const y = Math.max(0, Math.floor(r.top - QR_MARGIN))
+          const rw = Math.ceil(r.width + QR_MARGIN * 2)
+          const rh = Math.ceil(r.height + QR_MARGIN * 2)
+          return `M${x} ${y}h${rw}v${rh}h${-rw}Z`
+        })
+      const key = `${w}x${h}|${holes.join('')}`
+      if (key === last) return
+      last = key
+      if (holes.length === 0) {
+        layer.style.maskImage = ''
+        layer.style.webkitMaskImage = ''
+        return
+      }
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path fill="#fff" fill-rule="evenodd" d="M0 0H${w}V${h}H0Z${holes.join('')}"/></svg>`
+      const mask = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+      layer.style.maskImage = mask
+      layer.style.webkitMaskImage = mask
+    }
+    update()
+    const timer = setInterval(update, 500)
+    window.addEventListener('resize', update)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('resize', update)
+    }
+  }, [host])
+
   if (!host) return null
 
   return createPortal(
@@ -77,13 +139,25 @@ function TrialOverlay() {
         inset: 0,
         zIndex: TOP_Z_INDEX,
         pointerEvents: 'none',
-        backgroundImage: `url(${WATERMARK_LAYER_PATH})`,
-        backgroundSize: 'max(100vw, 100vh)',
-        backgroundPosition: 'top left',
-        backgroundRepeat: 'no-repeat',
       }}
     >
       <div
+        ref={layerRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url(${WATERMARK_LAYER_PATH})`,
+          backgroundSize: 'max(100vw, 100vh)',
+          backgroundPosition: 'top left',
+          backgroundRepeat: 'no-repeat',
+          maskSize: '100% 100%',
+          WebkitMaskSize: '100% 100%',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat',
+        }}
+      />
+      <div
+        ref={labelRef}
         style={{
           position: 'absolute',
           top: 0,
@@ -139,52 +213,5 @@ export function TrialWatermarkProvider({
       {children}
       {active && <TrialOverlay />}
     </TrialWatermarkContext.Provider>
-  )
-}
-
-/** Bandeau central du diaporama : coupe chaque photo, en plus du filigrane incrusté. */
-export function TrialSlideshowBand() {
-  return (
-    <div
-      aria-hidden="true"
-      data-trial-band=""
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        zIndex: TOP_Z_INDEX + 1,
-        pointerEvents: 'none',
-        padding: '2.4vh 16px',
-        background: 'rgba(0,0,0,.88)',
-        borderTop: '3px solid #D4AF37',
-        borderBottom: '3px solid #D4AF37',
-        textAlign: 'center',
-        fontFamily: 'Arial, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 900,
-          fontSize: 'clamp(28px, 5vw, 96px)',
-          lineHeight: 1.05,
-          letterSpacing: '0.06em',
-          color: '#D4AF37',
-        }}
-      >
-        VERSION D&apos;ESSAI
-      </div>
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: 'clamp(13px, 1.7vw, 32px)',
-          color: '#fff',
-          marginTop: 8,
-        }}
-      >
-        Réservé aux tests · Abonnez-vous sur animajet.fr
-      </div>
-    </div>
   )
 }

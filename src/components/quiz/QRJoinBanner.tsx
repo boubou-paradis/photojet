@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import styles from './QRJoinBanner.module.css'
 
 interface QRJoinBannerProps {

@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import AnimaBuzzLogo from '@/components/buzzer/AnimaBuzzLogo'
 import Buzzer from '@/components/buzzer/Buzzer'
 import { buzzerFontVars } from '@/components/buzzer/fonts'

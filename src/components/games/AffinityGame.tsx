@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import FinalScreen from '@/components/affinity/live/FinalScreen'
 import QuestionScreen from '@/components/affinity/live/QuestionScreen'
 import RevealScreen from '@/components/affinity/live/RevealScreen'

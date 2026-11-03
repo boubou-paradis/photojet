@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users, Megaphone } from 'lucide-react'
 import { createPublicClient } from '@/lib/supabase'
 import type { LiveMessage, LivePhoto, LiveSession } from '@/lib/public-api/columns'
@@ -28,7 +28,7 @@ import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
 import VoteGame from '@/components/games/VoteGame'
 import { useVoteStatus } from '@/hooks/useVoteStatus'
 import { usePromoPreload } from '@/hooks/usePromoPreload'
-import { TrialSlideshowBand, useTrialWatermark } from '@/components/TrialWatermark'
+import { useTrialWatermark } from '@/components/TrialWatermark'
 import { watermarkedPhotoUrl } from '@/lib/watermark/constants'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
 
@@ -1383,8 +1383,6 @@ export default function LivePage() {
     >
       {/* Background */}
       {renderBackground()}
-
-      {trialWatermark && <TrialSlideshowBand />}
 
       {/* New photo notification */}
       <NewPhotoNotification show={showNewPhotoNotification} />

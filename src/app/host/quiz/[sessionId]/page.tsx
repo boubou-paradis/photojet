@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Maximize, Minimize, Trophy, Users } from 'lucide-react'
-import QRCode from 'react-qr-code'
+import QRCode from '@/components/QRCode'
 
 // Lib
 import { getLocalClient } from '@/lib/realtime'

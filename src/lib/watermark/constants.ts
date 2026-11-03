@@ -3,7 +3,7 @@
 
 // Sans dépendance Node : importé côté navigateur comme côté serveur.
 
-export const WATERMARK_LAYER_PATH = '/watermark/calque-essai.png'
+export const WATERMARK_LAYER_PATH = '/watermark/calque-essai-leger.png'
 export const SUBSCRIBE_HREF = '/#pricing'
 
 export const TRIAL_DOWNLOAD_ERROR_CODE = 'trial_download_blocked'
