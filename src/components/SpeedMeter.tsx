@@ -114,7 +114,7 @@ export default function SpeedMeter({ className = '', variant = 'card', gaugeClas
         onClick={measureSpeed}
         disabled={testing}
         title={quality ? `Connexion ${qualityConfig[quality].label.toLowerCase()} — cliquer pour retester` : 'Tester la connexion'}
-        className={`relative group text-left w-full ${className}`}
+        className={`relative group text-left w-full h-full ${className}`}
       >
         <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-lime-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="relative h-full bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl px-3 py-2 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all flex flex-col justify-center">
@@ -122,7 +122,7 @@ export default function SpeedMeter({ className = '', variant = 'card', gaugeClas
             <span className="truncate">Connexion</span>
             {testing && <RefreshCw className="h-2.5 w-2.5 flex-shrink-0 opacity-60 animate-spin" />}
           </p>
-          <div className="flex items-end gap-2 mt-0.5 min-w-0">
+          <div className="flex items-end justify-between gap-2 mt-0.5 min-w-0">
             {/* Cadran : rouge < 2, orange 2-5, vert ≥ 5 Mbps */}
             <svg viewBox="0 0 200 112" className={`flex-shrink-0 overflow-visible ${gaugeClassName}`} aria-hidden="true">
               <path d={arcPath(0, 1)} fill="none" stroke="#2E2E33" strokeWidth="30" strokeLinecap="round" />
@@ -136,7 +136,7 @@ export default function SpeedMeter({ className = '', variant = 'card', gaugeClas
               />
               <circle cx="100" cy="100" r="13" fill="#1A1A1E" stroke="#F4D03F" strokeWidth="6" />
             </svg>
-            <div className="flex flex-col min-w-0 leading-none">
+            <div className="flex flex-col items-end min-w-0 leading-none">
               <span className="text-2xl font-black" style={{ color }}>
                 {testing || speed === null ? '--' : speed.toFixed(1)}
               </span>

@@ -329,8 +329,10 @@ export default function DashboardPage() {
     if (!el || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
-      // Autour du QR : marge blanche, code/compte et boutons ≈ 72 px en hauteur, 12 px en largeur
-      setQrSize(Math.max(80, Math.min(240, Math.floor(Math.min(height - 72, width - 12)))))
+      // Autour du QR : marge blanche, code/compte et boutons ≈ 72 px en hauteur, 12 px en largeur.
+      // QR aux 2/3 de la place disponible (plus aéré), plafonné à 160 px.
+      const room = Math.min(height - 72, width - 12)
+      setQrSize(Math.max(80, Math.min(160, Math.floor(room * 2 / 3))))
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -1719,10 +1721,10 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Photos Total */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group"
+                  className="relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-[#D4AF37]/20 group-hover:border-[#D4AF37]/50 transition-all">
+                  <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-[#D4AF37]/20 group-hover:border-[#D4AF37]/50 transition-all">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 items-center justify-center ${statIconClass}`}>
                         <ImageIcon className="h-5 w-5 text-[#D4AF37]" />
@@ -1738,10 +1740,10 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Invités */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group"
+                  className="relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
+                  <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 items-center justify-center ${statIconClass}`}>
                         <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -1757,10 +1759,10 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Borne */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group"
+                  className="relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
+                  <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 items-center justify-center ${statIconClass}`}>
                         <Tablet className="h-5 w-5 text-cyan-500" />
@@ -1776,10 +1778,10 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Messages */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group"
+                  className="relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-violet-500/20 group-hover:border-violet-500/50 transition-all">
+                  <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-violet-500/20 group-hover:border-violet-500/50 transition-all">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/10 items-center justify-center ${statIconClass}`}>
                         <MessageCircle className="h-5 w-5 text-violet-500" />
@@ -1804,14 +1806,14 @@ fetch(${JSON.stringify(imageUrl)})
                   onClick={toggleModeration}
                   whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative group cursor-pointer"
+                  className="relative group cursor-pointer h-full"
                 >
                   <div className={`absolute -inset-0.5 rounded-xl blur transition-opacity duration-300 ${
                     moderationEnabled
                       ? 'bg-gradient-to-r from-[#D4AF37]/50 to-amber-500/50 opacity-100'
                       : 'bg-gradient-to-r from-gray-500/30 to-gray-600/30 opacity-0 group-hover:opacity-100'
                   }`} />
-                  <div className={`relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border-2 transition-all ${
+                  <div className={`relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border-2 transition-all ${
                     moderationEnabled
                       ? 'border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.3)]'
                       : 'border-gray-600/30 group-hover:border-gray-500/50'
@@ -1856,10 +1858,10 @@ fetch(${JSON.stringify(imageUrl)})
                 {selectedSession?.print_enabled && (
                   <motion.div
                     whileHover={{ scale: 1.03, y: -2 }}
-                    className="relative group"
+                    className="relative group h-full"
                   >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500/30 to-rose-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-pink-500/20 group-hover:border-pink-500/50 transition-all">
+                    <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-pink-500/20 group-hover:border-pink-500/50 transition-all">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-600/10 items-center justify-center ${statIconClass}`}>
                           <Printer className="h-5 w-5 text-pink-500" />
