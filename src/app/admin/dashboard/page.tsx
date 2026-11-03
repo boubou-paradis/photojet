@@ -61,6 +61,7 @@ import {
 import SpeedMeter from '@/components/SpeedMeter'
 import { toast } from 'sonner'
 import { getInviteUrl } from '@/lib/utils'
+import { applyDisplayDefaults } from '@/lib/display-defaults/client'
 
 // Subscription Status Card Component
 function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subscription; isOwner?: boolean }) {
@@ -978,10 +979,27 @@ fetch(${JSON.stringify(imageUrl)})
         await supabase.from('sessions').update({ is_active: true }).eq('id', data.id)
       }
 
-      const created = { ...data, is_active: isActive }
+      // Réglages d'affichage par défaut du compte (s'il en a enregistré) :
+      // appliqués à CETTE nouvelle session uniquement. Un échec ne bloque pas
+      // la création : la session garde les réglages d'origine.
+      let base: Session = data
+      let defaultsWarning: string | null = null
+      try {
+        const applied = await applyDisplayDefaults(data.id)
+        if (applied.status === 'applied') {
+          base = applied.session
+          if (applied.warnings.length > 0) defaultsWarning = applied.warnings.join(' ')
+        }
+      } catch (err) {
+        console.error('Réglages par défaut non appliqués :', err)
+        defaultsWarning = "Vos réglages par défaut n'ont pas pu être appliqués. Utilisez « Appliquer mes réglages par défaut » dans les Paramètres."
+      }
+
+      const created = { ...base, is_active: isActive }
       setSessions((prev) => [created, ...prev])
       setSelectedSession(created)
       toast.success(isActive ? 'Session créée' : "Session créée, inactive. Vous pouvez la préparer et l'activer dans les Paramètres.")
+      if (defaultsWarning) toast.warning(defaultsWarning)
     } catch (err) {
       toast.error('Erreur lors de la création')
       console.error(err)

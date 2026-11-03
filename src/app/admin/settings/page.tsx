@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase'
 import SessionSwitchDialog from '@/components/SessionSwitchDialog'
+import DisplayDefaultsCard from '@/components/DisplayDefaultsCard'
 import { ACTIVATION_DENIED_MESSAGE, type ActiveSessionInfo } from '@/lib/sessions/activation'
 import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
@@ -266,6 +267,22 @@ export default function SettingsPage() {
   useEffect(() => {
     isInitialLoad.current = true
   }, [selectedSession?.id])
+
+  // Réglages par défaut : la base doit être à jour avant d'être relue
+  async function flushPendingSave() {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+    await autoSave()
+  }
+
+  // Session relue après « Appliquer mes réglages par défaut » : le formulaire
+  // repart de la base (sinon la sauvegarde auto réécrirait les anciennes valeurs).
+  function handleDefaultsApplied(updated: Session) {
+    setSelectedSession(updated)
+    setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+  }
 
   // Activation et désactivation passent par la route serveur. Si elle ne répond
   // pas, on écrit comme avant : une panne ne bloque jamais un abonné.
@@ -1091,6 +1108,15 @@ export default function SettingsPage() {
               </div>
             </div>
           </motion.div>
+
+          {/* Réglages par défaut du compte - pleine largeur */}
+          <DisplayDefaultsCard
+            key={selectedSession.id}
+            sessionId={selectedSession.id}
+            sessionName={selectedSession.name}
+            flushPendingSave={flushPendingSave}
+            onApplied={handleDefaultsApplied}
+          />
 
           {/* Affichage écran secondaire - pleine largeur (info, lecture seule) */}
           <motion.div

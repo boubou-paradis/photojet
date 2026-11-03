@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server'
 import { analyzeTemplate } from '@/lib/borne-templates/analyze'
 import { TEMPLATE_MAX_BYTES, TEMPLATE_NAME_MAX, TEMPLATES_PER_USER, templatePath } from '@/lib/borne-templates/constants'
 import { PHOTOS_BUCKET, getCurrentUserId, getTemplatesAdmin, isUuid } from '@/lib/borne-templates/server'
+import { unlinkTemplateFromDefaults } from '@/lib/display-defaults/server'
 
 export async function POST(request: Request) {
   const userId = await getCurrentUserId()
@@ -106,6 +107,15 @@ export async function DELETE(request: Request) {
       .select('id')
     if (error) return NextResponse.json({ error: "Suppression impossible pour l'instant, réessayez." }, { status: 500 })
     for (const s of data ?? []) unlinked.add(s.id as string)
+  }
+
+  // 1b. Retirer aussi le cadre des réglages par défaut du compte (sinon la
+  //     prochaine session créée pointerait vers un cadre supprimé).
+  try {
+    await unlinkTemplateFromDefaults(admin, userId, id)
+  } catch (e) {
+    console.error('[borne-templates] Réglages par défaut non mis à jour:', e instanceof Error ? e.message : e)
+    return NextResponse.json({ error: "Suppression impossible pour l'instant, réessayez." }, { status: 500 })
   }
 
   // 2. Ligne puis fichier

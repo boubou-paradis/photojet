@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendDataDeletionWarningEmail } from '@/lib/resend'
 import { stripe } from '@/lib/stripe'
 import { listUserTemplateFiles } from '@/lib/borne-templates/server'
+import { deleteDisplayDefaults } from '@/lib/display-defaults/server'
 
 const GRACE_PERIOD_DAYS = 30
 const TRIAL_GRACE_DAYS = 7 // Essais gratuits non convertis : purge 7 jours après expiration
@@ -478,6 +479,16 @@ async function deleteUserData(
     .from('borne_templates')
     .delete()
     .eq('user_id', userId)
+
+  // 10e. Réglages d'affichage par défaut du compte + leurs copies de fichiers
+  // (fond, logo, affiches « defaults-<user> »). Toutes les sessions sont déjà
+  // supprimées (étape 6). La ligne partirait aussi avec l'utilisateur (cascade),
+  // mais pas les fichiers. Robuste si la table n'existe pas encore.
+  try {
+    filesDeleted += await deleteDisplayDefaults(supabase, userId)
+  } catch (e) {
+    console.error('[Cron cleanup] Display defaults delete error:', e instanceof Error ? e.message : e)
+  }
 
   // 11. Delete subscription record
   await supabase
