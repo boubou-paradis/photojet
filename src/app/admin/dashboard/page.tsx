@@ -321,20 +321,16 @@ export default function DashboardPage() {
   const statIconClass = selectedSession?.print_enabled ? 'hidden min-[1500px]:flex' : 'hidden min-[1340px]:flex'
   // Taille des QR codes : ils s'agrandissent pour remplir la hauteur libre de la colonne de droite
   const qrAreaRef = useRef<HTMLDivElement>(null)
-  const [qrSize, setQrSize] = useState(84)
-  const [qrStacked, setQrStacked] = useState(false)
+  const [qrSize, setQrSize] = useState(120)
+  // Un seul QR affiché à la fois : deux QR côte à côte font hésiter les téléphones
+  const [qrView, setQrView] = useState<'invite' | 'album'>('invite')
   useEffect(() => {
     const el = qrAreaRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
-      // Chaque QR : libellé, marge blanche, code/compte et boutons ≈ 92 px autour.
-      // Côte à côte (écrans bas) ou l'un sous l'autre (écrans hauts), selon ce qui donne les plus grands QR.
-      const side = Math.min(height - 92, (width - 8) / 2 - 12)
-      const stacked = Math.min((height - 2 * 92 - 8) / 2, width - 12)
-      const useStacked = stacked > side + 10
-      setQrStacked(useStacked)
-      setQrSize(Math.max(64, Math.min(200, Math.floor(useStacked ? stacked : side))))
+      // Autour du QR : marge blanche, code/compte et boutons ≈ 72 px en hauteur, 12 px en largeur
+      setQrSize(Math.max(80, Math.min(240, Math.floor(Math.min(height - 72, width - 12)))))
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -1854,7 +1850,7 @@ fetch(${JSON.stringify(imageUrl)})
                 </motion.div>
 
                 {/* Connexion (à côté de la modération) */}
-                <SpeedMeter variant="tile" iconClassName={statIconClass} />
+                <SpeedMeter variant="tile" gaugeClassName={selectedSession?.print_enabled ? 'w-12 min-[1366px]:w-[60px] min-[1500px]:w-[72px]' : 'w-16 min-[1340px]:w-[72px]'} />
 
                 {/* Impressions */}
                 {selectedSession?.print_enabled && (
@@ -2388,63 +2384,74 @@ fetch(${JSON.stringify(imageUrl)})
                 </div>
               </div>
 
-              {/* QR codes invités + album : prend toute la hauteur libre, les QR s'agrandissent avec */}
+              {/* QR codes : un seul à la fois (Invités | Album), il remplit la hauteur libre */}
               <div className="card-gold rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center gap-1.5 flex-shrink-0">
                   <QrCode className="h-3.5 w-3.5 text-[#D4AF37]" />
                   <h3 className="font-semibold text-white text-xs">QR codes</h3>
-                </div>
-                <div ref={qrAreaRef} className={`flex-1 min-h-0 p-2 grid ${qrStacked ? 'grid-cols-1 content-center' : 'grid-cols-2 items-center'} gap-2`}>
-                  {/* Invités */}
-                  <div className="flex flex-col items-center min-w-0">
-                    <p className="text-[11px] font-semibold text-[#D4AF37] mb-1.5 flex items-center gap-1">
+                  <div role="tablist" aria-label="QR code affiché" className="ml-auto inline-flex p-0.5 rounded-md bg-[#1A1A1E] border border-white/10">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={qrView === 'invite'}
+                      onClick={() => setQrView('invite')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition-colors ${qrView === 'invite' ? 'bg-[#D4AF37] text-[#0f0f12]' : 'text-gray-400 hover:text-white'}`}
+                    >
                       <Smartphone className="h-3 w-3" /> Invités
-                    </p>
-                    <div className="relative" id="qr-invite">
-                      <div className="relative bg-white p-1.5 rounded-lg">
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={qrView === 'album'}
+                      onClick={() => setQrView('album')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 transition-colors ${qrView === 'album' ? 'bg-violet-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      <FolderOpen className="h-3 w-3" /> Album
+                    </button>
+                  </div>
+                </div>
+                <div ref={qrAreaRef} className="flex-1 min-h-0 p-2 flex flex-col items-center justify-center">
+                  {qrView === 'invite' ? (
+                    <>
+                      <div className="bg-white p-1.5 rounded-lg" id="qr-invite">
                         <QRCode value={getInviteUrl(selectedSession.code)} size={qrSize} />
                       </div>
-                    </div>
-                    <p className="text-sm font-mono font-black mt-1.5 leading-5 text-[#D4AF37]">
-                      #{selectedSession.code}
-                    </p>
-                    <div className="grid grid-cols-3 gap-1 mt-1.5 w-full">
-                      <Button variant="outline" size="sm" onClick={copyInviteLink} title="Copier le lien invités"
-                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => window.open(`/invite/${selectedSession.code}`, '_blank')} title="Ouvrir la page invités"
-                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={printQRCode} title="Imprimer le QR code"
-                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
-                        <Printer className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  {/* Album post-event */}
-                  <div className="flex flex-col items-center min-w-0">
-                    <p className="text-[11px] font-semibold text-violet-400 mb-1.5 flex items-center gap-1">
-                      <FolderOpen className="h-3 w-3" /> Album
-                    </p>
-                    <div className="relative bg-white p-1.5 rounded-lg">
-                      <QRCode value={getAlbumUrl(selectedSession.code)} size={qrSize} />
-                    </div>
-                    <p className="text-sm mt-1.5 leading-5 text-gray-400">
-                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos
-                    </p>
-                    <div className="grid grid-cols-2 gap-1 mt-1.5 w-full">
-                      <Button variant="outline" size="sm" onClick={copyAlbumLink} title="Copier le lien de l'album"
-                        className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')} title="Voir l'album"
-                        className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
+                      <p className="text-sm font-mono font-black mt-1.5 leading-5 text-[#D4AF37]">#{selectedSession.code}</p>
+                      <div className="grid grid-cols-3 gap-1.5 mt-1.5 w-full">
+                        <Button variant="outline" size="sm" onClick={copyInviteLink} title="Copier le lien invités"
+                          className="h-7 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px]">
+                          <Copy className="h-3 w-3 mr-1" /><span>Copier</span>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => window.open(`/invite/${selectedSession.code}`, '_blank')} title="Ouvrir la page invités"
+                          className="h-7 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px]">
+                          <ExternalLink className="h-3 w-3 mr-1" /><span>Ouvrir</span>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={printQRCode} title="Imprimer le QR code"
+                          className="h-7 px-0 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50 text-[11px]">
+                          <Printer className="h-3 w-3 mr-1" /><span>Imprimer</span>
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-white p-1.5 rounded-lg">
+                        <QRCode value={getAlbumUrl(selectedSession.code)} size={qrSize} />
+                      </div>
+                      <p className="text-sm mt-1.5 leading-5 text-gray-400">
+                        <span className="text-violet-400 font-bold">{approvedCount}</span> photos dans l&apos;album
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5 mt-1.5 w-full">
+                        <Button variant="outline" size="sm" onClick={copyAlbumLink} title="Copier le lien de l'album"
+                          className="h-7 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[11px]">
+                          <Copy className="h-3 w-3 mr-1" />Copier
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')} title="Voir l'album"
+                          className="h-7 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50 text-[11px]">
+                          <ExternalLink className="h-3 w-3 mr-1" />Voir
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
