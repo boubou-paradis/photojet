@@ -28,7 +28,7 @@ import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
 import { toast } from 'sonner'
 import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
-import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR, type Plan } from '@/lib/billing/plans'
+import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR } from '@/lib/billing/plans'
 
 // LES ANIMATIONS DISPONIBLES — uniquement les fonctionnalités réelles
 const animations = [
@@ -266,7 +266,13 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [trialEmail, setTrialEmail] = useState('')
   const [promoCode, setPromoCode] = useState('')
-  const [plan, setPlan] = useState<Plan>('monthly')
+  // Carte annuelle : état propre, indépendant de la carte mensuelle
+  const [annualEmail, setAnnualEmail] = useState('')
+  const [annualPromo, setAnnualPromo] = useState('')
+  const [showAnnualPromo, setShowAnnualPromo] = useState(false)
+  const [showAnnualForm, setShowAnnualForm] = useState(false)
+  const [annualLoading, setAnnualLoading] = useState(false)
+  const [annualError, setAnnualError] = useState<string | null>(null)
   const [showPromo, setShowPromo] = useState(false)
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -320,7 +326,7 @@ export default function Home() {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(plan === 'annual' ? { email, promoCode, productType: 'annual' } : { email, promoCode }),
+        body: JSON.stringify({ email, promoCode }),
       })
 
       const data = await response.json()
@@ -334,6 +340,36 @@ export default function Home() {
       setError('Erreur de connexion')
     } finally {
       setCheckoutLoading(false)
+    }
+  }
+
+  const handleAnnualCheckout = async () => {
+    if (!annualEmail) {
+      setAnnualError('Entrez votre email')
+      return
+    }
+
+    setAnnualLoading(true)
+    setAnnualError(null)
+
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: annualEmail, promoCode: annualPromo, productType: 'annual' }),
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setAnnualError(data.error || 'Erreur lors du paiement')
+      }
+    } catch {
+      setAnnualError('Erreur de connexion')
+    } finally {
+      setAnnualLoading(false)
     }
   }
 
@@ -907,7 +943,7 @@ export default function Home() {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -922,14 +958,14 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="flex flex-col lg:flex-row justify-center gap-6 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
               {/* Subscription Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="card-float rounded-2xl p-8 relative overflow-hidden border-[#D4AF37]/30 w-full max-w-md"
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-[#D4AF37]/30 w-full max-w-md mx-auto lg:max-w-none"
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37]" />
                 <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#0f0f12] px-4 py-1.5 rounded-bl-xl font-bold text-sm">
@@ -937,47 +973,12 @@ export default function Home() {
                 </div>
 
                 <div className="mb-6 pt-4">
-                  {/* Choix de la formule */}
-                  <div role="radiogroup" aria-label="Formule d'abonnement" className="inline-flex p-1 mb-4 rounded-xl bg-[#1A1A1E] border border-[#3a3a3a]">
-                    {(['monthly', 'annual'] as const).map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        role="radio"
-                        aria-checked={plan === p}
-                        onClick={() => setPlan(p)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                          plan === p ? 'bg-[#D4AF37] text-[#0f0f12]' : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        {p === 'monthly' ? 'Mensuel' : 'Annuel'}
-                        {p === 'annual' && (
-                          <span className={`ml-1.5 text-[11px] font-bold ${plan === p ? 'text-[#0f0f12]/70' : 'text-[#D4AF37]'}`}>
-                            2 mois offerts
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                  <h3 className="text-2xl font-bold text-white mb-2">Abonnement Mensuel</h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-white">{PRICE.toFixed(2).replace('.', ',')}€</span>
+                    <span className="text-gray-500">/mois</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    {plan === 'annual' ? 'Abonnement Annuel' : 'Abonnement Mensuel'}
-                  </h3>
-                  {plan === 'annual' ? (
-                    <>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-bold text-white">{ANNUAL_PRICE_EUR}€</span>
-                        <span className="text-gray-500">/an</span>
-                      </div>
-                      <p className="text-sm text-gray-400 mt-2">
-                        Soit {ANNUAL_MONTHLY_EQUIVALENT_EUR.toFixed(2).replace('.', ',')}€/mois · {ANNUAL_SAVING_EUR.toFixed(2).replace('.', ',')}€ d&apos;économie par an
-                      </p>
-                    </>
-                  ) : (
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold text-white">{PRICE.toFixed(2).replace('.', ',')}€</span>
-                      <span className="text-gray-500">/mois</span>
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-400 mt-2">Sans engagement</p>
                 </div>
 
                 <ul className="space-y-3 mb-6">
@@ -1010,7 +1011,7 @@ export default function Home() {
                       {showPromo ? (
                         <Input
                           type="text"
-                          placeholder={plan === 'annual' ? 'Code parrain (optionnel)' : 'Code promo (optionnel)'}
+                          placeholder="Code promo (optionnel)"
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                           className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-500 input-gold"
@@ -1020,7 +1021,7 @@ export default function Home() {
                           onClick={() => setShowPromo(true)}
                           className="text-sm text-[#D4AF37] hover:text-[#F4E4BC] transition-colors"
                         >
-                          {plan === 'annual' ? 'J’ai un code parrain' : 'J’ai un code promo'}
+                          J’ai un code promo
                         </button>
                       )}
 
@@ -1034,15 +1035,13 @@ export default function Home() {
                         ) : (
                           <>
                             <Sparkles className="h-5 w-5 mr-2" />
-                            Payer {plan === 'annual' ? `${ANNUAL_PRICE_EUR}€` : `${PRICE.toFixed(2).replace('.', ',')}€`}
+                            Payer {PRICE.toFixed(2).replace('.', ',')}€
                           </>
                         )}
                       </Button>
 
                       <p className="text-xs text-gray-600 text-center">
-                        {plan === 'annual'
-                          ? 'Paiement sécurisé par Stripe. Engagement 1 an, renouvellement résiliable à tout moment.'
-                          : 'Paiement sécurisé par Stripe. Annulable à tout moment.'}
+                        Paiement sécurisé par Stripe. Annulable à tout moment.
                       </p>
                     </>
                   ) : (
@@ -1069,13 +1068,127 @@ export default function Home() {
                 </div>
               </motion.div>
 
+              {/* Annual Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.15 }}
+                className="card-float rounded-2xl relative overflow-hidden border-2 !border-[#F4D03F] shadow-[0_0_40px_rgba(212,175,55,0.25)] w-full max-w-md mx-auto lg:max-w-none flex flex-col"
+              >
+                <div className="bg-gradient-to-r from-[#D4AF37] via-[#F4D03F] to-[#D4AF37] text-[#0f0f12] text-center py-3 px-4">
+                  <p className="font-heading text-3xl font-black tracking-wide leading-none">2 MOIS OFFERTS</p>
+                  <p className="text-xs font-semibold mt-1 opacity-80">12 mois au prix de 10</p>
+                </div>
+
+                <div className="p-8 flex flex-col flex-1">
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-bold text-white mb-2">Abonnement Annuel</h3>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-5xl font-bold text-white">{ANNUAL_PRICE_EUR}€</span>
+                      <span className="text-gray-500">/an</span>
+                      <span className="text-gray-600 line-through text-lg">{(PRICE * 12).toFixed(2).replace('.', ',')}€</span>
+                    </div>
+                    <p className="text-sm text-[#F4D03F] font-semibold mt-2">
+                      Soit {ANNUAL_MONTHLY_EQUIVALENT_EUR.toFixed(2).replace('.', ',')}€/mois · {ANNUAL_SAVING_EUR.toFixed(2).replace('.', ',')}€ d&apos;économie
+                    </p>
+                  </div>
+
+                  <ul className="space-y-3 mb-6">
+                    {pricingFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-3 text-gray-400 text-sm">
+                        <Check className="h-4 w-4 text-[#D4AF37] flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="space-y-3 mt-auto">
+                    {showAnnualForm ? (
+                      <>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                          <Input
+                            type="email"
+                            name="annual-email"
+                            autoComplete="off"
+                            placeholder="votre@email.com"
+                            value={annualEmail}
+                            onChange={(e) => setAnnualEmail(e.target.value)}
+                            autoFocus
+                            className="pl-10 h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20 text-white placeholder:text-gray-500 input-gold"
+                          />
+                        </div>
+
+                        {showAnnualPromo ? (
+                          <Input
+                            type="text"
+                            placeholder="Code parrain (optionnel)"
+                            value={annualPromo}
+                            onChange={(e) => setAnnualPromo(e.target.value.toUpperCase())}
+                            className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-500 input-gold"
+                          />
+                        ) : (
+                          <button
+                            onClick={() => setShowAnnualPromo(true)}
+                            className="text-sm text-[#D4AF37] hover:text-[#F4E4BC] transition-colors"
+                          >
+                            J’ai un code parrain
+                          </button>
+                        )}
+
+                        {annualError && (
+                          <p role="alert" className="text-sm text-red-400">{annualError}</p>
+                        )}
+
+                        <Button
+                          onClick={handleAnnualCheckout}
+                          disabled={annualLoading || !annualEmail}
+                          className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
+                        >
+                          {annualLoading ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <>
+                              <Sparkles className="h-5 w-5 mr-2" />
+                              Payer {ANNUAL_PRICE_EUR}€
+                            </>
+                          )}
+                        </Button>
+
+                        <p className="text-xs text-gray-600 text-center">
+                          Paiement sécurisé par Stripe. Engagement 1 an, renouvellement résiliable à tout moment.
+                        </p>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={() => setShowAnnualForm(true)}
+                        className="w-full h-12 btn-shimmer text-[#0f0f12] font-semibold text-lg border-0"
+                      >
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Choisir l&apos;annuel
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-[#D4AF37]/10">
+                    <p className="text-center text-sm text-gray-500">
+                      Déjà abonné ?{' '}
+                      <a href="/login" className="text-[#D4AF37] hover:text-[#F4E4BC] transition-colors font-medium">
+                        Se connecter
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Pass Week-end Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="card-float rounded-2xl p-8 relative overflow-hidden border-white/10 w-full max-w-md"
+                className="card-float rounded-2xl p-8 relative overflow-hidden border-white/10 w-full max-w-md mx-auto lg:max-w-none"
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-violet-500" />
                 <div className="absolute top-0 right-0 bg-violet-500 text-white px-4 py-1.5 rounded-bl-xl font-bold text-sm">
