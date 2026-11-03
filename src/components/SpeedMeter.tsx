@@ -5,6 +5,10 @@ import { RefreshCw, Wifi } from 'lucide-react'
 
 interface SpeedMeterProps {
   className?: string
+  /** 'tile' : format tuile, aligné sur les compteurs du haut du tableau de bord */
+  variant?: 'card' | 'tile'
+  /** Classes d'affichage du mini cadran en format tuile (ex. masqué sur écran étroit) */
+  iconClassName?: string
 }
 
 type ConnectionQuality = 'poor' | 'medium' | 'good' | 'excellent'
@@ -40,7 +44,7 @@ function arcPath(from: number, to: number, radius = 80): string {
   return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${radius} ${radius} 0 0 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`
 }
 
-export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
+export default function SpeedMeter({ className = '', variant = 'card', iconClassName = 'flex' }: SpeedMeterProps) {
   const [speed, setSpeed] = useState<number | null>(null)
   const [ping, setPing] = useState<number | null>(null)
   const [testing, setTesting] = useState(false)
@@ -101,6 +105,51 @@ export default function SpeedMeter({ className = '' }: SpeedMeterProps) {
   const poorEnd = scalePosition(POOR_BELOW)
   const mediumEnd = scalePosition(MEDIUM_BELOW)
   const lastTick = SCALE_TICKS.length - 1
+
+  if (variant === 'tile') {
+    const color = quality ? qualityConfig[quality].color : '#6B6B70'
+    return (
+      <button
+        type="button"
+        onClick={measureSpeed}
+        disabled={testing}
+        title="Tester la connexion"
+        className={`relative group text-left w-full ${className}`}
+      >
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-lime-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="relative h-full bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mini cadran */}
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-lime-600/10 items-center justify-center flex-shrink-0 ${iconClassName}`}>
+              <svg viewBox="0 0 200 120" className="w-8 h-6 overflow-visible">
+                <path d={arcPath(0, poorEnd)} fill="none" stroke="#E53935" strokeWidth="22" />
+                <path d={arcPath(poorEnd, mediumEnd)} fill="none" stroke="#FF9800" strokeWidth="22" />
+                <path d={arcPath(mediumEnd, 1)} fill="none" stroke="#4CAF50" strokeWidth="22" />
+                <polygon
+                  points="100,30 92,98 100,108 108,98"
+                  fill="#F4D03F"
+                  style={{ transform: `rotate(${needleAngle}deg)`, transformOrigin: '100px 100px', transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                />
+                <circle cx="100" cy="100" r="12" fill="#F4D03F" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 min-w-0">
+                <span className="truncate">Connexion</span>
+                {testing && <RefreshCw className="h-2.5 w-2.5 flex-shrink-0 opacity-60 animate-spin" />}
+              </p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black" style={{ color }}>
+                  {testing || speed === null ? '--' : speed.toFixed(1)}
+                </span>
+                <span className="text-[10px] text-gray-500">Mbps</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </button>
+    )
+  }
 
   return (
     <div className={`card-gold rounded-xl ${className}`}>

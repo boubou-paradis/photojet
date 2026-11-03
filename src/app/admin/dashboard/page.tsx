@@ -44,6 +44,9 @@ import {
   Printer,
   Facebook,
   CreditCard,
+  Zap,
+  QrCode,
+  Smartphone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -313,6 +316,29 @@ export default function DashboardPage() {
   // Polling fallback: filet de sécurité discret (60s)
   // Vérifie uniquement le compteur de photos et rafraîchit si changement
   const lastPhotoCountRef = useRef<number | null>(null)
+  // Icônes des tuiles du haut : masquées quand la largeur manque, pour garder libellés et chiffres lisibles
+  // (6 tuiles dès 1340 px, 7 tuiles avec Impressions dès 1500 px)
+  const statIconClass = selectedSession?.print_enabled ? 'hidden min-[1500px]:flex' : 'hidden min-[1340px]:flex'
+  // Taille des QR codes : ils s'agrandissent pour remplir la hauteur libre de la colonne de droite
+  const qrAreaRef = useRef<HTMLDivElement>(null)
+  const [qrSize, setQrSize] = useState(84)
+  const [qrStacked, setQrStacked] = useState(false)
+  useEffect(() => {
+    const el = qrAreaRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      // Chaque QR : libellé, marge blanche, code/compte et boutons ≈ 92 px autour.
+      // Côte à côte (écrans bas) ou l'un sous l'autre (écrans hauts), selon ce qui donne les plus grands QR.
+      const side = Math.min(height - 92, (width - 8) / 2 - 12)
+      const stacked = Math.min((height - 2 * 92 - 8) / 2, width - 12)
+      const useStacked = stacked > side + 10
+      setQrStacked(useStacked)
+      setQrSize(Math.max(64, Math.min(200, Math.floor(useStacked ? stacked : side))))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [selectedSession?.id])
   const lastMessageCountRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -1693,7 +1719,7 @@ fetch(${JSON.stringify(imageUrl)})
             {/* Colonne gauche : Stats + Photos */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
               {/* Stats Cards - Premium Gaming Style */}
-              <div className="grid grid-cols-6 gap-4 flex-shrink-0">
+              <div className={`grid ${selectedSession?.print_enabled ? 'grid-cols-7' : 'grid-cols-6'} gap-3 flex-shrink-0`}>
                 {/* Photos Total */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
@@ -1701,12 +1727,12 @@ fetch(${JSON.stringify(imageUrl)})
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-[#D4AF37]/20 group-hover:border-[#D4AF37]/50 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 flex items-center justify-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-amber-600/10 items-center justify-center ${statIconClass}`}>
                         <ImageIcon className="h-5 w-5 text-[#D4AF37]" />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Photos</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Photos</p>
                         <span className="text-2xl font-black text-[#D4AF37]">{photos.length}</span>
                       </div>
                     </div>
@@ -1720,12 +1746,12 @@ fetch(${JSON.stringify(imageUrl)})
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 items-center justify-center ${statIconClass}`}>
                         <CheckCircle className="h-5 w-5 text-emerald-500" />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Invités</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Invités</p>
                         <span className="text-2xl font-black text-emerald-500">{invitePhotosCount}</span>
                       </div>
                     </div>
@@ -1739,12 +1765,12 @@ fetch(${JSON.stringify(imageUrl)})
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 flex items-center justify-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 items-center justify-center ${statIconClass}`}>
                         <Tablet className="h-5 w-5 text-cyan-500" />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Borne</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Borne</p>
                         <span className="text-2xl font-black text-cyan-500">{bornePhotosCount}</span>
                       </div>
                     </div>
@@ -1758,12 +1784,12 @@ fetch(${JSON.stringify(imageUrl)})
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-violet-500/20 group-hover:border-violet-500/50 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/10 flex items-center justify-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/10 items-center justify-center ${statIconClass}`}>
                         <MessageCircle className="h-5 w-5 text-violet-500" />
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Messages</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Messages</p>
                         <div className="flex items-center gap-2">
                           <span className="text-2xl font-black text-violet-500">{totalMessagesCount}</span>
                           {pendingMessagesCount > 0 && (
@@ -1794,11 +1820,11 @@ fetch(${JSON.stringify(imageUrl)})
                       ? 'border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.3)]'
                       : 'border-gray-600/30 group-hover:border-gray-500/50'
                   }`}>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <motion.div
                         animate={{ rotate: togglingModeration ? 360 : 0 }}
                         transition={{ duration: 0.5 }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        className={`w-10 h-10 flex-shrink-0 rounded-xl items-center justify-center ${statIconClass} ${
                           moderationEnabled ? 'bg-gradient-to-br from-[#D4AF37]/30 to-amber-600/20' : 'bg-gray-600/10'
                         }`}
                       >
@@ -1810,8 +1836,8 @@ fetch(${JSON.stringify(imageUrl)})
                           <ShieldOff className="h-5 w-5 text-gray-500" />
                         )}
                       </motion.div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Modération</p>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Modération</p>
                         <div className="flex items-center gap-2">
                           <span className={`text-lg font-black ${moderationEnabled ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
                             {moderationEnabled ? 'ON' : 'OFF'}
@@ -1827,6 +1853,9 @@ fetch(${JSON.stringify(imageUrl)})
                   </div>
                 </motion.div>
 
+                {/* Connexion (à côté de la modération) */}
+                <SpeedMeter variant="tile" iconClassName={statIconClass} />
+
                 {/* Impressions */}
                 {selectedSession?.print_enabled && (
                   <motion.div
@@ -1835,18 +1864,18 @@ fetch(${JSON.stringify(imageUrl)})
                   >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500/30 to-rose-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-pink-500/20 group-hover:border-pink-500/50 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-600/10 flex items-center justify-center">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-600/10 items-center justify-center ${statIconClass}`}>
                           <Printer className="h-5 w-5 text-pink-500" />
                         </div>
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Impressions</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">Impressions</p>
                           <div className="flex items-center gap-2">
                             <span className="text-2xl font-black text-pink-500">
                               {pendingPrintCount}
                             </span>
                             {selectedSession?.print_limit && (
-                              <span className="text-xs text-gray-500">/ {selectedSession.print_limit} total</span>
+                              <span className="text-xs text-gray-500" title={`${selectedSession.print_limit} impressions au total`}>/ {selectedSession.print_limit}</span>
                             )}
                             {pendingPrintCount > 0 && (
                               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
@@ -2319,105 +2348,101 @@ fetch(${JSON.stringify(imageUrl)})
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[320px] flex flex-col gap-1.5 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
-              {/* Actions rapides — une ligne (« Voir l'album » est dans le bloc QR) */}
-              <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-rose-500/20 group-hover:border-rose-500/30 overflow-hidden transition-all">
-                  <div className="h-0.5 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
-                  <div className="p-2 flex gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 min-w-0 h-7 px-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
-                      onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
-                      title={selectedSession.borne_enabled ? (borneConnection?.is_online ? 'Borne en ligne' : 'Borne hors ligne') : undefined}
-                    >
-                      <Tablet className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
-                      <span className="truncate">AnimaBooth</span>
-                      {selectedSession.borne_enabled && (
-                        borneConnection?.is_online
-                          ? <span className="ml-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
-                          : <WifiOff className="ml-1 h-2.5 w-2.5 text-gray-500 flex-shrink-0" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 min-w-0 h-7 px-2 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-medium"
-                      onClick={downloadAllPhotos}
-                      disabled={downloading || approvedCount === 0}
-                    >
-                      {downloading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin flex-shrink-0" />
-                      ) : (
-                        <Download className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
-                      )}
-                      <span className="truncate">{downloading ? 'Téléchargement...' : `Télécharger (${approvedCount})`}</span>
-                    </Button>
-                  </div>
+            <div className="lg:w-[320px] flex flex-col gap-3 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+              {/* Actions rapides */}
+              <div className="card-gold rounded-xl flex-shrink-0">
+                <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  <h3 className="font-semibold text-white text-xs">Actions rapides</h3>
+                </div>
+                <div className="p-2 flex gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 min-w-0 h-7 px-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-[11px] font-medium"
+                    onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
+                    title={selectedSession.borne_enabled ? (borneConnection?.is_online ? 'Borne en ligne' : 'Borne hors ligne') : undefined}
+                  >
+                    <Tablet className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                    <span className="truncate">AnimaBooth</span>
+                    {selectedSession.borne_enabled && (
+                      borneConnection?.is_online
+                        ? <span className="ml-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
+                        : <WifiOff className="ml-1 h-2.5 w-2.5 text-gray-500 flex-shrink-0" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 min-w-0 h-7 px-2 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50 text-[11px] font-medium"
+                    onClick={downloadAllPhotos}
+                    disabled={downloading || approvedCount === 0}
+                  >
+                    {downloading ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin flex-shrink-0" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                    )}
+                    <span className="truncate">{downloading ? 'Téléchargement...' : `Télécharger (${approvedCount})`}</span>
+                  </Button>
                 </div>
               </div>
 
-              {/* QR codes invités + album côte à côte */}
-              <div className="relative group flex-shrink-0">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-violet-500/30 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl border border-[#D4AF37]/30 overflow-hidden">
-                  <div className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
-                  <div className="p-2 grid grid-cols-2 gap-2">
-                    {/* Invités */}
-                    <div className="flex flex-col items-center min-w-0">
-                      <h3 className="font-bold text-white text-[11px] flex items-center gap-1 self-start mb-1.5">
-                        <span>📱</span> Invités
-                      </h3>
-                      <div className="relative" id="qr-invite">
-                        <div className="absolute -inset-1 bg-[#D4AF37]/10 rounded-lg blur-md" />
-                        <div className="relative bg-white p-1.5 rounded-lg shadow-xl shadow-black/50">
-                          <QRCode value={getInviteUrl(selectedSession.code)} size={84} />
-                        </div>
-                      </div>
-                      <p className="text-base font-mono font-black mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]">
-                        #{selectedSession.code}
-                      </p>
-                      <div className="grid grid-cols-3 gap-1 mt-1 w-full">
-                        <Button variant="outline" size="sm" onClick={copyInviteLink} title="Copier le lien invités"
-                          className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => window.open(`/invite/${selectedSession.code}`, '_blank')} title="Ouvrir la page invités"
-                          className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={printQRCode} title="Imprimer le QR code"
-                          className="h-6 px-0 bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/50">
-                          <Printer className="h-3 w-3" />
-                        </Button>
+              {/* QR codes invités + album : prend toute la hauteur libre, les QR s'agrandissent avec */}
+              <div className="card-gold rounded-xl flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center gap-1.5 flex-shrink-0">
+                  <QrCode className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  <h3 className="font-semibold text-white text-xs">QR codes</h3>
+                </div>
+                <div ref={qrAreaRef} className={`flex-1 min-h-0 p-2 grid ${qrStacked ? 'grid-cols-1 content-center' : 'grid-cols-2 items-center'} gap-2`}>
+                  {/* Invités */}
+                  <div className="flex flex-col items-center min-w-0">
+                    <p className="text-[11px] font-semibold text-[#D4AF37] mb-1.5 flex items-center gap-1">
+                      <Smartphone className="h-3 w-3" /> Invités
+                    </p>
+                    <div className="relative" id="qr-invite">
+                      <div className="relative bg-white p-1.5 rounded-lg">
+                        <QRCode value={getInviteUrl(selectedSession.code)} size={qrSize} />
                       </div>
                     </div>
-                    {/* Album post-event */}
-                    <div className="flex flex-col items-center min-w-0 border-l border-white/5 pl-2">
-                      <h3 className="font-bold text-white text-[11px] flex items-center gap-1 self-start mb-1.5">
-                        <FolderOpen className="h-3 w-3 text-violet-500" /> Album
-                      </h3>
-                      <div className="relative">
-                        <div className="absolute -inset-1 bg-violet-500/10 rounded-lg blur-md" />
-                        <div className="relative bg-white p-1.5 rounded-lg shadow-lg shadow-black/30">
-                          <QRCode value={getAlbumUrl(selectedSession.code)} size={84} />
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1.5 leading-6">
-                        <span className="text-violet-400 font-bold">{approvedCount}</span> photos
-                      </p>
-                      <div className="grid grid-cols-2 gap-1 mt-1 w-full">
-                        <Button variant="outline" size="sm" onClick={copyAlbumLink} title="Copier le lien de l'album"
-                          className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')} title="Voir l'album"
-                          className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </div>
+                    <p className="text-sm font-mono font-black mt-1.5 leading-5 text-[#D4AF37]">
+                      #{selectedSession.code}
+                    </p>
+                    <div className="grid grid-cols-3 gap-1 mt-1.5 w-full">
+                      <Button variant="outline" size="sm" onClick={copyInviteLink} title="Copier le lien invités"
+                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.open(`/invite/${selectedSession.code}`, '_blank')} title="Ouvrir la page invités"
+                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={printQRCode} title="Imprimer le QR code"
+                        className="h-6 px-0 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50">
+                        <Printer className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  {/* Album post-event */}
+                  <div className="flex flex-col items-center min-w-0">
+                    <p className="text-[11px] font-semibold text-violet-400 mb-1.5 flex items-center gap-1">
+                      <FolderOpen className="h-3 w-3" /> Album
+                    </p>
+                    <div className="relative bg-white p-1.5 rounded-lg">
+                      <QRCode value={getAlbumUrl(selectedSession.code)} size={qrSize} />
+                    </div>
+                    <p className="text-sm mt-1.5 leading-5 text-gray-400">
+                      <span className="text-violet-400 font-bold">{approvedCount}</span> photos
+                    </p>
+                    <div className="grid grid-cols-2 gap-1 mt-1.5 w-full">
+                      <Button variant="outline" size="sm" onClick={copyAlbumLink} title="Copier le lien de l'album"
+                        className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.open(`/album/${selectedSession.code}`, '_blank')} title="Voir l'album"
+                        className="h-6 px-0 border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -2429,7 +2454,6 @@ fetch(${JSON.stringify(imageUrl)})
               )}
 
               {/* Speed Meter */}
-              <SpeedMeter className="flex-shrink-0" />
             </div>
           </div>
         )}
