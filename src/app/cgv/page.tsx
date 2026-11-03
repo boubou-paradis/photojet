@@ -25,7 +25,7 @@ export default function CGVPage() {
         </Link>
 
         <h1 className="text-3xl sm:text-4xl font-bold text-[#D4AF37] mb-2">Conditions Générales de Vente</h1>
-        <p className="text-gray-400 mb-8">Dernière mise à jour : Octobre 2026</p>
+        <p className="text-gray-400 mb-8">Dernière mise à jour : Novembre 2026</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
           {/* Article 1 */}
@@ -85,7 +85,8 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-white mb-2">4.1 Prix</h3>
             <div className="bg-[#242428] rounded-lg p-4 border border-[#D4AF37]/20 mb-4">
-              <p className="text-2xl font-bold text-[#D4AF37]">29,90 € TTC par mois</p>
+              <p className="text-2xl font-bold text-[#D4AF37]">Formule mensuelle : 29,90 € TTC par mois</p>
+              <p className="text-2xl font-bold text-[#D4AF37] mt-1">Formule annuelle : 299 € TTC par an</p>
               <p className="text-sm text-gray-400 mt-1">TVA non applicable, article 293 B du CGI (micro-entreprise).</p>
             </div>
             <p className="mb-4">
@@ -94,7 +95,7 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-white mb-2">4.2 Paiement</h3>
             <p className="mb-4">
-              Le paiement s&apos;effectue par carte bancaire via la plateforme sécurisée Stripe. Le paiement est dû à la souscription puis à chaque date anniversaire mensuelle.
+              Le paiement s&apos;effectue par carte bancaire via la plateforme sécurisée Stripe. Le paiement est dû à la souscription puis à chaque date anniversaire : chaque mois pour la formule mensuelle, chaque année pour la formule annuelle (paiement unique de 299 € pour l&apos;année).
             </p>
 
             <h3 className="text-lg font-semibold text-white mb-2">4.3 Facturation</h3>
@@ -107,7 +108,17 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-white mb-2">5.1 Durée</h3>
             <p className="mb-4">
-              L&apos;abonnement est conclu pour une durée d&apos;un mois, renouvelable tacitement par périodes successives d&apos;un mois.
+              La formule mensuelle est conclue pour une durée d&apos;un mois, renouvelable tacitement par périodes successives d&apos;un mois.
+            </p>
+            <p className="mb-4">
+              La formule annuelle est conclue pour une durée d&apos;un an, renouvelable tacitement par périodes successives d&apos;un an.
+              AnimaJet informe le Client par email au moins 30 jours avant chaque renouvellement annuel, en rappelant la date
+              d&apos;échéance, le montant et la possibilité de ne pas renouveler.
+            </p>
+            <p className="mb-4">
+              Le Client peut passer de la formule mensuelle à la formule annuelle à tout moment depuis son espace client : le passage
+              est immédiat et la part non utilisée du mois en cours est déduite. Le passage de la formule annuelle à la formule
+              mensuelle prend effet à la fin de l&apos;année en cours.
             </p>
 
             <h3 className="text-lg font-semibold text-white mb-2">5.2 Résiliation par le Client</h3>

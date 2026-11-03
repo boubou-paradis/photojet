@@ -28,6 +28,7 @@ import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
 import { toast } from 'sonner'
 import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
+import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR, type Plan } from '@/lib/billing/plans'
 
 // LES ANIMATIONS DISPONIBLES — uniquement les fonctionnalités réelles
 const animations = [
@@ -133,7 +134,7 @@ const faqs = [
   },
   {
     q: 'Combien coûte AnimaJet ?',
-    a: "L'abonnement est à 29,90€/mois, sans engagement et résiliable à tout moment. Un Pass Événement à 14,90€ existe pour un week-end ponctuel. Vous pouvez aussi tester gratuitement pendant 24h en semaine, sans carte bancaire.",
+    a: "L'abonnement est à 29,90€/mois, sans engagement et résiliable à tout moment. Il existe aussi en formule annuelle à 299€/an, soit 2 mois offerts (24,92€/mois). Un Pass Événement à 14,90€ existe pour un week-end ponctuel. Vous pouvez aussi tester gratuitement pendant 24h en semaine, sans carte bancaire.",
   },
   {
     q: 'De quoi mes invités ont-ils besoin ?',
@@ -159,13 +160,24 @@ const jsonLd = {
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       description: "Plateforme d'animation interactive pour événements professionnels : photos en direct, jeux interactifs, QR codes personnalisés.",
-      offers: {
-        '@type': 'Offer',
-        price: '29.90',
-        priceCurrency: 'EUR',
-        priceValidUntil: '2026-12-31',
-        availability: 'https://schema.org/InStock',
-      },
+      offers: [
+        {
+          '@type': 'Offer',
+          name: 'Abonnement mensuel',
+          price: '29.90',
+          priceCurrency: 'EUR',
+          priceValidUntil: '2026-12-31',
+          availability: 'https://schema.org/InStock',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Abonnement annuel',
+          price: '299.00',
+          priceCurrency: 'EUR',
+          priceValidUntil: '2026-12-31',
+          availability: 'https://schema.org/InStock',
+        },
+      ],
       featureList: [
         'Photos et messages en direct',
         'Diaporama HD temps réel',
@@ -254,6 +266,7 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [trialEmail, setTrialEmail] = useState('')
   const [promoCode, setPromoCode] = useState('')
+  const [plan, setPlan] = useState<Plan>('monthly')
   const [showPromo, setShowPromo] = useState(false)
   const [showSubscriptionForm, setShowSubscriptionForm] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -307,7 +320,7 @@ export default function Home() {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, promoCode }),
+        body: JSON.stringify(plan === 'annual' ? { email, promoCode, productType: 'annual' } : { email, promoCode }),
       })
 
       const data = await response.json()
@@ -924,11 +937,47 @@ export default function Home() {
                 </div>
 
                 <div className="mb-6 pt-4">
-                  <h3 className="text-2xl font-bold text-white mb-2">Abonnement Mensuel</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold text-white">{PRICE.toFixed(2).replace('.', ',')}€</span>
-                    <span className="text-gray-500">/mois</span>
+                  {/* Choix de la formule */}
+                  <div role="radiogroup" aria-label="Formule d'abonnement" className="inline-flex p-1 mb-4 rounded-xl bg-[#1A1A1E] border border-[#3a3a3a]">
+                    {(['monthly', 'annual'] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        role="radio"
+                        aria-checked={plan === p}
+                        onClick={() => setPlan(p)}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                          plan === p ? 'bg-[#D4AF37] text-[#0f0f12]' : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {p === 'monthly' ? 'Mensuel' : 'Annuel'}
+                        {p === 'annual' && (
+                          <span className={`ml-1.5 text-[11px] font-bold ${plan === p ? 'text-[#0f0f12]/70' : 'text-[#D4AF37]'}`}>
+                            2 mois offerts
+                          </span>
+                        )}
+                      </button>
+                    ))}
                   </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {plan === 'annual' ? 'Abonnement Annuel' : 'Abonnement Mensuel'}
+                  </h3>
+                  {plan === 'annual' ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-bold text-white">{ANNUAL_PRICE_EUR}€</span>
+                        <span className="text-gray-500">/an</span>
+                      </div>
+                      <p className="text-sm text-gray-400 mt-2">
+                        Soit {ANNUAL_MONTHLY_EQUIVALENT_EUR.toFixed(2).replace('.', ',')}€/mois · {ANNUAL_SAVING_EUR.toFixed(2).replace('.', ',')}€ d&apos;économie par an
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold text-white">{PRICE.toFixed(2).replace('.', ',')}€</span>
+                      <span className="text-gray-500">/mois</span>
+                    </div>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-6">
@@ -961,7 +1010,7 @@ export default function Home() {
                       {showPromo ? (
                         <Input
                           type="text"
-                          placeholder="Code promo (optionnel)"
+                          placeholder={plan === 'annual' ? 'Code parrain (optionnel)' : 'Code promo (optionnel)'}
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                           className="h-11 bg-[#1A1A1E] border-[#3a3a3a] focus:border-[#D4AF37] text-white uppercase placeholder:text-gray-500 input-gold"
@@ -971,7 +1020,7 @@ export default function Home() {
                           onClick={() => setShowPromo(true)}
                           className="text-sm text-[#D4AF37] hover:text-[#F4E4BC] transition-colors"
                         >
-                          J&apos;ai un code promo
+                          {plan === 'annual' ? 'J’ai un code parrain' : 'J’ai un code promo'}
                         </button>
                       )}
 
@@ -985,13 +1034,15 @@ export default function Home() {
                         ) : (
                           <>
                             <Sparkles className="h-5 w-5 mr-2" />
-                            Payer {PRICE.toFixed(2).replace('.', ',')}€
+                            Payer {plan === 'annual' ? `${ANNUAL_PRICE_EUR}€` : `${PRICE.toFixed(2).replace('.', ',')}€`}
                           </>
                         )}
                       </Button>
 
                       <p className="text-xs text-gray-600 text-center">
-                        Paiement sécurisé par Stripe. Annulable à tout moment.
+                        {plan === 'annual'
+                          ? 'Paiement sécurisé par Stripe. Engagement 1 an, renouvellement résiliable à tout moment.'
+                          : 'Paiement sécurisé par Stripe. Annulable à tout moment.'}
                       </p>
                     </>
                   ) : (

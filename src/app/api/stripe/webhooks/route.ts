@@ -9,6 +9,7 @@ import { sendWelcomeEmail, sendExpiredEmail, sendPaymentFailedEmail, sendRenewal
 import { computePassValidityUntil } from '@/lib/weekend-pass'
 import { createClient } from '@supabase/supabase-js'
 import { generateInvoiceNumber, generateInvoicePDF, saveInvoice, PRICE } from '@/lib/invoice'
+import { invoiceLineFor } from '@/lib/billing/plans'
 import { reactivateLatestSessionIfNone } from '@/lib/sessions/server'
 
 // Convert Stripe timestamp to ISO string with fallback
@@ -31,6 +32,17 @@ function safeTimestampToISO(
 
 function getDefaultPeriodEnd(): Date {
   return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+}
+
+// Montant et libellé de la facture d'un premier paiement d'abonnement :
+// le montant réellement payé (après réduction) et la durée de la formule
+// (mensuelle ou annuelle) lus chez Stripe. Valeurs historiques en secours.
+function invoiceLine(checkoutSession: Stripe.Checkout.Session, stripeSubscription: Stripe.Subscription) {
+  return invoiceLineFor(
+    checkoutSession.amount_total,
+    stripeSubscription.items?.data?.[0]?.price?.recurring?.interval,
+    PRICE,
+  )
 }
 
 // Extract current_period_start/end from Stripe subscription object.
@@ -299,13 +311,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
     const invoiceNumber = await generateInvoiceNumber()
     const customerName = session.customer_details?.name || ''
+    const line = invoiceLine(session, stripeSubscription)
 
     const pdfBuffer = await generateInvoicePDF({
       invoiceNumber,
       date: new Date(),
       customerName,
       customerEmail: email,
-      amount: PRICE,
+      amount: line.amount,
+      description: line.description,
       stripePaymentId: session.payment_intent as string || undefined,
     })
 
@@ -313,7 +327,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await saveInvoice({
       userId,
       invoiceNumber,
-      amount: PRICE,
+      amount: line.amount,
       stripePaymentId: session.payment_intent as string || undefined,
       pdfBuffer,
     })
@@ -418,13 +432,15 @@ async function updateExistingUser(
     try {
       const invoiceNumber = await generateInvoiceNumber()
       const customerName = checkoutSession.customer_details?.name || ''
+      const line = invoiceLine(checkoutSession, stripeSubscription)
 
       const pdfBuffer = await generateInvoicePDF({
         invoiceNumber,
         date: new Date(),
         customerName,
         customerEmail: email,
-        amount: PRICE,
+        amount: line.amount,
+        description: line.description,
         stripePaymentId: checkoutSession.payment_intent as string || undefined,
       })
 
@@ -432,7 +448,7 @@ async function updateExistingUser(
       await saveInvoice({
         userId,
         invoiceNumber,
-        amount: PRICE,
+        amount: line.amount,
         stripePaymentId: checkoutSession.payment_intent as string || undefined,
         pdfBuffer,
       })

@@ -21,3 +21,13 @@ export function verifyAffiliateAdminAccess(pin?: string | null): { authorized: b
 export function calculateCommission(activeReferrals: number): number {
   return Math.round(activeReferrals * SUBSCRIPTION_PRICE_EUR * COMMISSION_RATE * 100) / 100
 }
+
+/**
+ * Commission due sur des filleuls actifs, à partir de l'équivalent mensuel
+ * réel de chacun, en centimes (mensuel : 2990 ; annuel 299 € : 2492).
+ * Même taux pour toutes les formules.
+ */
+export function calculateCommissionFromMonthlyCents(monthlyCents: number[]): number {
+  const total = monthlyCents.reduce((sum, c) => sum + c, 0)
+  return Math.round(total * COMMISSION_RATE) / 100
+}

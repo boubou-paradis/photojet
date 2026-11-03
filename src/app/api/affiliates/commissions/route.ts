@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getStripe } from '@/lib/stripe'
-import { verifyAffiliateAdminAccess, calculateCommission } from '@/lib/affiliates'
+import { verifyAffiliateAdminAccess, calculateCommissionFromMonthlyCents, SUBSCRIPTION_PRICE_EUR } from '@/lib/affiliates'
+import { monthlyEquivalentCents } from '@/lib/billing/plans'
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -42,7 +43,8 @@ export async function GET(request: NextRequest) {
 
   // 3. Parcourir toutes les checkout sessions Stripe pour compter les filleuls actifs
   const stripe = getStripe()
-  const activeCountMap = new Map<string, number>()
+  // code promo -> équivalent mensuel (centimes) de chaque filleul actif
+  const activeCentsMap = new Map<string, number[]>()
 
   let hasMore = true
   let startingAfter: string | undefined
@@ -63,8 +65,13 @@ export async function GET(request: NextRequest) {
       if (promoCode && promoCodeMap.has(promoCode)) {
         const sub = session.subscription as import('stripe').Stripe.Subscription | null
         if (sub && typeof sub === 'object' && (sub.status === 'active' || sub.status === 'trialing')) {
-          const current = activeCountMap.get(promoCode) || 0
-          activeCountMap.set(promoCode, current + 1)
+          const price = sub.items?.data?.[0]?.price
+          // Mensuel : base historique 29,90 € inchangée. Annuel : prix réel / 12.
+          const cents = price?.recurring?.interval === 'year' && typeof price.unit_amount === 'number'
+            ? monthlyEquivalentCents(price.unit_amount, 'year', price.recurring.interval_count)
+            : Math.round(SUBSCRIPTION_PRICE_EUR * 100)
+          const current = activeCentsMap.get(promoCode) || []
+          activeCentsMap.set(promoCode, [...current, cents])
         }
       }
     }
@@ -79,14 +86,15 @@ export async function GET(request: NextRequest) {
 
   // 4. Construire le résultat avec les commissions calculées
   const commissions = affiliates.map(a => {
-    const activeCount = activeCountMap.get(a.promo_code.toUpperCase()) || 0
+    const cents = activeCentsMap.get(a.promo_code.toUpperCase()) || []
+    const activeCount = cents.length
     return {
       affiliate_id: a.id,
       name: a.name,
       email: a.email,
       promo_code: a.promo_code,
       active_referrals: activeCount,
-      commission_due: calculateCommission(activeCount),
+      commission_due: calculateCommissionFromMonthlyCents(cents),
     }
   })
 

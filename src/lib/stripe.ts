@@ -28,6 +28,7 @@ export const stripe = new Proxy({} as Stripe, {
 
 export const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ''
 export const STRIPE_PRICE_ID_WEEKEND_PASS = process.env.STRIPE_PRICE_ID_WEEKEND_PASS || ''
+export const STRIPE_PRICE_ID_ANNUAL = process.env.STRIPE_PRICE_ID_ANNUAL || ''
 
 // Price in cents
 export const SUBSCRIPTION_PRICE = 2990      // 29,90€/mois

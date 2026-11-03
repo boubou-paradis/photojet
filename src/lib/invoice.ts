@@ -24,6 +24,8 @@ interface InvoiceData {
   customerEmail: string
   amount: number
   stripePaymentId?: string
+  /** Libellé de la ligne ; par défaut l'abonnement mensuel (historique). */
+  description?: string
 }
 
 function formatDate(date: Date): string {
@@ -330,7 +332,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<Uint8Array>
     borderWidth: 0.5,
   })
 
-  page.drawText(PRODUCT_DESCRIPTION, {
+  page.drawText(data.description || PRODUCT_DESCRIPTION, {
     x: tableLeft + 15,
     y: y - 22,
     size: 10,

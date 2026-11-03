@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe, STRIPE_PRICE_ID, STRIPE_PRICE_ID_WEEKEND_PASS } from '@/lib/stripe'
+import { stripe, STRIPE_PRICE_ID, STRIPE_PRICE_ID_ANNUAL, STRIPE_PRICE_ID_WEEKEND_PASS } from '@/lib/stripe'
+import { buildSubscriptionCheckout, CheckoutError } from '@/lib/billing/checkout'
+import type { Plan } from '@/lib/billing/plans'
 import { isWeekendPassAvailable } from '@/lib/weekend-pass'
 import { createClient } from '@supabase/supabase-js'
 
@@ -53,68 +55,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url: passSession.url })
     }
 
-    // ---- ABONNEMENT MENSUEL (subscription) ----
-    if (!STRIPE_PRICE_ID) {
-      return NextResponse.json({ error: 'Stripe non configure' }, { status: 500 })
+    // ---- ABONNEMENT MENSUEL OU ANNUEL (subscription) ----
+    const plan: Plan = productType === 'annual' ? 'annual' : 'monthly'
+    const priceId = plan === 'annual' ? STRIPE_PRICE_ID_ANNUAL : STRIPE_PRICE_ID
+    if (!priceId) {
+      return NextResponse.json(
+        { error: plan === 'annual' ? 'Abonnement annuel non configuré' : 'Stripe non configure' },
+        { status: 500 }
+      )
     }
 
-    // Build checkout session params
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      customer_email: email,
-      line_items: [
+    let sessionParams: Stripe.Checkout.SessionCreateParams
+    try {
+      sessionParams = await buildSubscriptionCheckout(
         {
-          price: STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
-      metadata: {
-        email,
-        promoCode: promoCode || '',
-      },
-      subscription_data: {
-        metadata: {
+          plan,
           email,
+          promoCode,
+          priceId,
+          appUrl: process.env.NEXT_PUBLIC_APP_URL || '',
+          annualValidationCode: process.env.STRIPE_ANNUAL_VALIDATION_CODE || null,
         },
-      },
-    }
-
-    // Apply promo code if provided
-    if (promoCode) {
-      // Check if promo code is valid
-      const { data: promo } = await getSupabaseAdmin()
-        .from('promo_codes')
-        .select('*')
-        .eq('code', promoCode.toUpperCase())
-        .eq('is_active', true)
-        .single()
-
-      if (promo) {
-        if (promo.type === 'trial') {
-          // Add trial period
-          sessionParams.subscription_data!.trial_period_days = promo.value
-        } else if (promo.type === 'percent') {
-          // Create a Stripe coupon for percentage discount
-          const coupon = await stripe.coupons.create({
-            percent_off: promo.value,
-            duration: 'once',
-            name: `Promo ${promoCode.toUpperCase()}`,
-          })
-          sessionParams.discounts = [{ coupon: coupon.id }]
-        } else if (promo.type === 'fixed') {
-          // Create a Stripe coupon for fixed amount discount
-          const coupon = await stripe.coupons.create({
-            amount_off: promo.value,
-            currency: 'eur',
-            duration: 'once',
-            name: `Promo ${promoCode.toUpperCase()}`,
-          })
-          sessionParams.discounts = [{ coupon: coupon.id }]
+        {
+          findSitePromo: async (code) => {
+            const { data } = await getSupabaseAdmin()
+              .from('promo_codes')
+              .select('*')
+              .eq('code', code)
+              .eq('is_active', true)
+              .single()
+            return data ? { type: data.type, value: data.value } : null
+          },
+          isAffiliateCode: async (code) => {
+            const { data } = await getSupabaseAdmin()
+              .from('affiliates')
+              .select('id')
+              // Sans tenir compte de la casse, jokers % et _ neutralisés
+              .ilike('promo_code', code.replace(/[\\%_]/g, (c) => `\\${c}`))
+              .eq('is_active', true)
+              .limit(1)
+            return !!(data && data.length > 0)
+          },
+          createCoupon: async (params) => (await stripe.coupons.create(params)).id,
+          findPromotionCodeId: async (code) => {
+            const list = await stripe.promotionCodes.list({ code, active: true, limit: 1 })
+            return list.data[0]?.id ?? null
+          },
         }
+      )
+    } catch (err) {
+      if (err instanceof CheckoutError) {
+        return NextResponse.json({ error: err.message }, { status: err.status })
       }
+      throw err
     }
 
     // Create Stripe checkout session

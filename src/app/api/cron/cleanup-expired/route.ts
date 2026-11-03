@@ -8,7 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendDataDeletionWarningEmail } from '@/lib/resend'
+import { sendAnnualRenewalReminderEmail, sendDataDeletionWarningEmail } from '@/lib/resend'
+import { REMINDER_LOG_KIND, runAnnualRenewalReminders } from '@/lib/billing/annual-reminder'
 import { stripe } from '@/lib/stripe'
 import { listUserTemplateFiles } from '@/lib/borne-templates/server'
 import { deleteDisplayDefaults } from '@/lib/display-defaults/server'
@@ -325,18 +326,80 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ============================================================
+  // 3. Rappel 30 jours avant le renouvellement des abonnements ANNUELS
+  //    (indépendant de la purge : une erreur ici ne bloque rien d'autre)
+  // ============================================================
+  let annualReminders: { sent: number; skipped: number; errors: string[] } = { sent: 0, skipped: 0, errors: [] }
+  try {
+    const report = await runAnnualRenewalReminders(now, {
+      listCandidates: async (fromIso, toIso) => {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('user_id, stripe_subscription_id')
+          .eq('status', 'active')
+          .not('stripe_subscription_id', 'is', null)
+          .gte('current_period_end', fromIso)
+          .lte('current_period_end', toIso)
+        if (error) throw new Error(error.message)
+        return (data ?? []) as { user_id: string; stripe_subscription_id: string }[]
+      },
+      isOwner: async (userId) => {
+        const { data } = await supabase.from('user_profiles').select('role').eq('id', userId).maybeSingle()
+        return data?.role === 'owner'
+      },
+      retrieveSubscription: async (id) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = await stripe.subscriptions.retrieve(id) as any
+        const item = sub.items?.data?.[0]
+        return {
+          status: sub.status,
+          cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+          interval: item?.price?.recurring?.interval ?? null,
+          unitAmountCents: typeof item?.price?.unit_amount === 'number' ? item.price.unit_amount : null,
+          periodEnd: sub.current_period_end ?? item?.current_period_end ?? null,
+        }
+      },
+      alreadySent: async (userId, key) => {
+        const { data, error } = await supabase
+          .from('purge_log')
+          .select('id')
+          .eq('kind', REMINDER_LOG_KIND)
+          .eq('user_id', userId)
+          .eq('reason', key)
+          .limit(1)
+        // Prudence : si on ne peut pas vérifier, on considère le rappel déjà envoyé.
+        if (error) return true
+        return !!(data && data.length > 0)
+      },
+      getEmail: async (userId) => {
+        const { data } = await supabase.from('user_profiles').select('email').eq('id', userId).maybeSingle()
+        return data?.email ?? null
+      },
+      sendEmail: (params) => sendAnnualRenewalReminderEmail(params),
+      logSent: ({ userId, email, key }) => logPurge(supabase, { kind: REMINDER_LOG_KIND, user_id: userId, email, reason: key }),
+    })
+    annualReminders = { sent: report.sent.length, skipped: report.skipped, errors: report.errors }
+    if (report.errors.length) console.error('[Cron cleanup] Rappels annuels en erreur:', report.errors)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    annualReminders.errors.push(msg)
+    console.error('[Cron cleanup] Rappels annuels impossibles:', msg)
+  }
+
   console.log(`[Cron cleanup] Done: ${results.warningsSent.length} warnings, ${results.usersDeleted.length} deletions, ${results.errors.length} errors`)
 
   // Ligne de résumé pour l'audit
   await logPurge(supabase, {
     kind: 'summary',
     files_deleted: 0,
-    reason: `warnings=${results.warningsSent.length} deletions=${results.usersDeleted.length} errors=${results.errors.length}`,
+    reason: `warnings=${results.warningsSent.length} deletions=${results.usersDeleted.length} errors=${results.errors.length} annual_reminders=${annualReminders.sent}`,
   })
 
   return NextResponse.json({
     success: true,
     ...results,
+    annualReminders,
   })
 }
 
