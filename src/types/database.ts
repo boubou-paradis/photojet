@@ -134,6 +134,7 @@ export interface Session {
   promo_enabled: boolean
   promo_frequency: number // Show une affiche toutes les X photos
   promo_affiches: string | null // JSON array de chemins storage (ordonné, max 20)
+  promo_affiches_plein_ecran?: string | null // JSON array : sous-ensemble de promo_affiches montré bord à bord. NULL = Ajuster
   // Mystery Photo Game settings
   mystery_photo_enabled: boolean
   mystery_photo_url: string | null // Legacy single photo (kept for backwards compatibility)

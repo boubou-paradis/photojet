@@ -20,6 +20,7 @@ import {
   isOwnDefaultsPath,
   parsePromoPaths,
   pickDisplaySettings,
+  remapPleinEcran,
   sessionCopyPath,
   type DisplaySettings,
   type FileKind,
@@ -150,8 +151,15 @@ export async function saveDisplayDefaults(
   }
   const promos = parsePromoPaths(settings.promo_affiches)
   const promoCopies: string[] = []
-  for (const p of promos) promoCopies.push(await copyOrFail('promo', p))
+  const promoMap = new Map<string, string>()
+  for (const p of promos) {
+    const target = await copyOrFail('promo', p)
+    promoCopies.push(target)
+    promoMap.set(p, target)
+  }
   settings.promo_affiches = JSON.stringify(promoCopies)
+  // Le choix « plein écran » suit chaque affiche vers sa copie.
+  settings.promo_affiches_plein_ecran = remapPleinEcran(settings.promo_affiches_plein_ecran, promoMap)
 
   await keepOwnTemplates(admin, userId, settings)
 
@@ -209,7 +217,7 @@ export async function applyDisplayDefaults(
   const created: string[] = []
 
   for (const key of DISPLAY_DEFAULT_KEYS) {
-    if (key === 'background_image' || key === 'custom_logo' || key === 'promo_affiches') continue
+    if (key === 'background_image' || key === 'custom_logo' || key === 'promo_affiches' || key === 'promo_affiches_plein_ecran') continue
     if (key in s) patch[key] = s[key]
   }
 
@@ -249,18 +257,22 @@ export async function applyDisplayDefaults(
   // Affiches
   if ('promo_affiches' in s) {
     const copies: string[] = []
+    const promoMap = new Map<string, string>()
     let failed = 0
     for (const p of parsePromoPaths(s.promo_affiches)) {
       if (!isOwnDefaultsPath('promo', userId, p)) { failed++; continue }
       const target = sessionCopyPath('promo', sessionId, p)
       if (await copyFile(user, admin, p, target)) {
         copies.push(target)
+        promoMap.set(p, target)
         created.push(target)
       } else {
         failed++
       }
     }
     patch.promo_affiches = JSON.stringify(copies)
+    // Réglages enregistrés avant l'option : aucune clé, donc toutes en Ajuster.
+    patch.promo_affiches_plein_ecran = remapPleinEcran(s.promo_affiches_plein_ecran, promoMap)
     if (failed > 0) warnings.push(`${failed} affiche${failed > 1 ? 's' : ''} non copiée${failed > 1 ? 's' : ''}, à remettre à la main.`)
   }
 

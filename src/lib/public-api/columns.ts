@@ -24,7 +24,7 @@ export const LIVE_SESSION_COLUMNS = [
   'id', 'code', 'name', 'created_at', 'show_qr_on_screen', 'transition_type', 'transition_duration',
   'background_color', 'background_image', 'background_opacity', 'background_type', 'custom_logo',
   'logo_size', 'logo_position', 'show_logo', 'qr_size', 'slideshow_mode', 'promo_enabled',
-  'promo_frequency', 'promo_affiches', 'messages_enabled', 'messages_frequency', 'messages_duration',
+  'promo_frequency', 'promo_affiches', 'promo_affiches_plein_ecran', 'messages_enabled', 'messages_frequency', 'messages_duration',
   'mystery_photo_url', 'mystery_photo_grid', 'mystery_photo_speed', 'mystery_photo_active',
   'mystery_photos', 'mystery_current_round', 'mystery_total_rounds', 'mystery_is_playing',
   'mystery_revealed_tiles', 'mystery_reveal_audio',

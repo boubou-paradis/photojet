@@ -11,6 +11,7 @@ import {
   filePathsOf,
   isOwnDefaultsPath,
   pickDisplaySettings,
+  remapPleinEcran,
   sessionCopyPath,
 } from '../settings'
 
@@ -74,6 +75,36 @@ describe('copies de fichiers', () => {
   })
 })
 
+describe('affiches en plein écran', () => {
+  it('fait partie des réglages copiés', () => {
+    expect(pickDisplaySettings({ promo_affiches_plein_ecran: '["p1"]' })).toEqual({ promo_affiches_plein_ecran: '["p1"]' })
+    expect(pickDisplaySettings({ promo_affiches_plein_ecran: null })).toEqual({ promo_affiches_plein_ecran: null })
+    expect(pickDisplaySettings({ promo_affiches_plein_ecran: 42 })).toEqual({})
+  })
+
+  it('le choix suit chaque affiche vers sa copie', () => {
+    const copies = new Map([['a', 'A'], ['b', 'B'], ['c', 'C']])
+    expect(remapPleinEcran(JSON.stringify(['c', 'a']), copies)).toBe(JSON.stringify(['C', 'A']))
+  })
+
+  it('une affiche non copiée ou inconnue perd son choix, sans erreur', () => {
+    const copies = new Map([['a', 'A']])
+    expect(remapPleinEcran(JSON.stringify(['a', 'perdue', 'a']), copies)).toBe(JSON.stringify(['A']))
+    expect(remapPleinEcran(JSON.stringify(['perdue']), copies)).toBeNull()
+  })
+
+  it('absente ou illisible : toutes en Ajuster (null)', () => {
+    const copies = new Map([['a', 'A']])
+    expect(remapPleinEcran(undefined, copies)).toBeNull()
+    expect(remapPleinEcran(null, copies)).toBeNull()
+    expect(remapPleinEcran('pas du json', copies)).toBeNull()
+  })
+
+  it('ne compte pas comme un fichier à copier ou effacer', () => {
+    expect(filePathsOf({ promo_affiches: '["p1"]', promo_affiches_plein_ecran: '["p1","autre"]' })).toEqual(['p1'])
+  })
+})
+
 describe('résumé', () => {
   it('décrit les réglages en français', () => {
     expect(describeDisplaySettings({
@@ -100,5 +131,18 @@ describe('garde-fous du code', () => {
     expect(sql).not.toContain('trigger')
     expect(sql).not.toContain('references public.sessions')
     expect(sql).not.toMatch(/update\s+(public\.)?sessions/)
+  })
+  it('la colonne plein écran est additive, sans trigger ni réécriture', () => {
+    const sql = readFileSync(join(root, '..', 'supabase', 'migrations', '20261109_add_promo_affiches_plein_ecran.sql'), 'utf8')
+      .split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').toLowerCase()
+    expect(sql).toContain('add column if not exists promo_affiches_plein_ecran text null')
+    expect(sql).not.toContain('trigger')
+    expect(sql).not.toContain('default')
+    expect(sql).not.toContain('drop')
+    expect(sql).not.toMatch(/update\s+(public\.)?sessions/)
+  })
+  it('/live reçoit la colonne par la route serveur', () => {
+    const src = readFileSync(join(root, 'lib', 'public-api', 'columns.ts'), 'utf8')
+    expect(src).toContain("'promo_affiches_plein_ecran'")
   })
 })

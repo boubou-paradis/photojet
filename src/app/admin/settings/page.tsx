@@ -47,6 +47,7 @@ import {
 import { createClient } from '@/lib/supabase'
 import SessionSwitchDialog from '@/components/SessionSwitchDialog'
 import DisplayDefaultsCard from '@/components/DisplayDefaultsCard'
+import PromoAfficheDetail from '@/components/PromoAfficheDetail'
 import { ACTIVATION_DENIED_MESSAGE, type ActiveSessionInfo } from '@/lib/sessions/activation'
 import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
@@ -78,6 +79,8 @@ export default function SettingsPage() {
   const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingPromo, setUploadingPromo] = useState(false)
+  // Affiche ouverte dans le panneau de réglage (Ajuster / Plein écran)
+  const [selectedPromo, setSelectedPromo] = useState<string | null>(null)
   const bgInputRef = useRef<HTMLInputElement>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const promoInputRef = useRef<HTMLInputElement>(null)
@@ -119,6 +122,7 @@ export default function SettingsPage() {
     promo_enabled: false,
     promo_frequency: 10,
     promo_affiches: [] as string[],
+    promo_affiches_plein_ecran: [] as string[],
     // Print settings
     print_enabled: false,
     print_mode: 'manual' as PrintMode,
@@ -164,6 +168,7 @@ export default function SettingsPage() {
         promo_enabled: selectedSession.promo_enabled ?? false,
         promo_frequency: selectedSession.promo_frequency ?? 10,
         promo_affiches: parsePromoAffiches(selectedSession.promo_affiches),
+        promo_affiches_plein_ecran: parsePromoAffiches(selectedSession.promo_affiches_plein_ecran ?? null),
         // Print settings
         print_enabled: selectedSession.print_enabled ?? false,
         print_mode: selectedSession.print_mode ?? 'manual',
@@ -358,6 +363,11 @@ export default function SettingsPage() {
           promo_enabled: formData.promo_enabled,
           promo_frequency: formData.promo_frequency,
           promo_affiches: JSON.stringify(formData.promo_affiches),
+          // Seules les affiches encore présentes ; aucune en plein écran = NULL (Ajuster)
+          promo_affiches_plein_ecran: (() => {
+            const full = formData.promo_affiches_plein_ecran.filter((p) => formData.promo_affiches.includes(p))
+            return full.length > 0 ? JSON.stringify(full) : null
+          })(),
           // Print settings
           print_enabled: formData.print_enabled,
           print_mode: formData.print_mode,
@@ -528,7 +538,15 @@ export default function SettingsPage() {
     setFormData((prev) => ({
       ...prev,
       promo_affiches: prev.promo_affiches.filter((p) => p !== path),
+      promo_affiches_plein_ecran: prev.promo_affiches_plein_ecran.filter((p) => p !== path),
     }))
+  }
+
+  function handlePromoFullScreen(path: string, fullScreen: boolean) {
+    setFormData((prev) => {
+      const others = prev.promo_affiches_plein_ecran.filter((p) => p !== path)
+      return { ...prev, promo_affiches_plein_ecran: fullScreen ? [...others, path] : others }
+    })
   }
 
   async function handleDelete() {
@@ -1377,9 +1395,32 @@ export default function SettingsPage() {
                         Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max {PROMO_MAX_MB} Mo), plusieurs à la fois si besoin.
                       </p>
                     ) : (
+                      <>
+                      <p className="text-xs text-[#6B6B70]">
+                        Cliquez sur une affiche pour choisir « Ajuster » ou « Plein écran ».
+                      </p>
                       <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
-                        {formData.promo_affiches.map((path, i) => (
-                          <div key={path} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-[#D4AF37]/20 bg-[#2E2E33]">
+                        {formData.promo_affiches.map((path, i) => {
+                          const isFull = formData.promo_affiches_plein_ecran.includes(path)
+                          const isSelected = selectedPromo === path
+                          return (
+                          <div
+                            key={path}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={isSelected}
+                            aria-label={`Affiche ${i + 1}, ${isFull ? 'plein écran' : 'ajuster'}`}
+                            onClick={() => setSelectedPromo(isSelected ? null : path)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                setSelectedPromo(isSelected ? null : path)
+                              }
+                            }}
+                            className={`relative aspect-[3/4] rounded-lg overflow-hidden bg-[#2E2E33] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
+                              isSelected ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/20'
+                            }`}
+                          >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={getStorageUrl(path) || ''}
@@ -1391,14 +1432,36 @@ export default function SettingsPage() {
                             </span>
                             <button
                               type="button"
-                              onClick={() => handleRemovePromo(path)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (selectedPromo === path) setSelectedPromo(null)
+                                handleRemovePromo(path)
+                              }}
+                              aria-label={`Supprimer l'affiche ${i + 1}`}
                               className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white hover:bg-red-500/80 transition-colors"
                             >
                               <X className="h-3 w-3" />
                             </button>
+                            <span
+                              className={`absolute left-1 right-1 bottom-1 rounded px-1 py-0.5 text-center text-[10px] font-medium truncate ${
+                                isFull ? 'bg-[#D4AF37] text-[#1A1405]' : 'bg-black/70 text-white'
+                              }`}
+                            >
+                              {isFull ? 'Plein écran' : 'Ajuster'}
+                            </span>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
+                      {selectedPromo && formData.promo_affiches.includes(selectedPromo) && (
+                        <PromoAfficheDetail
+                          index={formData.promo_affiches.indexOf(selectedPromo)}
+                          src={getStorageUrl(selectedPromo) || ''}
+                          fullScreen={formData.promo_affiches_plein_ecran.includes(selectedPromo)}
+                          onChange={(full) => handlePromoFullScreen(selectedPromo, full)}
+                        />
+                      )}
+                      </>
                     )}
                   </div>
                 </>

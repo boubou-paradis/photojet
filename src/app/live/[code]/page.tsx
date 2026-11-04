@@ -478,6 +478,11 @@ export default function LivePage() {
     [session?.promo_enabled, session?.promo_affiches]
   )
   const { ready: promoImages, failed: promoFailed } = usePromoPreload(promoPaths, getStorageUrl)
+  // Affiches à montrer bord à bord. Absente ou illisible : toutes en « Ajuster ».
+  const promoPleinEcran = useMemo(
+    () => new Set(parseJsonArray<string>(session?.promo_affiches_plein_ecran).filter((p) => typeof p === 'string')),
+    [session?.promo_affiches_plein_ecran]
+  )
   // Nombre de tours complets du diaporama : la rotation des affiches continue
   // d'un tour à l'autre, sinon seules les premières passeraient.
   const [promoTour, setPromoTour] = useState(0)
@@ -960,6 +965,7 @@ export default function LivePage() {
   // passe dans le coin et les marges lui réservent sa place.
   const promoImage = currentItem?.type === 'promo' ? promoImages.get(currentItem.data.path) : undefined
   const showingPromo = promoImage !== undefined
+  const promoFullScreen = showingPromo && currentItem?.type === 'promo' && promoPleinEcran.has(currentItem.data.path)
   const cornerQrSize = showingPromo ? qrSizes.bar : qrSizes.fullscreen
   const promoSideMargin = session?.show_qr_on_screen ? qrSizes.bar + 62 : 24
 
@@ -1467,6 +1473,29 @@ export default function LivePage() {
           <AnimatePresence mode="wait">
             {currentItem?.type === 'message' ? (
               <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} />
+            ) : currentItem?.type === 'promo' && promoImage && promoFullScreen ? (
+              // Plein écran : bord à bord, sans cadre ni marge, rogné si besoin.
+              // Le QR (z-30) reste au-dessus. Même transition de session ;
+              // le zoom d'entrée est remplacé par un fondu simple.
+              <motion.div
+                key={`promo-${currentIndex}-${currentItem.data.index}`}
+                variants={transitions[transitionType]}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                className="absolute inset-0 z-10"
+              >
+                <motion.img
+                  src={getStorageUrl(currentItem.data.path) || ''}
+                  alt="Affiche promotionnelle"
+                  decoding="sync"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </motion.div>
             ) : currentItem?.type === 'promo' && promoImage ? (
               <motion.div
                 key={`promo-${currentIndex}-${currentItem.data.index}`}

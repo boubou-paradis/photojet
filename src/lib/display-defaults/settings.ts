@@ -22,6 +22,8 @@ export const DISPLAY_DEFAULT_KEYS = [
   'messages_enabled', 'messages_frequency', 'messages_duration',
   // Affiches promotionnelles (promo_affiches = JSON de chemins, comme en session)
   'promo_enabled', 'promo_frequency', 'promo_affiches',
+  // Sous-ensemble de promo_affiches montré bord à bord (chemins suivis lors des copies)
+  'promo_affiches_plein_ecran',
   // Borne : textes affichés
   'borne_welcome_enabled', 'borne_welcome_message', 'borne_show_event_name',
   // Cadres AnimaBooth (identifiants de la bibliothèque borne_templates)
@@ -62,6 +64,7 @@ const VALIDATORS: Record<DisplayDefaultKey, (v: unknown) => boolean> = {
   promo_enabled: bool,
   promo_frequency: intIn(1, 1000),
   promo_affiches: (v) => v === null || typeof v === 'string',
+  promo_affiches_plein_ecran: (v) => v === null || typeof v === 'string',
   borne_welcome_enabled: bool,
   borne_welcome_message: nullableString(500),
   borne_show_event_name: bool,
@@ -93,6 +96,21 @@ export function parsePromoPaths(raw: unknown): string[] {
   } catch {
     return []
   }
+}
+
+/**
+ * Report du choix « plein écran » quand les affiches sont copiées vers de
+ * nouveaux chemins. `copies` associe chaque ancien chemin à sa copie ; une
+ * affiche non copiée perd son choix (elle n'est plus affichée de toute façon).
+ * Résultat : JSON des nouveaux chemins, ou null si aucune affiche en plein écran.
+ */
+export function remapPleinEcran(raw: unknown, copies: Map<string, string>): string | null {
+  const out: string[] = []
+  for (const p of parsePromoPaths(raw)) {
+    const target = copies.get(p)
+    if (target && !out.includes(target)) out.push(target)
+  }
+  return out.length > 0 ? JSON.stringify(out) : null
 }
 
 /** Tous les fichiers Storage (bucket photos) référencés par des réglages. */
