@@ -1,0 +1,11 @@
+question;reponse1;reponse2;reponse3;reponse4;bonne_reponse;temps;points;fichier_audio
+Dans quelle année la série "Friends" a-t-elle débuté ?;1992;1994;1996;1998;2;20;10;
+"Qui a dit : ""Je pense, donc je suis"" ?";Descartes;Pascal;Voltaire;Rousseau;1;15;5;
+L'été où l'on s'aime ; c'est quand ?;"Juin; juillet";Août;Septembre;Mai;2;30;20;ete.mp3
+Question sans temps;A;B;C;D;4
+Trop peu;A;B
+Mauvaise bonne réponse;A;B;C;D;7;20;10;
+Question vide;;B;C;D;1;20;10;
+Temps fou;A;B;C;D;1;999;0;
+  Espaces autour  ; A ; B ; C ; D ;3; 25 ; 15 ;  son final.wav  
+Émoji 🎉 et œ, à â ç;Ça;Où;Là;Déjà;1;abc;xyz;

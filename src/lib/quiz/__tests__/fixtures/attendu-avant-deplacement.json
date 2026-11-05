@@ -1,0 +1,868 @@
+{
+ "chatgpt-series-guillemets.csv": {
+  "questions": [
+   {
+    "id": "csv_1700000000000_1",
+    "question": "Dans quelle année la série Friends a-t-elle débuté ?",
+    "answers": [
+     "1992",
+     "1994",
+     "1996",
+     "1998"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_2",
+    "question": "Quel est le prénom du personnage principal dans MacGyver ?",
+    "answers": [
+     "Jack",
+     "Angus",
+     "Michael",
+     "David"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_3",
+    "question": "Dans Le Prince de Bel-Air, quel est le nom de famille de Will ?",
+    "answers": [
+     "Smith",
+     "Banks",
+     "Johnson",
+     "Brown"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_4",
+    "question": "Quelle série met en scène un inspecteur nommé Columbo ?",
+    "answers": [
+     "Starsky & Hutch",
+     "Columbo",
+     "Magnum",
+     "Kojak"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_5",
+    "question": "Dans X-Files, quel est le prénom de l'agent Scully ?",
+    "answers": [
+     "Dana",
+     "Sarah",
+     "Emily",
+     "Laura"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_6",
+    "question": "Quelle série se déroule dans un hôpital avec le Dr Ross et le Dr Greene ?",
+    "answers": [
+     "Urgences",
+     "Grey's Anatomy",
+     "Dr House",
+     "Scrubs"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_7",
+    "question": "Dans Beverly Hills 90210, dans quelle ville vivent les personnages ?",
+    "answers": [
+     "Los Angeles",
+     "Beverly Hills",
+     "San Diego",
+     "Miami"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_8",
+    "question": "Quel acteur joue Magnum dans Magnum P.I. ?",
+    "answers": [
+     "Tom Cruise",
+     "Tom Selleck",
+     "Bruce Willis",
+     "Mel Gibson"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_9",
+    "question": "Dans K2000, comment s'appelle la voiture intelligente ?",
+    "answers": [
+     "KARR",
+     "KITT",
+     "KATT",
+     "KOTT"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_10",
+    "question": "Quelle série met en scène des sauveteurs sur une plage californienne ?",
+    "answers": [
+     "Alerte à Malibu",
+     "Pacific Blue",
+     "Miami Vice",
+     "Baywatch Nights"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_11",
+    "question": "Dans Une nounou d'enfer, quel est le prénom de la nounou ?",
+    "answers": [
+     "Fran",
+     "Lisa",
+     "Rachel",
+     "Monica"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_12",
+    "question": "Quelle série raconte la vie de quatre femmes à New York (fin 90s) ?",
+    "answers": [
+     "Friends",
+     "Sex and the City",
+     "Melrose Place",
+     "Ally McBeal"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_13",
+    "question": "Dans Alf, quelle est la planète d'origine d'Alf ?",
+    "answers": [
+     "Mars",
+     "Melmac",
+     "Jupiter",
+     "Saturne"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_14",
+    "question": "Quel est le métier de Jessica Fletcher dans Arabesque ?",
+    "answers": [
+     "Policière",
+     "Journaliste",
+     "Écrivaine",
+     "Avocate"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_15",
+    "question": "Dans Walker Texas Ranger, quel acteur joue Walker ?",
+    "answers": [
+     "Steven Seagal",
+     "Chuck Norris",
+     "Jean-Claude Van Damme",
+     "Sylvester Stallone"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_16",
+    "question": "Quelle série met en scène un groupe d'ados riches à Los Angeles ?",
+    "answers": [
+     "Melrose Place",
+     "Beverly Hills 90210",
+     "Friends",
+     "Saved by the Bell"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_17",
+    "question": "Dans Les Simpson, quelle est la couleur de peau des personnages ?",
+    "answers": [
+     "Verte",
+     "Bleue",
+     "Jaune",
+     "Rose"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_18",
+    "question": "Quel est le prénom du patron dans Une nounou d'enfer ?",
+    "answers": [
+     "Maxwell",
+     "Charles",
+     "Richard",
+     "Henry"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_19",
+    "question": "Dans Miami Vice, dans quelle ville se déroule la série ?",
+    "answers": [
+     "Los Angeles",
+     "Miami",
+     "New York",
+     "Chicago"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_20",
+    "question": "Quelle série met en scène Buffy, une chasseuse de vampires ?",
+    "answers": [
+     "Charmed",
+     "Buffy contre les vampires",
+     "Angel",
+     "Supernatural"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   }
+  ],
+  "errors": []
+ },
+ "chatgpt-films-bom.csv": {
+  "questions": [
+   {
+    "id": "csv_1700000000000_1",
+    "question": "Qui interprète Amélie Poulain dans Le Fabuleux Destin d'Amélie Poulain ?",
+    "answers": [
+     "Marion Cotillard",
+     "Audrey Tautou",
+     "Cécile de France",
+     "Mélanie Laurent"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_2",
+    "question": "Quel réalisateur a signé Astérix & Obélix : Mission Cléopâtre ?",
+    "answers": [
+     "Alain Chabat",
+     "Jean-Pierre Jeunet",
+     "Dany Boon",
+     "Francis Veber"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_3",
+    "question": "Dans Les Choristes, quel acteur interprète Clément Mathieu ?",
+    "answers": [
+     "Gérard Jugnot",
+     "Kad Merad",
+     "François Cluzet",
+     "Daniel Auteuil"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_4",
+    "question": "Quel acteur incarne Hubert Bonisseur de La Bath dans OSS 117 : Le Caire, nid d'espions ?",
+    "answers": [
+     "Jean Reno",
+     "Romain Duris",
+     "Jean Dujardin",
+     "Vincent Cassel"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_5",
+    "question": "Qui a réalisé Bienvenue chez les Ch'tis ?",
+    "answers": [
+     "Dany Boon",
+     "Michel Hazanavicius",
+     "Cédric Klapisch",
+     "Patrice Leconte"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_6",
+    "question": "Quel film de 2007 retrace la vie d'Édith Piaf ?",
+    "answers": [
+     "La Môme",
+     "Coco avant Chanel",
+     "Les Chansons d'amour",
+     "Faubourg 36"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_7",
+    "question": "Quelle actrice tient le rôle principal de La Môme ?",
+    "answers": [
+     "Sophie Marceau",
+     "Marion Cotillard",
+     "Isabelle Huppert",
+     "Julie Depardieu"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_8",
+    "question": "Quel réalisateur a signé Ne le dis à personne en 2006 ?",
+    "answers": [
+     "Guillaume Canet",
+     "Mathieu Kassovitz",
+     "Luc Besson",
+     "François Ozon"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_9",
+    "question": "Dans L'Auberge espagnole, dans quelle ville Xavier part-il étudier ?",
+    "answers": [
+     "Madrid",
+     "Rome",
+     "Barcelone",
+     "Lisbonne"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_10",
+    "question": "Qui a réalisé L'Auberge espagnole ?",
+    "answers": [
+     "Cédric Klapisch",
+     "Éric Toledano",
+     "Jacques Audiard",
+     "Jean Becker"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_11",
+    "question": "Quel réalisateur est derrière De battre mon cœur s'est arrêté ?",
+    "answers": [
+     "Jacques Audiard",
+     "Olivier Marchal",
+     "Costa-Gavras",
+     "Claude Miller"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_12",
+    "question": "Dans 36 Quai des Orfèvres, quels deux acteurs principaux s'affrontent ?",
+    "answers": [
+     "Daniel Auteuil et Gérard Depardieu",
+     "Jean Reno et Christian Clavier",
+     "Vincent Cassel et Benoît Magimel",
+     "François Cluzet et Guillaume Canet"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_13",
+    "question": "Qui a réalisé Un long dimanche de fiançailles ?",
+    "answers": [
+     "Jean-Pierre Jeunet",
+     "Claude Lelouch",
+     "Jean-Jacques Annaud",
+     "Bertrand Tavernier"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_14",
+    "question": "Quel acteur joue Brice dans Brice de Nice ?",
+    "answers": [
+     "Franck Dubosc",
+     "Jean Dujardin",
+     "José Garcia",
+     "Gad Elmaleh"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_15",
+    "question": "Quel film de 2008 avec Vincent Cassel raconte l'histoire du gangster Jacques Mesrine ?",
+    "answers": [
+     "L'Instinct de mort",
+     "Le Convoyeur",
+     "MR 73",
+     "Un prophète"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   }
+  ],
+  "errors": []
+ },
+ "blindtest-audio.csv": {
+  "questions": [
+   {
+    "id": "csv_1700000000000_1",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Les Visiteurs",
+     "Le Dîner de Cons",
+     "La Grande Vadrouille",
+     "Le Père Noël est une ordure"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "les_visiteurs",
+    "pendingAudioFile": "les_visiteurs.mp3"
+   },
+   {
+    "id": "csv_1700000000000_2",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Amélie Poulain",
+     "Les Choristes",
+     "Intouchables",
+     "La Môme"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "amelie_poulain",
+    "pendingAudioFile": "amelie_poulain.mp3"
+   },
+   {
+    "id": "csv_1700000000000_3",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Taxi",
+     "Banlieue 13",
+     "Yamakasi",
+     "Le Transporteur"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "taxi",
+    "pendingAudioFile": "taxi.mp3"
+   },
+   {
+    "id": "csv_1700000000000_4",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Le Grand Bleu",
+     "Nikita",
+     "Léon",
+     "Le Cinquième Élément"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "leon",
+    "pendingAudioFile": "leon.mp3"
+   },
+   {
+    "id": "csv_1700000000000_5",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Les Bronzés",
+     "L'Aventure c'est l'aventure",
+     "Les Sous-doués",
+     "Le Père Noël est une ordure"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "les_bronzes",
+    "pendingAudioFile": "les_bronzes.mp3"
+   },
+   {
+    "id": "csv_1700000000000_6",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Intouchables",
+     "Qu'est-ce qu'on a fait au Bon Dieu",
+     "Les Petits Mouchoirs",
+     "Le Prénom"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "intouchables",
+    "pendingAudioFile": "intouchables.mp3"
+   },
+   {
+    "id": "csv_1700000000000_7",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "La Boum",
+     "L'Étudiante",
+     "La Boom 2",
+     "36 Quai des Orfèvres"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "la_boum",
+    "pendingAudioFile": "la_boum.mp3"
+   },
+   {
+    "id": "csv_1700000000000_8",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Les Choristes",
+     "Au Revoir les Enfants",
+     "La Guerre des Boutons",
+     "Les Sous-doués"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "les_choristes",
+    "pendingAudioFile": "les_choristes.mp3"
+   },
+   {
+    "id": "csv_1700000000000_9",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Le Cinquième Élément",
+     "Subway",
+     "Le Grand Bleu",
+     "Lucy"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "cinquieme_element",
+    "pendingAudioFile": "cinquieme_element.mp3"
+   },
+   {
+    "id": "csv_1700000000000_10",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Bienvenue chez les Ch'tis",
+     "Rien à Déclarer",
+     "Supercondriaque",
+     "Raid Dingue"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "bienvenue_chtis",
+    "pendingAudioFile": "bienvenue_chtis.mp3"
+   },
+   {
+    "id": "csv_1700000000000_11",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Le Fabuleux Destin d'Amélie Poulain",
+     "Micmacs",
+     "Delicatessen",
+     "La Cité des Enfants Perdus"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "amelie",
+    "pendingAudioFile": "amelie.mp3"
+   },
+   {
+    "id": "csv_1700000000000_12",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "La Haine",
+     "Ma 6-T va crack-er",
+     "Banlieue 13",
+     "Les Misérables"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "la_haine",
+    "pendingAudioFile": "la_haine.mp3"
+   },
+   {
+    "id": "csv_1700000000000_13",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Le Dîner de Cons",
+     "Le Placard",
+     "La Doublure",
+     "Tais-toi"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "diner_de_cons",
+    "pendingAudioFile": "diner_de_cons.mp3"
+   },
+   {
+    "id": "csv_1700000000000_14",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Astérix Mission Cléopâtre",
+     "Astérix et Obélix",
+     "Astérix aux JO",
+     "Astérix chez les Bretons"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "asterix_cleopatre",
+    "pendingAudioFile": "asterix_cleopatre.mp3"
+   },
+   {
+    "id": "csv_1700000000000_15",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Le Père Noël est une ordure",
+     "Les Bronzés font du ski",
+     "Papy fait de la résistance",
+     "Les Trois Frères"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "pere_noel_ordure",
+    "pendingAudioFile": "pere_noel_ordure.mp3"
+   },
+   {
+    "id": "csv_1700000000000_16",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Jean de Florette",
+     "Manon des Sources",
+     "La Gloire de mon Père",
+     "Le Château de ma Mère"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "jean_de_florette",
+    "pendingAudioFile": "jean_de_florette.mp3"
+   },
+   {
+    "id": "csv_1700000000000_17",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "La Grande Vadrouille",
+     "Le Corniaud",
+     "Rabbi Jacob",
+     "L'Aile ou la Cuisse"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "grande_vadrouille",
+    "pendingAudioFile": "grande_vadrouille.mp3"
+   },
+   {
+    "id": "csv_1700000000000_18",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Nikita",
+     "Léon",
+     "Le Femme Nikita",
+     "Anna"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "nikita",
+    "pendingAudioFile": "nikita.mp3"
+   },
+   {
+    "id": "csv_1700000000000_19",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "Les Trois Frères",
+     "Les Visiteurs 2",
+     "Le Pari",
+     "Didier"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "trois_freres",
+    "pendingAudioFile": "trois_freres.mp3"
+   },
+   {
+    "id": "csv_1700000000000_20",
+    "question": "De quel film vient cette musique ?",
+    "answers": [
+     "OSS 117 Le Caire",
+     "OSS 117 Rio",
+     "Le Grand Blond",
+     "L'Homme de Rio"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10,
+    "audioFileName": "oss_117",
+    "pendingAudioFile": "oss_117.mp3"
+   }
+  ],
+  "errors": []
+ },
+ "cas-limites.csv": {
+  "questions": [
+   {
+    "id": "csv_1700000000000_1",
+    "question": "Dans quelle année la série Friends a-t-elle débuté ?",
+    "answers": [
+     "1992",
+     "1994",
+     "1996",
+     "1998"
+    ],
+    "correctAnswer": 1,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_2",
+    "question": "Qui a dit : Je pense, donc je suis ?",
+    "answers": [
+     "Descartes",
+     "Pascal",
+     "Voltaire",
+     "Rousseau"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 15,
+    "points": 5
+   },
+   {
+    "id": "csv_1700000000000_4",
+    "question": "Question sans temps",
+    "answers": [
+     "A",
+     "B",
+     "C",
+     "D"
+    ],
+    "correctAnswer": 3,
+    "timeLimit": 20,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_8",
+    "question": "Temps fou",
+    "answers": [
+     "A",
+     "B",
+     "C",
+     "D"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 120,
+    "points": 10
+   },
+   {
+    "id": "csv_1700000000000_9",
+    "question": "Espaces autour",
+    "answers": [
+     "A",
+     "B",
+     "C",
+     "D"
+    ],
+    "correctAnswer": 2,
+    "timeLimit": 25,
+    "points": 15,
+    "audioFileName": "son final",
+    "pendingAudioFile": "son final.wav"
+   },
+   {
+    "id": "csv_1700000000000_10",
+    "question": "Émoji 🎉 et œ, à â ç",
+    "answers": [
+     "Ça",
+     "Où",
+     "Là",
+     "Déjà"
+    ],
+    "correctAnswer": 0,
+    "timeLimit": 20,
+    "points": 10
+   }
+  ],
+  "errors": [
+   "Ligne 4: Bonne réponse doit être 1, 2, 3 ou 4 (reçu: \"Mai\")",
+   "Ligne 6: Pas assez de colonnes (3/6 minimum)",
+   "Ligne 7: Bonne réponse doit être 1, 2, 3 ou 4 (reçu: \"7\")",
+   "Ligne 8: Question ou réponses manquantes"
+  ]
+ },
+ "entete-seule.csv": {
+  "questions": [],
+  "errors": [
+   "Le fichier doit contenir au moins une ligne d'en-tête et une question"
+  ]
+ }
+}

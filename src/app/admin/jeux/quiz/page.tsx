@@ -50,6 +50,19 @@ import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 import { compressImage, needsCompression } from '@/lib/image-utils'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
+import { parseLegacyQuizCsv } from '@/lib/quiz/csv-legacy'
+import { TransferError } from '@/lib/games/quiz-transfer/format'
+import {
+  applyQuizImport,
+  checkQuizExportAccess,
+  exportQuiz,
+  readQuizSnapshot,
+  type PreparedQuizImport,
+  type StoredQuestion,
+  type TransferProgress,
+} from '@/lib/games/quiz-transfer/transfer'
+import { SUBSCRIBE_HREF } from '@/lib/watermark/constants'
+import { QuizExportModal, QuizImportModal } from './QuizTransferModals'
 import dynamic from 'next/dynamic'
 
 // Outil de découpe audio (admin only) : chargé à la demande, jamais rendu côté serveur.
@@ -161,6 +174,11 @@ export default function QuizPage() {
   const [csvPreviewQuestions, setCsvPreviewQuestions] = useState<QuizQuestion[]>([])
   const [csvImportErrors, setCsvImportErrors] = useState<string[]>([])
   const csvInputRef = useRef<HTMLInputElement>(null)
+
+  // Export / import d'un quiz complet (.zip)
+  const [exportQuestions, setExportQuestions] = useState<StoredQuestion[] | null>(null)
+  const [importRequest, setImportRequest] = useState<{ file: File; currentCount: number } | null>(null)
+  const [quizImporting, setQuizImporting] = useState(false)
 
   // Quiz pré-packagés
   const [showPrepackagedModal, setShowPrepackagedModal] = useState(false)
@@ -507,98 +525,41 @@ export default function QuizPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Un .zip (reconnu à son contenu, pas à son nom) part vers l'import complet ;
+    // un .csv suit exactement le chemin historique ci-dessous.
+    if (file.size >= 4 && (/\.zip$/i.test(file.name) || file.type.includes('zip'))) {
+      if (csvInputRef.current) csvInputRef.current.value = ''
+      void openZipImport(file)
+      return
+    }
+    void file.slice(0, 4).arrayBuffer().then((head) => {
+      const b = new Uint8Array(head)
+      if (b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04) {
+        void openZipImport(file)
+      } else {
+        readLegacyCsvFile(file)
+      }
+    }).catch(() => readLegacyCsvFile(file))
+
+    // Reset input
+    if (csvInputRef.current) csvInputRef.current.value = ''
+  }
+
+  function readLegacyCsvFile(file: File) {
     const reader = new FileReader()
     reader.onload = (event) => {
       const text = event.target?.result as string
       parseCsvContent(text)
     }
     reader.readAsText(file, 'UTF-8')
-
-    // Reset input
-    if (csvInputRef.current) csvInputRef.current.value = ''
   }
 
   function parseCsvContent(text: string) {
-    const errors: string[] = []
-    const parsedQuestions: QuizQuestion[] = []
-
-    // Split lignes et ignorer les vides
-    const lines = text.split(/\r?\n/).filter(line => line.trim())
-
-    if (lines.length < 2) {
-      errors.push('Le fichier doit contenir au moins une ligne d\'en-tête et une question')
-      setCsvImportErrors(errors)
-      setCsvPreviewQuestions([])
-      setShowCsvImportModal(true)
-      return
-    }
-
-    // Ignorer la première ligne (en-tête)
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
-
-      // Parser avec point-virgule, gérer les guillemets
-      const cols = parseCsvLine(line)
-
-      if (cols.length < 6) {
-        errors.push(`Ligne ${i + 1}: Pas assez de colonnes (${cols.length}/6 minimum)`)
-        continue
-      }
-
-      const [question, rep1, rep2, rep3, rep4, bonneRepStr, tempsStr, pointsStr, audioFile] = cols
-
-      if (!question || !rep1 || !rep2 || !rep3 || !rep4) {
-        errors.push(`Ligne ${i + 1}: Question ou réponses manquantes`)
-        continue
-      }
-
-      const bonneRep = parseInt(bonneRepStr || '1', 10)
-      if (bonneRep < 1 || bonneRep > 4 || isNaN(bonneRep)) {
-        errors.push(`Ligne ${i + 1}: Bonne réponse doit être 1, 2, 3 ou 4 (reçu: "${bonneRepStr}")`)
-        continue
-      }
-
-      const temps = parseInt(tempsStr || '20', 10) || 20
-      const points = parseInt(pointsStr || '10', 10) || 10
-
-      parsedQuestions.push({
-        id: `csv_${Date.now()}_${i}`,
-        question: question.trim(),
-        answers: [rep1.trim(), rep2.trim(), rep3.trim(), rep4.trim()],
-        correctAnswer: bonneRep - 1, // Index 0-based
-        timeLimit: Math.max(5, Math.min(120, temps)),
-        points: Math.max(1, points),
-        audioUrl: undefined,
-        // Stocker le nom du fichier audio pour référence
-        ...(audioFile?.trim() ? { audioFileName: audioFile.trim().replace(/\.[^.]+$/, ''), pendingAudioFile: audioFile.trim() } : {}),
-      } as QuizQuestion)
-    }
-
+    // Lecteur historique, déplacé à l'identique dans src/lib/quiz/csv-legacy.ts
+    const { questions: parsedQuestions, errors } = parseLegacyQuizCsv(text)
     setCsvPreviewQuestions(parsedQuestions)
     setCsvImportErrors(errors)
     setShowCsvImportModal(true)
-  }
-
-  // Parser une ligne CSV avec gestion des guillemets
-  function parseCsvLine(line: string): string[] {
-    const result: string[] = []
-    let current = ''
-    let inQuotes = false
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      if (char === '"') {
-        inQuotes = !inQuotes
-      } else if (char === ';' && !inQuotes) {
-        result.push(current.trim())
-        current = ''
-      } else {
-        current += char
-      }
-    }
-    result.push(current.trim())
-    return result
   }
 
   function confirmCsvImport() {
@@ -620,45 +581,82 @@ export default function QuizPage() {
     setCsvImportErrors([])
   }
 
-  function exportToCsv() {
-    if (questions.length === 0) {
-      toast.error('Aucune question à exporter')
-      return
+  // ========== Export / import d'un quiz complet (.zip) ==========
+
+  function mediaUploadsBusy(): boolean {
+    if (audioUploading || photoUploading || questionAudioUploading) {
+      toast.error('Patientez la fin de l’upload des médias')
+      return true
     }
-
-    const header = 'question;reponse1;reponse2;reponse3;reponse4;bonne_reponse;temps;points;fichier_audio'
-    const lines = questions.map(q => {
-      const audioFileName = (q as QuizQuestion & { audioFileName?: string }).audioFileName || ''
-      return [
-        escapeCsvField(q.question),
-        escapeCsvField(q.answers[0] || ''),
-        escapeCsvField(q.answers[1] || ''),
-        escapeCsvField(q.answers[2] || ''),
-        escapeCsvField(q.answers[3] || ''),
-        q.correctAnswer + 1, // 1-based pour l'export
-        q.timeLimit,
-        q.points,
-        escapeCsvField(audioFileName),
-      ].join(';')
-    })
-
-    const csvContent = [header, ...lines].join('\n')
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' }) // BOM pour Excel
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `quiz_export_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-
-    toast.success(`${questions.length} question(s) exportée(s)`)
+    return false
   }
 
-  function escapeCsvField(field: string): string {
-    if (field.includes(';') || field.includes('"') || field.includes('\n')) {
-      return `"${field.replace(/"/g, '""')}"`
+  async function openExportModal() {
+    if (!session || mediaUploadsBusy()) return
+    try {
+      const access = await checkQuizExportAccess()
+      if (access.blocked) {
+        toast.error(access.message, {
+          action: { label: 'Voir les offres', onClick: () => router.push(SUBSCRIBE_HREF) },
+        })
+        return
+      }
+      const snapshot = await readQuizSnapshot(supabase, session.id)
+      if (snapshot.questions.length === 0) {
+        toast.error('Aucune question à exporter')
+        return
+      }
+      setExportQuestions(snapshot.questions)
+    } catch (err) {
+      console.error('Error opening quiz export:', err)
+      toast.error(err instanceof TransferError ? err.message : 'Erreur lors de la préparation de l’export')
     }
-    return field
+  }
+
+  async function handleExport(name: string, onProgress: TransferProgress) {
+    if (!session) return
+    const { blob, fileName } = await exportQuiz({ supabase, sessionId: session.id, name, penaltyPoints, onProgress })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    setExportQuestions(null)
+    toast.success('Quiz exporté')
+  }
+
+  async function openZipImport(file: File) {
+    if (!session || mediaUploadsBusy()) return
+    try {
+      const snapshot = await readQuizSnapshot(supabase, session.id)
+      if (snapshot.running) {
+        toast.error('Une partie est en cours. Quittez-la avant d’importer')
+        return
+      }
+      setImportRequest({ file, currentCount: snapshot.questions.length })
+    } catch (err) {
+      console.error('Error opening quiz import:', err)
+      toast.error(err instanceof TransferError ? err.message : 'Erreur lors de la préparation de l’import')
+    }
+  }
+
+  async function handleZipImport(prepared: PreparedQuizImport, onProgress: TransferProgress) {
+    if (!session) return
+    setQuizImporting(true)
+    try {
+      const result = await applyQuizImport({ supabase, sessionId: session.id, prepared, onProgress })
+      setQuestions(result.questions)
+      setEditingQuestion(null)
+      setPenaltyPoints(result.penaltyPoints)
+      try {
+        localStorage.setItem('quiz-penalty-points', String(result.penaltyPoints))
+      } catch { /* stockage local indisponible : la pénalité reste réglée pour cette page */ }
+      setImportRequest(null)
+      toast.success(`Quiz « ${prepared.manifest.name} » importé (${result.questions.length} question${result.questions.length > 1 ? 's' : ''})`)
+    } finally {
+      setQuizImporting(false)
+    }
   }
 
   // === Bibliothèque personnelle de quiz (saved_quizzes) ===
@@ -1995,13 +1993,19 @@ export default function QuizPage() {
   // non mappés. Le lobby est ignoré (gameActive faux), coupé après le podium.
   // L'état local fait foi : c'est cette page qui pilote le chrono et la base.
   // Partie affichée : confirmation avant rechargement (F5) ou fermeture.
-  useLeaveGuard(gameActive || lobbyVisible)
+  useLeaveGuard(gameActive || lobbyVisible || quizImporting)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   useRemoteControl({
     active: gameActive && remoteOn && !showPodium,
     phase: `${currentQuestionIndex}|${isAnswering}|${showResults}`,
-    isBlocked: () => showCsvImportModal || showPrepackagedModal || showSaveQuizModal || showLoadQuizModal,
+    isBlocked: () =>
+      showCsvImportModal ||
+      showPrepackagedModal ||
+      showSaveQuizModal ||
+      showLoadQuizModal ||
+      exportQuestions !== null ||
+      importRequest !== null,
     onNext: async () => {
       if (!isAnswering && !showResults) { await startQuestion(); return 1500 }
       if (isAnswering) { await revealAnswer(); return 1500 }
@@ -2137,7 +2141,7 @@ export default function QuizPage() {
                   <button
                     onClick={() => csvInputRef.current?.click()}
                     className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
-                    title="Importer depuis CSV"
+                    title="Importer un quiz (.zip) ou des questions (.csv)"
                   >
                     <FileSpreadsheet className="h-4 w-4" />
                     Importer
@@ -2145,14 +2149,14 @@ export default function QuizPage() {
                   <input
                     ref={csvInputRef}
                     type="file"
-                    accept=".csv,text/csv"
+                    accept=".csv,text/csv,.zip,application/zip"
                     onChange={handleCsvFileSelect}
                     className="hidden"
                   />
                   <button
-                    onClick={exportToCsv}
+                    onClick={openExportModal}
                     className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
-                    title="Exporter en CSV"
+                    title="Exporter le quiz complet (.zip, médias compris)"
                   >
                     <Download className="h-4 w-4" />
                     Exporter
@@ -3296,6 +3300,25 @@ export default function QuizPage() {
           </div>
         )}
       </main>
+
+      {/* Export / import d'un quiz complet (.zip) */}
+      {exportQuestions && (
+        <QuizExportModal
+          questions={exportQuestions}
+          penaltyPoints={penaltyPoints}
+          defaultName=""
+          onClose={() => setExportQuestions(null)}
+          onExport={handleExport}
+        />
+      )}
+      {importRequest && (
+        <QuizImportModal
+          initialFile={importRequest.file}
+          currentCount={importRequest.currentCount}
+          onClose={() => setImportRequest(null)}
+          onImport={handleZipImport}
+        />
+      )}
 
       {/* Modal Import CSV */}
       {showCsvImportModal && (
