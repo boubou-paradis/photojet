@@ -51,6 +51,7 @@ import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
 import { compressImage, needsCompression } from '@/lib/image-utils'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import { parseLegacyQuizCsv } from '@/lib/quiz/csv-legacy'
+import { canDeleteQuizMedia, quizMediaPath } from '@/lib/quiz/media-in-use'
 import { TransferError } from '@/lib/games/quiz-transfer/format'
 import {
   applyQuizImport,
@@ -917,43 +918,41 @@ export default function QuizPage() {
     if (questionPhotoInputRef.current) questionPhotoInputRef.current.value = ''
   }
 
+  // Supprime le fichier du stockage seulement s'il n'est utilisé nulle part
+  // ailleurs (quiz en cours, bibliothèque, autres sessions du compte). Si le
+  // fichier est utilisé ou si la vérification échoue, il est conservé : le
+  // média est seulement retiré de la question.
+  async function deleteQuizMediaIfUnused(url: string | null | undefined, updated: QuizQuestion) {
+    if (!url || !session?.id) return
+    const path = quizMediaPath(url)
+    if (!path) return
+    const remainingQuestions = questions.map(q => q.id === updated.id ? updated : q)
+    const safe = await canDeleteQuizMedia(supabase, { url, sessionId: session.id, remainingQuestions })
+    if (!safe) return
+    try {
+      await supabase.storage.from('photos').remove([path])
+    } catch { /* suppression impossible, fichier conservé */ }
+  }
+
   async function removeQuestionPhoto(questionId: string) {
     if (!editingQuestion) return
-
-    // Supprimer le fichier du storage si possible
-    if (editingQuestion.photoUrl) {
-      const path = editingQuestion.photoUrl.match(/photos\/(.+)/)
-      if (path?.[1]) {
-        try {
-          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
-        } catch { /* chemin photo invalide, ignoré */ }
-      }
-    }
 
     const updated = { ...editingQuestion, photoUrl: null }
     setEditingQuestion(updated)
     updateQuestion(updated)
     toast.success('Photo supprimée')
+    await deleteQuizMediaIfUnused(editingQuestion.photoUrl, updated)
   }
 
   async function removeQuestionAudio(questionId: string) {
     if (!editingQuestion) return
-
-    // Supprimer le fichier du storage si possible
-    if (editingQuestion.audioUrl) {
-      const path = editingQuestion.audioUrl.match(/photos\/(.+)/)
-      if (path?.[1]) {
-        try {
-          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
-        } catch { /* chemin audio invalide, ignoré */ }
-      }
-    }
 
     const updated = { ...editingQuestion, audioUrl: null, audioStart: null, audioEnd: null }
     setEditingQuestion(updated)
     updateQuestion(updated)
     stopPreviewAudio()
     toast.success('Audio supprimé')
+    await deleteQuizMediaIfUnused(editingQuestion.audioUrl, updated)
   }
 
   function togglePreviewAudio(url: string) {
@@ -1070,20 +1069,12 @@ export default function QuizPage() {
   async function removeQuestionPromptAudio(_questionId: string) {
     if (!editingQuestion) return
 
-    if (editingQuestion.questionAudioUrl) {
-      const path = editingQuestion.questionAudioUrl.match(/photos\/(.+)/)
-      if (path?.[1]) {
-        try {
-          await supabase.storage.from('photos').remove([decodeURIComponent(path[1])])
-        } catch { /* chemin invalide, ignoré */ }
-      }
-    }
-
     const updated = { ...editingQuestion, questionAudioUrl: null, questionAudioName: null, questionAudioStart: null, questionAudioEnd: null }
     setEditingQuestion(updated)
     updateQuestion(updated)
     stopQuestionPreviewAudio()
     toast.success('Audio de la question supprimé')
+    await deleteQuizMediaIfUnused(editingQuestion.questionAudioUrl, updated)
   }
 
   function toggleQuestionPreviewAudio(url: string) {
