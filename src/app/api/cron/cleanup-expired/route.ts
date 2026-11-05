@@ -18,6 +18,10 @@ const GRACE_PERIOD_DAYS = 30
 const TRIAL_GRACE_DAYS = 7 // Essais gratuits non convertis : purge 7 jours après expiration
 const WARNING_DAYS = [7, 1] // Send warnings at 7 days and 1 day before deletion
 const PHOTOS_BUCKET = 'photos'
+// PAUSE (05/11/2026) : aucune suppression de compte tant que la nouvelle purge
+// (30 jours après la fin d'accès, compte et factures conservés) n'est pas validée.
+// Les e-mails d'avertissement et les rappels annuels continuent normalement.
+const ACCOUNT_DELETION_PAUSED = true
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -172,10 +176,12 @@ export async function GET(request: NextRequest) {
     warningsSent: string[]
     usersDeleted: string[]
     skippedStillActive?: string[]
+    pausedCandidates: string[]
     errors: string[]
   } = {
     warningsSent: [],
     usersDeleted: [],
+    pausedCandidates: [],
     errors: [],
   }
 
@@ -308,6 +314,13 @@ export async function GET(request: NextRequest) {
         continue
       }
 
+      if (ACCOUNT_DELETION_PAUSED) {
+        console.log(`[Cron cleanup] PAUSE : suppression du compte ${sub.user_id} non effectuée.`)
+        processedUsers.add(sub.user_id)
+        results.pausedCandidates.push(sub.user_id)
+        continue
+      }
+
       const { filesDeleted, email } = await deleteUserData(supabase, sub.user_id)
       processedUsers.add(sub.user_id)
       results.usersDeleted.push(sub.user_id)
@@ -393,7 +406,7 @@ export async function GET(request: NextRequest) {
   await logPurge(supabase, {
     kind: 'summary',
     files_deleted: 0,
-    reason: `warnings=${results.warningsSent.length} deletions=${results.usersDeleted.length} errors=${results.errors.length} annual_reminders=${annualReminders.sent}`,
+    reason: `warnings=${results.warningsSent.length} deletions=${results.usersDeleted.length} errors=${results.errors.length} annual_reminders=${annualReminders.sent}${ACCOUNT_DELETION_PAUSED ? ` paused=${results.pausedCandidates.length}` : ''}`,
   })
 
   return NextResponse.json({
