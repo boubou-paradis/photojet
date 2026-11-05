@@ -136,6 +136,15 @@ export default function CGVPage() {
               <li>Violation des présentes CGV</li>
               <li>Utilisation abusive ou frauduleuse du service</li>
             </ul>
+
+            <h3 className="text-lg font-semibold text-white mt-4 mb-2">5.4 Conservation des contenus après la fin de l&apos;accès</h3>
+            <p className="mb-4">
+              À la fin de l&apos;abonnement, de l&apos;essai gratuit ou du Pass Événement, les contenus créés par le Client (jeux,
+              quiz, bibliothèques, personnalisations, photos et messages des invités) sont conservés pendant 30 jours. Un e-mail
+              prévient le Client 7 jours avant leur suppression. Sans réabonnement dans ce délai, ils sont définitivement supprimés.
+              Le compte et les factures sont conservés. Il appartient au Client de télécharger ou d&apos;exporter avant cette date
+              les contenus qu&apos;il souhaite garder.
+            </p>
           </section>
 
           {/* Article 6 */}

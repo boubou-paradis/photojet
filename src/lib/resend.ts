@@ -1311,86 +1311,95 @@ export async function sendAnnualRenewalReminderEmail(params: {
   }
 }
 
-export async function sendDataDeletionWarningEmail(params: { to: string; daysLeft: number }) {
-  if (!resend) {
-    return { success: false, error: 'Resend not configured' }
-  }
-
-  const { to, daysLeft } = params
+// E-mail J-7 avant la purge des contenus (texte validé le 05/11/2026).
+export async function sendContentDeletionWarningEmail(params: {
+  to: string
+  type: 'essai' | 'pass' | 'abonnement'
+  endDate: string // ex. « 19 octobre 2026 »
+  deletionDate: string // ex. « 18 novembre 2026 »
+}) {
+  if (!resend) return { success: false, error: 'Resend not configured' }
+  const { to, type, endDate, deletionDate } = params
+  const what = type === 'essai' ? 'essai gratuit' : type === 'pass' ? 'Pass Événement' : 'abonnement'
 
   try {
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       replyTo: REPLY_TO,
-      subject: daysLeft === 0
-        ? 'URGENT : Vos donnees AnimaJet seront supprimees aujourd\'hui'
-        : `Vos donnees AnimaJet seront supprimees dans ${daysLeft} jours`,
+      subject: `Vos contenus AnimaJet seront supprimés le ${deletionDate}`,
+      text: [
+        'Bonjour,',
+        '',
+        `Votre ${what} AnimaJet a pris fin le ${endDate}.`,
+        `Sans réabonnement de votre part, vos quiz, photos, jeux et personnalisations seront définitivement supprimés le ${deletionDate}.`,
+        '',
+        `Réabonnez-vous avant cette date pour tout conserver : ${APP_URL}/#pricing`,
+        '',
+        'Votre compte et vos factures restent accessibles.',
+        '',
+        'L’équipe AnimaJet',
+      ].join('\n'),
       html: `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suppression de donnees</title>
+  <title>Vos contenus AnimaJet seront supprimés</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0D0D0F; font-family: 'Segoe UI', Arial, Helvetica, sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0D0D0F;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%;">
-
-          <tr>
-            <td height="3" style="background: linear-gradient(90deg, transparent 0%, #E53935 30%, #E53935 70%, transparent 100%); border-radius: 20px 20px 0 0;"></td>
-          </tr>
-
           <tr>
             <td align="center" style="background: linear-gradient(180deg, #1A1A1E 0%, #242428 100%); padding: 40px; border-radius: 20px 20px 0 0;">
               <img src="https://animajet.fr/logo.png" alt="AnimaJet" width="100" height="100" style="display: block; width: 100px; height: 100px; border: 0; border-radius: 15px;" />
-              <h1 style="margin: 25px 0 0 0; color: #E53935; font-size: 24px; font-weight: 700;">
-                ${daysLeft === 0 ? 'Suppression imminente de vos donnees' : 'Vos donnees seront bientot supprimees'}
+              <h1 style="margin: 25px 0 0 0; color: #D4AF37; font-size: 24px; font-weight: 700;">
+                Vos contenus seront supprimés le ${deletionDate}
               </h1>
             </td>
           </tr>
-
           <tr>
             <td style="background-color: #1A1A1E; padding: 40px;">
+              <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">Bonjour,</p>
               <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
-                Votre abonnement AnimaJet a expire et ${daysLeft === 0
-                  ? '<strong style="color: #E53935;">vos donnees seront supprimees aujourd\'hui</strong>'
-                  : `vos donnees seront definitivement supprimees dans <strong style="color: #E53935;">${daysLeft} jours</strong>`
-                }.
+                Votre ${what} AnimaJet a pris fin le ${endDate}.
               </p>
-              <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
-                Cela inclut toutes vos sessions, photos, messages et donnees de jeux. Cette action est irreversible.
+              <p style="margin: 0 0 20px; color: #E5E5E7; font-size: 16px; line-height: 1.7;">
+                Sans réabonnement de votre part, vos quiz, photos, jeux et personnalisations seront définitivement supprimés le
+                <strong style="color: #D4AF37;">${deletionDate}</strong>.
               </p>
               <p style="margin: 0 0 35px; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
-                Pour conserver vos donnees, reabonnez-vous maintenant :
+                Réabonnez-vous avant cette date pour tout conserver.
               </p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <a href="${APP_URL}/#pricing" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #1A1A1E; text-decoration: none; padding: 18px 45px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);">
-                      Se reabonner et conserver mes donnees
+                    <a href="${APP_URL}/#pricing" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #F4D03F 100%); color: #1A1A1E; text-decoration: none; padding: 18px 45px; border-radius: 12px; font-size: 16px; font-weight: 700;">
+                      Me réabonner
                     </a>
                   </td>
                 </tr>
               </table>
+              <p style="margin: 35px 0 0; color: #9A9AA0; font-size: 15px; line-height: 1.7;">
+                Votre compte et vos factures restent accessibles.
+              </p>
+              <p style="margin: 20px 0 0; color: #E5E5E7; font-size: 15px; line-height: 1.7;">L’équipe AnimaJet</p>
             </td>
           </tr>
-
           <tr>
             <td style="background-color: #0D0D0F; padding: 30px 40px; border-radius: 0 0 20px 20px; border-top: 1px solid #2A2A2E;">
               <p style="margin: 0 0 15px; color: #9A9AA0; font-size: 14px; text-align: center;">
                 Des questions ? <a href="mailto:animajet3@gmail.com" style="color: #D4AF37; text-decoration: none; font-weight: 600;">animajet3@gmail.com</a>
               </p>
               <p style="margin: 0; color: #4A4A4F; font-size: 12px; text-align: center; line-height: 1.8;">
-                &copy; 2025 AnimaJet - Tous droits reserves<br>
-                <span style="color: #6B6B70;">Cree par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
+                &copy; 2025 AnimaJet - Tous droits réservés<br>
+                <span style="color: #6B6B70;">Créé par <strong style="color: #D4AF37;">MG Events Animation</strong></span>
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -1399,10 +1408,10 @@ export async function sendDataDeletionWarningEmail(params: { to: string; daysLef
 </html>
       `,
     })
-
-    return { success: true, data: result }
+    if (error) return { success: false, error }
+    return { success: true, data }
   } catch (error: unknown) {
-    console.error('[Email] Data deletion warning error:', error instanceof Error ? error.message : error)
+    console.error('[Email] Content deletion warning error:', error instanceof Error ? error.message : error)
     return { success: false, error }
   }
 }

@@ -145,9 +145,11 @@ export default function ConfidentialitePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  <tr><td className="py-3 px-4">Données de compte</td><td className="py-3 px-4">Durée de l&apos;abonnement + 3 ans</td></tr>
+                  <tr><td className="py-3 px-4">Données de compte (e-mail, identifiants)</td><td className="py-3 px-4">Durée de l&apos;abonnement, puis 3 ans après la fin du dernier accès</td></tr>
+                  <tr><td className="py-3 px-4">Contenus créés (jeux, quiz, bibliothèques, personnalisations, photos et messages des invités)</td><td className="py-3 px-4">Supprimés 30 jours après la fin de l&apos;abonnement, de l&apos;essai gratuit ou du Pass Événement, après un e-mail d&apos;avertissement envoyé 7 jours avant</td></tr>
                   <tr><td className="py-3 px-4">Données de facturation</td><td className="py-3 px-4">10 ans (obligation légale)</td></tr>
-                  <tr><td className="py-3 px-4">Photos uploadées</td><td className="py-3 px-4">30 jours après l&apos;événement</td></tr>
+                  <tr><td className="py-3 px-4">Adresse e-mail ayant bénéficié de l&apos;essai gratuit</td><td className="py-3 px-4">3 ans (empêcher un second essai)</td></tr>
+                  <tr><td className="py-3 px-4">Journal des suppressions</td><td className="py-3 px-4">3 ans (preuve de suppression)</td></tr>
                   <tr><td className="py-3 px-4">Logs de connexion</td><td className="py-3 px-4">1 an</td></tr>
                   <tr><td className="py-3 px-4">Cookies</td><td className="py-3 px-4">13 mois maximum</td></tr>
                 </tbody>
@@ -256,8 +258,8 @@ export default function ConfidentialitePage() {
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">11. Photos uploadées (Borne Photo)</h2>
             <p className="mb-2">Les photos uploadées par les invités via la fonction Borne Photo :</p>
             <ul className="list-disc ml-6 space-y-1">
-              <li>Sont stockées temporairement pour l&apos;affichage en direct</li>
-              <li>Sont automatiquement supprimées 30 jours après l&apos;événement</li>
+              <li>Sont stockées pour l&apos;affichage en direct et l&apos;album de l&apos;événement</li>
+              <li>Sont automatiquement supprimées 30 jours après la fin de l&apos;abonnement, de l&apos;essai gratuit ou du Pass Événement de l&apos;organisateur</li>
               <li>Ne sont pas utilisées à d&apos;autres fins</li>
               <li>Peuvent être supprimées à tout moment par l&apos;organisateur</li>
             </ul>

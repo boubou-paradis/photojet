@@ -274,8 +274,8 @@ export default function MentionsLegalesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">6.5 Durée de conservation</h3>
                 <ul className="list-disc ml-6 space-y-1">
-                  <li>Données de compte : conservées pendant la durée de l&apos;abonnement et 30 jours après la résiliation</li>
-                  <li>Photos partagées lors des événements : conservées 30 jours après l&apos;événement puis automatiquement supprimées</li>
+                  <li>Données de compte : conservées pendant la durée de l&apos;abonnement, puis 3 ans après la fin du dernier accès</li>
+                  <li>Contenus créés par l&apos;organisateur et photos partagées lors des événements : supprimés automatiquement 30 jours après la fin de l&apos;abonnement, de l&apos;essai gratuit ou du Pass Événement, après un e-mail d&apos;avertissement envoyé 7 jours avant</li>
                   <li>Données de facturation : conservées 10 ans conformément aux obligations comptables françaises (article L.123-22 du Code de commerce)</li>
                 </ul>
               </div>

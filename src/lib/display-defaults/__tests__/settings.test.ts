@@ -118,8 +118,10 @@ describe('résumé', () => {
 describe('garde-fous du code', () => {
   const root = join(__dirname, '..', '..', '..')
   it('la purge des comptes efface aussi les réglages par défaut', () => {
-    const src = readFileSync(join(root, 'app', 'api', 'cron', 'cleanup-expired', 'route.ts'), 'utf8')
-    expect(src).toContain('deleteDisplayDefaults(supabase, userId)')
+    const src = readFileSync(join(root, 'lib', 'purge', 'account-purge.ts'), 'utf8')
+    expect(src).toContain("'account_display_defaults'")
+    expect(src).toContain('`promos/defaults-${userId}`')
+    expect(src).toContain('`defaults-${userId}`')
   })
   it('la suppression d\'un cadre le retire des réglages par défaut', () => {
     const src = readFileSync(join(root, 'app', 'api', 'borne', 'templates', 'route.ts'), 'utf8')
