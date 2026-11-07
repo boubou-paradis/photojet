@@ -4,9 +4,11 @@ import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent 
 const URL = 'https://animajet.fr/animation-camping-interactive'
 
 export const metadata: Metadata = {
-  title: 'Animation Camping Interactive : jeux & soirées',
-  description: 'Quiz, blind test, photo mystère : animez vos soirées camping sur écran géant. Vos vacanciers jouent depuis leur téléphone, sans appli. Essai 24h.',
+  title: "Logiciel d'animation camping : jeux sur écran géant",
+  description: "Logiciel et matériel d'animation camping : quiz, blind test et jeux sur écran géant, joués depuis le téléphone des vacanciers. Sans appli, essai 24h.",
   keywords: [
+    "logiciel d'animation camping",
+    "matériel d'animation camping",
     'animation camping',
     'animation camping interactive',
     'soirée camping',
@@ -22,8 +24,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     images: [{ url: '/images/og-animajet.jpg', width: 1200, height: 630, alt: 'AnimaJet — Les animations interactives qui font vibrer vos événements' }],
-    title: 'Animation Camping Interactive | AnimaJet',
-    description: 'Quiz, jeux interactifs et partage photo en direct. Faites participer tous vos vacanciers depuis leur téléphone.',
+    title: "Logiciel d'animation camping : jeux sur écran géant | AnimaJet",
+    description: "Quiz, blind test et jeux interactifs sur écran géant pour animer les soirées de votre camping. Les vacanciers jouent depuis leur téléphone, sans appli.",
     url: URL,
     type: 'website',
     locale: 'fr_FR',
@@ -39,7 +41,7 @@ const content: AnimationDetailContent = {
   what: [
     "Au camping, une bonne soirée d'animation rassemble des familles entières, des enfants aux grands-parents, autour de l'écran de la salle commune ou de la terrasse du bar. AnimaJet propose des jeux pensés pour cette ambiance conviviale : un quiz accessible à tous, une roue de la destinée qui distribue défis et petits lots, et une photo mystère qui fait monter le suspense manche après manche.",
     "Le fonctionnement est idéal pour un public de vacances : un QR code affiché à l'écran, les vacanciers le scannent avec leur téléphone et jouent immédiatement, sans rien installer. Le partage de photos en direct fait défiler les souvenirs de la semaine sur grand écran, et crée une vraie vie de groupe entre les campeurs. L'animateur pilote tout depuis une tablette ou un ordinateur, sans stress.",
-    "Pour un camping, un village vacances ou une base de loisirs, c'est une animation clé en main qui renouvelle le programme des soirées sans investir dans du matériel lourd. L'essai gratuit de 24h permet de tester avant la haute saison.",
+    "Pour un camping, un village vacances ou une base de loisirs, AnimaJet remplace une bonne partie du matériel d'animation classique : un écran ou un vidéoprojecteur, une connexion et la sono existante suffisent, les jeux, le classement et les buzzers passent par les téléphones des vacanciers. Les gérants et les animateurs saisonniers renouvellent ainsi le programme des soirées sans investir dans du matériel lourd. L'essai gratuit de 24h permet de tester avant la haute saison.",
   ],
   steps: [
     { title: 'Créez la soirée', desc: 'Quiz, roue, photo mystère : en quelques minutes.' },
@@ -60,6 +62,7 @@ const content: AnimationDetailContent = {
     { q: 'Les vacanciers doivent-ils installer une application ?', a: "Non. Ils scannent un QR code affiché à l'écran et jouent directement depuis leur navigateur. C'est idéal pour un public de passage qui change chaque semaine." },
     { q: 'Les animations conviennent-elles aux enfants comme aux adultes ?', a: "Oui. Le quiz, la roue de la destinée et la photo mystère sont pensés pour réunir toutes les générations autour du même écran, dans une ambiance familiale." },
     { q: 'Quel matériel faut-il prévoir au camping ?', a: "Un écran ou un vidéoprojecteur dans la salle commune ou au bar, une connexion internet, et une tablette ou un ordinateur pour piloter. Les vacanciers utilisent leur propre téléphone." },
+    { q: "Comment préparer le planning d'animation de la saison ?", a: "Préparez vos quiz, blind tests et photos mystère avant l'ouverture, puis rejouez-les chaque semaine auprès des nouveaux vacanciers. Il suffit de changer quelques thèmes pour les familles qui restent plusieurs semaines : le planning des soirées se construit une fois pour toute la saison." },
     { q: 'Peut-on animer plusieurs soirées dans la semaine ?', a: "Oui. Vous renouvelez les jeux et les questions autant de fois que vous le souhaitez pour proposer un programme varié tout au long du séjour." },
   ],
   related: [

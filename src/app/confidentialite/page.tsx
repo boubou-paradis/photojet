@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import Footer from '@/components/Footer'
 import ProtectedContact, { ProtectedEmail } from '@/components/ProtectedContact'
+import ManageConsentButton from '@/components/consent/ManageConsentButton'
+import ConsentManager from '@/components/consent/ConsentManager'
 
 export default function ConfidentialitePage() {
   return (
@@ -225,7 +227,7 @@ export default function ConfidentialitePage() {
           </section>
 
           {/* Section 10 */}
-          <section>
+          <section id="cookies" className="scroll-mt-20">
             <h2 className="text-xl sm:text-2xl font-semibold text-[#D4AF37] mb-4">10. Cookies</h2>
 
             <h3 className="text-lg font-semibold text-white mb-2">10.1 Qu&apos;est-ce qu&apos;un cookie ?</h3>
@@ -245,12 +247,21 @@ export default function ConfidentialitePage() {
                   <tr><td className="py-3 px-4">Session</td><td className="py-3 px-4">Maintien de la connexion</td><td className="py-3 px-4">Session</td></tr>
                   <tr><td className="py-3 px-4">Préférences</td><td className="py-3 px-4">Mémoriser vos choix</td><td className="py-3 px-4">1 an</td></tr>
                   <tr><td className="py-3 px-4">Analytics</td><td className="py-3 px-4">Statistiques de visite</td><td className="py-3 px-4">13 mois</td></tr>
+                  <tr><td className="py-3 px-4">Choix cookies</td><td className="py-3 px-4">Mémoriser votre acceptation ou votre refus de la mesure publicitaire</td><td className="py-3 px-4">6 mois</td></tr>
+                  <tr><td className="py-3 px-4">Google Ads (_gcl_*)</td><td className="py-3 px-4">Uniquement si vous l&apos;acceptez : mesurer si nos annonces Google mènent à une demande d&apos;essai ou d&apos;abonnement. Aucune publicité personnalisée, aucun ciblage.</td><td className="py-3 px-4">90 jours</td></tr>
                 </tbody>
               </table>
             </div>
 
             <h3 className="text-lg font-semibold text-white mb-2">10.3 Gestion des cookies</h3>
-            <p>Vous pouvez configurer votre navigateur pour refuser les cookies. Cela peut affecter le fonctionnement du site.</p>
+            <p className="mb-2">
+              Le cookie Google Ads n&apos;est déposé qu&apos;après votre accord explicite, donné via le bandeau
+              affiché sur nos pages de présentation. Refuser est aussi simple qu&apos;accepter et n&apos;a aucune
+              conséquence sur l&apos;utilisation du site ou du service. Votre choix est conservé 6 mois, puis vous
+              est redemandé. Vous pouvez le modifier ou retirer votre accord à tout moment :{' '}
+              <ManageConsentButton className="text-[#D4AF37] underline underline-offset-2" />
+            </p>
+            <p>Vous pouvez aussi configurer votre navigateur pour refuser les cookies. Cela peut affecter le fonctionnement du site.</p>
           </section>
 
           {/* Section 11 */}
@@ -324,6 +335,8 @@ export default function ConfidentialitePage() {
       </div>
 
       <Footer />
+      {/* Footer est partagé avec le SaaS : le bandeau est monté ici, dans la page vitrine. */}
+      <ConsentManager />
     </div>
   )
 }

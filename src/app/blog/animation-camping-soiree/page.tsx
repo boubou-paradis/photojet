@@ -7,7 +7,7 @@ import BlogArticle, { buildBlogJsonLd, type BlogArticleContent } from '@/compone
 const SLUG = 'animation-camping-soiree'
 const URL = `https://animajet.fr/blog/${SLUG}`
 const PUBLISHED = '2026-07-01'
-const MODIFIED = '2026-10-08'
+const MODIFIED = '2026-11-07'
 const TITLE = 'Animation camping en soirée : idées simples pour faire participer tout le monde'
 const DESCRIPTION =
   "Animer les soirées d'un camping sans matériel lourd : idées interactives pour toutes les générations, jouables depuis le téléphone des vacanciers, sur écran ou vidéoprojecteur."
@@ -102,7 +102,7 @@ const content: BlogArticleContent = {
       id: 'materiel',
       heading: 'Le matériel minimum pour une soirée réussie',
       body: [
-        "Bonne nouvelle&nbsp;: il en faut peu. Voici l'équipement de base pour animer sereinement, sans transformer chaque soir en chantier.",
+        "Bonne nouvelle&nbsp;: il en faut peu. Voici l'équipement de base pour animer sereinement, sans transformer chaque soir en chantier. Pour les gérants qui cherchent un <a href=\"/animation-camping-interactive\">matériel d'animation camping</a> simple à installer, l'essentiel tient dans un écran et les téléphones des vacanciers.",
       ],
       table: {
         head: ['Élément', 'Rôle', 'À prévoir'],

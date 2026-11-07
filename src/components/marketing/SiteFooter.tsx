@@ -6,6 +6,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook } from 'lucide-react'
+import ManageConsentButton from '@/components/consent/ManageConsentButton'
+import ConsentManager from '@/components/consent/ConsentManager'
 
 const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61585844578617'
 const YOUTUBE_URL = 'https://www.youtube.com/channel/UCV4Gm6NsSXyRX8_sU7sPRVQ'
@@ -64,7 +66,7 @@ const legal = [
   { label: 'Confidentialité', href: '/confidentialite' },
 ]
 
-function Column({ title, links }: { title: string; links: { label: string; href: string }[] }) {
+function Column({ title, links, children }: { title: string; links: { label: string; href: string }[]; children?: React.ReactNode }) {
   return (
     <div>
       <h3 className="text-sm font-bold text-white mb-4 tracking-wide uppercase text-[12px]">{title}</h3>
@@ -76,6 +78,7 @@ function Column({ title, links }: { title: string; links: { label: string; href:
             </Link>
           </li>
         ))}
+        {children}
       </ul>
     </div>
   )
@@ -140,7 +143,11 @@ export default function SiteFooter() {
           <Column title="Pour qui ?" links={segments} />
           <Column title="Par événement" links={events} />
           <Column title="Ressources" links={resources} />
-          <Column title="Légal" links={legal} />
+          <Column title="Légal" links={legal}>
+            <li>
+              <ManageConsentButton className="text-sm text-gray-400 hover:text-[#D4AF37] transition-colors" />
+            </li>
+          </Column>
         </div>
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -152,6 +159,8 @@ export default function SiteFooter() {
           </p>
         </div>
       </div>
+      {/* Bandeau de consentement + mesure des clics commerciaux (vitrine uniquement). */}
+      <ConsentManager />
     </footer>
   )
 }

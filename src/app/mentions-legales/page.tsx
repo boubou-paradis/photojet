@@ -340,10 +340,14 @@ export default function MentionsLegalesPage() {
               7. Cookies
             </h2>
             <p>
-              Le site AnimaJet utilise uniquement des cookies strictement nécessaires au fonctionnement du service
-              (cookies de session, d&apos;authentification). Aucun cookie publicitaire ou de tracking tiers
-              n&apos;est utilisé. Conformément à la directive ePrivacy et aux recommandations de la CNIL, les
-              cookies strictement nécessaires ne requièrent pas le consentement préalable de l&apos;utilisateur.
+              Le site AnimaJet utilise des cookies strictement nécessaires au fonctionnement du service
+              (cookies de session, d&apos;authentification, mémorisation de votre choix en matière de cookies).
+              Conformément à la directive ePrivacy et aux recommandations de la CNIL, ces cookies ne requièrent
+              pas le consentement préalable de l&apos;utilisateur. Sur les pages de présentation, un cookie de
+              mesure Google Ads peut être déposé uniquement si vous l&apos;acceptez, afin de mesurer l&apos;efficacité
+              de nos annonces ; il n&apos;est utilisé ni pour personnaliser la publicité ni pour vous cibler. Le
+              détail et la gestion de votre choix figurent dans la{' '}
+              <a href="/confidentialite#cookies" className="text-[#D4AF37] underline underline-offset-2">politique de confidentialité</a>.
             </p>
           </section>
 
