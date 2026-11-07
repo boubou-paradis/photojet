@@ -84,7 +84,7 @@ function Column({ title, links }: { title: string; links: { label: string; href:
 export default function SiteFooter() {
   return (
     <footer className="relative z-10 border-t border-white/10 bg-[#0A0A0D]/80 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-14">
+      <div className="w-full px-6 lg:px-10 2xl:px-12 py-14">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">

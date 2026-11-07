@@ -37,7 +37,6 @@ import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
 import TrustedByMarquee from '@/components/marketing/TrustedByMarquee'
-import { Section, SectionHeading, Accent } from '@/components/marketing/SectionKit'
 import { toast } from 'sonner'
 import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
 import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR } from '@/lib/billing/plans'
@@ -106,7 +105,7 @@ const animations = [
   },
   {
     name: 'Impression photo sur place',
-    img: '/images/borne-photo.png',
+    img: '/images/impression.png',
     href: '/impression-photo-evenement',
     desc: 'Vos invités repartent avec leurs souvenirs imprimés, directement pendant l\'événement.',
   },
@@ -129,15 +128,6 @@ const advantages = [
   { icon: MonitorPlay, title: 'Affichage en direct', desc: 'Sur écran géant, ambiance garantie' },
   { icon: Users, title: 'Pour tous vos événements', desc: 'Mariages, soirées, bars, clubs, entreprises' },
   { icon: Globe, title: '100% en ligne', desc: 'Une simple connexion internet suffit' },
-]
-
-// GALERIE — photos réelles d'événements en priorité (ajoute tes photos dans public/images/gallery/ pour enrichir)
-const galleryPhotos = [
-  { src: '/photo-qr-partage.png', alt: 'Partage photo en direct sur écran géant lors d\'une soirée AnimaJet', featured: true },
-  { src: '/images/games/quiz-v2.png', alt: 'Quiz interactif AnimaJet affiché sur écran géant' },
-  { src: '/images/games/roue-de-la-destinee-v2.png', alt: 'Roue de la Destinée AnimaJet en soirée' },
-  { src: '/images/borne-photo.png', alt: 'Borne photo connectée AnimaJet' },
-  { src: '/images/games/photo-mystere-v2.png', alt: 'Jeu Photo Mystère AnimaJet sur écran géant' },
 ]
 
 const PRICE = 29.90
@@ -492,14 +482,15 @@ export default function Home() {
       </HeroV5>
 
       {/* Advantage bar */}
-      <div className="relative z-10 w-full bg-[#111] border-y border-white/5 py-5 px-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-center lg:justify-between items-center gap-x-6 gap-y-4">
+      <div className="relative z-10 w-full bg-[#111] border-y border-white/5 py-5 px-6 lg:px-10 2xl:px-12">
+        {/* Ordinateur : 5 colonnes égales sur toute la largeur (titre puis description) ; téléphone : lignes centrées */}
+        <div className="w-full flex flex-wrap justify-center items-center gap-x-6 gap-y-4 lg:grid lg:grid-cols-5 lg:gap-8">
           {advantages.map((item) => (
-            <div key={item.title} className="flex items-center gap-2.5 text-sm">
+            <div key={item.title} className="flex items-center lg:items-start gap-2.5 text-sm">
               <item.icon className="h-5 w-5 text-[#D4AF37] flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
               <div>
-                <span className="text-white font-semibold">{item.title}</span>
-                <span className="text-gray-500"> — {item.desc}</span>
+                <span className="text-white font-semibold lg:block">{item.title}</span>
+                <span className="text-gray-500"><span className="lg:hidden"> — </span><span className="lg:block lg:mt-0.5">{item.desc}</span></span>
               </div>
             </div>
           ))}
@@ -508,23 +499,24 @@ export default function Home() {
 
       {/* Rest of the page */}
       <div className="relative z-10 content-layer">
-        {/* Vidéo démo — emplacement premium (remplacer le poster + lien par l'embed vidéo final) */}
-        <section id="video" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
+        {/* Vidéo de présentation YouTube « AnimaJet, c'est quoi ? » (lecture au clic, voir DemoVideo) */}
+        <section id="video" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          {/* Pleine largeur : texte à gauche, vidéo à droite sur ordinateur */}
+          <div className="w-full lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 xl:gap-24 lg:items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-10"
+              className="text-center lg:text-left mb-8 lg:mb-0"
             >
               <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
-                EN ACTION
+                EN VIDÉO
               </span>
               <h2 className="font-heading text-4xl font-bold text-white mb-4">
-                Voyez l&apos;ambiance, pas l&apos;interface
+                AnimaJet, c&apos;est quoi ?
               </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Quelques secondes pour comprendre ce que vivent vos invités avec AnimaJet.
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto lg:mx-0">
+                Jeux interactifs et animations pour DJ, campings et soirées privées : découvrez en vidéo comment AnimaJet fait participer toute la salle.
               </p>
             </motion.div>
 
@@ -539,41 +531,55 @@ export default function Home() {
         </section>
 
         {/* How it works Section */}
-        {/* LOT B (maquette) — composition « frise » pleine largeur sur bande relevée, sans cartes */}
-        <Section id="how-it-works" surface="regie">
-          <SectionHeading
-            align="split"
-            title={<>Comment ça <Accent>marche</Accent> ?</>}
-            intro="En 4 étapes simples, boostez vos prestations"
-          />
-
-          <ol className="relative mt-12 lg:mt-20 grid gap-8 lg:grid-cols-4 lg:gap-12">
-            {/* Ligne de la frise : horizontale sur ordinateur, verticale sur téléphone */}
-            <span aria-hidden="true" className="hidden lg:block absolute left-0 right-0 top-[5px] h-px bg-gradient-to-r from-[#D4AF37]/70 via-[#D4AF37]/30 to-[#D4AF37]/0" />
-            <span aria-hidden="true" className="lg:hidden absolute left-[5px] top-2 bottom-2 w-px bg-gradient-to-b from-[#D4AF37]/60 to-[#D4AF37]/10" />
-            {howItWorks.map((item) => (
-              <li key={item.step} className="relative pl-10 lg:pl-0">
-                <span aria-hidden="true" className="absolute left-0 top-[1px] lg:static block w-[11px] h-[11px] rounded-full bg-[#D4AF37] ring-[5px] ring-[#0f0f16]" />
-                <p aria-hidden="true" className="-mt-1 lg:mt-8 font-[family-name:var(--font-playfair)] text-4xl lg:text-[4rem] leading-none text-[#D4AF37] [font-variant-numeric:lining-nums]">
-                  {item.step.padStart(2, '0')}
-                </p>
-                <h3 className="mt-4 lg:mt-6 text-lg lg:text-xl font-semibold text-white leading-snug max-w-[24ch] text-balance">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm lg:text-base text-[#A1A1AA] leading-relaxed max-w-[30ch]">{item.description}</p>
-              </li>
-            ))}
-          </ol>
-        </Section>
-
-        {/* Les animations disponibles */}
-        <section id="animations" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
+        {/* Même langage que le reste de la page : pastille, titre centré, cartes card-float, tuiles dorées */}
+        <section id="how-it-works" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-14"
+              className="text-center lg:text-left mb-8 lg:mb-10"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                EN 4 ÉTAPES
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Comment ça marche ?
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto lg:mx-0">
+                En 4 étapes simples, boostez vos prestations
+              </p>
+            </motion.div>
+
+            <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {howItWorks.map((item, i) => (
+                <motion.li
+                  key={item.step}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="card-float rounded-2xl p-6 border-[#D4AF37]/15 h-full flex flex-col"
+                >
+                  <span className="w-11 h-11 mb-4 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center text-lg font-bold text-[#D4AF37]">
+                    {item.step}
+                  </span>
+                  <h3 className="text-lg font-bold text-white mb-1.5">{item.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                </motion.li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Les animations disponibles */}
+        <section id="animations" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center lg:text-left mb-8 lg:mb-10"
             >
               <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
                 LES ANIMATIONS
@@ -581,13 +587,13 @@ export default function Home() {
               <h2 className="font-heading text-4xl font-bold text-white mb-4">
                 Une animation pour chaque moment
               </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto lg:mx-0">
                 Vos invités participent depuis leur téléphone, tout s&apos;affiche en direct sur écran géant. Sans application à installer.
               </p>
             </motion.div>
 
             {/* Rangées centrées : la dernière rangée incomplète se centre au lieu de laisser un trou */}
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center lg:justify-start gap-6">
               {animations.map((a, i) => (
                 <motion.div
                   key={a.name}
@@ -595,23 +601,23 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 3) * 0.1 }}
-                  className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
+                  className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]"
                 >
                   <Link
                     href={a.href}
                     className="card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full"
                   >
-                    <div className="relative aspect-[16/10] overflow-hidden">
+                    <div className="relative aspect-[16/9] overflow-hidden">
                       <Image
                         src={a.img}
                         alt={`Animation ${a.name} AnimaJet sur écran géant`}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 370px"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/20 to-transparent" />
                     </div>
-                    <div className="p-6 flex-1 flex flex-col">
+                    <div className="p-5 flex-1 flex flex-col">
                       <h3 className="text-lg font-bold text-white mb-2">{a.name}</h3>
                       <p className="text-gray-400 text-sm leading-relaxed flex-1">{a.desc}</p>
                       <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
@@ -624,7 +630,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="text-center mt-12">
+            <div className="text-center lg:text-left mt-8">
               <Link
                 href="/#essai"
                 className="inline-flex items-center gap-2 px-7 py-4 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5C349] to-[#D4AF37] text-[#0D0D0F] font-bold hover:brightness-110 shadow-[0_4px_24px_rgba(212,175,55,0.25)] transition-all"
@@ -637,47 +643,63 @@ export default function Home() {
         </section>
 
         {/* Pour qui ? */}
-        {/* LOT B (maquette) — composition asymétrique : en-tête fixe à gauche, liste éditoriale à droite */}
-        <Section id="pour-qui">
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20 xl:gap-28">
-            <div className="lg:sticky lg:top-28 lg:self-start">
-              <SectionHeading
-                eyebrow="Pour qui ?"
-                title={<>Pensé pour les pros de <Accent>l&apos;événementiel</Accent></>}
-                intro="Quel que soit votre métier, AnimaJet transforme votre événement en expérience interactive."
-              />
-            </div>
-
-            <ul className="grid sm:grid-cols-2 border-t border-white/[0.08]">
-              {segments.map((s) => (
-                <li key={s.label} className="border-b border-white/[0.08] sm:even:border-l sm:even:pl-8 sm:odd:pr-8">
-                  <Link href={s.href} className="group flex gap-5 py-6 lg:py-8 h-full rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37]">
-                    <span className="shrink-0 w-11 h-11 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center group-hover:border-[#D4AF37]/60 transition-colors">
-                      <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
-                    </span>
-                    <div className="flex flex-col">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-[#F4E4BC] transition-colors">{s.label}</h3>
-                      <span className="mt-1.5 text-sm text-[#A1A1AA] leading-relaxed">{s.desc}</span>
-                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
-                        Découvrir
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Section>
-
-        {/* Tout explorer — hub & guide */}
-        <section className="py-20 px-4 section-glow">
-          <div className="max-w-5xl mx-auto">
+        {/* Même langage que « Les animations » : pastille, titre centré, cartes card-float à tuile dorée */}
+        <section id="pour-qui" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center lg:text-left mb-8 lg:mb-10"
+            >
+              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
+                POUR QUI ?
+              </span>
+              <h2 className="font-heading text-4xl font-bold text-white mb-4">
+                Pensé pour les pros de l&apos;événementiel
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto lg:mx-0">
+                Quel que soit votre métier, AnimaJet transforme votre événement en expérience interactive.
+              </p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {segments.map((s, i) => (
+                <motion.div
+                  key={s.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 3) * 0.08 }}
+                >
+                  <Link
+                    href={s.href}
+                    className="card-float rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
+                  >
+                    <span className="w-11 h-11 mb-4 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center">
+                      <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
+                    </span>
+                    <h3 className="text-lg font-bold text-white mb-1.5">{s.label}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{s.desc}</p>
+                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                      Découvrir
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Tout explorer — hub & guide */}
+        <section className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow">
+          <div className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center lg:text-left mb-8 lg:mb-10"
             >
               <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
                 TOUT EXPLORER
@@ -685,7 +707,7 @@ export default function Home() {
               <h2 className="font-heading text-4xl font-bold text-white mb-4">
                 Explorez AnimaJet en profondeur
               </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto lg:mx-0">
                 Le panorama complet des fonctionnalités et le guide des animations interactives.
               </p>
             </motion.div>
@@ -736,13 +758,13 @@ export default function Home() {
         </section>
 
         {/* Customization Section */}
-        <section className="py-20 px-4 section-glow">
-          <div className="max-w-5xl mx-auto">
+        <section className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center lg:text-left mb-8 lg:mb-10"
             >
               <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
                 100% personnalisable à votre image
@@ -789,64 +811,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Galerie */}
-        <section id="galerie" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
-                GALERIE
-              </span>
-              <h2 className="font-heading text-4xl font-bold text-white mb-4">
-                AnimaJet en images
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Des soirées qui prennent vie : vos invités participent, l&apos;ambiance monte, les souvenirs s&apos;affichent en grand.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[140px] md:auto-rows-[190px]">
-              {galleryPhotos.map((p, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (i % 5) * 0.07 }}
-                  className={`relative overflow-hidden rounded-2xl border border-white/10 group ${
-                    p.featured ? 'col-span-2 row-span-2' : ''
-                  }`}
-                >
-                  <Image
-                    src={p.src}
-                    alt={p.alt}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes={p.featured ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 50vw, 25vw'}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Développé par un DJ animateur */}
-        <section id="histoire" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-5xl mx-auto">
+        <section id="histoire" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="card-float rounded-3xl p-8 md:p-12 border-[#D4AF37]/20"
+              className="card-float rounded-3xl p-6 md:p-10 border-[#D4AF37]/20"
             >
               <div className="grid md:grid-cols-[1fr_1.4fr] gap-8 md:gap-12 items-center">
                 {/* Visuel — photo du fondateur en prestation */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden border border-[#D4AF37]/20">
+                <div className="relative aspect-square lg:aspect-[3/2] rounded-2xl overflow-hidden border border-[#D4AF37]/20">
                   <Image
                     src="/images/moi dj.png"
                     alt="Fondateur d'AnimaJet, DJ animateur en prestation"
@@ -885,13 +861,13 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
+        <section id="pricing" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center lg:text-left mb-8 lg:mb-10"
             >
               <h2 className="font-heading text-4xl font-bold text-white mb-4">
                 Un prix simple, tout inclus
@@ -1229,13 +1205,13 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-3xl mx-auto">
+        <section id="faq" className="py-12 lg:py-16 px-6 lg:px-10 2xl:px-12 section-glow scroll-mt-20">
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center lg:text-left mb-8 lg:mb-10"
             >
               <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
                 FAQ
@@ -1248,7 +1224,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="space-y-3">
+            <div className="grid lg:grid-cols-2 gap-3 items-start">
               {faqs.map((f, i) => (
                 <details
                   key={i}
