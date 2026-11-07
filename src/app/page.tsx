@@ -26,6 +26,7 @@ import SiteFooter from '@/components/marketing/SiteFooter'
 import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
+import TrustedByMarquee from '@/components/marketing/TrustedByMarquee'
 import { toast } from 'sonner'
 import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
 import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR } from '@/lib/billing/plans'
@@ -511,6 +512,9 @@ export default function Home() {
         onTrialRequest={handleTrialRequest}
         isAdmin={isAdmin}
       />
+
+      {/* Bandeau « Ils nous font déjà confiance » — masqué tant qu'il y a moins de 6 logos */}
+      <TrustedByMarquee />
 
       {/* Advantage bar */}
       <div className="relative z-10 w-full bg-[#111] border-y border-white/5 py-5 px-4">
