@@ -17,6 +17,17 @@ import {
   Target,
   ArrowRight,
   ChevronDown,
+  Smartphone,
+  Timer,
+  MonitorPlay,
+  Users,
+  Globe,
+  Headphones,
+  Gem,
+  Building2,
+  Tent,
+  Martini,
+  PartyPopper,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -102,12 +113,21 @@ const animations = [
 
 // POUR QUI ? — segments avec page dédiée
 const segments = [
-  { emoji: '🎧', label: 'DJ & animateurs', desc: 'Démarquez-vous, fidélisez vos clients, animez sans effort.', href: '/animation-dj-interactive' },
-  { emoji: '💍', label: 'Mariages', desc: 'Faites participer tous les invités et créez des souvenirs.', href: '/animation-mariage-interactive' },
-  { emoji: '🏢', label: 'Entreprises', desc: 'Team building, séminaires et soirées d\'entreprise.', href: '/animation-entreprise-interactive' },
-  { emoji: '⛺', label: 'Campings', desc: 'Des soirées vacanciers qui rassemblent les familles.', href: '/animation-camping-interactive' },
-  { emoji: '🍸', label: 'Bars & restaurants', desc: 'Remplissez votre salle en semaine et fidélisez vos clients.', href: '/animation-bar-restaurant-interactive' },
-  { emoji: '🎉', label: 'Événementiel', desc: 'Tous vos événements transformés en expérience interactive.', href: '/animation-evenementielle-interactive' },
+  { icon: Headphones, label: 'DJ & animateurs', desc: 'Démarquez-vous, fidélisez vos clients, animez sans effort.', href: '/animation-dj-interactive' },
+  { icon: Gem, label: 'Mariages', desc: 'Faites participer tous les invités et créez des souvenirs.', href: '/animation-mariage-interactive' },
+  { icon: Building2, label: 'Entreprises', desc: 'Team building, séminaires et soirées d\'entreprise.', href: '/animation-entreprise-interactive' },
+  { icon: Tent, label: 'Campings', desc: 'Des soirées vacanciers qui rassemblent les familles.', href: '/animation-camping-interactive' },
+  { icon: Martini, label: 'Bars & restaurants', desc: 'Remplissez votre salle en semaine et fidélisez vos clients.', href: '/animation-bar-restaurant-interactive' },
+  { icon: PartyPopper, label: 'Événementiel', desc: 'Tous vos événements transformés en expérience interactive.', href: '/animation-evenementielle-interactive' },
+]
+
+// Barre d'avantages sous le haut de page
+const advantages = [
+  { icon: Smartphone, title: 'Aucune application', desc: 'Aucun téléchargement, aucune installation' },
+  { icon: Timer, title: 'Mise en place express', desc: 'QR code généré en 2 secondes' },
+  { icon: MonitorPlay, title: 'Affichage en direct', desc: 'Sur écran géant, ambiance garantie' },
+  { icon: Users, title: 'Pour tous vos événements', desc: 'Mariages, soirées, bars, clubs, entreprises' },
+  { icon: Globe, title: '100% en ligne', desc: 'Une simple connexion internet suffit' },
 ]
 
 // GALERIE — photos réelles d'événements en priorité (ajoute tes photos dans public/images/gallery/ pour enrichir)
@@ -473,15 +493,9 @@ export default function Home() {
       {/* Advantage bar */}
       <div className="relative z-10 w-full bg-[#111] border-y border-white/5 py-5 px-4">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center lg:justify-between items-center gap-x-6 gap-y-4">
-          {[
-            { icon: '📡', title: 'Aucune application', desc: 'Aucun téléchargement, aucune installation' },
-            { icon: '⏱', title: 'Mise en place express', desc: 'QR code généré en 2 secondes' },
-            { icon: '📺', title: 'Affichage en direct', desc: 'Sur écran géant, ambiance garantie' },
-            { icon: '👥', title: 'Pour tous vos événements', desc: 'Mariages, soirées, bars, clubs, entreprises' },
-            { icon: '🌐', title: '100% en ligne', desc: 'Une simple connexion internet suffit' },
-          ].map((item) => (
+          {advantages.map((item) => (
             <div key={item.title} className="flex items-center gap-2.5 text-sm">
-              <span className="text-xl">{item.icon}</span>
+              <item.icon className="h-5 w-5 text-[#D4AF37] flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
               <div>
                 <span className="text-white font-semibold">{item.title}</span>
                 <span className="text-gray-500"> — {item.desc}</span>
@@ -550,9 +564,9 @@ export default function Home() {
                   transition={{ delay: i * 0.1 }}
                   className="relative"
                 >
-                  {/* Connection line */}
+                  {/* Liaison entre deux étapes : uniquement dans l'espace entre les cartes, à hauteur des pastilles */}
                   {i < howItWorks.length - 1 && (
-                    <div className="hidden lg:block absolute top-12 left-[calc(50%+40px)] w-[calc(100%-40px)] h-0.5 bg-gradient-to-r from-[#D4AF37]/50 to-[#D4AF37]/20" />
+                    <div aria-hidden="true" className="hidden lg:block absolute top-[51px] -right-6 w-6 h-0.5 bg-[#D4AF37]/45" />
                   )}
 
                   <div className="card-float rounded-2xl p-6 border-[#D4AF37]/20 hover:border-[#D4AF37]/40 h-full">
@@ -590,7 +604,8 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Rangées centrées : la dernière rangée incomplète se centre au lieu de laisser un trou */}
+            <div className="flex flex-wrap justify-center gap-6">
               {animations.map((a, i) => (
                 <motion.div
                   key={a.name}
@@ -598,6 +613,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 3) * 0.1 }}
+                  className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
                 >
                   <Link
                     href={a.href}
@@ -609,7 +625,7 @@ export default function Home() {
                         alt={`Animation ${a.name} AnimaJet sur écran géant`}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 370px"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/20 to-transparent" />
                     </div>
@@ -671,7 +687,9 @@ export default function Home() {
                     href={s.href}
                     className="card-float rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
                   >
-                    <div className="text-3xl mb-3">{s.emoji}</div>
+                    <div className="w-11 h-11 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center mb-4">
+                      <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
+                    </div>
                     <h3 className="text-lg font-bold text-white mb-1.5">{s.label}</h3>
                     <p className="text-gray-400 text-sm leading-relaxed flex-1">{s.desc}</p>
                     <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
