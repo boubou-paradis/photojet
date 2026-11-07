@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Loader2, ArrowRight, Check, Mail, Play } from 'lucide-react'
+import { Loader2, ArrowRight, Check, Mail, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -14,6 +14,8 @@ interface HeroV5Props {
   setError: (error: string | null) => void
   onTrialRequest: (email: string) => void
   isAdmin?: boolean
+  /** Contenu affiché en bas du haut de page, par-dessus l'image de fond (bandeau partenaires) */
+  children?: React.ReactNode
 }
 
 const targets = [
@@ -33,16 +35,20 @@ export default function HeroV5({
   setError,
   onTrialRequest,
   isAdmin = false,
+  children,
 }: HeroV5Props) {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    // lg:min-h-svh : sur ordinateur, le haut de page (bandeau partenaires compris) occupe au moins tout le premier écran.
+    // Le bandeau partenaires est poussé en bas (contenu en flex-1), donc la barre d'avantages qui suit
+    // commence toujours sous la ligne de flottaison.
+    <section className="relative flex flex-col overflow-hidden lg:min-h-svh">
       {/* Background image */}
       <div className="absolute inset-0">
         <Image
           src="/hero-animajet-1.jpg"
           alt="AnimaJet — animations interactives pour DJ et professionnels de l'événementiel"
           fill
-          className="object-cover object-center"
+          className="object-cover object-top"
           priority
         />
         {/* Overlay sombre uniforme : transforme le visuel en ambiance dorée premium
@@ -63,32 +69,20 @@ export default function HeroV5({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 py-20 pt-28">
-        <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-16 items-center">
+      {/* Pleine largeur (marges 24 → 48 px) : titre à gauche, espace libre au centre pour la fusée
+          de l'image de fond, formulaire calé à droite */}
+      {/* lg:min-h-[38vw] : sur ordinateur l'image de fond occupe toute la largeur (hauteur = 2/3 de la largeur)
+          et le bas des lettres « ANIMAJET » se situe vers 37 % de la largeur d'écran.
+          Cette hauteur minimale est le plancher : le bandeau partenaires ne remonte jamais sur les lettres
+          (il peut seulement recouvrir « L'ARME ULTIME DES DJ »). Au-dessus de ce plancher, flex-1 le cale
+          en bas du premier écran, sans positionnement absolu. */}
+      <div className="relative z-10 w-full px-6 lg:px-10 2xl:px-12 pt-24 pb-8 lg:pt-[88px] lg:pb-8 lg:min-h-[38vw] lg:flex-1">
+        <div className="grid gap-12 lg:flex lg:items-center lg:justify-between lg:gap-10">
 
           {/* Left column — text */}
-          <div className="space-y-6">
-            {/* Logo */}
-            <div className="w-[200px] lg:w-[240px]">
-              <Image
-                src="/brand/animajet_logo_ultraclean_hero.png"
-                alt="AnimaJet"
-                width={240}
-                height={60}
-                className="w-full h-auto"
-                priority
-              />
-            </div>
-
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#D4AF37]/60 bg-[#D4AF37]/10 backdrop-blur-sm">
-              <span className="text-[#D4AF37] text-sm font-semibold tracking-wide">
-                🎧 Développé par un DJ animateur, pour les pros
-              </span>
-            </div>
-
+          <div className="space-y-6 lg:space-y-5 min-w-0 lg:flex-1 lg:max-w-[760px]">
             {/* Title */}
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
+            <h1 className="text-4xl lg:text-5xl xl:text-[3.4rem] font-black text-white leading-[1.08] tracking-tight">
               Le logiciel d&apos;animation interactive{' '}
               <span className="text-gold-gradient">pour DJ et événements.</span>
             </h1>
@@ -108,13 +102,6 @@ export default function HeroV5({
                 Essayer gratuitement
                 <ArrowRight className="h-5 w-5" />
               </a>
-              <a
-                href="/#video"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/25 bg-white/5 text-white font-semibold text-base hover:bg-white/10 hover:border-white/40 backdrop-blur-sm transition-all"
-              >
-                <Play className="h-5 w-5 fill-current" />
-                Voir la démo
-              </a>
             </div>
 
             {/* Target audience */}
@@ -129,7 +116,7 @@ export default function HeroV5({
           </div>
 
           {/* Right column — login + form */}
-          <div id="essai" className="w-full max-w-[420px] mx-auto lg:mx-0 lg:ml-auto space-y-3 scroll-mt-24">
+          <div id="essai" className="w-full max-w-[420px] mx-auto lg:mx-0 lg:w-[420px] lg:shrink-0 space-y-3 scroll-mt-24">
             {/* Form card — visible to all */}
             <div
               className="rounded-2xl p-6 border border-[#2A2A2E]"
@@ -137,7 +124,8 @@ export default function HeroV5({
             >
                 <div className="mb-5">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/40 mb-3">
-                    <span className="text-[#D4AF37] text-xs font-bold tracking-wide">🎁 24H GRATUITES</span>
+                    <Gift className="h-3.5 w-3.5 text-[#D4AF37]" aria-hidden="true" />
+                    <span className="text-[#D4AF37] text-xs font-bold tracking-wide">24H GRATUITES</span>
                   </div>
                   <h3 className="text-lg font-semibold text-white">Commencer votre essai gratuit</h3>
                   <p className="text-xs text-[#6B6B70] mt-0.5">Sans carte bancaire — accès 24h en semaine</p>
@@ -214,10 +202,7 @@ export default function HeroV5({
         </div>
       </div>
 
-      {/* Logo Bretagne — coin bas droit */}
-      <div className="absolute bottom-6 right-6 z-20">
-        <img src="/images/logo bretagne.png" alt="Logo Bretagne" className="h-24 w-auto object-contain opacity-95" />
-      </div>
+      {children && <div className="relative z-10 w-full">{children}</div>}
     </section>
   )
 }

@@ -121,10 +121,14 @@ export default function TrustedByMarquee() {
 
 const CSS = `
 .tbm{--chip-w:${D.chipW}px;--chip-h:96px;--logo-w:160px;--logo-h:82px;--gap:${D.gap}px;--cta-w:${D.ctaW}px;
-  position:relative;z-index:10;padding:36px 0 40px;background:linear-gradient(180deg,#0a0a14,#0d0d18 50%,#0a0a14);
-  border-bottom:1px solid rgba(212,175,55,.12)}
+  position:relative;z-index:10;padding:24px 0 28px;
+  background:linear-gradient(180deg,rgba(10,10,20,.25),rgba(10,10,20,.6));
+  border-top:1px solid rgba(212,175,55,.18);border-bottom:1px solid rgba(212,175,55,.12)}
 .tbm-title{font-family:var(--font-playfair),Georgia,serif;font-weight:600;font-size:1.6rem;line-height:1.2;
-  text-align:center;color:#fff;margin:0 16px 22px}
+  text-align:left;color:#fff;margin:0 0 16px;padding:0 24px}
+/* Aligné sur la marge gauche du haut de page (px-6 / lg:px-10 / 2xl:px-12) */
+@media (min-width:1024px){.tbm-title{padding:0 40px}}
+@media (min-width:1536px){.tbm-title{padding:0 48px}}
 .tbm-title em{font-style:italic;color:#D4AF37}
 .tbm-viewport{overflow:hidden;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);

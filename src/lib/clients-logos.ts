@@ -33,4 +33,5 @@ export const CLIENTS_LOGOS: ClientLogo[] = [
   { nom: 'Club Pacha', fichier: 'club-pacha.webp', fond: 'sombre' },
   { nom: 'DJ Sawat', fichier: 'dj-sawat.webp', fond: 'sombre' },
   { nom: "MG Event's Animation", fichier: 'mg-events-animation.webp' },
+  { nom: 'Lenge', fichier: 'lenge.webp' },
 ]
