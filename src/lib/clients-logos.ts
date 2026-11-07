@@ -34,4 +34,5 @@ export const CLIENTS_LOGOS: ClientLogo[] = [
   { nom: 'DJ Sawat', fichier: 'dj-sawat.webp', fond: 'sombre' },
   { nom: "MG Event's Animation", fichier: 'mg-events-animation.webp' },
   { nom: 'Lenge', fichier: 'lenge.webp' },
+  { nom: 'Lumilab', fichier: 'lumilab.webp', fond: 'plein' },
 ]
