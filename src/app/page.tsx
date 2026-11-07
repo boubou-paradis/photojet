@@ -37,6 +37,7 @@ import DemoVideo from '@/components/marketing/DemoVideo'
 import HeroV5 from '@/components/marketing/HeroV5'
 import AccessToast from '@/components/marketing/AccessToast'
 import TrustedByMarquee from '@/components/marketing/TrustedByMarquee'
+import { Section, SectionHeading, Accent } from '@/components/marketing/SectionKit'
 import { toast } from 'sonner'
 import { GAMES_COUNT, GAME_NAMES } from '@/lib/games-catalog'
 import { ANNUAL_MONTHLY_EQUIVALENT_EUR, ANNUAL_PRICE_EUR, ANNUAL_SAVING_EUR } from '@/lib/billing/plans'
@@ -538,51 +539,32 @@ export default function Home() {
         </section>
 
         {/* How it works Section */}
-        <section id="how-it-works" className="py-20 px-4 section-glow">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="font-heading text-4xl font-bold text-white mb-4">
-                Comment ça marche ?
-              </h2>
-              <p className="text-gray-400 text-lg">
-                En 4 étapes simples, boostez vos prestations
-              </p>
-            </motion.div>
+        {/* LOT B (maquette) — composition « frise » pleine largeur sur bande relevée, sans cartes */}
+        <Section id="how-it-works" surface="regie">
+          <SectionHeading
+            align="split"
+            title={<>Comment ça <Accent>marche</Accent> ?</>}
+            intro="En 4 étapes simples, boostez vos prestations"
+          />
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {howItWorks.map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="relative"
-                >
-                  {/* Liaison entre deux étapes : uniquement dans l'espace entre les cartes, à hauteur des pastilles */}
-                  {i < howItWorks.length - 1 && (
-                    <div aria-hidden="true" className="hidden lg:block absolute top-[51px] -right-6 w-6 h-0.5 bg-[#D4AF37]/45" />
-                  )}
-
-                  <div className="card-float rounded-2xl p-6 border-[#D4AF37]/20 hover:border-[#D4AF37]/40 h-full">
-                    {/* Step number */}
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#F4D03F] flex items-center justify-center mb-4 shadow-lg shadow-[#D4AF37]/30">
-                      <span className="text-2xl font-bold text-[#0D0D0F]">{item.step}</span>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-                    <p className="text-gray-400 text-sm">{item.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+          <ol className="relative mt-12 lg:mt-20 grid gap-8 lg:grid-cols-4 lg:gap-12">
+            {/* Ligne de la frise : horizontale sur ordinateur, verticale sur téléphone */}
+            <span aria-hidden="true" className="hidden lg:block absolute left-0 right-0 top-[5px] h-px bg-gradient-to-r from-[#D4AF37]/70 via-[#D4AF37]/30 to-[#D4AF37]/0" />
+            <span aria-hidden="true" className="lg:hidden absolute left-[5px] top-2 bottom-2 w-px bg-gradient-to-b from-[#D4AF37]/60 to-[#D4AF37]/10" />
+            {howItWorks.map((item) => (
+              <li key={item.step} className="relative pl-10 lg:pl-0">
+                <span aria-hidden="true" className="absolute left-0 top-[1px] lg:static block w-[11px] h-[11px] rounded-full bg-[#D4AF37] ring-[5px] ring-[#0f0f16]" />
+                <p aria-hidden="true" className="-mt-1 lg:mt-8 font-[family-name:var(--font-playfair)] text-4xl lg:text-[4rem] leading-none text-[#D4AF37] [font-variant-numeric:lining-nums]">
+                  {item.step.padStart(2, '0')}
+                </p>
+                <h3 className="mt-4 lg:mt-6 text-lg lg:text-xl font-semibold text-white leading-snug max-w-[24ch] text-balance">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm lg:text-base text-[#A1A1AA] leading-relaxed max-w-[30ch]">{item.description}</p>
+              </li>
+            ))}
+          </ol>
+        </Section>
 
         {/* Les animations disponibles */}
         <section id="animations" className="py-20 px-4 section-glow scroll-mt-20">
@@ -655,53 +637,38 @@ export default function Home() {
         </section>
 
         {/* Pour qui ? */}
-        <section id="pour-qui" className="py-20 px-4 section-glow scroll-mt-20">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-14"
-            >
-              <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold tracking-wide mb-4">
-                POUR QUI ?
-              </span>
-              <h2 className="font-heading text-4xl font-bold text-white mb-4">
-                Pensé pour les pros de l&apos;événementiel
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Quel que soit votre métier, AnimaJet transforme votre événement en expérience interactive.
-              </p>
-            </motion.div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {segments.map((s, i) => (
-                <motion.div
-                  key={s.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (i % 3) * 0.08 }}
-                >
-                  <Link
-                    href={s.href}
-                    className="card-float rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
-                  >
-                    <div className="w-11 h-11 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center mb-4">
-                      <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-1.5">{s.label}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{s.desc}</p>
-                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
-                      Découvrir
-                      <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </Link>
-                </motion.div>
-              ))}
+        {/* LOT B (maquette) — composition asymétrique : en-tête fixe à gauche, liste éditoriale à droite */}
+        <Section id="pour-qui">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20 xl:gap-28">
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <SectionHeading
+                eyebrow="Pour qui ?"
+                title={<>Pensé pour les pros de <Accent>l&apos;événementiel</Accent></>}
+                intro="Quel que soit votre métier, AnimaJet transforme votre événement en expérience interactive."
+              />
             </div>
+
+            <ul className="grid sm:grid-cols-2 border-t border-white/[0.08]">
+              {segments.map((s) => (
+                <li key={s.label} className="border-b border-white/[0.08] sm:even:border-l sm:even:pl-8 sm:odd:pr-8">
+                  <Link href={s.href} className="group flex gap-5 py-6 lg:py-8 h-full rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37]">
+                    <span className="shrink-0 w-11 h-11 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center group-hover:border-[#D4AF37]/60 transition-colors">
+                      <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
+                    </span>
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold text-white group-hover:text-[#F4E4BC] transition-colors">{s.label}</h3>
+                      <span className="mt-1.5 text-sm text-[#A1A1AA] leading-relaxed">{s.desc}</span>
+                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
+                        Découvrir
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-        </section>
+        </Section>
 
         {/* Tout explorer — hub & guide */}
         <section className="py-20 px-4 section-glow">
