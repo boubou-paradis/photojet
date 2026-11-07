@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import AnimationDetailPage, { buildSoftwareAppJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import { GAME_MEDIA } from '@/lib/game-media'
 
 const URL = 'https://animajet.fr/diaporama-live-evenement'
 
@@ -68,5 +69,5 @@ const jsonLd = buildSoftwareAppJsonLd({
 })
 
 export default function DiaporamaLiveEvenementPage() {
-  return <AnimationDetailPage content={content} jsonLd={jsonLd} />
+  return <AnimationDetailPage content={content} jsonLd={jsonLd} media={GAME_MEDIA['/diaporama-live-evenement']} />
 }

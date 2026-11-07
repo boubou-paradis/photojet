@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import { GAME_MEDIA } from '@/lib/game-media'
 
 const URL = 'https://animajet.fr/quiz-interactif'
 
@@ -71,5 +72,5 @@ const jsonLd = buildAnimationJsonLd({
 })
 
 export default function QuizInteractifPage() {
-  return <AnimationDetailPage content={content} jsonLd={jsonLd} />
+  return <AnimationDetailPage content={content} jsonLd={jsonLd} media={GAME_MEDIA['/quiz-interactif']} />
 }

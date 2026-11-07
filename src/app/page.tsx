@@ -113,12 +113,12 @@ const animations = [
 
 // POUR QUI ? — segments avec page dédiée
 const segments = [
-  { icon: Headphones, label: 'DJ & animateurs', desc: 'Démarquez-vous, fidélisez vos clients, animez sans effort.', href: '/animation-dj-interactive' },
-  { icon: Gem, label: 'Mariages', desc: 'Faites participer tous les invités et créez des souvenirs.', href: '/animation-mariage-interactive' },
-  { icon: Building2, label: 'Entreprises', desc: 'Team building, séminaires et soirées d\'entreprise.', href: '/animation-entreprise-interactive' },
-  { icon: Tent, label: 'Campings', desc: 'Des soirées vacanciers qui rassemblent les familles.', href: '/animation-camping-interactive' },
-  { icon: Martini, label: 'Bars & restaurants', desc: 'Remplissez votre salle en semaine et fidélisez vos clients.', href: '/animation-bar-restaurant-interactive' },
-  { icon: PartyPopper, label: 'Événementiel', desc: 'Tous vos événements transformés en expérience interactive.', href: '/animation-evenementielle-interactive' },
+  { icon: Headphones, label: 'DJ & animateurs', desc: 'Démarquez-vous, fidélisez vos clients, animez sans effort.', href: '/animation-dj-interactive', fond: '/images/pour-qui/dj-animateurs.webp' },
+  { icon: Gem, label: 'Mariages', desc: 'Faites participer tous les invités et créez des souvenirs.', href: '/animation-mariage-interactive', fond: '/images/pour-qui/mariages.webp' },
+  { icon: Building2, label: 'Entreprises', desc: 'Team building, séminaires et soirées d\'entreprise.', href: '/animation-entreprise-interactive', fond: '/images/pour-qui/entreprises.webp' },
+  { icon: Tent, label: 'Campings', desc: 'Des soirées vacanciers qui rassemblent les familles.', href: '/animation-camping-interactive', fond: '/images/pour-qui/campings.webp' },
+  { icon: Martini, label: 'Bars & restaurants', desc: 'Remplissez votre salle en semaine et fidélisez vos clients.', href: '/animation-bar-restaurant-interactive', fond: '/images/pour-qui/bars-restaurants.webp' },
+  { icon: PartyPopper, label: 'Événementiel', desc: 'Tous vos événements transformés en expérience interactive.', href: '/animation-evenementielle-interactive', fond: '/images/pour-qui/evenementiel.webp' },
 ]
 
 // Barre d'avantages sous le haut de page
@@ -603,10 +603,8 @@ export default function Home() {
                   transition={{ delay: (i % 3) * 0.1 }}
                   className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]"
                 >
-                  <Link
-                    href={a.href}
-                    className="card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full"
-                  >
+                  {/* Toute la carte mène à la page du jeu (captures réelles + tuto vidéo dans la section « en vrai ») */}
+                  <Link href={a.href} className="card-float rounded-2xl overflow-hidden border-[#D4AF37]/15 hover:border-[#D4AF37]/40 group flex flex-col h-full">
                     <div className="relative aspect-[16/9] overflow-hidden">
                       <Image
                         src={a.img}
@@ -621,7 +619,7 @@ export default function Home() {
                       <h3 className="text-lg font-bold text-white mb-2">{a.name}</h3>
                       <p className="text-gray-400 text-sm leading-relaxed flex-1">{a.desc}</p>
                       <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
-                        En savoir plus
+                        Voir le jeu
                         <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>
@@ -629,6 +627,7 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
+
 
             <div className="text-center lg:text-left mt-8">
               <Link
@@ -674,13 +673,22 @@ export default function Home() {
                 >
                   <Link
                     href={s.href}
-                    className="card-float rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
+                    className="card-float relative isolate overflow-hidden rounded-2xl p-6 border-[#D4AF37]/15 hover:border-[#D4AF37]/40 h-full flex flex-col group"
                   >
+                    {/* Fond photo : scène à droite, partie gauche sombre pour le texte */}
+                    <Image
+                      src={s.fond}
+                      alt=""
+                      fill
+                      className="object-cover object-right -z-10 group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                    <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0D0D0F]/85 via-[#0D0D0F]/45 to-transparent" />
                     <span className="w-11 h-11 mb-4 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] flex items-center justify-center">
                       <s.icon className="h-5 w-5 text-[#D4AF37]" strokeWidth={1.75} aria-hidden="true" />
                     </span>
                     <h3 className="text-lg font-bold text-white mb-1.5">{s.label}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{s.desc}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed flex-1 max-w-[62%]">{s.desc}</p>
                     <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] group-hover:gap-2.5 transition-all">
                       Découvrir
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />

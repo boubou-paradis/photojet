@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import AnimationDetailPage, { buildAnimationJsonLd, type AnimationDetailContent } from '@/components/marketing/AnimationDetailPage'
+import { GAME_MEDIA } from '@/lib/game-media'
 
 const URL = 'https://animajet.fr/roue-de-la-destinee'
 
@@ -70,5 +71,5 @@ const jsonLd = buildAnimationJsonLd({
 })
 
 export default function RouePage() {
-  return <AnimationDetailPage content={content} jsonLd={jsonLd} />
+  return <AnimationDetailPage content={content} jsonLd={jsonLd} media={GAME_MEDIA['/roue-de-la-destinee']} />
 }

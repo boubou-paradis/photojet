@@ -68,6 +68,7 @@ import {
 } from 'lucide-react'
 import SiteHeader from '@/components/marketing/SiteHeader'
 import SiteFooter from '@/components/marketing/SiteFooter'
+import type { GameMedia } from '@/lib/game-media'
 
 export interface AnimationDetailContent {
   /** Fil d'ariane / eyebrow */
@@ -275,9 +276,12 @@ export default function AnimationDetailPage({
   content,
   jsonLd,
   hero,
+  media,
 }: {
   content: AnimationDetailContent
   jsonLd: object
+  /** Le jeu en vrai : captures réelles + tuto vidéo YouTube (src/lib/game-media.ts) */
+  media?: GameMedia
   /** Hero visuel custom (ex. mockups d'appareils). Par défaut : image stylisée. */
   hero?: ReactNode
 }) {
@@ -313,7 +317,7 @@ export default function AnimationDetailPage({
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
-                  href="/#video"
+                  href={media ? '#en-vrai' : '/#video'}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-7 py-4 font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/5"
                 >
                   Voir la démo
@@ -349,6 +353,65 @@ export default function AnimationDetailPage({
             </div>
           </div>
         </section>
+
+        {/* ──────────── Le jeu en vrai : tuto vidéo + captures réelles ──────────── */}
+        {media && (media.video || media.captures?.length) && (
+          <section id="en-vrai" className="scroll-mt-24 border-t border-white/5 px-4 py-14 lg:py-16">
+            <div className="mx-auto max-w-6xl">
+              <h2
+                className="mb-3 text-center text-[clamp(1.7rem,3.2vw,2.4rem)] font-bold tracking-[-0.01em] text-white"
+                style={{ fontFamily: 'var(--font-playfair)' }}
+              >
+                Découvrez-le en vrai
+              </h2>
+              <p className="mx-auto mb-10 max-w-2xl text-center text-gray-400">
+                {media.video && media.captures?.length
+                  ? "Le tuto vidéo complet et des captures réelles d'une partie, sur grand écran et sur téléphone."
+                  : media.video
+                    ? 'Le tuto vidéo complet, pas à pas.'
+                    : "Des captures réelles d'une partie, sur grand écran et sur téléphone."}
+              </p>
+              <div className={media.video && media.captures?.length ? 'grid items-start gap-8 lg:grid-cols-12' : 'mx-auto max-w-4xl'}>
+                {media.video && (
+                  <div className={media.captures?.length ? 'lg:col-span-7' : ''}>
+                    <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${media.video}?rel=0&modestbranding=1`}
+                        title={`Tuto vidéo AnimaJet : ${content.title} ${content.highlight}`}
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        className="absolute inset-0 h-full w-full"
+                      />
+                    </div>
+                    <a
+                      href={`https://www.youtube.com/watch?v=${media.video}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D4AF37] transition-all hover:gap-2.5"
+                    >
+                      Voir la vidéo sur YouTube
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  </div>
+                )}
+                {media.captures && media.captures.length > 0 && (
+                  <ul className={`grid gap-4 ${media.video ? 'grid-cols-2 lg:col-span-5' : 'sm:grid-cols-2'}`}>
+                    {media.captures.map((c) => (
+                      <li key={c.src} className={media.captures!.length === 1 || (media.captures!.length === 3 && c === media.captures![0]) ? 'col-span-2' : ''}>
+                        <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-black">
+                          <Image src={c.src} alt={`${content.highlight} : ${c.legende}`} fill className="object-contain" sizes="(max-width: 1024px) 50vw, 33vw" />
+                        </div>
+                        <p className="mt-2 text-sm leading-snug text-gray-400">{c.legende}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ──────────── Comment ça marche (prose) ──────────── */}
         <section className="border-y border-white/5 bg-white/[0.015] px-4 py-14 lg:py-16">
