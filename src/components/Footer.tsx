@@ -24,7 +24,7 @@ export default function Footer({ fixed = false, className = '' }: FooterProps) {
       `}
     >
       <div className="flex items-center justify-center gap-2 flex-wrap">
-        <span>© 2025 AnimaJet</span>
+        <span>© {new Date().getFullYear()} AnimaJet</span>
         <span className="text-[#D4AF37]/40">•</span>
         <a
           href={FACEBOOK_URL}

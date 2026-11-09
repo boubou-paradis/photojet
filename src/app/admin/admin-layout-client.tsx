@@ -19,12 +19,14 @@ import { createClient } from '@/lib/supabase'
 import { formatTimeRemaining } from '@/lib/trial'
 import { TrialWatermarkContext } from '@/components/TrialWatermark'
 import { TRIAL_ADMIN_NOTICE } from '@/lib/watermark/constants'
+import { getRememberedSessionId, rememberSessionId, SESSION_SELECTIONNEE_EVENT } from '@/lib/selected-session'
 import { toast } from 'sonner'
 
+// suiviSession : le lien ouvre la session sélectionnée sur le tableau de bord
 const navItems = [
-  { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/admin/borne', label: 'AnimaBooth', icon: Tablet },
-  { href: '/admin/settings', label: 'Paramètres', icon: Settings },
+  { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, suiviSession: false },
+  { href: '/admin/borne', label: 'AnimaBooth', icon: Tablet, suiviSession: true },
+  { href: '/admin/settings', label: 'Paramètres', icon: Settings, suiviSession: true },
 ]
 
 interface AdminLayoutClientProps {
@@ -48,6 +50,18 @@ export default function AdminLayoutClient({
   const [loggingOut, setLoggingOut] = useState(false)
   const [isTrialUser] = useState(serverIsTrialUser)
   const [trialExpiresAt] = useState(serverTrialExpiresAt)
+  const [sessionMemorisee, setSessionMemorisee] = useState<string | null>(null)
+
+  // Session sélectionnée sur le tableau de bord (lue après le montage : localStorage)
+  useEffect(() => {
+    setSessionMemorisee(getRememberedSessionId())
+    const maj = (e: Event) => setSessionMemorisee((e as CustomEvent<string | null>).detail ?? null)
+    window.addEventListener(SESSION_SELECTIONNEE_EVENT, maj)
+    return () => window.removeEventListener(SESSION_SELECTIONNEE_EVENT, maj)
+  }, [])
+  const sessionCourante = searchParams.get('session') ?? sessionMemorisee
+  const lienNav = (item: (typeof navItems)[number]) =>
+    item.suiviSession && sessionCourante ? `${item.href}?session=${encodeURIComponent(sessionCourante)}` : item.href
 
   // Show welcome toast for trial users
   useEffect(() => {
@@ -63,6 +77,7 @@ export default function AdminLayoutClient({
       document.cookie = 'trial_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
       document.cookie = 'trial_email=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
       document.cookie = 'trial_expires_at=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+      rememberSessionId(null)
 
       // Sign out from Supabase if authenticated
       const supabase = createClient()
@@ -90,23 +105,25 @@ export default function AdminLayoutClient({
     <div className={`min-h-screen bg-[#1A1A1E] ${isDashboard ? 'lg:h-dvh lg:flex lg:flex-col lg:overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#1A1A1E]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/admin/dashboard" className="flex items-center">
+        {/* Pleine largeur, mêmes marges que le tableau de bord (24 px). Grand écran : grille
+            à 3 colonnes pour que le menu soit exactement centré dans la page. */}
+        <div className="px-6">
+          <div className="flex items-center justify-between h-16 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:grid-rows-[4rem] lg:gap-x-4">
+            {/* Logo — l'image a 27 px de marge transparente à gauche, compensée */}
+            <Link href="/admin/dashboard" className="flex items-center -ml-[27px] lg:justify-self-start">
               <AnimaJetLogo size="md" variant="horizontal" />
             </Link>
 
             {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-3">
               {navItems.map((item) => {
                 const isActive = pathname === item.href
                 const Icon = item.icon
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
-                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    href={lienNav(item)}
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'text-[#D4AF37]'
                         : 'text-[#B0B0B5] hover:text-white hover:bg-[#2E2E33]'
@@ -127,10 +144,10 @@ export default function AdminLayoutClient({
             </nav>
 
             {/* Trial banner + Logout button */}
-            <div className="flex items-center gap-3">
-              {/* Trial status banner */}
+            <div className="flex items-center gap-3 lg:justify-self-end">
+              {/* Trial status banner (dans la barre à partir de 1440 px, sinon ligne dessous) */}
               {isTrialUser && trialTimeRemaining && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                <div className="hidden min-[1440px]:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                   <Gift className="h-4 w-4 text-emerald-500" />
                   <span className="text-sm text-emerald-400 font-medium">
                     Essai : {trialTimeRemaining}
@@ -145,7 +162,7 @@ export default function AdminLayoutClient({
               )}
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+                className="hidden sm:flex items-center gap-2 h-9 px-4 text-sm font-medium text-red-400 border border-red-400/45 hover:text-red-300 hover:border-red-400/70 hover:bg-red-500/10 rounded-lg transition-all"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Déconnexion</span>
@@ -162,7 +179,7 @@ export default function AdminLayoutClient({
         </div>
 
         {/* Mobile Navigation */}
-        <nav className="md:hidden border-t border-[rgba(255,255,255,0.05)] bg-[#1A1A1E]">
+        <nav className="lg:hidden border-t border-[rgba(255,255,255,0.05)] bg-[#1A1A1E]">
           <div className="flex justify-around py-2">
             {navItems.map((item) => {
               const isActive = pathname === item.href
@@ -170,7 +187,7 @@ export default function AdminLayoutClient({
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={lienNav(item)}
                   className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
                     isActive
                       ? 'text-[#D4AF37]'
@@ -183,24 +200,24 @@ export default function AdminLayoutClient({
               )
             })}
           </div>
-
-          {/* Mobile trial banner */}
-          {isTrialUser && trialTimeRemaining && (
-            <div className="flex items-center justify-center gap-2 py-2 px-4 bg-emerald-500/10 border-t border-emerald-500/20">
-              <Gift className="h-4 w-4 text-emerald-500" />
-              <span className="text-sm text-emerald-400">
-                Essai : {trialTimeRemaining}
-              </span>
-              <button
-                onClick={handleSubscribe}
-                className="text-xs text-[#D4AF37] font-semibold ml-2 flex items-center gap-1"
-              >
-                <Sparkles className="h-3 w-3" />
-                S&apos;abonner
-              </button>
-            </div>
-          )}
         </nav>
+
+        {/* Ligne d'essai sous la barre (en dessous de 1440 px) */}
+        {isTrialUser && trialTimeRemaining && (
+          <div className="min-[1440px]:hidden flex items-center justify-center gap-2 py-2 px-4 bg-emerald-500/10 border-t border-emerald-500/20">
+            <Gift className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm text-emerald-400">
+              Essai : {trialTimeRemaining}
+            </span>
+            <button
+              onClick={handleSubscribe}
+              className="text-xs text-[#D4AF37] font-semibold ml-2 flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              S&apos;abonner
+            </button>
+          </div>
+        )}
       </header>
 
       {showWatermarkNotice && (
