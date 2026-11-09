@@ -12,7 +12,7 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from '@/components/QRCode'
-import { Maximize, Minimize, ImagePlus, MessageCircle, Quote, Users, Megaphone } from 'lucide-react'
+import { Maximize, Minimize, ImagePlus, Quote, Users } from 'lucide-react'
 import { createPublicClient } from '@/lib/supabase'
 import type { LiveMessage, LivePhoto, LiveSession } from '@/lib/public-api/columns'
 import { LogoPosition } from '@/types/database'
@@ -134,27 +134,6 @@ function RocketAnimation() {
       {rockets.map((rocket) => (
         <Rocket key={rocket.id} {...rocket} />
       ))}
-    </div>
-  )
-}
-
-// Animated counter component
-function AnimatedCounter({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <AnimatePresence mode="popLayout">
-        <motion.span
-          key={value}
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 20, opacity: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="text-[#D4AF37] font-bold tabular-nums"
-        >
-          {value}
-        </motion.span>
-      </AnimatePresence>
-      <span className="text-white/70">{label}</span>
     </div>
   )
 }
@@ -577,28 +556,16 @@ export default function LivePage() {
   }, [photos, messages, session?.messages_enabled, session?.messages_frequency, session?.slideshow_mode, promoPaths, promoFailed, promoTour, session?.promo_frequency])
 
   // Get current item duration
-  const getCurrentDuration = useCallback(() => {
-    const currentItem = slideshowItems[currentIndex]
-    if (!currentItem) return (session?.transition_duration || 5) * 1000
-
-    if (currentItem.type === 'message') {
-      return (session?.messages_duration || 8) * 1000
-    }
-    return (session?.transition_duration || 5) * 1000
-  }, [currentIndex, slideshowItems, session?.transition_duration, session?.messages_duration])
-
-  // Hide UI after inactivity
+  // Bouton plein écran et curseur : visibles au mouvement de la souris, masqués
+  // après 3 s sans mouvement, que la page soit en plein écran ou non (F11, télé).
+  // Rien d'autre à l'écran ne dépend de cet état.
   const resetUITimer = useCallback(() => {
     setShowUI(true)
     if (hideUITimeout.current) {
       clearTimeout(hideUITimeout.current)
     }
-    hideUITimeout.current = setTimeout(() => {
-      if (isFullscreen) {
-        setShowUI(false)
-      }
-    }, 5000)
-  }, [isFullscreen])
+    hideUITimeout.current = setTimeout(() => setShowUI(false), 3000)
+  }, [])
 
   useEffect(() => {
     const handleMouseMove = () => resetUITimer()
@@ -616,16 +583,9 @@ export default function LivePage() {
     }
   }, [resetUITimer])
 
-  // Show UI when not fullscreen
+  // À l'ouverture et à chaque entrée/sortie du plein écran : bouton visible 3 s
   useEffect(() => {
-    if (!isFullscreen) {
-      setShowUI(true)
-      if (hideUITimeout.current) {
-        clearTimeout(hideUITimeout.current)
-      }
-    } else {
-      resetUITimer()
-    }
+    resetUITimer()
   }, [isFullscreen, resetUITimer])
 
   // Session, photos et messages arrivent ensemble par le serveur. Une réponse en
@@ -953,21 +913,25 @@ export default function LivePage() {
     />
   )
 
-  // Tailles QR code configurables (petit / moyen / grand)
+  // Tailles QR code configurables (petit / moyen / grand) : écran d'attente,
+  // et coin du diaporama (le même pour photos, messages et affiches).
   const qrSizeMap = {
-    small:   { waiting: 80,  bar: 50,  fullscreen: 40 },
-    medium:  { waiting: 120, bar: 70,  fullscreen: 60 },
-    large:   { waiting: 180, bar: 100, fullscreen: 90 },
+    small:   { waiting: 80,  corner: 50 },
+    medium:  { waiting: 120, corner: 70 },
+    large:   { waiting: 180, corner: 100 },
   }
   const qrSizes = qrSizeMap[session?.qr_size as keyof typeof qrSizeMap] || qrSizeMap.medium
 
-  // Affiche à l'écran : barre et logo s'effacent, rien ne la recouvre. Le QR
-  // passe dans le coin et les marges lui réservent sa place.
+  // Une seule mise en page pour tout le diaporama : QR et logo restent dans
+  // leurs coins quoi qu'il s'affiche. Les affiches « Ajuster » gardent leurs
+  // marges latérales réservées au QR.
   const promoImage = currentItem?.type === 'promo' ? promoImages.get(currentItem.data.path) : undefined
   const showingPromo = promoImage !== undefined
   const promoFullScreen = showingPromo && currentItem?.type === 'promo' && promoPleinEcran.has(currentItem.data.path)
-  const cornerQrSize = showingPromo ? qrSizes.bar : qrSizes.fullscreen
-  const promoSideMargin = session?.show_qr_on_screen ? qrSizes.bar + 62 : 24
+  const promoSideMargin = session?.show_qr_on_screen ? qrSizes.corner + 62 : 24
+  // Diaporama : le logo reste dans un coin. « Centre » passerait sur les
+  // visages des photos, il s'affiche donc en haut à gauche.
+  const slideshowLogoPosition: 'top-left' | 'bottom-left' = logoPosition === 'bottom-left' ? 'bottom-left' : 'top-left'
 
   // QR Code component with pulse animation
   const renderQRCode = (size: number = 80) => (
@@ -1414,8 +1378,8 @@ export default function LivePage() {
         )}
       </motion.button>
 
-      {/* Universal logo overlay */}
-      {showLogo && !showingPromo && (
+      {/* Logo de l'écran d'attente (le diaporama a le sien, dans un coin) */}
+      {showLogo && slideshowItems.length === 0 && (
         <div
           className={[
             'absolute z-30 pointer-events-none',
@@ -1543,111 +1507,76 @@ export default function LivePage() {
                   transition={{ duration: 0.4, ease: 'easeOut' }}
                   className="relative"
                 >
+                  {/* Le plus grand possible, entière (ni rognée ni déformée),
+                      24 px de marge ; QR et logo se posent sur les coins. */}
                   <img
                     src={trialWatermark
                       ? watermarkedPhotoUrl(currentItem.data.id, 1920)
                       : getStorageUrl(currentItem.data.storage_path) || ''}
                     alt="Photo"
-                    className="max-w-full max-h-[90vh] object-contain"
+                    className="block object-contain"
                     style={{
+                      maxWidth: 'calc(100vw - 48px)',
+                      maxHeight: 'calc(100vh - 48px)',
                       borderRadius: '12px',
                       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.2)',
                     }}
                   />
+                  {/* « par Prénom » posé sur la photo, il part et arrive avec elle.
+                      Centré si le logo occupe le coin bas gauche. */}
+                  {currentItem.data.uploader_name && (
+                    <span
+                      data-live-uploader
+                      className={`absolute bottom-3 max-w-[60%] truncate px-2.5 py-1 rounded-md bg-black/45 text-white/85 text-sm pointer-events-none ${
+                        showLogo && slideshowLogoPosition === 'bottom-left'
+                          ? 'left-1/2 -translate-x-1/2'
+                          : 'left-3'
+                      }`}
+                    >
+                      par {currentItem.data.uploader_name}
+                    </span>
+                  )}
                 </motion.div>
               </motion.div>
             ) : null}
           </AnimatePresence>
 
-          {/* QR Code toujours visible en plein écran (coin bas droit) */}
-          {session.show_qr_on_screen && (showingPromo || (!showUI && isFullscreen)) && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="fixed bottom-4 right-4 z-30"
-            >
-              <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10">
+          {/* Coins du diaporama : mêmes places et mêmes tailles pour photos,
+              messages et affiches. Ils ne dépendent ni de l'élément affiché,
+              ni de la souris, ni du plein écran : rien ne bouge aux transitions. */}
+          {session.show_qr_on_screen && (
+            <div className="fixed bottom-4 right-4 z-30" data-live-corner="qr">
+              <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10 flex flex-col items-center">
                 <div className="bg-white p-1.5 rounded-lg">
-                  <QRCode value={getInviteUrl(code)} size={cornerQrSize} />
+                  <QRCode value={getInviteUrl(code)} size={qrSizes.corner} />
                 </div>
                 <p className="text-xs text-center text-white/70 mt-1 font-mono">#{code}</p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Bottom overlay bar */}
-          <motion.div
-            initial={false}
-            animate={{
-              opacity: showUI && !showingPromo ? 1 : 0,
-              y: showUI && !showingPromo ? 0 : 20
-            }}
-            transition={{ duration: 0.3 }}
-            className="absolute bottom-0 left-0 right-0 z-20"
-          >
-            <div
-              className="p-6 backdrop-blur-md"
-              style={{
-                background: 'rgba(0, 0, 0, 0.6)',
-                borderTop: '1px solid rgba(212, 175, 55, 0.1)'
-              }}
-            >
-              <div className="flex items-end justify-between">
-                {/* Left side: event info */}
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl font-bold text-white drop-shadow-lg">{session.name}</h1>
-                    <div className="flex items-center gap-4 mt-1">
-                      <AnimatedCounter
-                        value={currentIndex + 1}
-                        label={`/ ${slideshowItems.length}`}
-                      />
-                      {currentItem?.type === 'photo' && currentItem.data.uploader_name && (
-                        <span className="text-white/60 text-sm">
-                          par {currentItem.data.uploader_name}
-                        </span>
-                      )}
-                      {currentItem?.type === 'message' && (
-                        <span className="text-[#D4AF37]/80 text-sm flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3" />
-                          Message
-                        </span>
-                      )}
-                      {currentItem?.type === 'promo' && (
-                        <span className="text-[#D4AF37]/80 text-sm flex items-center gap-1">
-                          <Megaphone className="h-3 w-3" />
-                          Affiche promotionnelle
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: QR Code */}
-                {session.show_qr_on_screen && renderQRCode(qrSizes.bar)}
+                {/* Largeur du QR : le cadre reste dans la marge des affiches « Ajuster » */}
+                <p
+                  className="text-[11px] leading-tight text-center text-white/80 font-medium"
+                  style={{ width: qrSizes.corner + 12 }}
+                >
+                  Partagez vos photos
+                </p>
               </div>
             </div>
-          </motion.div>
-
-          {/* Progress bar */}
-          <motion.div
-            initial={false}
-            animate={{ opacity: showUI && !showingPromo ? 1 : 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute bottom-0 left-0 right-0 h-1 z-30"
-          >
-            <motion.div
-              key={currentIndex}
-              className="h-full bg-[#D4AF37]"
-              initial={{ width: '0%' }}
-              animate={{ width: '100%' }}
-              transition={{
-                duration: getCurrentDuration() / 1000,
-                ease: 'linear'
-              }}
-            />
-          </motion.div>
+          )}
+          {showLogo && (
+            <div
+              className={`fixed left-4 z-30 pointer-events-none ${slideshowLogoPosition === 'bottom-left' ? 'bottom-4' : 'top-4'}`}
+              // Compte en essai : l'étiquette « Version d'essai » occupe le coin
+              // haut gauche (police clamp(13px, 1.4vw, 26px) + 20 px de marge
+              // intérieure) ; le logo se place juste dessous.
+              style={trialWatermark && slideshowLogoPosition === 'top-left'
+                ? { top: 'calc(clamp(13px, 1.4vw, 26px) * 1.3 + 32px)' }
+                : undefined}
+              data-live-corner="logo"
+            >
+              <div className="bg-black/40 backdrop-blur-sm p-2 rounded-xl border border-white/10">
+                {renderLogo()}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
