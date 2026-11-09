@@ -237,7 +237,7 @@ export default function AdminLayoutClient({
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer liensSociaux={false} />
 
       {/* Logout Confirmation Modal */}
       <AnimatePresence>
