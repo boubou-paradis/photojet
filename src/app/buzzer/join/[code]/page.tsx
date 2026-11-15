@@ -150,22 +150,27 @@ export default function BuzzerJoinPage() {
 
   return (
     <PhoneFrame>
-      <form className="bzp-form" onSubmit={submit}>
+      {/* Formulaire à un seul champ : sans attributs explicites, Chrome Android le
+          prenait pour « nom du titulaire de la carte » et proposait les cartes
+          bancaires dans la barre du clavier. Ne pas remettre autocomplete="nickname". */}
+      <form className="bzp-form" onSubmit={submit} autoComplete="off">
         <Buzzer state="off" size="36cqw" />
         <AnimaBuzzLogo variant="small" subtitle size="12.5cqw" />
 
         {mode === 'solo' ? (
           <>
-            <label htmlFor="bz-nick">Ton pseudo</label>
+            <label htmlFor="pseudo-joueur">Ton pseudo</label>
             <input
-              id="bz-nick"
+              id="pseudo-joueur"
+              name="pseudo-joueur"
+              type="text"
+              inputMode="text"
               className="bzp-input"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               maxLength={BUZZER_LIMITS.nicknameMaxLength}
-              autoComplete="nickname"
+              autoComplete="off"
               autoCapitalize="words"
-              enterKeyHint="go"
               placeholder="Luna"
               required
             />
@@ -181,15 +186,18 @@ export default function BuzzerJoinPage() {
           </>
         ) : (
           <>
-            <label htmlFor="bz-team">Ton équipe</label>
+            <label htmlFor="equipe-joueur">Ton équipe</label>
             <input
-              id="bz-team"
+              id="equipe-joueur"
+              name="equipe-joueur"
+              type="text"
+              inputMode="text"
               className="bzp-input"
               value={team}
               onChange={(e) => setTeam(e.target.value)}
               maxLength={BUZZER_LIMITS.teamMaxLength}
+              autoComplete="off"
               autoCapitalize="words"
-              enterKeyHint="go"
               placeholder="Table 4"
               required
             />
