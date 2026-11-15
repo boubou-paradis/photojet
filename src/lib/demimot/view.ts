@@ -90,6 +90,13 @@ export type PhoneStatus =
   | 'letters_turn' // Tour de lettres : à vous de proposer (oralement)
   | 'revoked' // téléphone remplacé par l'animateur
 
+/**
+ * 20 couleurs d'équipes (et noms par défaut), dans l'ordre d'attribution.
+ * Choisies par calcul pour rester distinctes deux à deux (écart CIEDE2000
+ * minimal ≥ 15) et lisibles sur le fond sombre (contraste ≥ 3,6) : voir
+ * __tests__/teams20.test.ts. Les 6 premières sont celles d'origine. Chaque
+ * équipe porte aussi un NUMÉRO partout (écran, téléphone, régie).
+ */
 export const TEAM_PALETTE: { name: string; color: string }[] = [
   { name: 'Azur', color: '#3B82F6' },
   { name: 'Mandarine', color: '#F97316' },
@@ -97,11 +104,37 @@ export const TEAM_PALETTE: { name: string; color: string }[] = [
   { name: 'Framboise', color: '#EC4899' },
   { name: 'Lagon', color: '#22D3EE' },
   { name: 'Soleil', color: '#FACC15' },
-  { name: 'Corail', color: '#FB7185' },
-  { name: 'Lavande', color: '#C4B5FD' },
-  { name: 'Sable', color: '#D6B98C' },
-  { name: 'Ardoise', color: '#94A3B8' },
+  { name: 'Émeraude', color: '#25B154' },
+  { name: 'Neige', color: '#F1F5F9' },
+  { name: 'Citron vert', color: '#A8F906' },
+  { name: 'Rubis', color: '#D22D2D' },
+  { name: 'Menthe', color: '#7EFCD2' },
+  { name: 'Saumon', color: '#E89992' },
+  { name: 'Bronze', color: '#B18225' },
+  { name: 'Sable', color: '#E8BD92' },
+  { name: 'Orchidée', color: '#E192E8' },
+  { name: 'Olive', color: '#A5B125' },
+  { name: 'Ciel', color: '#7EBDFC' },
+  { name: 'Sarcelle', color: '#25B1A5' },
+  { name: 'Vanille', color: '#E8E892' },
+  { name: 'Pétrole', color: '#258EB1' },
 ]
+
+/** Équipes par défaut (noms et couleurs de la palette) pour un nombre donné. */
+export function defaultTeams(count: number): { name: string; color: string }[] {
+  return TEAM_PALETTE.slice(0, Math.max(0, Math.min(count, TEAM_PALETTE.length))).map((t) => ({ ...t }))
+}
+
+/** Prochaine équipe libre de la palette (ni son nom ni sa couleur déjà pris). */
+export function nextFreeTeam(taken: readonly { name: string; color: string }[]): { name: string; color: string } {
+  const lc = (v: string) => v.trim().toLocaleLowerCase('fr-FR')
+  const free = TEAM_PALETTE.find((p) => !taken.some((d) => lc(d.name) === lc(p.name) || d.color.toUpperCase() === p.color.toUpperCase()))
+  if (free) return { ...free }
+  // Palette épuisée (couleurs modifiées à la main) : nom numéroté unique.
+  let i = taken.length + 1
+  while (taken.some((d) => lc(d.name) === lc(`Équipe ${i}`))) i++
+  return { name: `Équipe ${i}`, color: TEAM_PALETTE[taken.length % TEAM_PALETTE.length].color }
+}
 
 // Vues de la régie et du téléphone (reprises du protocole du prototype).
 

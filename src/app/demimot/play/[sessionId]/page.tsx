@@ -105,6 +105,8 @@ export default function DemiMotPlayPage() {
   const gate = state?.active ? state.gate : undefined
   const teamId = captain?.teamId ?? null
   const team: PublicTeam | null = view?.teams.find((t) => t.id === teamId) ?? null
+  // Numéro de l'équipe (le même que sur l'écran géant et la page de choix).
+  const teamNumber = view ? view.teams.findIndex((t) => t.id === teamId) + 1 || undefined : undefined
 
   // Partie arrêtée par l'animateur (ou autre jeu lancé) : retour au QR de la soirée.
   useEffect(() => {
@@ -175,6 +177,7 @@ export default function DemiMotPlayPage() {
       <PhoneScreen
         status={status}
         team={team ?? (status === 'connecting' ? null : fallbackTeam)}
+        teamNumber={teamNumber}
         otherTeamName={gate?.teamName ?? undefined}
         secondsLeft={secondsLeft}
         online={channel.connected}

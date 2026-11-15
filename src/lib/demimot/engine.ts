@@ -49,7 +49,7 @@ export type GameEvent =
 export type Result = { ok: true; state: GameState; events: GameEvent[] } | { ok: false; error: string; message: string }
 
 export const MIN_TEAMS = 2
-export const MAX_TEAMS = 10
+export const MAX_TEAMS = 20
 const LOG_MAX = 200
 const UNDO_MAX = 20
 

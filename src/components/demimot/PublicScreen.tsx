@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from 'react'
 import QRCode from '@/components/QRCode'
+import { DEMIMOT_LECTERN_MAX } from '@/lib/demimot/constants'
 import { toCells } from '@/lib/demimot/text'
 import type { PublicCell, PublicTeam, PublicView } from '@/lib/demimot/view'
 import type { Quality, StudioState, StudioTeam } from './three/StudioScene'
@@ -85,7 +86,7 @@ export function toStudioState(view: PublicView, clockOffsetMs: number, themeId: 
     note: view.phase === 'resolved' && t.id === activeId ? 'BRAVO' : undefined,
   }))
 
-  // La jauge porte aussi un libellé : nom de l'équipe qui a la main (lisible même à 10 équipes) + secondes.
+  // La jauge porte aussi un libellé : nom de l'équipe qui a la main (lisible même à 20 équipes) + secondes.
   let gauge: StudioState['gauge'] = null
   if (r && view.phase === 'answering' && r.buzz && buzz) gauge = { color: buzz.color, endsAt: r.buzz.deadline, totalMs: r.buzz.totalMs, label: buzz.name }
   else if (r && view.phase === 'final_window' && r.finalWindowEndsAt) gauge = { color: th.gauge, endsAt: r.finalWindowEndsAt, totalMs: r.finalWindowMs, label: 'Dernière chance' }
@@ -102,6 +103,7 @@ export function toStudioState(view: PublicView, clockOffsetMs: number, themeId: 
     accent: (view.phase === 'answering' ? buzz?.color : view.phase === 'turn' ? turn?.color : view.phase === 'resolved' ? winner?.color : null) ?? null,
     celebrateKey: view.phase === 'resolved' && winner && r ? `${r.key}:won` : null,
     showTeams: view.phase !== 'waiting' && view.phase !== 'podium',
+    compactScores: view.teams.length > DEMIMOT_LECTERN_MAX,
     theme: th.id,
   }
 }
@@ -132,7 +134,8 @@ function Join({ view }: { view: PublicView }) {
   const host = view.joinUrl.replace(/^https?:\/\//, '')
   return (
     <div className="join-zone">
-      <div className="join-card">
+      {/* Plus de 6 équipes : QR et code à gauche, pastilles à droite (le panneau reste bas, sous le plateau de lettres). */}
+      <div className={`join-card${view.teams.length > 6 ? ' many' : ''}`}>
         <div className="qr" aria-label="QR code pour rejoindre la partie">
           <QRCode value={view.joinUrl} size={256} level="M" fgColor="#0D0D0F" style={{ width: '100%', height: 'auto' }} />
         </div>
@@ -143,7 +146,7 @@ function Join({ view }: { view: PublicView }) {
           </div>
           <div className="code">{view.code}</div>
         </div>
-        <div className="team-chips">
+        <div className={`team-chips${view.teams.length > 6 ? ' many' : ''}`}>
           {view.teams.map((t, i) => (
             <span key={t.id} className={`team-chip${t.connected ? '' : ' off'}`} style={{ ['--team' as string]: t.color } as React.CSSProperties}>
               <b>{i + 1}</b> {t.name}
@@ -188,7 +191,10 @@ export function Standings({ teams, title }: { teams: PublicTeam[]; title: string
   return (
     <div className="overlay-panel">
       <h2 className="title-3d">{title}</h2>
-      <div className={`rank-list${teams.length > 6 ? ' dense' : ''}`}>
+      <div
+        className={`rank-list${teams.length > 6 ? ' dense' : ''}${teams.length > DEMIMOT_LECTERN_MAX ? ' two-cols' : ''}`}
+        style={teams.length > DEMIMOT_LECTERN_MAX ? { gridTemplateRows: `repeat(${Math.ceil(teams.length / 2)}, auto)` } : undefined}
+      >
         {sorted.map((t) => (
           <div className="rank-row" key={t.id}>
             <span className="pos">{1 + teams.filter((o) => o.score > t.score).length}</span>

@@ -8,11 +8,13 @@
 // l'autre, /api/demimot/library), jeux utilisés pour le tirage, équipes.
 // `v` absent : avant le lancement, seule la bibliothèque est affichée.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Copy, Download, Pencil, Plus, Save, Search, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Copy, Download, Minus, Pencil, Plus, Save, Search, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { cleanText, normalizeForCompare, validateSolution } from '@/lib/demimot/text'
 import type { Difficulty, Puzzle } from '@/lib/demimot/types'
-import { TEAM_PALETTE, type RegieView } from '@/lib/demimot/view'
+import { DEMIMOT_LECTERN_MAX } from '@/lib/demimot/constants'
+import { MAX_TEAMS, MIN_TEAMS } from '@/lib/demimot/engine'
+import { nextFreeTeam, type RegieView } from '@/lib/demimot/view'
 import type { Send } from './api'
 
 interface PuzzleSet {
@@ -47,6 +49,7 @@ export function RegiePrep({ v, send, notify }: { v: RegieView | null; send: Send
   const [edit, setEdit] = useState<{ puzzle: Puzzle; isNew: boolean } | null>(null)
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const teamDraft = useTeamDraft(v, send, notify)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/demimot/library', { cache: 'no-store' }).catch(() => null)
@@ -140,6 +143,7 @@ export function RegiePrep({ v, send, notify }: { v: RegieView | null; send: Send
 
   return (
     <div className="regie-body prep" style={{ gridTemplateColumns: v ? 'minmax(260px, 0.8fr) minmax(0, 1.6fr) minmax(280px, 1fr)' : 'minmax(260px, 0.8fr) minmax(0, 1.6fr)' }}>
+      {v && send && <TeamCountBar t={teamDraft} />}
       <div className="panel">
         <h3>Jeux d’énigmes</h3>
         <p className="regie-help">{v ? 'Cochez les jeux utilisés pour le tirage (aucun coché : toute la bibliothèque).' : 'Votre bibliothèque est gardée d’une soirée à l’autre.'}</p>
@@ -226,7 +230,7 @@ export function RegiePrep({ v, send, notify }: { v: RegieView | null; send: Send
 
       {v && send && (
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
-          <TeamsEditor v={v} send={send} notify={notify} />
+          <TeamsEditor t={teamDraft} />
           <div className="panel">
             <h3>Partie</h3>
             <div className="log" style={{ maxHeight: 'none', gap: 8, fontSize: 14 }}>
@@ -303,23 +307,37 @@ function Editor({ initial, isNew, all, onCancel, onSave }: { initial: Puzzle; is
   )
 }
 
-function TeamsEditor({ v, send, notify }: { v: RegieView; send: Send; notify: Notify }) {
-  const teams = v.public.teams
-  const fromTeams = () => teams.map((t) => ({ id: t.id, name: t.name, color: t.color }))
+type TeamDraft = { id: string; name: string; color: string }[]
+
+/**
+ * Brouillon des équipes, partagé par le réglage « Nombre d'équipes » (haut de
+ * Préparation) et l'éditeur des noms et couleurs : aucun des deux n'écrase
+ * une modification en cours de l'autre.
+ */
+function useTeamDraft(v: RegieView | null, send: Send | null, notify: Notify) {
+  const teams = useMemo(() => v?.public.teams ?? [], [v])
+  const fromTeams = useCallback((): TeamDraft => teams.map((t) => ({ id: t.id, name: t.name, color: t.color })), [teams])
   const key = teams.map((t) => `${t.id}:${t.name}:${t.color}`).join('|')
-  const [draft, setDraft] = useState(fromTeams)
+  const [draft, setDraft] = useState<TeamDraft>(fromTeams)
   const [draftKey, setDraftKey] = useState(key)
   // Équipes changées ailleurs (autre onglet, renommage) : le brouillon repart de l'état réel.
   if (draftKey !== key) {
     setDraftKey(key)
     setDraft(fromTeams())
   }
-  const open = v.phase === 'waiting'
+  const open = v?.phase === 'waiting'
   const dirty = JSON.stringify(draft) !== JSON.stringify(fromTeams())
+
+  const commit = async (next: TeamDraft, message: string) => {
+    if (!send) return false
+    const a = await send({ type: 'setTeams', teams: next.map((t) => ({ id: t.id || undefined, name: t.name, color: t.color })) })
+    if (a?.ok) notify(message)
+    return !!a?.ok
+  }
   const save = async () => {
+    if (!send) return
     if (open) {
-      const a = await send({ type: 'setTeams', teams: draft.map((t) => ({ id: t.id || undefined, name: t.name, color: t.color })) })
-      if (a?.ok) notify('Équipes enregistrées.')
+      await commit(draft, 'Équipes enregistrées.')
     } else {
       for (const t of draft) {
         const o = teams.find((x) => x.id === t.id)
@@ -328,33 +346,68 @@ function TeamsEditor({ v, send, notify }: { v: RegieView; send: Send; notify: No
       notify('Équipes renommées.')
     }
   }
+  /** Nombre d'équipes : ajoute (noms et couleurs libres de la palette) ou retire EN FIN de liste, et enregistre aussitôt. */
+  const setCount = async (count: number) => {
+    const n = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, count))
+    if (!open || n === draft.length) return
+    let next: TeamDraft = draft.slice(0, n)
+    while (next.length < n) next = [...next, { id: '', ...nextFreeTeam(next) }]
+    setDraft(next)
+    await commit(next, `${n} équipes.`)
+  }
+  return { draft, setDraft, dirty, open, save, setCount }
+}
+type TeamDraftApi = ReturnType<typeof useTeamDraft>
+
+/** Réglage principal, en haut de Préparation : le nombre d'équipes (2 à 20). */
+function TeamCountBar({ t }: { t: TeamDraftApi }) {
+  const n = t.draft.length
+  return (
+    <div className="panel team-count" data-testid="team-count" style={{ gridColumn: '1 / -1' }}>
+      <div className="team-count-main">
+        <label htmlFor="dm-nb-equipes"><Users size={16} /> Nombre d’équipes</label>
+        <div className="stepper">
+          <button className="btn" aria-label="Une équipe de moins" disabled={!t.open || n <= MIN_TEAMS} onClick={() => void t.setCount(n - 1)}><Minus size={16} /></button>
+          <select id="dm-nb-equipes" name="dm-nb-equipes" value={n} disabled={!t.open} onChange={(e) => void t.setCount(Number(e.target.value))} data-testid="team-count-select">
+            {Array.from({ length: MAX_TEAMS - MIN_TEAMS + 1 }, (_, i) => i + MIN_TEAMS).map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+          <button className="btn" aria-label="Une équipe de plus" disabled={!t.open || n >= MAX_TEAMS} onClick={() => void t.setCount(n + 1)}><Plus size={16} /></button>
+        </div>
+        <span className="regie-help" style={{ margin: 0 }}>
+          {t.open
+            ? `De ${MIN_TEAMS} à ${MAX_TEAMS} équipes. Enregistré aussitôt ; noms et couleurs modifiables ci-contre.${n > DEMIMOT_LECTERN_MAX ? ' Au-delà de 10, l’écran affiche un tableau des scores compact.' : ''}`
+            : 'Partie lancée : le nombre d’équipes est figé (noms et couleurs restent modifiables).'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function TeamsEditor({ t }: { t: TeamDraftApi }) {
+  const { draft, setDraft, dirty, open, save } = t
   return (
     <div className="panel" data-testid="teams-editor">
       <h3><Users size={14} /> Équipes ({draft.length})</h3>
       {!open && <p className="regie-help">Partie lancée : on peut renommer ou recolorer, pas ajouter ni retirer.</p>}
-      {draft.map((t, i) => (
-        <div key={t.id || `new-${i}`} className="team-edit">
-          <input type="color" value={t.color} aria-label={`Couleur de ${t.name}`} onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, color: e.target.value } : x)))} />
-          <input id={`dm-equipe-${i}`} name={`dm-equipe-${i}`} autoComplete="off" value={t.name} maxLength={28} aria-label={`Nom de l’équipe ${i + 1}`} onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-          {open && (
-            <button className="icon-btn" aria-label={`Retirer ${t.name}`} disabled={draft.length <= 2} onClick={() => setDraft(draft.filter((_, j) => j !== i))}><Trash2 size={14} /></button>
-          )}
-        </div>
-      ))}
+      <div className={`team-edit-list${draft.length > 10 ? ' many' : ''}`}>
+        {draft.map((d, i) => (
+          <div key={d.id || `new-${i}`} className="team-edit">
+            <span className="team-num" style={{ background: d.color }}>{i + 1}</span>
+            <input type="color" value={d.color} aria-label={`Couleur de ${d.name}`} onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, color: e.target.value } : x)))} />
+            <input id={`dm-equipe-${i}`} name={`dm-equipe-${i}`} autoComplete="off" value={d.name} maxLength={28} aria-label={`Nom de l’équipe ${i + 1}`} onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+            {open && (
+              <button className="icon-btn" aria-label={`Retirer ${d.name}`} disabled={draft.length <= MIN_TEAMS} onClick={() => setDraft(draft.filter((_, j) => j !== i))}><Trash2 size={14} /></button>
+            )}
+          </div>
+        ))}
+      </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         {open && (
-          <button
-            className="btn"
-            disabled={draft.length >= 10}
-            onClick={() => {
-              const free = TEAM_PALETTE.find((p) => !draft.some((d) => d.name === p.name || d.color === p.color)) ?? TEAM_PALETTE[draft.length % 10]
-              setDraft([...draft, { id: '', name: free.name, color: free.color }])
-            }}
-          >
+          <button className="btn" disabled={draft.length >= MAX_TEAMS} onClick={() => setDraft([...draft, { id: '', ...nextFreeTeam(draft) }])}>
             <Plus size={15} /> Équipe
           </button>
         )}
-        <button className="btn primary" disabled={!dirty} onClick={save} data-testid="save-teams"><Save size={15} /> Enregistrer</button>
+        <button className="btn primary" disabled={!dirty} onClick={() => void save()} data-testid="save-teams"><Save size={15} /> Enregistrer</button>
       </div>
     </div>
   )

@@ -144,6 +144,7 @@
 .dm .phone { min-height: 100dvh; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 30%, #10261f 0%, #0d0d0f 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
 .dm .phone-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: rgba(26, 26, 30, 0.9); border: 1px solid var(--line); }
 .dm .phone-head .sw { width: 14px; height: 40px; border-radius: 8px; background: var(--team); box-shadow: 0 0 14px var(--team); }
+.dm .phone-head .sw.num { width: auto; min-width: 40px; padding: 0 6px; display: grid; place-items: center; color: #0d0d0f; font-weight: 900; font-size: 20px; }
 .dm .phone-head .nm { font-weight: 800; font-size: 20px; line-height: 1.1; }
 .dm .phone-head .sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .dm .phone-head .score { margin-left: auto; text-align: right; font-weight: 800; font-size: 24px; font-variant-numeric: tabular-nums; }
@@ -172,10 +173,23 @@
 .dm .phone-banner.warn { background: rgba(250, 204, 21, 0.12); border: 1px solid rgba(250, 204, 21, 0.4); color: #fde68a; }
 .dm .phone-banner.err { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.45); color: #fecaca; }
 .dm .team-pick { display: grid; gap: 10px; width: 100%; }
-.dm .team-pick button { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: #17171b; font-weight: 700; font-size: 18px; text-align: left; min-height: 56px; cursor: pointer; }
-.dm .team-pick button:disabled { opacity: 0.45; cursor: not-allowed; }
-.dm .team-pick button .sw { width: 12px; height: 28px; border-radius: 6px; background: var(--team); }
-.dm .team-pick button em { margin-left: auto; font-style: normal; font-size: 13px; font-weight: 500; color: var(--muted); }
+.dm .team-pick button { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); border-left: 6px solid var(--team); background: #17171b; font-weight: 700; font-size: 18px; text-align: left; min-height: 56px; cursor: pointer; min-width: 0; }
+.dm .team-pick button .num { flex: none; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center; background: var(--team); color: #0d0d0f; font-weight: 900; font-size: 16px; }
+.dm .team-pick button .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm .team-pick button em { margin-left: auto; flex: none; font-style: normal; font-size: 13px; font-weight: 600; color: var(--muted); }
+/* Équipe déjà prise : bien visible comme indisponible (grisée, nom barré, badge). */
+.dm .team-pick button.taken { cursor: not-allowed; background: #101013; border-color: #26262b; border-left-color: color-mix(in srgb, var(--team) 35%, #26262b); }
+.dm .team-pick button.taken .num { background: #2a2a30; color: #8b8b94; }
+.dm .team-pick button.taken .nm { color: #77777f; text-decoration: line-through; text-decoration-thickness: 2px; }
+.dm .team-pick button.taken em { padding: 2px 8px; border-radius: 999px; background: #2a2a30; color: #b4b4bc; }
+/* Plus de 6 équipes : 2 colonnes, tuiles plus compactes (20 équipes = 10 rangées). */
+.dm .team-pick.grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Grille 2 colonnes : numéro + statut en haut, nom sur toute la largeur (pas de nom coupé sur petit écran). */
+.dm .team-pick.grid button { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'num st' 'nm nm'; align-items: center; gap: 6px 8px; padding: 9px 10px; min-height: 64px; font-size: 16px; border-radius: 12px; border-left-width: 5px; }
+.dm .team-pick.grid button .num { grid-area: num; min-width: 26px; height: 26px; font-size: 14px; }
+.dm .team-pick.grid button .nm { grid-area: nm; }
+.dm .team-pick.grid button em { grid-area: st; justify-self: end; margin-left: 0; font-size: 12px; }
+.dm .team-pick.grid button.taken em { padding: 1px 7px; }
 
 /* ------------------------------------------------------------ régie */
 .dm .regie { min-height: 100vh; background: #0b0b0d; display: grid; grid-template-rows: auto 1fr; }
@@ -353,7 +367,16 @@
 .dm .editor-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
 .dm .editor label.check { display: flex; align-items: center; gap: 6px; color: var(--white); }
 .dm .editor ul.field-error { padding-left: 18px; }
-.dm .team-edit { display: grid; grid-template-columns: 38px 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.dm .team-edit { display: grid; grid-template-columns: 26px 38px 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.dm .team-edit .team-num { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font-weight: 800; font-size: 13px; color: #0d0d0f; }
+/* Beaucoup d'équipes : la liste défile dans la carte au lieu d'allonger toute la page. */
+.dm .team-edit-list.many { max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+/* Réglage principal en haut de Préparation : nombre d'équipes. */
+.dm .team-count .team-count-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dm .team-count label { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; }
+.dm .team-count .stepper { display: inline-flex; align-items: center; gap: 6px; }
+.dm .team-count .stepper .btn { min-height: 40px; width: 40px; padding: 0; }
+.dm .team-count .stepper select { height: 40px; min-width: 76px; font-size: 18px; font-weight: 800; text-align: center; border-radius: 10px; border: 1px solid var(--line); background: #121216; color: var(--white); padding: 0 8px; }
 .dm .team-edit input[type=color] { width: 38px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--line); background: #121216; }
 @media (max-width: 1100px) { .dm .regie-body.prep { grid-template-columns: 1fr !important; } }
 /* Chiffre du podium : tient dans la plus petite marche (bronze, 8vh). */
@@ -382,3 +405,38 @@
 .dm .dm-fs { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line); background: rgba(12, 12, 14, 0.6); color: var(--white); opacity: 0.35; cursor: pointer; transition: opacity 0.2s; }
 .dm .dm-fs:hover, .dm .dm-fs:focus-visible { opacity: 1; }
 .dm .join-card .qr { background: #fff; }
+
+/* ------------------------------------------------------------ tableau des scores compact (11 à 20 équipes)
+   Même tableau en 3D (posé sur la scène, à la place des pupitres) et sans 3D.
+   Tailles en vh : lisibles du fond de la salle en 1080p comme en 720p. */
+.dm .score-board-overlay { position: absolute; left: 0; right: 0; bottom: 2.2vh; display: flex; justify-content: center; pointer-events: none; }
+.dm .score-board { display: grid; gap: 1.6vh 0.6vw; width: min(95vw, 178vh); }
+.dm .sb-cell { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'nm nm' 'n sc'; align-items: center; gap: 0.2vh 0.8vh; padding: 0.8vh 0.9vh 0.5vh;
+  min-width: 0; border-radius: 1.1vh; background: linear-gradient(180deg, rgba(25, 25, 30, 0.95), rgba(11, 11, 13, 0.95));
+  border: 1.5px solid color-mix(in srgb, var(--team) 55%, transparent); box-shadow: inset 0 0.45vh 0 var(--team);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease; }
+.dm .sb-n { grid-area: n; min-width: 3.6vh; height: 3.6vh; padding: 0 0.5vh; border-radius: 0.8vh; display: grid; place-items: center; background: var(--team); color: #0d0d0f; font-weight: 900; font-size: 2.5vh; }
+.dm .sb-nm { grid-area: nm; text-align: center; font-weight: 700; font-size: 2.1vh; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm .sb-sc { grid-area: sc; text-align: center; padding-right: 3.6vh; font-weight: 900; font-size: 5vh; line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--white); }
+.dm .sb-cell.active { transform: scale(1.08); z-index: 1; border-color: var(--team); box-shadow: inset 0 0.45vh 0 var(--team), 0 0 2.6vh var(--team); }
+.dm .sb-cell.blocked { opacity: 0.38; }
+.dm .sb-cell.off { opacity: 0.55; }
+.dm .sb-st { position: absolute; top: -1.3vh; right: 0.8vh; padding: 0.15vh 0.8vh; border-radius: 999px; background: var(--team); color: #0d0d0f; font-size: 1.4vh; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.dm .sb-cell.blocked .sb-st { background: #3a3a40; color: #e5e5e5; }
+.dm .no-motion .sb-cell { transition: none; }
+/* Classement de plus de 10 équipes : 2 colonnes (1 à 10, puis 11 à 20), tout tient à l'écran. */
+.dm .overlay-panel:has(.rank-list.two-cols) { width: min(94vw, 170vh); max-width: none; }
+.dm .rank-list.two-cols { grid-auto-flow: column; grid-template-columns: 1fr 1fr; column-gap: 3vh; gap: 0.9vh 3vh; }
+.dm .rank-list.two-cols .rank-row { padding: 0.55vh 1.8vh; }
+.dm .rank-list.two-cols .rank-row .nm, .dm .rank-list.two-cols .rank-row .sc, .dm .rank-list.two-cols .rank-row .pos { font-size: 2.7vh; }
+/* Accueil (QR) avec beaucoup d'équipes : pastilles en grille compacte. */
+.dm .team-chips.many { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.7vh; width: 100%; }
+.dm .team-chips.many .team-chip { justify-content: flex-start; min-width: 0; padding: 0.4vh 1vh; font-size: 1.45vh; }
+.dm .team-chips.many .team-chip em { margin-left: auto; font-size: 1.2vh; }
+/* Plus de 6 équipes : QR à gauche, pastilles à droite, panneau bas et peu haut (le plateau de lettres reste visible). */
+.dm .join-card.many { flex-wrap: nowrap; width: 94vw; max-width: 94vw; gap: 2.4vh; padding: 1.4vh 2vh; }
+.dm .join-card.many .qr { width: 13vh; height: 13vh; flex: none; }
+.dm .join-card.many .txt { flex: none; font-size: 1.7vh; }
+.dm .join-card.many .code { font-size: 4.6vh; }
+.dm .join-card.many .team-chips.many { flex: 1 1 auto; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dm .join-card.many .team-chip { font-size: 1.6vh; padding: 0.45vh 1vh; }

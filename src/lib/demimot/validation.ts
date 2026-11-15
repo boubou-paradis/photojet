@@ -6,7 +6,7 @@
 // connues, sans jamais accepter d'énigme venant du navigateur pour une partie.
 
 import { isSessionCode, isUuid } from '@/lib/affinity/validation'
-import type { Command } from './engine'
+import { MAX_TEAMS, type Command } from './engine'
 import type { Settings } from './types'
 
 export { isSessionCode, isUuid }
@@ -118,7 +118,7 @@ function parseCommand(raw: unknown): RegieCommand | null {
       return { type: 'renameTeam', teamId: c.teamId, name: c.name as string | undefined, color: c.color as string | undefined }
     }
     case 'setTeams': {
-      if (!Array.isArray(c.teams) || c.teams.length > 10) return null
+      if (!Array.isArray(c.teams) || c.teams.length > MAX_TEAMS) return null
       const teams: { id?: string; name: string; color: string }[] = []
       for (const t of c.teams as Record<string, unknown>[]) {
         if (!t || typeof t !== 'object' || !str(t.name, 40) || !(typeof t.color === 'string' && HEX_RE.test(t.color))) return null

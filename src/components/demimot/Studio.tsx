@@ -66,7 +66,39 @@ export function Studio({ state, quality, reducedMotion }: StudioProps) {
   }, [state])
 
   if (fallback) return <DomStudio state={state} reducedMotion={reducedMotion} />
-  return <canvas ref={canvasRef} className="board-canvas" aria-label="Plateau de jeu À Demi-Mot" role="img" data-testid="board-canvas" />
+  return (
+    <>
+      <canvas ref={canvasRef} className="board-canvas" aria-label="Plateau de jeu À Demi-Mot" role="img" data-testid="board-canvas" />
+      {/* Plus de 10 équipes : la scène 3D n'a pas de pupitres, ce tableau (le même qu'en mode sans 3D) les remplace. */}
+      {state.showTeams && state.compactScores && (
+        <div className="score-board-overlay">
+          <ScoreBoard teams={state.teams} />
+        </div>
+      )}
+    </>
+  )
+}
+
+/**
+ * Tableau des scores compact (11 à 20 équipes) : 2 lignes, numéro dans la
+ * couleur de l'équipe, nom raccourci, gros score. L'équipe qui a la main
+ * s'allume, une équipe bloquée est grisée. Ordre fixe (numéro d'équipe) :
+ * chacun retrouve sa case ; le classement trié reste sur la touche C / B.
+ */
+export function ScoreBoard({ teams }: { teams: StudioState['teams'] }) {
+  const cols = Math.ceil(teams.length / 2)
+  return (
+    <div className="score-board" data-testid="score-board" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+      {teams.map((t, i) => (
+        <div key={t.id} className={`sb-cell ${t.state}`} style={{ ['--team' as string]: t.color } as React.CSSProperties} data-testid="score-cell">
+          <span className="sb-n">{i + 1}</span>
+          <span className="sb-nm">{t.name}</span>
+          <span className="sb-sc">{t.score}</span>
+          {(t.state === 'active' || t.state === 'blocked') && <span className="sb-st">{t.state === 'active' ? 'À vous' : 'Bloquée'}</span>}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 /** Secours DOM : même hiérarchie (signature, catégorie en titre, mur, pupitres), sans 3D. Couleurs : variables du thème. */
@@ -86,7 +118,8 @@ export function DomStudio({ state, reducedMotion }: { state: StudioState; reduce
         <DomBoard cells={state.board.cells} accent={state.accent} reducedMotion={reducedMotion} />
         {state.gauge && <DomCountdown gauge={state.gauge} clockOffsetMs={state.clockOffsetMs} />}
       </div>
-      {state.showTeams && (
+      {state.showTeams && state.compactScores && <ScoreBoard teams={state.teams} />}
+      {state.showTeams && !state.compactScores && (
         <div className="dom-lecterns" style={{ gridTemplateColumns: `repeat(${state.teams.length > 6 ? Math.ceil(state.teams.length / 2) : state.teams.length}, minmax(0, 1fr))` }}>
           {state.teams.map((t, i) => (
             <div key={t.id} className={`dom-lectern ${t.state}`} style={{ ['--team' as string]: t.color } as React.CSSProperties}>

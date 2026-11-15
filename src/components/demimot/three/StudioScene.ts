@@ -45,6 +45,8 @@ export interface StudioState {
   celebrateKey: string | null
   /** Masque les pupitres (podium, accueil plein écran). */
   showTeams: boolean
+  /** Plus de 10 équipes : pas de pupitres 3D, un tableau des scores compact (DOM) les remplace. */
+  compactScores?: boolean
   /** Couleur du plateau (shared/themes.ts). Changée à chaud : aucun état de jeu n'est reconstruit. */
   theme: ThemeId
 }
@@ -643,7 +645,7 @@ export class StudioScene {
 
   // ---------------------------------------------------------------- pupitres
   private updateLecterns(st: StudioState) {
-    const n = st.showTeams ? st.teams.length : 0
+    const n = st.showTeams && !st.compactScores ? st.teams.length : 0
     const layoutKey = `${n}`
     if (layoutKey !== this.lecternLayout) this.buildLecterns(n)
     st.teams.slice(0, n).forEach((t, i) => {

@@ -16,7 +16,8 @@ import { apply, restoreSafe } from '@/lib/demimot/engine'
 import { drawPuzzles } from '@/lib/demimot/library'
 import { DemiMotActionError, act, getDemiMotAdmin, launchGame, regieSnapshot, requireSessionOwner } from '@/lib/demimot/server'
 import { parseAdminRequest, type RegieCommand } from '@/lib/demimot/validation'
-import { TEAM_PALETTE } from '@/lib/demimot/view'
+import { DEMIMOT_DEFAULT_TEAM_COUNT } from '@/lib/demimot/constants'
+import { defaultTeams } from '@/lib/demimot/view'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
@@ -83,9 +84,9 @@ export async function POST(request: Request) {
         const { data: session, error } = await admin.from('sessions').select('code').eq('id', sessionId).maybeSingle()
         if (error || !session) throw new Error(error?.message ?? 'session introuvable')
         await launchGame(admin, sessionId, session.code as string)
-        // Quatre équipes prêtes d'emblée (renommables en Préparation) : les capitaines peuvent rejoindre aussitôt.
+        // DEMIMOT_DEFAULT_TEAM_COUNT équipes prêtes d'emblée (nombre, noms et couleurs réglables en Préparation) : les capitaines peuvent rejoindre aussitôt.
         await act(admin, sessionId, (s, now) =>
-          apply(s, { type: 'setTeams', teams: TEAM_PALETTE.slice(0, 4).map((t) => ({ id: randomUUID(), name: t.name, color: t.color })) }, now),
+          apply(s, { type: 'setTeams', teams: defaultTeams(DEMIMOT_DEFAULT_TEAM_COUNT).map((t) => ({ id: randomUUID(), name: t.name, color: t.color })) }, now),
         )
         const { publicState, regie } = await regieSnapshot(admin, sessionId)
         return NextResponse.json({ ok: true, state: publicState, regie }, { headers: NO_STORE })

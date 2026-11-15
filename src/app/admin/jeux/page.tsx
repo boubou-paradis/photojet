@@ -107,7 +107,7 @@ const games = [
   {
     id: 'demimot',
     name: 'À Demi-Mot',
-    image: '/images/games/a-demi-mot.png',
+    image: '/images/games/a-demi-mot-v2.png',
     description: 'Quelques lettres, à vous de trouver : les équipes buzzent pour deviner l’expression',
     path: '/admin/jeux/demimot',
     // Ouvert à tous les abonnés (15/11/2026).

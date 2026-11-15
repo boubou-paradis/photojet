@@ -35,3 +35,8 @@ export const DEMIMOT_LIBRARY_LIMITS = {
 export function demimotTopic(sessionId: string): string {
   return `demimot:${sessionId}`
 }
+
+/** Équipes créées d'office au lancement (réglable ensuite en Préparation, de 2 à 20). */
+export const DEMIMOT_DEFAULT_TEAM_COUNT = 4
+/** Au-delà de ce nombre d'équipes, l'écran remplace les pupitres par un tableau des scores compact. */
+export const DEMIMOT_LECTERN_MAX = 10

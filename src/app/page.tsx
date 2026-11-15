@@ -87,7 +87,7 @@ const animations = [
   },
   {
     name: 'À Demi-Mot',
-    img: '/images/games/a-demi-mot.png',
+    img: '/images/games/a-demi-mot-v2.png',
     href: '/jeu-a-demi-mot',
     desc: 'Une expression se dévoile lettre par lettre sur l\'écran géant : la première équipe qui buzze tente de la deviner.',
   },

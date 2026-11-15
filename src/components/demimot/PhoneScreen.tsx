@@ -10,6 +10,8 @@ import type { PhoneStatus, PublicTeam } from '@/lib/demimot/view'
 export interface PhoneScreenProps {
   status: PhoneStatus
   team: PublicTeam | null
+  /** Numéro de l'équipe (même numéro qu'à l'écran) ; absent = simple pastille de couleur. */
+  teamNumber?: number
   teams?: PublicTeam[]
   takenTeamIds?: string[]
   otherTeamName?: string
@@ -33,14 +35,22 @@ export function PhoneScreen(p: PhoneScreenProps) {
         <p style={{ color: 'var(--muted)', fontSize: 15, textAlign: 'center', margin: '10px 0 16px' }}>
           Vous êtes le <b style={{ color: 'var(--white)' }}>capitaine</b> : choisissez votre équipe. Vos coéquipiers jouent à l’oral, autour de la table.
         </p>
-        <div className="team-pick">
-          {(p.teams ?? []).map((t) => {
+        {/* Plus de 6 équipes : grille de 2 colonnes (20 équipes = 10 rangées). Équipe prise : grisée, barrée, badge « Prise ». */}
+        <div className={`team-pick${(p.teams?.length ?? 0) > 6 ? ' grid' : ''}`}>
+          {(p.teams ?? []).map((t, i) => {
             const taken = p.takenTeamIds?.includes(t.id) ?? false
             return (
-              <button key={t.id} disabled={taken} onClick={() => p.onPickTeam?.(t.id)} style={{ ['--team' as string]: t.color } as React.CSSProperties}>
-                <span className="sw" />
-                {t.name}
-                <em>{taken ? 'déjà prise' : 'libre'}</em>
+              <button
+                key={t.id}
+                className={taken ? 'taken' : undefined}
+                disabled={taken}
+                onClick={() => p.onPickTeam?.(t.id)}
+                aria-label={`Équipe ${i + 1}, ${t.name}${taken ? ', déjà prise' : ''}`}
+                style={{ ['--team' as string]: t.color } as React.CSSProperties}
+              >
+                <span className="num">{i + 1}</span>
+                <span className="nm">{t.name}</span>
+                <em>{taken ? 'Prise' : 'Libre'}</em>
               </button>
             )
           })}
@@ -53,7 +63,7 @@ export function PhoneScreen(p: PhoneScreenProps) {
   return (
     <div className="phone" style={style} data-testid="phone" data-status={p.status}>
       <div className="phone-head">
-        <span className="sw" />
+        {p.teamNumber ? <span className="sw num">{p.teamNumber}</span> : <span className="sw" />}
         <div style={{ minWidth: 0 }}>
           <div className="nm">{team.name}</div>
           <div className="sub">
