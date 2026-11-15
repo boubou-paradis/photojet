@@ -7,7 +7,7 @@ function parseJsonArray<T = unknown>(raw: unknown): T[] {
   return []
 }
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -172,17 +172,69 @@ interface LiveState {
   messages: LiveMessage[]
 }
 
-function MessageDisplay({ message }: { message: LiveMessage }) {
-  const content = message.content
-  const length = content.length
+// Bulle de message : le texte prend la plus grande taille qui tient entière dans
+// l'espace libre (recherche par dichotomie sur la taille réelle rendue).
+// Marges latérales réservées au QR (bas droite) et au logo (coin gauche), des
+// deux côtés pour rester centré : la bulle ne peut pas les chevaucher.
+const MESSAGE_EDGE = 24 // marge haut/bas de l'écran (px)
+const MESSAGE_TAIL = 24 // pointe de la bulle sous le cadre (px)
+const MESSAGE_MIN_PX = 16
+const MESSAGE_MAX_SCREEN_RATIO = 0.2 // un message très court : 20 % de la hauteur au plus
 
-  // Calculate font size based on message length
-  const getFontSize = () => {
-    if (length < 50) return '2.5rem'
-    if (length < 100) return '2rem'
-    if (length < 150) return '1.5rem'
-    return '1.25rem'
-  }
+// Prénom : suit l'agrandissement, toujours plus petit que le message.
+function authorPx(messagePx: number) {
+  return Math.min(messagePx * 0.75, Math.max(40, messagePx * 0.45))
+}
+
+// Marge haut/bas : l'étiquette « Version d'essai » (coin haut gauche, au-dessus
+// de tout) mesure clamp(13px, 1.4vw, 26px) × 1.3 + 22 px ; on la laisse libre.
+function messageEdge(trial: boolean) {
+  if (!trial) return MESSAGE_EDGE
+  const labelFont = Math.min(26, Math.max(13, window.innerWidth * 0.014))
+  return Math.max(MESSAGE_EDGE, labelFont * 1.3 + 32)
+}
+
+function MessageDisplay({ message, sideReserve, trial }: { message: LiveMessage; sideReserve: number; trial: boolean }) {
+  const content = message.content
+  const bubbleRef = useRef<HTMLDivElement>(null)
+  const [fontPx, setFontPx] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = bubbleRef.current
+      if (!el) return
+      const availH = window.innerHeight - 2 * messageEdge(trial) - MESSAGE_TAIL
+      const apply = (px: number) => {
+        el.style.setProperty('--msg-px', `${px}px`)
+        el.style.setProperty('--author-px', `${authorPx(px)}px`)
+      }
+      const fits = () => el.offsetHeight <= availH && el.scrollWidth <= el.clientWidth + 1
+      let lo = MESSAGE_MIN_PX
+      let hi = Math.max(lo, Math.round(window.innerHeight * MESSAGE_MAX_SCREEN_RATIO))
+      apply(hi)
+      if (fits()) {
+        lo = hi
+      } else {
+        for (let i = 0; i < 16 && hi - lo > 0.5; i++) {
+          const mid = (lo + hi) / 2
+          apply(mid)
+          if (fits()) lo = mid
+          else hi = mid
+        }
+      }
+      const px = Math.floor(lo)
+      apply(px)
+      setFontPx(px)
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    document.addEventListener('fullscreenchange', fit)
+    document.fonts?.ready.then(fit).catch(() => {})
+    return () => {
+      window.removeEventListener('resize', fit)
+      document.removeEventListener('fullscreenchange', fit)
+    }
+  }, [content, message.author_name, sideReserve, trial])
 
   return (
     <motion.div
@@ -191,34 +243,45 @@ function MessageDisplay({ message }: { message: LiveMessage }) {
       exit={{ opacity: 0, y: -30, scale: 0.95 }}
       transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
       className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ paddingBottom: MESSAGE_TAIL }}
     >
-      <div className="relative max-w-2xl mx-4">
+      <div className="relative" style={{ maxWidth: `calc(100vw - ${2 * sideReserve}px)` }}>
         {/* SMS Bubble */}
         <motion.div
+          ref={bubbleRef}
+          data-live-message
+          data-font-px={fontPx ?? undefined}
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1, duration: 0.4, type: 'spring', stiffness: 200 }}
-          className="bg-[#242428] border-2 border-[#D4AF37] rounded-3xl p-8 shadow-2xl"
-          style={{ boxShadow: '0 0 40px rgba(212, 175, 55, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+          className="bg-[#242428] border-2 border-[#D4AF37] rounded-3xl shadow-2xl"
+          style={{
+            boxShadow: '0 0 40px rgba(212, 175, 55, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            padding: 'calc(var(--msg-px, 40px) * 0.45 + 12px) calc(var(--msg-px, 40px) * 0.6 + 16px)',
+            visibility: fontPx === null ? 'hidden' : undefined,
+          }}
         >
           {/* Opening quote */}
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.3 }}
-            className="text-[#D4AF37] text-5xl mb-4 text-center font-serif"
+            className="text-[#D4AF37] text-center font-serif"
+            style={{ fontSize: 'min(calc(var(--msg-px, 40px) * 1.1), 140px)', lineHeight: 0.8 }}
           >
             &ldquo;
           </motion.div>
 
-          {/* Message content */}
+          {/* Message content : coupure entre les mots, un mot trop long passe à la ligne */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="text-white text-center font-medium leading-relaxed"
+            className="text-white text-center font-medium"
             style={{
-              fontSize: getFontSize(),
+              fontSize: 'var(--msg-px, 40px)',
+              lineHeight: 1.22,
+              overflowWrap: 'anywhere',
               textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}
           >
@@ -230,7 +293,8 @@ function MessageDisplay({ message }: { message: LiveMessage }) {
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.3 }}
-            className="text-[#D4AF37] text-5xl mt-4 text-center font-serif"
+            className="text-[#D4AF37] text-center font-serif"
+            style={{ fontSize: 'min(calc(var(--msg-px, 40px) * 1.1), 140px)', lineHeight: 0.8, marginTop: '0.25em' }}
           >
             &rdquo;
           </motion.div>
@@ -241,7 +305,8 @@ function MessageDisplay({ message }: { message: LiveMessage }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.4 }}
-              className="text-[#D4AF37] text-xl italic text-center mt-6 font-medium"
+              className="text-[#D4AF37] italic text-center font-medium"
+              style={{ fontSize: 'var(--author-px, 20px)', lineHeight: 1.2, marginTop: '0.35em', overflowWrap: 'anywhere' }}
             >
               — {message.author_name}
             </motion.p>
@@ -929,6 +994,11 @@ export default function LivePage() {
   const showingPromo = promoImage !== undefined
   const promoFullScreen = showingPromo && currentItem?.type === 'promo' && promoPleinEcran.has(currentItem.data.path)
   const promoSideMargin = session?.show_qr_on_screen ? qrSizes.corner + 62 : 24
+  // Messages : largeur des coins (QR à droite : 16 + cadre 30 + QR ; logo à
+  // gauche : 16 + cadre 18 + logo) + 24 px d'écart, réservée des deux côtés.
+  const qrCornerWidth = session?.show_qr_on_screen ? qrSizes.corner + 46 : 0
+  const logoCornerWidth = showLogo ? logoSizeValues.width + 34 : 0
+  const messageSideReserve = Math.max(qrCornerWidth, logoCornerWidth) + 24
   // Diaporama : le logo reste dans un coin. « Centre » passerait sur les
   // visages des photos, il s'affiche donc en haut à gauche.
   const slideshowLogoPosition: 'top-left' | 'bottom-left' = logoPosition === 'bottom-left' ? 'bottom-left' : 'top-left'
@@ -1436,7 +1506,7 @@ export default function LivePage() {
           {/* Photo/Message/Affiche slideshow */}
           <AnimatePresence mode="wait">
             {currentItem?.type === 'message' ? (
-              <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} />
+              <MessageDisplay key={`msg-${currentIndex}-${currentItem.data.id}`} message={currentItem.data} sideReserve={messageSideReserve} trial={trialWatermark} />
             ) : currentItem?.type === 'promo' && promoImage && promoFullScreen ? (
               // Plein écran : bord à bord, sans cadre ni marge, rogné si besoin.
               // Le QR (z-30) reste au-dessus. Même transition de session ;
