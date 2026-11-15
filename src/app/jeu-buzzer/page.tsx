@@ -58,6 +58,7 @@ const content: AnimationDetailContent = {
     { label: 'Photo Mystère', href: '/photo-mystere' },
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaVote', href: '/jeu-vote' },
+    { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }

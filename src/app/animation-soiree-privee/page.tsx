@@ -56,6 +56,7 @@ const content: AnimationDetailContent = {
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'AnimaVote', href: '/jeu-vote' },
+    { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
     { label: 'Anniversaire', href: '/animation-anniversaire' },
     { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
     { label: 'Toutes les fonctionnalités', href: '/fonctionnalites' },

@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 tmpclaude-*
+
+# supabase CLI (fichiers locaux de liaison au projet)
+supabase/.temp/

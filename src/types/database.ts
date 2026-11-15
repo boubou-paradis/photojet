@@ -210,6 +210,9 @@ export interface Session {
   // AnimaVote (identifiant technique vote) : seul drapeau public. Choix,
   // bulletins et état vivent dans les tables vote_* (serveur uniquement).
   vote_active?: boolean
+  // À Demi-Mot (identifiant technique demimot) : seul drapeau public. Équipes,
+  // buzz et état vivent dans les tables demimot_* (serveur uniquement).
+  demimot_active?: boolean
 }
 
 // Mystery Photo types

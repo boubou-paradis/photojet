@@ -1,0 +1,1333 @@
+{
+ "format": "a-demi-mot/enigmes",
+ "version": 1,
+ "exportedAt": "2026-11-13T00:00:00.000Z",
+ "sets": [
+  {
+   "id": "expressions",
+   "name": "Expressions françaises",
+   "puzzleIds": [
+    "avoir-un-coeur-dartichaut",
+    "poser-un-lapin",
+    "tomber-dans-les-pommes",
+    "mettre-son-grain-de-sel",
+    "avoir-la-tete-dans-les-nuages",
+    "couper-la-poire-en-deux",
+    "etre-aux-anges",
+    "avoir-du-pain-sur-la-planche",
+    "raconter-des-salades",
+    "se-tourner-les-pouces",
+    "donner-sa-langue-au-chat",
+    "mettre-les-pieds-dans-le-plat",
+    "avoir-un-poil-dans-la-main",
+    "casser-les-pieds",
+    "prendre-ses-jambes-a-son-cou",
+    "etre-dans-de-beaux-draps",
+    "faire-la-grasse-matinee",
+    "tirer-les-vers-du-nez",
+    "avoir-le-cafard",
+    "mettre-la-main-a-la-pate",
+    "passer-du-coq-a-lane",
+    "se-mettre-sur-son-trente-et-un",
+    "chercher-midi-a-quatorze-heures",
+    "avoir-les-yeux-plus-gros-que-le-ventre",
+    "faire-chou-blanc"
+   ]
+  },
+  {
+   "id": "proverbes",
+   "name": "Proverbes",
+   "puzzleIds": [
+    "qui-va-a-la-chasse-perd-sa-place",
+    "petit-a-petit-loiseau-fait-son-nid",
+    "apres-la-pluie-le-beau-temps",
+    "il-ne-faut-pas-vendre-la-peau-de-lours",
+    "lhabit-ne-fait-pas-le-moine",
+    "qui-se-ressemble-sassemble",
+    "la-nuit-porte-conseil",
+    "les-murs-ont-des-oreilles",
+    "rien-ne-sert-de-courir-il-faut-partir-a-point",
+    "pierre-qui-roule-namasse-pas-mousse",
+    "tel-pere-tel-fils",
+    "chat-echaude-craint-leau-froide"
+   ]
+  },
+  {
+   "id": "bar-resto",
+   "name": "Bar et restaurant",
+   "puzzleIds": [
+    "un-demi-bien-frais-sil-vous-plait",
+    "la-tournee-du-patron",
+    "les-cacahuetes-sont-offertes",
+    "on-trinque-a-la-sante-des-maries",
+    "le-dernier-verre-avant-la-fermeture",
+    "une-planche-de-charcuterie-a-partager",
+    "le-serveur-a-renverse-le-plateau",
+    "deux-cafes-et-laddition",
+    "happy-hour-jusqua-vingt-heures",
+    "un-diabolo-menthe-pour-la-petite",
+    "le-juke-box-joue-encore-la-meme-chanson",
+    "qui-veut-une-partie-de-flechettes",
+    "le-plat-du-jour-est-une-blanquette",
+    "une-creme-brulee-pour-le-dessert",
+    "saignant-ou-a-point",
+    "le-fromage-avant-le-dessert",
+    "une-carafe-deau-sil-vous-plait",
+    "les-frites-maison-sont-croustillantes",
+    "le-chef-recommande-le-magret-de-canard",
+    "une-tarte-tatin-et-sa-boule-de-glace",
+    "le-pain-est-encore-tout-chaud",
+    "une-soupe-a-loignon-gratinee",
+    "un-oeuf-mayonnaise-en-entree",
+    "la-mousse-au-chocolat-de-grand-mere"
+   ]
+  },
+  {
+   "id": "classique",
+   "name": "Classique",
+   "puzzleIds": [
+    "bronzer-sous-un-parasol",
+    "construire-un-chateau-de-sable",
+    "oublier-la-creme-solaire",
+    "le-camping-est-complet",
+    "une-glace-a-deux-boules",
+    "partir-a-laventure-sans-boussole",
+    "la-valise-ne-ferme-plus",
+    "un-coucher-de-soleil-sur-la-plage",
+    "envoyer-une-carte-postale",
+    "les-bouchons-sur-lautoroute-du-soleil",
+    "souffler-les-bougies-du-gateau",
+    "la-piste-de-danse-est-ouverte",
+    "lancer-le-bouquet-de-la-mariee",
+    "un-karaoke-jusquau-bout-de-la-nuit",
+    "les-confettis-tombent-du-plafond",
+    "le-dj-passe-un-vieux-tube",
+    "une-chenille-autour-des-tables",
+    "les-invites-arrivent-en-avance",
+    "un-feu-dartifice-au-dessus-du-lac",
+    "le-photographe-prend-la-pose",
+    "chercher-ses-cles-partout",
+    "le-reveil-na-pas-sonne",
+    "rater-le-bus-de-deux-minutes",
+    "oublier-son-parapluie",
+    "faire-la-vaisselle-a-la-main",
+    "arroser-les-plantes-du-voisin",
+    "le-chat-dort-sur-le-clavier",
+    "une-chaussette-a-disparu-dans-la-machine",
+    "promener-le-chien-sous-la-pluie",
+    "recharger-son-telephone-a-dix-pour-cent",
+    "un-but-a-la-derniere-minute",
+    "le-maillot-jaune-passe-la-ligne",
+    "un-service-gagnant-sur-terre-battue",
+    "les-supporters-chantent-dans-les-tribunes",
+    "un-plongeon-parfait-dans-la-piscine",
+    "courir-un-marathon-sous-la-chaleur",
+    "larbitre-siffle-la-fin-du-match",
+    "un-essai-transforme-au-rugby",
+    "une-partie-de-petanque-entre-amis",
+    "le-gardien-arrete-le-penalty",
+    "le-boulanger-se-leve-avant-laube",
+    "la-pharmacienne-prepare-lordonnance",
+    "le-facteur-passe-en-fin-de-matinee",
+    "un-pompier-sauve-le-chat-du-toit",
+    "la-fleuriste-compose-un-bouquet",
+    "le-pecheur-rentre-au-port",
+    "une-maitresse-corrige-les-cahiers",
+    "le-jardinier-taille-les-rosiers",
+    "un-ecureuil-cache-ses-noisettes",
+    "les-hirondelles-annoncent-le-printemps",
+    "une-vache-regarde-passer-le-train",
+    "le-hibou-veille-toute-la-nuit",
+    "un-arc-en-ciel-apres-lorage",
+    "les-feuilles-mortes-tombent-en-automne",
+    "un-herisson-traverse-le-jardin",
+    "la-maree-monte-tres-vite",
+    "accorder-sa-guitare-avant-le-concert",
+    "un-solo-de-batterie-endiable",
+    "chanter-faux-sous-la-douche",
+    "la-fanfare-defile-dans-la-rue",
+    "un-piano-a-queue-dans-le-salon",
+    "le-public-reclame-un-rappel"
+   ]
+  },
+  {
+   "id": "demo",
+   "name": "Démonstration (cas difficiles)",
+   "puzzleIds": [
+    "demo-le-boeuf-bourguignon-mijote-a-letouffee",
+    "demo-quest-ce-quon-mange-ce-soir",
+    "demo-un-arc-en-ciel-au-dessus-de-saint-malo",
+    "demo-il-etait-une-fois-une-princesse-qui-dete",
+    "demo-un-oeil-sur-le-coeur-de-loeuvre",
+    "demo-attention-chaud-devant"
+   ]
+  }
+ ],
+ "puzzles": [
+  {
+   "id": "avoir-un-coeur-dartichaut",
+   "category": "Expressions",
+   "solution": "Avoir un cœur d’artichaut",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "poser-un-lapin",
+   "category": "Expressions",
+   "solution": "Poser un lapin",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "tomber-dans-les-pommes",
+   "category": "Expressions",
+   "solution": "Tomber dans les pommes",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "mettre-son-grain-de-sel",
+   "category": "Expressions",
+   "solution": "Mettre son grain de sel",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "avoir-la-tete-dans-les-nuages",
+   "category": "Expressions",
+   "solution": "Avoir la tête dans les nuages",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "couper-la-poire-en-deux",
+   "category": "Expressions",
+   "solution": "Couper la poire en deux",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "etre-aux-anges",
+   "category": "Expressions",
+   "solution": "Être aux anges",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "avoir-du-pain-sur-la-planche",
+   "category": "Expressions",
+   "solution": "Avoir du pain sur la planche",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "raconter-des-salades",
+   "category": "Expressions",
+   "solution": "Raconter des salades",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "se-tourner-les-pouces",
+   "category": "Expressions",
+   "solution": "Se tourner les pouces",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "donner-sa-langue-au-chat",
+   "category": "Expressions",
+   "solution": "Donner sa langue au chat",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "mettre-les-pieds-dans-le-plat",
+   "category": "Expressions",
+   "solution": "Mettre les pieds dans le plat",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "avoir-un-poil-dans-la-main",
+   "category": "Expressions",
+   "solution": "Avoir un poil dans la main",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "casser-les-pieds",
+   "category": "Expressions",
+   "solution": "Casser les pieds",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "prendre-ses-jambes-a-son-cou",
+   "category": "Expressions",
+   "solution": "Prendre ses jambes à son cou",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "etre-dans-de-beaux-draps",
+   "category": "Expressions",
+   "solution": "Être dans de beaux draps",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "faire-la-grasse-matinee",
+   "category": "Expressions",
+   "solution": "Faire la grasse matinée",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "tirer-les-vers-du-nez",
+   "category": "Expressions",
+   "solution": "Tirer les vers du nez",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "avoir-le-cafard",
+   "category": "Expressions",
+   "solution": "Avoir le cafard",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "mettre-la-main-a-la-pate",
+   "category": "Expressions",
+   "solution": "Mettre la main à la pâte",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "passer-du-coq-a-lane",
+   "category": "Expressions",
+   "solution": "Passer du coq à l’âne",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "se-mettre-sur-son-trente-et-un",
+   "category": "Expressions",
+   "solution": "Se mettre sur son trente et un",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "chercher-midi-a-quatorze-heures",
+   "category": "Expressions",
+   "solution": "Chercher midi à quatorze heures",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "avoir-les-yeux-plus-gros-que-le-ventre",
+   "category": "Expressions",
+   "solution": "Avoir les yeux plus gros que le ventre",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "faire-chou-blanc",
+   "category": "Expressions",
+   "solution": "Faire chou blanc",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "qui-va-a-la-chasse-perd-sa-place",
+   "category": "Proverbes",
+   "solution": "Qui va à la chasse perd sa place",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "petit-a-petit-loiseau-fait-son-nid",
+   "category": "Proverbes",
+   "solution": "Petit à petit, l’oiseau fait son nid",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "apres-la-pluie-le-beau-temps",
+   "category": "Proverbes",
+   "solution": "Après la pluie, le beau temps",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "il-ne-faut-pas-vendre-la-peau-de-lours",
+   "category": "Proverbes",
+   "solution": "Il ne faut pas vendre la peau de l’ours",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "lhabit-ne-fait-pas-le-moine",
+   "category": "Proverbes",
+   "solution": "L’habit ne fait pas le moine",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "qui-se-ressemble-sassemble",
+   "category": "Proverbes",
+   "solution": "Qui se ressemble s’assemble",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-nuit-porte-conseil",
+   "category": "Proverbes",
+   "solution": "La nuit porte conseil",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-murs-ont-des-oreilles",
+   "category": "Proverbes",
+   "solution": "Les murs ont des oreilles",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "rien-ne-sert-de-courir-il-faut-partir-a-point",
+   "category": "Proverbes",
+   "solution": "Rien ne sert de courir, il faut partir à point",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "pierre-qui-roule-namasse-pas-mousse",
+   "category": "Proverbes",
+   "solution": "Pierre qui roule n’amasse pas mousse",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "tel-pere-tel-fils",
+   "category": "Proverbes",
+   "solution": "Tel père, tel fils",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "chat-echaude-craint-leau-froide",
+   "category": "Proverbes",
+   "solution": "Chat échaudé craint l’eau froide",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-demi-bien-frais-sil-vous-plait",
+   "category": "Au comptoir",
+   "solution": "Un demi bien frais, s’il vous plaît",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-tournee-du-patron",
+   "category": "Au comptoir",
+   "solution": "La tournée du patron",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-cacahuetes-sont-offertes",
+   "category": "Au comptoir",
+   "solution": "Les cacahuètes sont offertes",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "on-trinque-a-la-sante-des-maries",
+   "category": "Au comptoir",
+   "solution": "On trinque à la santé des mariés",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-dernier-verre-avant-la-fermeture",
+   "category": "Au comptoir",
+   "solution": "Le dernier verre avant la fermeture",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-planche-de-charcuterie-a-partager",
+   "category": "Au comptoir",
+   "solution": "Une planche de charcuterie à partager",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-serveur-a-renverse-le-plateau",
+   "category": "Au comptoir",
+   "solution": "Le serveur a renversé le plateau",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "deux-cafes-et-laddition",
+   "category": "Au comptoir",
+   "solution": "Deux cafés et l’addition",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "happy-hour-jusqua-vingt-heures",
+   "category": "Au comptoir",
+   "solution": "Happy hour jusqu’à vingt heures",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-diabolo-menthe-pour-la-petite",
+   "category": "Au comptoir",
+   "solution": "Un diabolo menthe pour la petite",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-juke-box-joue-encore-la-meme-chanson",
+   "category": "Au comptoir",
+   "solution": "Le juke-box joue encore la même chanson",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "qui-veut-une-partie-de-flechettes",
+   "category": "Au comptoir",
+   "solution": "Qui veut une partie de fléchettes ?",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-plat-du-jour-est-une-blanquette",
+   "category": "À table",
+   "solution": "Le plat du jour est une blanquette",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-creme-brulee-pour-le-dessert",
+   "category": "À table",
+   "solution": "Une crème brûlée pour le dessert",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "saignant-ou-a-point",
+   "category": "À table",
+   "solution": "Saignant ou à point ?",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-fromage-avant-le-dessert",
+   "category": "À table",
+   "solution": "Le fromage avant le dessert",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-carafe-deau-sil-vous-plait",
+   "category": "À table",
+   "solution": "Une carafe d’eau, s’il vous plaît",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-frites-maison-sont-croustillantes",
+   "category": "À table",
+   "solution": "Les frites maison sont croustillantes",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-chef-recommande-le-magret-de-canard",
+   "category": "À table",
+   "solution": "Le chef recommande le magret de canard",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-tarte-tatin-et-sa-boule-de-glace",
+   "category": "À table",
+   "solution": "Une tarte Tatin et sa boule de glace",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-pain-est-encore-tout-chaud",
+   "category": "À table",
+   "solution": "Le pain est encore tout chaud",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-soupe-a-loignon-gratinee",
+   "category": "À table",
+   "solution": "Une soupe à l’oignon gratinée",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-oeuf-mayonnaise-en-entree",
+   "category": "À table",
+   "solution": "Un œuf mayonnaise en entrée",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-mousse-au-chocolat-de-grand-mere",
+   "category": "À table",
+   "solution": "La mousse au chocolat de grand-mère",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "bronzer-sous-un-parasol",
+   "category": "En vacances",
+   "solution": "Bronzer sous un parasol",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "construire-un-chateau-de-sable",
+   "category": "En vacances",
+   "solution": "Construire un château de sable",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "oublier-la-creme-solaire",
+   "category": "En vacances",
+   "solution": "Oublier la crème solaire",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-camping-est-complet",
+   "category": "En vacances",
+   "solution": "Le camping est complet",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-glace-a-deux-boules",
+   "category": "En vacances",
+   "solution": "Une glace à deux boules",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "partir-a-laventure-sans-boussole",
+   "category": "En vacances",
+   "solution": "Partir à l’aventure sans boussole",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-valise-ne-ferme-plus",
+   "category": "En vacances",
+   "solution": "La valise ne ferme plus",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-coucher-de-soleil-sur-la-plage",
+   "category": "En vacances",
+   "solution": "Un coucher de soleil sur la plage",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "envoyer-une-carte-postale",
+   "category": "En vacances",
+   "solution": "Envoyer une carte postale",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-bouchons-sur-lautoroute-du-soleil",
+   "category": "En vacances",
+   "solution": "Les bouchons sur l’autoroute du soleil",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "souffler-les-bougies-du-gateau",
+   "category": "Fête et soirée",
+   "solution": "Souffler les bougies du gâteau",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-piste-de-danse-est-ouverte",
+   "category": "Fête et soirée",
+   "solution": "La piste de danse est ouverte",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "lancer-le-bouquet-de-la-mariee",
+   "category": "Fête et soirée",
+   "solution": "Lancer le bouquet de la mariée",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-karaoke-jusquau-bout-de-la-nuit",
+   "category": "Fête et soirée",
+   "solution": "Un karaoké jusqu’au bout de la nuit",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-confettis-tombent-du-plafond",
+   "category": "Fête et soirée",
+   "solution": "Les confettis tombent du plafond",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-dj-passe-un-vieux-tube",
+   "category": "Fête et soirée",
+   "solution": "Le DJ passe un vieux tube",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-chenille-autour-des-tables",
+   "category": "Fête et soirée",
+   "solution": "Une chenille autour des tables",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-invites-arrivent-en-avance",
+   "category": "Fête et soirée",
+   "solution": "Les invités arrivent en avance",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-feu-dartifice-au-dessus-du-lac",
+   "category": "Fête et soirée",
+   "solution": "Un feu d’artifice au-dessus du lac",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-photographe-prend-la-pose",
+   "category": "Fête et soirée",
+   "solution": "Le photographe prend la pose",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "chercher-ses-cles-partout",
+   "category": "Au quotidien",
+   "solution": "Chercher ses clés partout",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-reveil-na-pas-sonne",
+   "category": "Au quotidien",
+   "solution": "Le réveil n’a pas sonné",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "rater-le-bus-de-deux-minutes",
+   "category": "Au quotidien",
+   "solution": "Rater le bus de deux minutes",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "oublier-son-parapluie",
+   "category": "Au quotidien",
+   "solution": "Oublier son parapluie",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "faire-la-vaisselle-a-la-main",
+   "category": "Au quotidien",
+   "solution": "Faire la vaisselle à la main",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "arroser-les-plantes-du-voisin",
+   "category": "Au quotidien",
+   "solution": "Arroser les plantes du voisin",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-chat-dort-sur-le-clavier",
+   "category": "Au quotidien",
+   "solution": "Le chat dort sur le clavier",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-chaussette-a-disparu-dans-la-machine",
+   "category": "Au quotidien",
+   "solution": "Une chaussette a disparu dans la machine",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "promener-le-chien-sous-la-pluie",
+   "category": "Au quotidien",
+   "solution": "Promener le chien sous la pluie",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "recharger-son-telephone-a-dix-pour-cent",
+   "category": "Au quotidien",
+   "solution": "Recharger son téléphone à dix pour cent",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-but-a-la-derniere-minute",
+   "category": "Sport",
+   "solution": "Un but à la dernière minute",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-maillot-jaune-passe-la-ligne",
+   "category": "Sport",
+   "solution": "Le maillot jaune passe la ligne",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-service-gagnant-sur-terre-battue",
+   "category": "Sport",
+   "solution": "Un service gagnant sur terre battue",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-supporters-chantent-dans-les-tribunes",
+   "category": "Sport",
+   "solution": "Les supporters chantent dans les tribunes",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-plongeon-parfait-dans-la-piscine",
+   "category": "Sport",
+   "solution": "Un plongeon parfait dans la piscine",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "courir-un-marathon-sous-la-chaleur",
+   "category": "Sport",
+   "solution": "Courir un marathon sous la chaleur",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "larbitre-siffle-la-fin-du-match",
+   "category": "Sport",
+   "solution": "L’arbitre siffle la fin du match",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-essai-transforme-au-rugby",
+   "category": "Sport",
+   "solution": "Un essai transformé au rugby",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-partie-de-petanque-entre-amis",
+   "category": "Sport",
+   "solution": "Une partie de pétanque entre amis",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-gardien-arrete-le-penalty",
+   "category": "Sport",
+   "solution": "Le gardien arrête le penalty",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-boulanger-se-leve-avant-laube",
+   "category": "Métiers",
+   "solution": "Le boulanger se lève avant l’aube",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-pharmacienne-prepare-lordonnance",
+   "category": "Métiers",
+   "solution": "La pharmacienne prépare l’ordonnance",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-facteur-passe-en-fin-de-matinee",
+   "category": "Métiers",
+   "solution": "Le facteur passe en fin de matinée",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-pompier-sauve-le-chat-du-toit",
+   "category": "Métiers",
+   "solution": "Un pompier sauve le chat du toit",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-fleuriste-compose-un-bouquet",
+   "category": "Métiers",
+   "solution": "La fleuriste compose un bouquet",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-pecheur-rentre-au-port",
+   "category": "Métiers",
+   "solution": "Le pêcheur rentre au port",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-maitresse-corrige-les-cahiers",
+   "category": "Métiers",
+   "solution": "Une maîtresse corrige les cahiers",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-jardinier-taille-les-rosiers",
+   "category": "Métiers",
+   "solution": "Le jardinier taille les rosiers",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-ecureuil-cache-ses-noisettes",
+   "category": "Nature et animaux",
+   "solution": "Un écureuil cache ses noisettes",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-hirondelles-annoncent-le-printemps",
+   "category": "Nature et animaux",
+   "solution": "Les hirondelles annoncent le printemps",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "une-vache-regarde-passer-le-train",
+   "category": "Nature et animaux",
+   "solution": "Une vache regarde passer le train",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-hibou-veille-toute-la-nuit",
+   "category": "Nature et animaux",
+   "solution": "Le hibou veille toute la nuit",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-arc-en-ciel-apres-lorage",
+   "category": "Nature et animaux",
+   "solution": "Un arc-en-ciel après l’orage",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "les-feuilles-mortes-tombent-en-automne",
+   "category": "Nature et animaux",
+   "solution": "Les feuilles mortes tombent en automne",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-herisson-traverse-le-jardin",
+   "category": "Nature et animaux",
+   "solution": "Un hérisson traverse le jardin",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-maree-monte-tres-vite",
+   "category": "Nature et animaux",
+   "solution": "La marée monte très vite",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "accorder-sa-guitare-avant-le-concert",
+   "category": "Musique",
+   "solution": "Accorder sa guitare avant le concert",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-solo-de-batterie-endiable",
+   "category": "Musique",
+   "solution": "Un solo de batterie endiablé",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "chanter-faux-sous-la-douche",
+   "category": "Musique",
+   "solution": "Chanter faux sous la douche",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "la-fanfare-defile-dans-la-rue",
+   "category": "Musique",
+   "solution": "La fanfare défile dans la rue",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "un-piano-a-queue-dans-le-salon",
+   "category": "Musique",
+   "solution": "Un piano à queue dans le salon",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "le-public-reclame-un-rappel",
+   "category": "Musique",
+   "solution": "Le public réclame un rappel",
+   "variants": [],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-le-boeuf-bourguignon-mijote-a-letouffee",
+   "category": "Accents",
+   "solution": "Le bœuf bourguignon mijote à l’étouffée",
+   "variants": [
+    "Le boeuf bourguignon mijote a l etouffee"
+   ],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-quest-ce-quon-mange-ce-soir",
+   "category": "Ponctuation",
+   "solution": "Qu’est-ce qu’on mange ce soir ?",
+   "variants": [
+    "Qu est ce qu on mange ce soir"
+   ],
+   "difficulty": "moyen",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-un-arc-en-ciel-au-dessus-de-saint-malo",
+   "category": "Tirets",
+   "solution": "Un arc-en-ciel au-dessus de Saint-Malo",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-il-etait-une-fois-une-princesse-qui-dete",
+   "category": "Phrase longue",
+   "solution": "Il était une fois une princesse qui détestait les petits pois",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-un-oeil-sur-le-coeur-de-loeuvre",
+   "category": "Ligatures",
+   "solution": "Un œil sur le cœur de l’œuvre",
+   "variants": [],
+   "difficulty": "difficile",
+   "points": null,
+   "active": true
+  },
+  {
+   "id": "demo-attention-chaud-devant",
+   "category": "Exclamation",
+   "solution": "Attention, chaud devant !",
+   "variants": [],
+   "difficulty": "facile",
+   "points": null,
+   "active": true
+  }
+ ]
+}

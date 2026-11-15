@@ -86,6 +86,12 @@ const animations = [
     desc: 'Le vote live : les invités élisent leur favori depuis leur téléphone, résultats en direct ou révélés en podium.',
   },
   {
+    name: 'À Demi-Mot',
+    img: '/images/games/a-demi-mot.png',
+    href: '/jeu-a-demi-mot',
+    desc: 'Une expression se dévoile lettre par lettre sur l\'écran géant : la première équipe qui buzze tente de la deviner.',
+  },
+  {
     name: 'Partage photo en direct',
     img: '/photo-qr-partage.png',
     href: '/partage-photo-evenement',

@@ -59,6 +59,7 @@ const content: AnimationDetailContent = {
     { label: 'Roue de la Destinée', href: '/roue-de-la-destinee' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'AnimaVote', href: '/jeu-vote' },
+    { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }

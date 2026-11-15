@@ -27,6 +27,7 @@ interface InviteState {
   affinityActive: boolean
   buzzerActive: boolean
   voteActive: boolean
+  demimotActive?: boolean
 }
 
 // Une panne ou une session inconnue donne null.
@@ -185,6 +186,25 @@ export default function InvitePage() {
               .then((r) => r.json()).catch(() => null)
             if (status?.live) {
               router.push(`/vote/${code}`)
+              return
+            }
+          }
+        }
+
+        // À Demi-Mot : même QR que la session. Redirige seulement si À Demi-Mot
+        // est vraiment en direct (signal de vie, aucun autre jeu actif), sauf
+        // si l'invité a choisi « juste des photos ».
+        let skipDemiMot = photosOnly
+        try {
+          if (photosOnly) sessionStorage.setItem(`demimot-photos-only-${code}`, '1')
+          skipDemiMot ||= sessionStorage.getItem(`demimot-photos-only-${code}`) === '1'
+        } catch { /* navigation privée */ }
+        if (!skipDemiMot) {
+          if (state.demimotActive) {
+            const status = await fetch(`/api/demimot/status?code=${encodeURIComponent(code)}`)
+              .then((r) => r.json()).catch(() => null)
+            if (status?.live) {
+              router.push(`/demimot/join/${code}`)
               return
             }
           }

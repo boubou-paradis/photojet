@@ -27,6 +27,8 @@ import BuzzerGame from '@/components/games/BuzzerGame'
 import { useBuzzerStatus } from '@/hooks/useBuzzerStatus'
 import VoteGame from '@/components/games/VoteGame'
 import { useVoteStatus } from '@/hooks/useVoteStatus'
+import DemiMotGame from '@/components/games/DemiMotGame'
+import { useDemiMotStatus } from '@/hooks/useDemiMotStatus'
 import { usePromoPreload } from '@/hooks/usePromoPreload'
 import { useTrialWatermark } from '@/components/TrialWatermark'
 import { watermarkedPhotoUrl } from '@/lib/watermark/constants'
@@ -927,6 +929,8 @@ export default function LivePage() {
   const buzzerStatus = useBuzzerStatus(code, session?.buzzer_active === true)
   // AnimaVote : même principe, interrogé seulement quand AnimaVote est lancé.
   const voteStatus = useVoteStatus(code, session?.vote_active === true)
+  // À Demi-Mot : même principe, interrogé seulement quand À Demi-Mot est lancé.
+  const demimotStatus = useDemiMotStatus(code, session?.demimot_active === true)
 
   const transitionType = session?.transition_type || 'fade'
   const currentItem = slideshowItems[currentIndex]
@@ -1395,6 +1399,12 @@ export default function LivePage() {
         isFinished={quizState?.isFinished ?? session.quiz_show_podium === true}
       />
     )
+  }
+
+  // À Demi-Mot : juste avant AnimaVote (les jeux s'excluent). Affiché seulement si
+  // le serveur confirme qu'il est en direct (signal de vie frais, aucun autre jeu).
+  if (session.demimot_active && demimotStatus.live) {
+    return <DemiMotGame session={session} status={demimotStatus} />
   }
 
   // AnimaVote : juste avant AnimaBuzz (les jeux s'excluent). Affiché seulement si

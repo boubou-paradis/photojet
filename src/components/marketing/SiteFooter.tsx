@@ -22,6 +22,7 @@ const animations = [
   { label: 'Matching', href: '/jeu-points-communs' },
   { label: 'AnimaBuzz', href: '/jeu-buzzer' },
   { label: 'AnimaVote', href: '/jeu-vote' },
+  { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
   { label: 'Partage photo en direct', href: '/partage-photo-evenement' },
   { label: 'Impression photo sur place', href: '/impression-photo-evenement' },
   { label: 'Diaporama live', href: '/diaporama-live-evenement' },

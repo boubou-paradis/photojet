@@ -57,6 +57,7 @@ const content: AnimationDetailContent = {
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'Quiz interactif', href: '/quiz-interactif' },
     { label: 'Matching', href: '/jeu-points-communs' },
+    { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
     { label: 'Toutes les animations', href: '/animations-interactives-evenementielles' },
   ],
 }

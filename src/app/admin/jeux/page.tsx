@@ -84,9 +84,9 @@ const games = [
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
     notice: '/animabuzz-regles.pdf',
-    // Grand écran : 2e ligne avec AnimaVote, la paire centrée sous la Roue de
-    // la Destinée (décalage d'une demi-colonne + demi-gouttière, gap-6 = 1,5rem).
-    gridClass: 'lg:col-start-3 lg:-translate-x-[calc(50%+0.75rem)]',
+    // Grand écran : 2e ligne avec AnimaVote et À Demi-Mot, le trio centré
+    // (colonnes 2 à 4 sur 5).
+    gridClass: 'lg:col-start-2',
   },
   {
     id: 'vote',
@@ -99,9 +99,25 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
     notice: '/animavote-regles.pdf',
-    // Tablette (3 colonnes) : seule sur la dernière ligne, centrée.
-    // Grand écran : même décalage qu'AnimaBuzz, la paire reste centrée.
-    gridClass: 'md:col-start-2 lg:col-start-auto lg:-translate-x-[calc(50%+0.75rem)]',
+    // Tablette (3 colonnes) : dernière ligne avec À Demi-Mot, la paire centrée
+    // (décalage d'une demi-colonne + demi-gouttière, gap-6 = 1,5rem).
+    // Grand écran : à la suite d'AnimaBuzz, sans décalage.
+    gridClass: 'md:col-start-2 md:-translate-x-[calc(50%+0.75rem)] lg:col-start-auto lg:translate-x-0',
+  },
+  {
+    id: 'demimot',
+    name: 'À Demi-Mot',
+    image: '/images/games/a-demi-mot.png',
+    description: 'Quelques lettres, à vous de trouver : les équipes buzzent pour deviner l’expression',
+    path: '/admin/jeux/demimot',
+    // Ouvert à tous les abonnés (15/11/2026).
+    available: true,
+    glowColor: 'rgba(212, 175, 55, 0.5)',
+    borderHover: 'hover:border-[#D4AF37]',
+    accentColor: 'text-[#D4AF37]',
+    notice: '/a-demi-mot-regles.pdf',
+    // Tablette : même décalage qu'AnimaVote (paire centrée). Grand écran : à la suite.
+    gridClass: 'md:-translate-x-[calc(50%+0.75rem)] lg:translate-x-0',
   },
 ]
 
@@ -267,8 +283,8 @@ export default function JeuxPage() {
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                 />
-                {/* Badge notice PDF */}
-                {'notice' in game && game.notice && (
+                {/* Badge notice PDF (cartes ouvertes seulement : une carte grisée n'affiche pas sa notice) */}
+                {game.available && 'notice' in game && game.notice && (
                   <a
                     href={game.notice as string}
                     target="_blank"

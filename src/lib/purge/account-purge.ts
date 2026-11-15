@@ -209,8 +209,8 @@ export async function buildReferenceIndex(db: SupabaseClient): Promise<Reference
 }
 
 // ---------- Plan d'un compte ----------
-const SESSION_TABLES = ['messages', 'photos', 'print_requests', 'borne_connections'] as const
-const USER_TABLES = ['saved_quizzes', 'saved_mysteries', 'saved_matchings', 'saved_buzzer_sets', 'borne_templates', 'account_display_defaults'] as const
+const SESSION_TABLES = ['messages', 'photos', 'print_requests', 'borne_connections', 'demimot_buzzes', 'demimot_teams', 'demimot_runtime'] as const
+const USER_TABLES = ['saved_quizzes', 'saved_mysteries', 'saved_matchings', 'saved_buzzer_sets', 'borne_templates', 'account_display_defaults', 'demimot_puzzles', 'demimot_sets'] as const
 
 async function countRows(db: SupabaseClient, table: string, col: string, values: string[]): Promise<number> {
   if (values.length === 0) return 0

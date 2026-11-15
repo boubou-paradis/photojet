@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/lib/public-api/code-guard'
 import { LIVE_MESSAGE_COLUMNS, LIVE_PHOTO_COLUMNS, LIVE_SESSION_COLUMNS } from '@/lib/public-api/columns'
+import { selectWithOptionalColumns } from '@/lib/public-api/optional-columns'
 import { NO_STORE, getPublicAdmin, isPubliclyVisible, pickColumns, type SessionVisibilityRow } from '@/lib/public-api/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
@@ -24,11 +25,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const admin = getPublicAdmin()
   const busy = NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
 
-  const { data, error } = await admin
-    .from('sessions')
-    .select(`is_active, user_id, ${LIVE_SESSION_COLUMNS.join(', ')}`)
-    .eq('code', code)
-    .maybeSingle()
+  // demimot_active est facultative : si la base ne la connaît pas, lecture sans elle.
+  const { data, error } = await selectWithOptionalColumns(['is_active', 'user_id', ...LIVE_SESSION_COLUMNS], (columns) =>
+    admin.from('sessions').select(columns).eq('code', code).maybeSingle(),
+  )
   if (error) return busy
 
   const row = data as (SessionVisibilityRow & Record<string, unknown>) | null
@@ -56,6 +56,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   // Les questions et leurs réponses ne sortent que pendant une partie.
   const session = pickColumns(row, LIVE_SESSION_COLUMNS)
   if (row.quiz_active !== true && row.quiz_lobby_visible !== true) session.quiz_questions = null
+  // Absente ou illisible : À Demi-Mot inactif.
+  session.demimot_active = row.demimot_active === true
 
   return NextResponse.json({ session, photos: photos.data, messages: messages.data }, { headers: NO_STORE })
 }

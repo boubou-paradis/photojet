@@ -20,6 +20,7 @@ export const GAME_ACTIVITY_COLUMNS = [
   'affinity_active',
   'buzzer_active',
   'vote_active',
+  'demimot_active',
 ] as const
 
 export interface ActiveSessionInfo {

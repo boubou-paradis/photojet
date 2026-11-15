@@ -37,7 +37,7 @@ export const LIVE_SESSION_COLUMNS = [
   'quiz_show_results', 'quiz_show_podium', 'quiz_time_left', 'quiz_participants',
   'affinity_active', 'affinity_phase', 'affinity_questions', 'affinity_current_question',
   'affinity_deadline', 'affinity_reveal', 'affinity_final_stats',
-  'buzzer_active', 'vote_active',
+  'buzzer_active', 'vote_active', 'demimot_active',
 ] as const
 export type LiveSession = Pick<Session, (typeof LIVE_SESSION_COLUMNS)[number]>
 

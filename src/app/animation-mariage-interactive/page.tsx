@@ -72,6 +72,7 @@ const content: AnimationDetailContent = {
     { label: 'Matching', href: '/jeu-points-communs' },
     { label: 'AnimaBuzz', href: '/jeu-buzzer' },
     { label: 'AnimaVote', href: '/jeu-vote' },
+    { label: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
     { label: 'Pour les DJ & animateurs', href: '/animation-dj-interactive' },
     { label: "25 idées d'animation pour mariage", href: '/blog/idees-animation-mariage' },
     { label: '50 questions pour votre quiz de mariage', href: '/blog/50-questions-quiz-mariage' },
