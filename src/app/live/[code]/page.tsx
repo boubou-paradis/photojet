@@ -242,7 +242,9 @@ function MessageDisplay({ message, sideReserve, trial }: { message: LiveMessage;
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -30, scale: 0.95 }}
       transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed inset-0 flex items-center justify-center z-50"
+      // Couche plein écran sans rien de cliquable : elle laisse passer les clics
+      // (bouton plein écran en haut à droite, accessible pendant un message).
+      className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
       style={{ paddingBottom: MESSAGE_TAIL }}
     >
       <div className="relative" style={{ maxWidth: `calc(100vw - ${2 * sideReserve}px)` }}>
