@@ -115,3 +115,24 @@ export function phoneStatus(state: DemiMotPublicState | null, teamId: string | n
   if (r.buzz) return r.buzz.teamId === teamId ? 'accepted' : 'too_late'
   return 'waiting'
 }
+
+/** Buzz envoyé par ce téléphone, en attente de la réponse du serveur. */
+export interface SentBuzz {
+  /** Clé de l'énigme au moment de l'envoi (les numéros de fenêtre sont propres à la partie). */
+  roundKey: string | null
+  window: number
+  /** Heure locale de l'envoi (ms). */
+  at: number
+}
+
+/** Au-delà, « Envoi… » rend la main au bouton même si le réseau n'a jamais répondu. */
+export const DEMIMOT_SENT_TIMEOUT_MS = 6000
+
+/**
+ * « Envoi… » ne s'affiche que pour l'envoi de CETTE énigme et de CETTE fenêtre,
+ * et jamais plus de DEMIMOT_SENT_TIMEOUT_MS : le bouton ne peut pas rester figé.
+ */
+export function isSending(sent: SentBuzz | null, gateWindow: number | null, roundKey: string | null, now: number): boolean {
+  if (!sent || gateWindow === null) return false
+  return sent.window === gateWindow && sent.roundKey === roundKey && now - sent.at < DEMIMOT_SENT_TIMEOUT_MS
+}

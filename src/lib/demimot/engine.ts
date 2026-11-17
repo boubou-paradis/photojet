@@ -67,6 +67,7 @@ export function createGame(code: string, teams: Team[], seed: number, now: numbe
     roundIndex: -1,
     stage: 'main',
     round: null,
+    windowFloor: 0,
     usedPuzzleIds: [],
     undo: [],
     log: [],
@@ -186,7 +187,7 @@ function makeRound(s: GameState, puzzle: Puzzle, opts: { number: number; total: 
     status: 'ready',
     nextRevealAt: null,
     finalWindowEndsAt: null,
-    windowId: 1,
+    windowId: (s.windowFloor ?? 0) + 1, // suite de la partie, jamais 1 à chaque énigme
     buzz: null,
     blocked: opts.blocked,
     paused: null,
@@ -199,7 +200,21 @@ function makeRound(s: GameState, puzzle: Puzzle, opts: { number: number; total: 
   }
 }
 
+/**
+ * Plancher des numéros de fenêtre : jamais en arrière pendant la partie (la base refuse
+ * un 2e buzz sur le même numéro → « taken »). Un état enregistré avant l'ajout de
+ * `windowFloor` ne connaît que la manche en cours : marge de 1000 pour passer au-dessus
+ * des numéros des manches précédentes (quelques fenêtres par manche).
+ */
+function windowFloor(s: GameState): number {
+  const current = s.round?.windowId ?? 0
+  if (s.windowFloor === undefined) return s.round ? current + LEGACY_WINDOW_MARGIN : 0
+  return Math.max(s.windowFloor, current)
+}
+const LEGACY_WINDOW_MARGIN = 1000
+
 function startRound(s: GameState, puzzle: Puzzle, opts: Parameters<typeof makeRound>[2], now: number, events: GameEvent[]) {
+  s.windowFloor = windowFloor(s)
   s.round = makeRound(s, puzzle, opts)
   s.usedPuzzleIds.push(puzzle.id)
   s.undo = []
@@ -568,6 +583,7 @@ function run(s: GameState, r: Round | null, cmd: Command, now: number, events: G
     case 'reset': {
       s.phase = 'waiting'
       s.display = 'board'
+      s.windowFloor = windowFloor(s) // même partie en base : les numéros continuent
       s.round = null
       s.plan = { puzzles: [], finale: [] }
       s.roundIndex = -1

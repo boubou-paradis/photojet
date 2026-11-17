@@ -16,7 +16,7 @@ import { useDemiMotChannel } from '@/hooks/useDemiMotChannel'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { findCaptainBySession, forgetCaptain, type StoredCaptain } from '@/lib/demimot/captain-storage'
 import { DEMIMOT_PING_INTERVAL_MS } from '@/lib/demimot/constants'
-import { phoneStatus } from '@/lib/demimot/gate'
+import { DEMIMOT_SENT_TIMEOUT_MS, isSending, phoneStatus, type SentBuzz } from '@/lib/demimot/gate'
 import type { PhoneStatus, PublicTeam } from '@/lib/demimot/view'
 import { createPublicClient } from '@/lib/supabase'
 
@@ -35,7 +35,7 @@ export default function DemiMotPlayPage() {
   const [captain, setCaptain] = useState<StoredCaptain | null>(null)
   const [missing, setMissing] = useState(false)
   const [revoked, setRevoked] = useState(false)
-  const [sentWindow, setSentWindow] = useState<number | null>(null)
+  const [sent, setSent] = useState<SentBuzz | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const supabase = useMemo(() => createPublicClient(), [])
@@ -121,13 +121,21 @@ export default function DemiMotPlayPage() {
     return () => clearInterval(t)
   }, [answering])
 
-  // « Envoi… » ne vaut que pour la fenêtre de buzz où il a été envoyé.
+  // « Envoi… » ne vaut que pour l'énigme et la fenêtre de buzz où il a été envoyé,
+  // et jamais plus de quelques secondes (réseau muet) : le bouton ne reste pas figé.
   const gateWindow = gate?.window ?? null
+  const roundKey = view?.round?.key ?? null
+  useEffect(() => {
+    if (!sent) return
+    const t = setTimeout(() => setSent((cur) => (cur === sent ? null : cur)), Math.max(0, sent.at + DEMIMOT_SENT_TIMEOUT_MS - Date.now()))
+    return () => clearTimeout(t)
+  }, [sent])
 
   let status: PhoneStatus = phoneStatus(state ?? null, team ? teamId : null)
   if (revoked) status = 'revoked'
   else if (!state) status = 'connecting'
-  else if (status === 'open' && sentWindow !== null && sentWindow === gateWindow) status = 'sent'
+  // L'expiration est faite par le minuteur ci-dessus (qui vide `sent`) : rendu pur, sans horloge.
+  else if (status === 'open' && isSending(sent, gateWindow, roundKey, sent?.at ?? 0)) status = 'sent'
 
   // Vibration quand l'équipe obtient la main.
   const prev = useRef<PhoneStatus | null>(null)
@@ -139,20 +147,21 @@ export default function DemiMotPlayPage() {
   const buzz = useCallback(async () => {
     if (!captain || !gate || gate.state !== 'open') return
     const win = gate.window
-    setSentWindow(win)
+    const mine: SentBuzz = { roundKey, window: win, at: Date.now() }
+    setSent(mine)
     setNotice(null)
     navigator.vibrate?.(30)
     const { data, error } = await supabase.rpc('demimot_buzz', { p_session_id: captain.sessionId, p_team_id: captain.teamId, p_token: captain.token, p_window: win })
     const result = (data ?? {}) as { ok?: boolean; reason?: string }
     if (error || !result.ok) {
-      setSentWindow(null)
+      setSent((cur) => (cur === mine ? null : cur))
       if (result.reason === 'not_captain') setRevoked(true)
       else if (result.reason && result.reason !== 'taken' && result.reason !== 'stale') setNotice(BUZZ_ERRORS[result.reason] ?? 'Buzz non pris en compte.')
       else if (error) setNotice('Réseau instable : buzz non pris en compte.')
     }
     // Le résultat (la main, ou une autre équipe) arrive par le canal ; relecture par sécurité.
     void refresh()
-  }, [captain, gate, supabase, refresh])
+  }, [captain, gate, roundKey, supabase, refresh])
 
   if (missing) {
     return (

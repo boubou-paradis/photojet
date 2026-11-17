@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 import {
   BookOpen, Check, Eye, Flag, Keyboard, ListOrdered, Lock, Minus, Pause, Play, Plus, RotateCcw, SkipForward, Smartphone, Sparkles, Trophy, Undo2, Unlink, Wifi, WifiOff, X,
 } from 'lucide-react'
-import type { RegieCommand } from '@/lib/demimot/validation'
+import { regieShortcut } from '@/lib/demimot/shortcuts'
 import type { RegieView } from '@/lib/demimot/view'
 import { DomBoard } from '../Studio'
 import type { Send } from './api'
@@ -55,19 +55,11 @@ export function RegieDirect({ v, send, onRelease, offset, online }: { v: RegieVi
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (el.closest('input, textarea, select, [contenteditable]') || e.ctrlKey || e.metaKey || e.altKey || !online) return
-      const k = e.key.toLowerCase()
-      const act = (cmd: RegieCommand) => (e.preventDefault(), void send(cmd))
-      if (k === ' ' && status === 'ready') act({ type: 'startReveal' })
-      else if (k === ' ' && status === 'paused') act({ type: 'resume' })
-      else if (k === 'p' && ['revealing', 'final_window', 'answering', 'turn', 'ready'].includes(status)) act({ type: 'pause' })
-      else if (k === 'p' && status === 'paused') act({ type: 'resume' })
-      else if (k === 'v' && status === 'answering' && r?.buzz) act({ type: 'judge', correct: true, windowId: windowOf(v) })
-      else if (k === 'x' && status === 'answering' && r?.buzz) act({ type: 'judge', correct: false, windowId: windowOf(v) })
-      else if (k === 'a' && status === 'answering') act({ type: 'cancelBuzz', windowId: windowOf(v) })
-      else if (k === 'l' && (status === 'revealing' || status === 'ready') && r?.mode === 'reveal') act({ type: 'revealLetter' })
-      else if (k === 'c') act({ type: 'display', display: p.display === 'standings' ? 'board' : 'standings' })
-      else if (k === 'n') act({ type: 'display', display: p.display === 'black' ? 'board' : 'black' })
-      else if (k === 'enter' && status === 'resolved' && r) act({ type: 'next', roundKey: r.key })
+      const cmd = regieShortcut(e.key, { status, round: r, display: p.display, buzzWindowId: windowOf(v) })
+      if (cmd) {
+        e.preventDefault()
+        void send(cmd)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -198,7 +190,7 @@ export function RegieDirect({ v, send, onRelease, offset, online }: { v: RegieVi
           <div className="panel">
             <h3><Sparkles size={14} /> Finale Déclic</h3>
             <p className="regie-help">L’écran présente la règle de la finale : {v.settings.finale.base} points + {v.settings.finale.bonusPerHidden} par lettre encore cachée au moment du buzz.</p>
-            <button className="btn primary xl" onClick={() => send({ type: 'startFinale' })} data-testid="start-finale"><Play size={20} /> Lancer la finale</button>
+            <button className="btn primary xl" onClick={() => send({ type: 'startFinale' })} data-testid="start-finale"><Play size={20} /> Lancer la finale <kbd>Entrée</kbd></button>
           </div>
         )}
         {status === 'end_tie' && (
@@ -206,7 +198,7 @@ export function RegieDirect({ v, send, onRelease, offset, online }: { v: RegieVi
             <h3><Trophy size={14} /> Égalité en tête</h3>
             <p className="regie-help">{(p.tie?.teamIds ?? []).map((id) => team(id)?.name).join(', ')} sont à égalité. Une énigme de départage se joue entre elles seules (les autres équipes sont bloquées).</p>
             <div className="grid-actions">
-              <button className="btn primary xl" onClick={() => send({ type: 'tiebreak' })} data-testid="tiebreak"><Play size={20} /> Énigme de départage</button>
+              <button className="btn primary xl" onClick={() => send({ type: 'tiebreak' })} data-testid="tiebreak"><Play size={20} /> Énigme de départage <kbd>Entrée</kbd></button>
               <button className="btn xl" onClick={() => send({ type: 'finish' })}><Trophy size={20} /> Podium avec ex æquo</button>
             </div>
           </div>

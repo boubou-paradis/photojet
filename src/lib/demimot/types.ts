@@ -127,6 +127,12 @@ export interface GameState {
   /** 'main' | 'finale' | 'tiebreak' */
   stage: 'main' | 'finale' | 'tiebreak'
   round: Round | null
+  /**
+   * Plus grand numéro de fenêtre de buzz déjà attribué dans cette partie (en base :
+   * UNIQUE (game_id, window_no) → un numéro ne sert qu'une fois, « Nouvelle partie » comprise).
+   * Absent des états enregistrés avant son ajout : voir `windowFloor()` dans engine.ts.
+   */
+  windowFloor?: number
   usedPuzzleIds: string[]
   undo: UndoSnapshot[]
   log: LogEntry[]
