@@ -510,13 +510,16 @@ export default function BingoAdminPage() {
               onPlaylist={setPlaylistId}
               onOpenLibrary={() => setLibraryOpen(true)}
             />
-            <SettingsForm settings={draft} onChange={setDraft} phases={draftPhases} onPhases={setDraftPhases} phasesLocked={false} onTestVoice={voice.test} />
             <button className="btn gold launch" onClick={() => void launch()} disabled={busy !== null} data-testid="launch">
               {busy === 'launch' ? 'Lancement…' : '▶ Afficher AnimaBingo sur l’écran géant'}
             </button>
             <p className="note" style={{ textAlign: 'center' }}>Lancer AnimaBingo met en pause le jeu en cours sur l’écran géant (sans rien effacer).</p>
           </div>
-          <div>{paperBox}</div>
+          <div className="box setup-settings">
+            <h3>Réglages de la partie</h3>
+            <SettingsForm settings={draft} onChange={setDraft} phases={draftPhases} onPhases={setDraftPhases} phasesLocked={false} onTestVoice={voice.test} />
+          </div>
+          <div className="setup-paper">{paperBox}</div>
         </div>
       ) : (
         <div className="rgrid">
