@@ -56,7 +56,7 @@ export function isAnimatorAlive(heartbeatAt: string | null | undefined, now: num
 
 export type BingoErrorCode =
   | 'no_game' | 'invalid' | 'not_running' | 'too_fast' | 'empty' | 'not_valid'
-  | 'full' | 'duplicate' | 'forbidden' | 'cooldown' | 'unknown'
+  | 'full' | 'duplicate' | 'forbidden' | 'cooldown' | 'pending' | 'phase_done' | 'unknown'
 
 const MESSAGES: Record<BingoErrorCode, [string, number]> = {
   no_game: ['Aucune partie AnimaBingo en cours.', 409],
@@ -69,6 +69,8 @@ const MESSAGES: Record<BingoErrorCode, [string, number]> = {
   duplicate: ['Carton déjà existant, nouvel essai.', 409],
   forbidden: ['Carton introuvable pour ce téléphone.', 403],
   cooldown: ['Patientez quelques secondes avant une nouvelle demande.', 429],
+  pending: ['Vérifiez d’abord les demandes en attente.', 409],
+  phase_done: ['Tous les lots de cette étape sont gagnés : passez à la suite.', 409],
   unknown: ['Réseau saturé, réessayez dans un instant.', 503],
 }
 
@@ -423,9 +425,11 @@ export async function runAdmin(admin: SupabaseClient, sessionId: string, command
       const music = command.playlistId
         ? await freezePlaylist(admin, userId, command.playlistId)
         : command.action === 'new_game' ? await currentMusic(admin, sessionId) : null
-      return call({ settings: command.settings, phases: command.phases, ...(music ? { music } : {}) })
+      return call({ settings: command.settings, phases: command.phases, ...(command.lots ? { lots: command.lots } : {}), ...(music ? { music } : {}) })
     }
-    case 'settings': return call({ settings: command.settings, ...(command.phases ? { phases: command.phases } : {}) })
+    case 'new_round': return call({ ...(command.settings ? { settings: command.settings } : {}), ...(command.phases ? { phases: command.phases } : {}), ...(command.lots ? { lots: command.lots } : {}) })
+    case 'settings': return call({ settings: command.settings, ...(command.phases ? { phases: command.phases } : {}), ...(command.lots ? { lots: command.lots } : {}) })
+    case 'next_phase': case 'advance': case 'jump_final': return call(command.expect !== undefined ? { expect: command.expect } : {})
     case 'draw': return call({ expect: command.expect })
     case 'auto': return call({ mode: command.mode, ...(command.ms ? { ms: command.ms } : {}) })
     case 'decide': return call({ claimId: command.claimId, accept: command.accept, ...(command.name ? { name: command.name } : {}) })

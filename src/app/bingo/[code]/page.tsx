@@ -162,10 +162,18 @@ function Play({ ctl, s, code }: { ctl: PhoneController; s: PhoneSnapshot; code: 
   const canClaim = !!pub && !!phase && ['running', 'checking', 'celebrating'].includes(pub.status) && !mem.claim
   const frozen = !!mem.claim && s.outcome === null
 
+  const [askClear, setAskClear] = useState(false)
+  const anyMark = Object.values(mem.marks).some((a) => a.length > 0)
+
+  // Dernier lot gagné de l'étape (quine suivie : seulement les gagnants du lot qui vient de tomber).
   const recentWinners = useMemo(() => {
     if (!pub || pub.status !== 'celebrating' || !phase) return []
-    return pub.winners.filter((w) => w.phase === phase)
+    const ws = pub.winners.filter((w) => w.phase === phase)
+    const top = Math.max(0, ...ws.map((w) => w.lot ?? 0))
+    return top ? ws.filter((w) => (w.lot ?? 0) === top) : ws
   }, [pub, phase])
+  const lotN = pub && phase ? pub.lots?.[pub.phaseIndex] ?? 1 : 1
+  const lotNow = pub ? Math.min(lotN, (pub.lotsUsed ?? 0) + (pub.status === 'celebrating' ? 0 : 1)) : 1
 
   let button = phase ? claimButtonLabel(phase) : s.pub ? 'PARTIE TERMINÉE' : 'CHARGEMENT…'
   if (pub?.status === 'lobby') button = 'EN ATTENTE DU TIRAGE'
@@ -183,7 +191,12 @@ function Play({ ctl, s, code }: { ctl: PhoneController; s: PhoneSnapshot; code: 
             {s.online ? 'Connecté' : 'Reconnexion…'}
           </span>
         </div>
-        {phase && <span className="pill">{PHASE_LABELS[phase].toUpperCase()}</span>}
+        {phase && (
+          <span className="pill" data-testid="phone-phase">
+            {PHASE_LABELS[phase].toUpperCase()}
+            {lotN > 1 && <small data-testid="phone-lot"> · LOT {Math.max(1, lotNow)}/{lotN}</small>}
+          </span>
+        )}
       </header>
 
       {!s.online && <div className="strip warn" role="status" data-testid="phone-offline">Reconnexion… vos jetons sont gardés sur ce téléphone.</div>}
@@ -231,7 +244,13 @@ function Play({ ctl, s, code }: { ctl: PhoneController; s: PhoneSnapshot; code: 
       ) : (
         <PhoneCard card={card} marks={marks} wrong={wrong} frozen={frozen} onToggle={(n) => ctl.toggle(card.id, n)} titles={titles} />
       )}
-      <div className="legend"><span>{music ? 'Touchez un titre quand vous l’entendez' : 'Touchez un numéro pour poser un jeton'}</span><span><b data-testid="phone-count">{marks.length}</b> / 15</span></div>
+      <div className="legend">
+        <span>{music ? 'Touchez un titre quand vous l’entendez' : 'Touchez un numéro pour poser un jeton'}</span>
+        <span><b data-testid="phone-count">{marks.length}</b> / 15</span>
+      </div>
+      {anyMark && !frozen && (
+        <button type="button" className="clear-marks" onClick={() => setAskClear(true)} data-testid="phone-clear">Effacer mes jetons</button>
+      )}
 
       <div className="spacer" />
       <button className="quine" type="button" disabled={!canClaim} onClick={() => ctl.claim(card.id)} data-testid="phone-claim">
@@ -240,6 +259,16 @@ function Play({ ctl, s, code }: { ctl: PhoneController; s: PhoneSnapshot; code: 
       </button>
       <div className="hint">La régie vérifie votre carton avant de valider.</div>
 
+      {askClear && (
+        <div className="sheet ask" role="dialog" aria-modal="true" aria-label="Effacer les jetons" data-testid="phone-clear-ask">
+          <h1>Effacer tous vos jetons ?</h1>
+          <p>Les jetons de {mem.cards.length > 1 ? 'tous vos cartons' : 'votre carton'} sont retirés. Vos cartons restent les mêmes.</p>
+          <div className="acts">
+            <button type="button" className="btn ghost" onClick={() => setAskClear(false)} data-testid="phone-clear-no">Annuler</button>
+            <button type="button" className="btn gold" onClick={() => { ctl.clearAll(); setAskClear(false) }} data-testid="phone-clear-yes">Effacer</button>
+          </div>
+        </div>
+      )}
       {mem.claim && s.outcome === null && <Checking sent={mem.claim.claimId !== null} online={s.online} phase={phase} />}
       {mem.claim && s.outcome === 'accepted' && claimCard && (
         <Won card={claimCard} marks={mem.claim.marks} phase={phase} s={s} onBack={() => ctl.dismiss()} titles={titles} />

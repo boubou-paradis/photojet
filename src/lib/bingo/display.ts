@@ -55,6 +55,25 @@ export function currentPhase(s: BingoPublicState | null | undefined): Phase | nu
 }
 
 /** Libellé du bouton du téléphone : « QUINE ! », « DOUBLE QUINE ! », « CARTON PLEIN ! ». */
+/**
+ * Lots de l'étape en cours : nombre, déjà gagnés, et lot en jeu (1…n).
+ * Pendant la fête, le lot affiché est celui qui vient d'être gagné.
+ */
+export function lotInfo(s: BingoPublicState | null | undefined): { n: number; used: number; now: number; done: boolean } {
+  if (!s?.active || s.phaseIndex >= s.phases.length) return { n: 1, used: 0, now: 1, done: false }
+  const n = s.lots?.[s.phaseIndex] ?? 1
+  const used = s.lotsUsed ?? 0
+  const done = s.phaseDone ?? false
+  const now = Math.max(1, Math.min(n, s.status === 'celebrating' ? used : used + 1))
+  return { n, used, now, done }
+}
+
+/** Étape suivante (null = c'était la dernière). */
+export function nextPhase(s: BingoPublicState | null | undefined): Phase | null {
+  if (!s?.active) return null
+  return s.phaseIndex + 1 < s.phases.length ? s.phases[s.phaseIndex + 1] : null
+}
+
 export const claimButtonLabel = (p: Phase | null): string => (p ? `${PHASE_LABELS[p].toUpperCase()} !` : '')
 
 /** Verdict lisible d'une demande, pour la régie (l'animateur reste seul juge). */

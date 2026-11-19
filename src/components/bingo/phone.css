@@ -154,3 +154,11 @@
 .bgo-phone .strip.last .eqp i:nth-child(2) { animation-delay: -.3s; } .bgo-phone .strip.last .eqp i:nth-child(3) { animation-delay: -.55s; } .bgo-phone .strip.last .eqp i:nth-child(4) { animation-delay: -.15s; }
 @keyframes bgo-eqp { from { height: 25%; } to { height: 100%; } }
 @media (prefers-reduced-motion: reduce) { .bgo-phone .strip.last .eqp i { animation: none; height: 70%; } }
+
+/* Effacer mes jetons : discret, avec confirmation (jamais pendant une vérification). */
+.bgo-phone .clear-marks { align-self: center; margin: 10px auto 0; display: block; padding: 6px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.bgo-phone .sheet.ask h1 { font-size: 30px; }
+.bgo-phone .sheet.ask .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 330px; }
+.bgo-phone .sheet.ask .acts .btn { margin-top: 22px; }
+.bgo-phone .pill small { font-size: 11px; letter-spacing: .08em; }
+.bgo-phone .sheet.ask { background: rgba(10, 8, 20, .94); backdrop-filter: blur(6px); }

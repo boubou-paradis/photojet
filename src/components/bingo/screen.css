@@ -204,3 +204,8 @@
 .bgo-screen .mlist li.last .k { color: #1a1206; }
 .bgo-screen .mlist.full li { padding: 0 14px; }
 .bgo-screen .recent .rtitle { max-width: 230px; padding: 8px 14px; border-radius: 12px; background: rgba(166, 107, 255, .16); box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .35); font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Quine suivie : gagnants des lots précédents de l'étape, sous la fête. */
+.bgo-screen .wlist { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 18px; max-width: 1600px; }
+.bgo-screen .wlist span { padding: 8px 20px; border-radius: 999px; font-size: 24px; font-weight: 700; color: #f1ebff; background: rgba(16, 11, 30, .85); box-shadow: inset 0 0 0 1.5px rgba(246, 227, 161, .35); }
+.bgo-screen .wlist small { margin-right: 10px; font-size: 15px; letter-spacing: .16em; color: var(--gold-hi); }

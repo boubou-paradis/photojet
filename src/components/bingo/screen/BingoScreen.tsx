@@ -14,7 +14,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import QRCode from '@/components/QRCode'
 import { PHASE_LABELS } from '@/lib/bingo/constants'
-import { inWords } from '@/lib/bingo/display'
+import { inWords, lotInfo, nextPhase } from '@/lib/bingo/display'
 import type { BingoPublicState, BingoWinner, Phase } from '@/lib/bingo/types'
 import { getInviteUrl } from '@/lib/utils'
 import { Ball, Board } from '../Ball'
@@ -76,16 +76,22 @@ function Confetti({ n = 140, gold = false }: { n?: number; gold?: boolean }) {
 function TopBar({ s, name }: { s: Live; name: string }) {
   const phase = s.phaseIndex < s.phases.length ? s.phases[s.phaseIndex] : null
   const left = phase ? s.phases.length - s.phaseIndex - 1 : 0
+  const lot = lotInfo(s)
   return (
     <div className="top">
       <div className="brand">
         <Ball n={77} size={58} label="AnimaBingo" />
         <div><b className="gold-text">ANIMABINGO</b><small>ANIMAJET</small></div>
       </div>
-      {phase && <div className="plate phase"><span className="gold-text">{PHASE_LABELS[phase].toUpperCase()}</span><em>· {PHASE_SUB[phase]}</em></div>}
+      {phase && (
+        <div className="plate phase" data-testid="screen-phase-plate">
+          <span className="gold-text">{PHASE_LABELS[phase].toUpperCase()}</span>
+          {lot.n > 1 ? <em data-testid="screen-lot">· LOT {lot.now} / {lot.n}</em> : <em>· {PHASE_SUB[phase]}</em>}
+        </div>
+      )}
       <div className="event">
         <b>{name}</b>
-        Manche {s.round} · {left === 0 ? 'dernière phase' : `${left} phase${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}`}
+        Partie {s.round} · {left === 0 ? 'dernière étape' : `${left} étape${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}`}
       </div>
     </div>
   )
@@ -243,7 +249,13 @@ function Checking({ s, code, titles }: { s: Live; code: string; titles: readonly
 
 function Celebrating({ s }: { s: Live }) {
   const phase = s.phases[s.phaseIndex] ?? 'quine'
-  const winners = s.winners.filter((w) => w.phase === phase)
+  const all = s.winners.filter((w) => w.phase === phase)
+  // Quine suivie : on fête le lot qui vient de tomber ; les lots d'avant restent listés en bas.
+  const top = Math.max(0, ...all.map((w) => w.lot ?? 0))
+  const winners = top ? all.filter((w) => (w.lot ?? 0) === top) : all
+  const earlier = top ? all.filter((w) => (w.lot ?? 0) < top) : []
+  const lot = lotInfo(s)
+  const next = nextPhase(s)
   const showName = s.display.showName !== false
   const at = winners[winners.length - 1]?.drawCount ?? s.count
   const ball = s.drawn[at - 1]
@@ -257,7 +269,7 @@ function Celebrating({ s }: { s: Live }) {
       <Confetti n={plein ? 220 : 140} gold={plein} />
       <div className="moment" data-testid="screen-winner">
         <div className={`tag ${plein ? 'gold' : ''}`}>
-          {plein ? 'GRAND FINAL · ' : ''}{s.music ? `MORCEAU N° ${at}` : `BOULE N° ${at}${ball ? ` · LE ${ball}` : ''}`}{winners.length > 1 ? ` · ${winners.length} GAGNANTS` : ''}
+          {plein ? 'GRAND FINAL · ' : ''}{lot.n > 1 ? `LOT ${top || lot.now} / ${lot.n} · ` : ''}{s.music ? `MORCEAU N° ${at}` : `BOULE N° ${at}${ball ? ` · LE ${ball}` : ''}`}{winners.length > 1 ? ` · ${winners.length} GAGNANTS` : ''}
         </div>
         <h1 className="gold-text" style={{ marginTop: 22, fontSize: plein ? 176 : winners.length > 1 ? 170 : 200 }}>{title}</h1>
         {winners.length <= 1 ? (
@@ -276,7 +288,18 @@ function Celebrating({ s }: { s: Live }) {
             ))}
           </div>
         )}
-        <div className="sub">{plein ? 'Bravo, et merci à tous d’avoir joué !' : winners.length > 1 ? 'Félicitations aux gagnants !' : 'Félicitations !'}</div>
+        <div className="sub" data-testid="screen-next">
+          {lot.done && next
+            ? <>Prochaine étape : <b className="gold-text">{PHASE_LABELS[next].toUpperCase()}</b></>
+            : !lot.done && lot.n > 1
+              ? `Félicitations ! Prochain lot : ${Math.min(lot.n, lot.used + 1)} / ${lot.n}`
+              : plein || !next ? 'Bravo, et merci à tous d’avoir joué !' : winners.length > 1 ? 'Félicitations aux gagnants !' : 'Félicitations !'}
+        </div>
+        {earlier.length > 0 && (
+          <div className="wlist" data-testid="screen-earlier">
+            {earlier.slice(-8).map((w, i) => <span key={i}><small>LOT {w.lot}</small>{winnerLabel(w, showName)}</span>)}
+          </div>
+        )}
       </div>
     </>
   )
@@ -314,9 +337,9 @@ function Finished({ s }: { s: Live }) {
         <h1 className="gold-text" style={{ marginTop: 22, fontSize: 150 }}>MERCI À TOUS !</h1>
         {s.winners.length > 0 && (
           <div className="wgrid">
-            {s.winners.slice(0, 9).map((w, i) => (
+            {s.winners.slice(0, 12).map((w, i) => (
               <div key={i} className="wcard" style={{ animationDelay: `${0.2 + i * 0.1}s`, minWidth: 320 }}>
-                <small>{PHASE_LABELS[w.phase]}</small>
+                <small>{PHASE_LABELS[w.phase]}{w.lot && (s.lots?.[s.phases.indexOf(w.phase)] ?? 1) > 1 ? ` · LOT ${w.lot}` : ''}</small>
                 <b style={{ fontSize: 44 }}>{winnerLabel(w, showName)}</b>
                 <span>{winnerSub(w)}</span>
               </div>

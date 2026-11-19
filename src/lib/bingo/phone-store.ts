@@ -111,6 +111,11 @@ export function reconcile(m: PhoneMemory, gameId: string, round: number): PhoneM
   return { ...m, round, marks: {}, claim: null }
 }
 
+/** Tous les jetons retirés (bouton « Effacer mes jetons ») ; les cartons ne changent pas. */
+export function clearMarks(m: PhoneMemory): PhoneMemory {
+  return { ...m, marks: {} }
+}
+
 /** Une demande en attente d'envoi doit-elle partir maintenant ? */
 export function claimToSend(m: PhoneMemory, live: { round: number; phaseIndex: number; status: string }): 'send' | 'stale' | 'none' {
   const c = m.claim

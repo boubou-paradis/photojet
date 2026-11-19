@@ -139,7 +139,7 @@ export function useMusicPlayer(live: Live | null, music: RegieMusic | null, held
   return { playing, pos, error, toggle, replay }
 }
 
-export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, onDraw, onReveal }: {
+export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, onDraw, onReveal, step = null, links = null }: {
   live: Live
   music: RegieMusic
   held: boolean
@@ -149,6 +149,9 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
   onStart: () => void
   onDraw: () => void
   onReveal: () => void
+  /** À la place de TIRER : continuer / passer à l'étape suivante / nouvelle partie. */
+  step?: React.ReactNode
+  links?: React.ReactNode
 }) {
   const hidden = !!live.hidden
   const full = live.count + (hidden ? 1 : 0)
@@ -161,8 +164,8 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
   if (held) hint = <>AnimaBingo est en pause (autre jeu à l’écran).</>
   else if (live.status === 'lobby') hint = <>Les joueurs rejoignent la partie. Commencez quand la salle est prête.</>
   else if (live.status === 'checking') hint = <>Tirage bloqué pendant la vérification.</>
-  else if (live.status === 'celebrating') hint = <>Gagnant validé : choisissez la suite au centre.</>
-  else if (live.status === 'finished') hint = <>Partie terminée.</>
+  else if (live.status === 'celebrating') hint = <>Gagnant validé : remettez le lot, puis continuez.</>
+  else if (live.status === 'finished') hint = <>Partie terminée. Les joueurs gardent leurs cartons.</>
   else if (left === 0 && !hidden) hint = <>Tous les titres de la playlist sont passés.</>
 
   return (
@@ -200,11 +203,12 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
         <button className="draw reveal" onClick={onReveal} disabled={held || busy !== null} data-testid="reveal" aria-label="Révéler le titre à la salle">
           <div><b style={{ fontSize: 26 }}>RÉVÉLER</b><small>LE TITRE</small></div>
         </button>
-      ) : (
+      ) : step ?? (
         <button className="draw" onClick={onDraw} disabled={!canDraw || tooSoon} data-testid="draw" aria-label="Tirer le morceau suivant">
           <div><b>TIRER</b><small>MORCEAU SUIVANT</small></div>
         </button>
       )}
+      {links}
       <div className="hint">{hint}</div>
       <p className="note">Le son sort de cet ordinateur : reliez-le à la sono. Le titre apparaît à l’écran à la fin de l’extrait, ou dès que vous cliquez sur « Révéler ».</p>
     </div>

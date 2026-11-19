@@ -12,7 +12,7 @@
 // Effacement : seulement « Nouvelle partie » ou « Quitter le jeu », chacun
 // avec une double confirmation.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Loader2, Volume2, VolumeX } from 'lucide-react'
 import { toast } from 'sonner'
@@ -28,12 +28,14 @@ import { MusicBoard, MusicDeck, useMusicPlayer } from '@/components/bingo/regie/
 import { MusicPicker } from '@/components/bingo/regie/MusicPicker'
 import { PlaylistLibrary } from '@/components/bingo/regie/PlaylistLibrary'
 import { SettingsForm } from '@/components/bingo/regie/SettingsForm'
+import { AUTO_ADVANCE_MS, StepButton, StepLinks } from '@/components/bingo/regie/StepControl'
 import { useBingoChannel } from '@/hooks/useBingoChannel'
 import { useBingoVoice } from '@/hooks/useBingoVoice'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { BINGO_HEARTBEAT_INTERVAL_MS, BINGO_PHASES, PHASE_LABELS } from '@/lib/bingo/constants'
-import { currentPhase, inWords } from '@/lib/bingo/display'
+import { currentPhase, inWords, lotInfo } from '@/lib/bingo/display'
+import { normalizeLots } from '@/lib/bingo/formulas'
 import type { PendingClaim, RegieMusic, RegieSnapshot } from '@/lib/bingo/server'
 import type { LibraryPlaylist } from '@/lib/bingo/music-client'
 import type { BingoPublicState, BingoSettings, Phase } from '@/lib/bingo/types'
@@ -59,6 +61,7 @@ export default function BingoAdminPage() {
   const [snap, setSnap] = useState<RegieSnapshot | null>(null)
   const [draft, setDraft] = useState<BingoSettings>(DEFAULT_SETTINGS)
   const [draftPhases, setDraftPhases] = useState<Phase[]>([...BINGO_PHASES])
+  const [draftLots, setDraftLots] = useState<number[]>([1, 1, 1])
   const [busy, setBusy] = useState<string | null>(null)
   const [decidingId, setDecidingId] = useState<number | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
@@ -171,6 +174,7 @@ export default function BingoAdminPage() {
         if (s.settings) setDraft(s.settings)
         if (s.state.active) {
           setDraftPhases(s.state.phases)
+          setDraftLots(normalizeLots(s.state.phases, s.state.lots))
           setAutoSec(Math.round(s.state.autoMs / 1000))
           if (!s.held && (s.state.count > 0 || s.state.status !== 'lobby')) {
             setBanner(`Partie reprise : ${s.state.count} boule${s.state.count > 1 ? 's' : ''} sortie${s.state.count > 1 ? 's' : ''}, ${s.state.players} joueur${s.state.players > 1 ? 's' : ''}. Rien n’a été perdu.`)
@@ -282,6 +286,24 @@ export default function BingoAdminPage() {
 
   const setAuto = useCallback((mode: 'manual' | 'auto' | 'paused') => run({ action: 'auto', mode, ms: autoSec * 1000 }, { key: 'auto' }), [run, autoSec])
 
+  // Passage automatique (réglage « Auto 8 s ») : piloté par cette régie, la base
+  // revérifie tout (étape gagnée, 8 s écoulées, aucune demande en attente, même étape).
+  const autoAdvanceAt = !!live && !held && live.status === 'celebrating' && live.advance === 'auto' && live.pending === 0 && !!live.phaseDone
+    ? (live.lastWinAt ? Date.parse(live.lastWinAt) - offset : Date.now()) + AUTO_ADVANCE_MS + 400
+    : null
+  const autoAdvanceKey = autoAdvanceAt === null || !live ? null : `${live.round}|${live.phaseIndex}|${autoAdvanceAt}`
+  const [advanceRetry, setAdvanceRetry] = useState(0)
+  useEffect(() => {
+    if (autoAdvanceAt === null || !live) return
+    const expect = live.phaseIndex
+    const t = setTimeout(async () => {
+      await run({ action: 'advance', expect }, { quiet: true })
+      setAdvanceRetry((n) => n + 1) // réseau coupé : on retente
+    }, Math.max(1000, autoAdvanceAt - Date.now()))
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAdvanceKey, advanceRetry, run])
+
   // ---------- Décisions ----------
   const decide = useCallback(async (c: PendingClaim, accept: boolean) => {
     setDecidingId(c.id)
@@ -302,7 +324,7 @@ export default function BingoAdminPage() {
       toast.error('Choisissez une playlist prête à jouer (au moins 30 titres).')
       return
     }
-    const r = await run({ action: 'launch', settings: draft, phases: draftPhases, ...(fresh && mode === 'music' ? { playlistId } : {}) }, { key: 'launch' })
+    const r = await run({ action: 'launch', settings: draft, phases: draftPhases, lots: normalizeLots(draftPhases, draftLots), ...(fresh && mode === 'music' ? { playlistId } : {}) }, { key: 'launch' })
     if (!r?.ok) return
     window.open(`/live/${session.code}`, 'photojet-live')
     if (isState(r.data) && r.data.active && r.data.resumedGame) {
@@ -312,21 +334,29 @@ export default function BingoAdminPage() {
     void refreshSnap()
   }
 
-  const askNewGame = () => setConfirmReq({
-    title: 'Nouvelle partie ?',
-    message: LOST_TEXT,
-    note: 'Boules, gagnants, joueurs et cartons des téléphones sont effacés. Les cartons papier imprimés restent utilisables.',
-    check: 'J’ai compris : la partie en cours et tous les cartons seront perdus.',
-    confirm: 'Effacer et recommencer',
-    onConfirm: async () => {
-      const r = await run({ action: 'new_game', settings: settings ?? draft, phases: draftPhases }, { key: 'new' })
-      if (r?.ok) {
-        setBanner(null)
-        toast.success('Nouvelle partie prête')
-        void refreshSnap()
-      }
-    },
-  })
+  // Nouvelle partie de la soirée : nouvelles boules, jetons vidés sur tous les
+  // téléphones, MÊMES cartons pour tout le monde (téléphones et papier), personne
+  // ne rescanne. Seul « Quitter AnimaBingo » efface les cartons.
+  const askNewGame = () => {
+    const playing = !!live && live.status !== 'finished' && live.count > 0
+    setConfirmReq({
+      title: 'Nouvelle partie ?',
+      message: playing
+        ? 'La partie en cours s’arrête. On repart avec toutes les boules, et les jetons sont vidés sur tous les téléphones.'
+        : 'On repart avec toutes les boules, et les jetons sont vidés sur tous les téléphones.',
+      note: 'Chacun garde ses cartons (téléphones et papier) : personne ne rescanne. La formule se change dans Réglages avant la première boule.',
+      check: 'J’ai compris : nouvelles boules, mêmes cartons.',
+      confirm: 'Lancer la nouvelle partie',
+      onConfirm: async () => {
+        const r = await run({ action: 'new_round' }, { key: 'new' })
+        if (r?.ok) {
+          setBanner(null)
+          toast.success('Nouvelle partie prête : mêmes cartons pour tout le monde')
+          void refreshSnap()
+        }
+      },
+    })
+  }
 
   const askQuit = () => setConfirmReq({
     title: 'Quitter AnimaBingo ?',
@@ -344,8 +374,8 @@ export default function BingoAdminPage() {
     },
   })
 
-  async function saveSettings(next: BingoSettings, phases?: Phase[]) {
-    const r = await run({ action: 'settings', settings: next, ...(phases ? { phases } : {}) }, { key: 'settings' })
+  async function saveSettings(next: BingoSettings, phases?: Phase[], lots?: number[]) {
+    const r = await run({ action: 'settings', settings: next, ...(phases ? { phases, ...(lots ? { lots } : {}) } : {}) }, { key: 'settings' })
     if (r?.ok) {
       // Copie locale à jour tout de suite : un 2e appui rapide (touche B) part du bon réglage.
       setSnap((cur) => (cur ? { ...cur, settings: next } : cur))
@@ -379,6 +409,11 @@ export default function BingoAdminPage() {
       if (live.status === 'lobby') await run({ action: 'start' })
       else if (music && live.hidden) await reveal()
       else if (live.status === 'running') await draw()
+      else if (live.status === 'celebrating' && live.pending === 0) {
+        // Page ↓ = le gros bouton : continuer l'étape ou passer à la suivante.
+        if (lotInfo(live).done) await run({ action: 'next_phase', expect: live.phaseIndex })
+        else await run({ action: 'resume' })
+      }
     },
     onPrev: async () => {
       if (!live) return
@@ -430,8 +465,12 @@ export default function BingoAdminPage() {
     />
   )
 
+  // Le gros bouton ne remplace TIRER qu'après un gagnant validé ou en fin de partie.
+  const stepButton = live && (live.status === 'celebrating' || live.status === 'finished') ? <StepButton live={live} held={held} busy={busy} run={run} offset={offset} onNewGame={askNewGame} /> : null
+  const stepLinks = live ? <StepLinks live={live} held={held} busy={busy} run={run} askConfirm={setConfirmReq} /> : null
+
   return (
-    <div className="bgo regie" data-testid="bingo-regie" data-status={status} data-held={held ? '1' : '0'}>
+    <div className={`bgo regie${hasGame ? ' direct' : ''}`} data-testid="bingo-regie" data-status={status} data-held={held ? '1' : '0'}>
       <div className="rtop">
         <Button variant="ghost" size="sm" onClick={goBack} className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -517,7 +556,15 @@ export default function BingoAdminPage() {
           </div>
           <div className="box setup-settings">
             <h3>Réglages de la partie</h3>
-            <SettingsForm settings={draft} onChange={setDraft} phases={draftPhases} onPhases={setDraftPhases} phasesLocked={false} onTestVoice={voice.test} />
+            <SettingsForm
+              settings={draft}
+              onChange={setDraft}
+              phases={draftPhases}
+              lots={draftLots}
+              onPhases={(p, l) => { setDraftPhases(p); setDraftLots(l) }}
+              phasesLocked={false}
+              onTestVoice={voice.test}
+            />
           </div>
           <div className="setup-paper">{paperBox}</div>
         </div>
@@ -534,6 +581,8 @@ export default function BingoAdminPage() {
               onStart={() => void run({ action: 'start' }, { key: 'start' })}
               onDraw={() => void draw()}
               onReveal={() => void reveal()}
+              step={stepButton}
+              links={stepLinks}
             />
           ) : (
           <DrawColumn
@@ -548,9 +597,11 @@ export default function BingoAdminPage() {
             onStart={() => void run({ action: 'start' }, { key: 'start' })}
             onAuto={(m) => void setAuto(m)}
             onInterval={(sec) => { if (live!.autoMode !== 'manual') void run({ action: 'auto', mode: live!.autoMode, ms: sec * 1000 }, { quiet: true }) }}
+            step={stepButton}
+            links={stepLinks}
           />
           )}
-          <CenterColumn live={live!} held={held} busy={busy} run={run} music={music} drawnFull={drawnFull} />
+          <CenterColumn live={live!} held={held} music={music} drawnFull={drawnFull} />
           <div className="col-right">
             <ClaimsPanel claims={snap?.claims ?? []} state={live} phase={phase} busyId={decidingId} offset={offset} onDecide={(c, a) => void decide(c, a)} titles={titles} drawnFull={drawnFull} />
             {paperBox}
@@ -562,11 +613,12 @@ export default function BingoAdminPage() {
         <SettingsModal
           initial={settings}
           phases={live.phases}
+          lots={normalizeLots(live.phases, live.lots)}
           phasesLocked={live.count > 0 || live.status !== 'lobby'}
           onClose={() => setSettingsOpen(false)}
-          onSave={async (s, p) => {
-            const changed = p.join() !== live.phases.join()
-            if (await saveSettings(s, changed && live.count === 0 ? p : undefined)) setSettingsOpen(false)
+          onSave={async (s, p, l) => {
+            const changed = p.join() !== live.phases.join() || l.join() !== normalizeLots(live.phases, live.lots).join()
+            if (await saveSettings(s, changed && live.count === 0 ? p : undefined, changed && live.count === 0 ? l : undefined)) setSettingsOpen(false)
           }}
           onTestVoice={voice.test}
         />
@@ -581,7 +633,7 @@ export default function BingoAdminPage() {
 
 // ------------------------------------------------------------------ colonnes
 
-function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, onDraw, onStart, onAuto, onInterval }: {
+function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, onDraw, onStart, onAuto, onInterval, step, links }: {
   live: Live
   held: boolean
   busy: string | null
@@ -593,6 +645,9 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
   onStart: () => void
   onAuto: (m: 'manual' | 'auto' | 'paused') => void
   onInterval: (sec: number) => void
+  /** À la place de TIRER : continuer / passer à l'étape suivante / nouvelle partie. */
+  step: ReactNode
+  links: ReactNode
 }) {
   const locked = live.status === 'checking'
   const canDraw = !held && live.status === 'running' && live.count < 90
@@ -600,8 +655,8 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
   if (held) hint = <>AnimaBingo est en pause (autre jeu à l’écran).</>
   else if (live.status === 'lobby') hint = <>Les joueurs rejoignent la partie. Commencez quand la salle est prête.</>
   else if (locked) hint = <>Tirage bloqué pendant la vérification.</>
-  else if (live.status === 'celebrating') hint = <>Gagnant validé : choisissez la suite au centre.</>
-  else if (live.status === 'finished') hint = <>Partie terminée.</>
+  else if (live.status === 'celebrating') hint = <>Gagnant validé : remettez le lot, puis continuez.</>
+  else if (live.status === 'finished') hint = <>Partie terminée. Les joueurs gardent leurs cartons.</>
   else if (tooSoon) hint = <>La boule s’affiche à l’écran…</>
 
   const autoMode = live.autoMode
@@ -617,11 +672,12 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
         <button className="draw" onClick={onStart} disabled={held || busy !== null} data-testid="start">
           <div><b style={{ fontSize: 26 }}>COMMENCER</b><small>LA PARTIE</small></div>
         </button>
-      ) : (
+      ) : step ?? (
         <button className="draw" onClick={onDraw} disabled={!canDraw || tooSoon} data-testid="draw" aria-label="Tirer la boule suivante">
           <div><b>TIRER</b><small>BOULE SUIVANTE</small></div>
         </button>
       )}
+      {links}
       <div className="hint">{hint}</div>
 
       <div className="seg" role="group" aria-label="Mode de tirage">
@@ -666,18 +722,15 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
   )
 }
 
-function CenterColumn({ live, held, busy, run, music, drawnFull }: {
+function CenterColumn({ live, held, music, drawnFull }: {
   live: Live
   held: boolean
-  busy: string | null
-  run: (b: AdminBody, o?: { quiet?: boolean; key?: string }) => Promise<AdminResult | null>
   music: RegieMusic | null
   drawnFull?: readonly number[]
 }) {
   const hist = live.drawn.slice(-10, -1).reverse()
-  const cur = live.phaseIndex < live.phases.length ? live.phases[live.phaseIndex] : null
-  const next = live.phaseIndex + 1 < live.phases.length ? live.phases[live.phaseIndex + 1] : null
-  const winnersNow = live.winners.filter((w) => w.phase === cur)
+  const lot = lotInfo(live)
+  const lotsOf = (i: number) => live.lots?.[i] ?? 1
   return (
     <div>
       <div className="box">
@@ -687,6 +740,11 @@ function CenterColumn({ live, held, busy, run, music, drawnFull }: {
             <div key={p} className={`ph ${i < live.phaseIndex ? 'done' : i === live.phaseIndex ? 'now' : ''}`}>
               <small>{i < live.phaseIndex ? 'Jouée' : i === live.phaseIndex ? 'En cours' : i === live.phases.length - 1 ? 'Final' : 'Ensuite'}</small>
               <b>{PHASE_LABELS[p]}</b>
+              {lotsOf(i) > 1 && (
+                <em className="lotc" data-testid={i === live.phaseIndex ? 'regie-lot' : undefined}>
+                  {i === live.phaseIndex ? `Lot ${lot.now} / ${lot.n}` : `${lotsOf(i)} lots`}
+                </em>
+              )}
             </div>
           ))}
         </div>
@@ -702,44 +760,21 @@ function CenterColumn({ live, held, busy, run, music, drawnFull }: {
           </>
         )}
 
-        {!held && live.status === 'celebrating' && cur && (
-          <div className="banner info" style={{ margin: '14px 0 0' }} data-testid="celebrating">
-            {winnersNow.length} gagnant{winnersNow.length > 1 ? 's' : ''} pour la {PHASE_LABELS[cur].toLowerCase()}.
-            <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn sm ghost" onClick={() => void run({ action: 'resume' }, { key: 'resume' })} disabled={busy !== null}>
-                Continuer la {PHASE_LABELS[cur].toLowerCase()}
-              </button>
-              <button className="btn sm gold" onClick={() => void run({ action: 'next_phase' }, { key: 'next' })} disabled={busy !== null} data-testid="next-phase">
-                {next ? `Passer à : ${PHASE_LABELS[next]}` : 'Terminer la partie'}
-              </button>
-            </span>
-          </div>
-        )}
-        {!held && live.status === 'running' && cur && live.count > 0 && (
-          <div className="row-actions">
-            <button className="btn sm ghost" onClick={() => void run({ action: 'next_phase' }, { key: 'next' })} disabled={busy !== null}>
-              {next ? `Passer directement à : ${PHASE_LABELS[next]}` : 'Terminer la partie'}
-            </button>
-          </div>
-        )}
         {!held && live.status === 'finished' && (
-          <div className="banner info" style={{ margin: '14px 0 0' }} data-testid="finished">
-            Partie terminée. Une nouvelle manche garde les joueurs et leurs cartons, et repart avec {music ? 'tous les titres' : 'les 90 boules'}.
-            <button className="btn sm gold" onClick={() => void run({ action: 'new_round' }, { key: 'round' })} disabled={busy !== null} data-testid="new-round">
-              Nouvelle manche
-            </button>
+          <div className="banner info" style={{ margin: '12px 0 0' }} data-testid="finished">
+            Partie terminée. « Nouvelle partie » repart avec {music ? 'tous les titres' : 'les 90 boules'} : chacun garde ses cartons.
           </div>
         )}
       </div>
 
       {live.winners.length > 0 && (
         <div className="box" data-testid="winners">
-          <h2><span>Gagnants{live.round > 1 ? ` · manche ${live.round}` : ''}</span><span>{live.winners.length}</span></h2>
-          {live.winners.map((w, i) => (
+          <h2><span>Gagnants{live.round > 1 ? ` · partie ${live.round}` : ''}</span><span>{live.winners.length}</span></h2>
+          {[...live.winners].reverse().map((w, i) => (
             <div key={i} className="opt">
               <div className="t">
                 <b>{w.name ?? `Carton n° ${w.serial}`}</b>
-                <span>{PHASE_LABELS[w.phase]} · carton {w.kind === 'paper' ? 'papier ' : ''}n° {w.serial} · {music ? 'au morceau' : 'à la boule'} n° {w.drawCount}</span>
+                <span>{PHASE_LABELS[w.phase]}{w.lot && lotsOf(live.phases.indexOf(w.phase)) > 1 ? ` · lot ${w.lot}` : ''} · carton {w.kind === 'paper' ? 'papier ' : ''}n° {w.serial} · {music ? 'au morceau' : 'à la boule'} n° {w.drawCount}</span>
               </div>
             </div>
           ))}
@@ -749,16 +784,18 @@ function CenterColumn({ live, held, busy, run, music, drawnFull }: {
   )
 }
 
-function SettingsModal({ initial, phases, phasesLocked, onClose, onSave, onTestVoice }: {
+function SettingsModal({ initial, phases, lots, phasesLocked, onClose, onSave, onTestVoice }: {
   initial: BingoSettings
   phases: Phase[]
+  lots: number[]
   phasesLocked: boolean
   onClose: () => void
-  onSave: (s: BingoSettings, p: Phase[]) => Promise<void>
+  onSave: (s: BingoSettings, p: Phase[], l: number[]) => Promise<void>
   onTestVoice: () => void
 }) {
   const [s, setS] = useState(initial)
   const [p, setP] = useState(phases)
+  const [l, setL] = useState(lots)
   const [saving, setSaving] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -770,10 +807,10 @@ function SettingsModal({ initial, phases, phasesLocked, onClose, onSave, onTestV
       <div className="card bgo" style={{ width: 'min(640px, 100%)', maxHeight: '90dvh', overflowY: 'auto', boxShadow: '0 0 0 1px rgba(139,77,255,.3), 0 30px 60px rgba(0,0,0,.6)' }}>
         <h4>Réglages</h4>
         <p className="note" style={{ marginTop: 0 }}>Les cartons déjà distribués ne changent pas ; le nombre de cartons s’applique aux nouveaux joueurs.</p>
-        <SettingsForm settings={s} onChange={setS} phases={p} onPhases={setP} phasesLocked={phasesLocked} onTestVoice={onTestVoice} />
+        <SettingsForm settings={s} onChange={setS} phases={p} lots={l} onPhases={(np, nl) => { setP(np); setL(nl) }} phasesLocked={phasesLocked} onTestVoice={onTestVoice} />
         <div className="acts">
           <button className="btn ghost" onClick={onClose}>Annuler</button>
-          <button className="btn gold" disabled={saving} onClick={async () => { setSaving(true); await onSave(s, p); setSaving(false) }} data-testid="save-settings">
+          <button className="btn gold" disabled={saving} onClick={async () => { setSaving(true); await onSave(s, p, l); setSaving(false) }} data-testid="save-settings">
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>

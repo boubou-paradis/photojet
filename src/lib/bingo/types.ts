@@ -13,6 +13,14 @@ export interface BingoSettings {
   /** Une demande de quine met la partie en vérification et le tirage auto en pause. */
   pauseOnClaim: boolean
   voice: 'off' | 'tts' | 'recordings'
+  /** Fin d'une étape (dernier lot gagné) : bouton de l'animateur (défaut) ou passage tout seul après 8 s. */
+  advance: 'manual' | 'auto'
+  /** Plusieurs gagnants sur la même boule : un seul lot partagé (défaut) ou un lot chacun. */
+  tie: 'shared' | 'each'
+  /** Étape à plusieurs lots : un même carton peut regagner avec de nouvelles lignes (défaut : non). */
+  repeatCard: boolean
+  /** Formule choisie en préparation (affichage seulement, la base ne lit que étapes et lots). */
+  formula: 'classic' | 'plein' | 'suivie' | 'custom'
   public: {
     /** Dernier numéro affiché sur les téléphones. */
     showLast: boolean
@@ -38,6 +46,8 @@ export interface BingoWinner {
   name: string | null
   lines: number
   drawCount: number
+  /** Lot gagné dans l'étape (1, 2…) ; ex aequo d'une même boule = même lot (réglage par défaut). */
+  lot?: number
 }
 
 /** Forme exacte renvoyée par bingo_public_state. */
@@ -66,6 +76,15 @@ export type BingoPublicState =
       players: number
       pending: number
       winners: BingoWinner[]
+      /** Nombre de lots de chaque étape (même ordre que phases). Absent : 1 partout. */
+      lots?: number[]
+      /** Lots déjà gagnés dans l'étape en cours. */
+      lotsUsed?: number
+      /** Tous les lots de l'étape en cours sont gagnés : on passe à la suite. */
+      phaseDone?: boolean
+      advance?: 'manual' | 'auto'
+      /** Dernier gagnant validé de l'étape en cours (heure serveur). */
+      lastWinAt?: string | null
       /** Régie silencieuse depuis plus de 90 s (PC planté, coupure) : rien n'est perdu. */
       paused: boolean
       /** Présent quand un lancement a repris une partie existante. */

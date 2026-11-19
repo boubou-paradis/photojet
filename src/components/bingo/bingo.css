@@ -304,3 +304,36 @@
 .bgo .mboard li.on { background: rgba(166, 107, 255, .16); color: #fff; }
 .bgo .mboard li.last { background: linear-gradient(180deg, #fbe9a8, #d4af37); color: #1a1206; }
 .bgo .mboard li.last .k { color: #1a1206; }
+
+/* Formules et lots (préparation / réglages). */
+.bgo .pills.formulas { flex-wrap: wrap; margin-top: 8px; }
+.bgo .order .lots { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.bgo .order .lots > span { min-width: 52px; text-align: center; color: var(--text); font-weight: 700; }
+
+/* Régie Direct : jamais de défilement de la page ; chaque colonne garde ses commandes en haut. */
+.bgo.regie.direct { height: calc(100dvh - 95px); min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.bgo.regie.direct > .rgrid { flex: 1; min-height: 0; align-items: stretch; padding-top: 12px; padding-bottom: 12px; }
+.bgo.regie.direct > .rgrid > * { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.bgo.regie.direct .banner { margin-top: 8px; margin-bottom: 0; }
+.bgo .draw.step { width: 190px; height: 190px; }
+.bgo .draw.step b { font-size: 24px; letter-spacing: .03em; }
+.bgo .draw.step.go { background: radial-gradient(circle at 40% 30%, #fff, #c9f5dd 35%, #3ddc97 70%, #17784c); color: #04220f; animation: bgo-step 1.6s ease-in-out infinite; }
+.bgo .draw.step.go small { color: #0d4a2c; }
+@keyframes bgo-step { 50% { box-shadow: inset 0 3px 0 #fffbe8, 0 0 0 6px #1b1433, 0 0 0 8px rgba(61, 220, 151, .8), 0 0 70px rgba(61, 220, 151, .45), 0 18px 30px rgba(0, 0, 0, .5); } }
+@media (prefers-reduced-motion: reduce) { .bgo .draw.step.go { animation: none; } }
+.bgo .step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 2px 0 6px; }
+/* Écrans bas (1366×768) : boule et bouton plus compacts, tout tient sans défiler. */
+@media (max-height: 820px) {
+  .bgo.regie.direct .rtop { padding-top: 8px; padding-bottom: 8px; }
+  .bgo.regie.direct .current .ball { transform: scale(.72); margin: -14px auto -12px; }
+  .bgo.regie.direct .draw { width: 140px; height: 140px; margin: 8px auto 4px; }
+  .bgo.regie.direct .draw b { font-size: 28px; }
+  .bgo.regie.direct .draw.step { width: 156px; height: 156px; }
+  .bgo.regie.direct .draw.step b { font-size: 20px; }
+  .bgo.regie.direct .phases { margin-bottom: 8px; }
+  .bgo.regie.direct .ph { padding: 6px 10px; }
+  .bgo.regie.direct .seg { margin-top: 8px; }
+  .bgo.regie.direct .hist { margin-top: 8px; }
+}
+.bgo .ph .lotc { display: block; font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+.bgo .ph.now .lotc { color: #ffe3ae; }

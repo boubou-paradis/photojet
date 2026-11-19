@@ -8,9 +8,11 @@ import type { RegieSnapshot } from '@/lib/bingo/server'
 import type { BingoSettings, Phase } from '@/lib/bingo/types'
 
 export type AdminBody =
-  | { action: 'launch' | 'new_game'; settings: BingoSettings; phases: Phase[]; playlistId?: string }
-  | { action: 'settings'; settings: BingoSettings; phases?: Phase[] }
-  | { action: 'start' | 'resume' | 'next_phase' | 'new_round' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
+  | { action: 'launch' | 'new_game'; settings: BingoSettings; phases: Phase[]; lots?: number[]; playlistId?: string }
+  | { action: 'new_round'; settings?: BingoSettings; phases?: Phase[]; lots?: number[] }
+  | { action: 'settings'; settings: BingoSettings; phases?: Phase[]; lots?: number[] }
+  | { action: 'next_phase' | 'advance' | 'jump_final'; expect?: number }
+  | { action: 'start' | 'resume' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
   | { action: 'draw'; expect: number }
   | { action: 'auto'; mode: 'manual' | 'auto' | 'paused'; ms?: number }
   | { action: 'decide'; claimId: number; accept: boolean }

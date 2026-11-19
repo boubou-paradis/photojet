@@ -16,7 +16,7 @@
 //   n'existe plus (410) : jamais sur une simple erreur réseau.
 
 import { BINGO_CLAIM_POLL_MS, BINGO_PHONE_POLL_MS } from './constants'
-import { claimToSend, clearMemory, loadMemory, reconcile, saveMemory, toggleMark, type PhoneMemory, type StoredCard } from './phone-store'
+import { claimToSend, clearMarks, clearMemory, loadMemory, reconcile, saveMemory, toggleMark, type PhoneMemory, type StoredCard } from './phone-store'
 import type { BingoPublicState } from './types'
 
 export type PhoneStage = 'loading' | 'join' | 'play' | 'closed'
@@ -77,10 +77,10 @@ export class PhoneController {
     this.s = { ...this.s, ...patch }
     this.listeners.forEach((l) => l())
   }
-  private notify(text: string) {
+  private notify(text: string, ms = NOTICE_MS) {
     clearTimeout(this.noticeTimer)
     this.set({ notice: text })
-    this.noticeTimer = setTimeout(() => this.set({ notice: null }), NOTICE_MS)
+    this.noticeTimer = setTimeout(() => this.set({ notice: null }), ms)
   }
   private remember(mem: PhoneMemory | null) {
     if (mem) {
@@ -164,11 +164,15 @@ export class PhoneController {
       void this.checkMe()
       return
     }
+    // Nouvelle partie lancée par l'animateur (numéro de partie changé), même
+    // si ce téléphone dormait à ce moment-là : jetons vidés, mêmes cartons.
+    // Entre deux étapes d'une même partie, le numéro ne change pas : rien n'est effacé.
     const next = reconcile(mem, pub.gameId, pub.round)
     if (next && next !== mem) {
       this.remember(next)
       this.set({ outcome: null })
-      this.notify('Nouvelle manche : vos jetons sont remis à zéro.')
+      // round 0 = arrivé avant la première lecture : rien à vider, pas de message.
+      if (mem.round > 0) this.notify('Nouvelle partie ! Vos cartons ont été vidés.', 10_000)
     }
     const cur = this.s.mem
     if (!cur) return
@@ -216,7 +220,7 @@ export class PhoneController {
         token: String(r.json.token),
         name: String(r.json.name ?? name),
         gameId: String(r.json.gameId),
-        round: pub?.active ? pub.round : 1,
+        round: pub?.active ? pub.round : 0,
         cards: r.json.cards as StoredCard[],
         marks: {},
         claim: null,
@@ -236,6 +240,14 @@ export class PhoneController {
     const mem = this.s.mem
     if (!mem || (mem.claim && this.s.outcome === null)) return // carton figé pendant la vérification
     this.remember(toggleMark(mem, cardId, n))
+  }
+
+  /** Bouton « Effacer mes jetons » (après confirmation) : les cartons restent les mêmes. */
+  clearAll() {
+    const mem = this.s.mem
+    if (!mem || (mem.claim && this.s.outcome === null)) return // carton figé pendant la vérification
+    this.remember(clearMarks(mem))
+    this.notify('Jetons effacés.')
   }
 
   // ---------------------------------------------------------------- « QUINE ! »

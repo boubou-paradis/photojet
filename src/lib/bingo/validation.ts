@@ -6,6 +6,7 @@
 
 import { isSessionCode, isUuid } from '@/lib/affinity/validation'
 import { BINGO_MAX_CARDS_PER_PLAYER, BINGO_NAME_MAX, BINGO_PAPER_MAX_PER_BATCH, BINGO_PHASES } from './constants'
+import { LOTS_MAX } from './formulas'
 import type { AutoMode, BingoSettings, Cells, Phase } from './types'
 
 export { isSessionCode, isUuid }
@@ -16,6 +17,10 @@ export const DEFAULT_SETTINGS: BingoSettings = {
   cardsPerPlayer: 1,
   pauseOnClaim: true,
   voice: 'tts',
+  advance: 'manual',
+  tie: 'shared',
+  repeatCard: false,
+  formula: 'classic',
   public: { showLast: true, showName: true, screen: 'machine' },
 }
 
@@ -31,6 +36,10 @@ export function parseSettings(x: unknown, base: BingoSettings = DEFAULT_SETTINGS
     cardsPerPlayer: Number.isInteger(cards) && cards >= 1 && cards <= BINGO_MAX_CARDS_PER_PLAYER ? (cards as BingoSettings['cardsPerPlayer']) : base.cardsPerPlayer,
     pauseOnClaim: bool(o.pauseOnClaim, base.pauseOnClaim),
     voice: o.voice === 'off' || o.voice === 'tts' || o.voice === 'recordings' ? o.voice : base.voice,
+    advance: o.advance === 'auto' || o.advance === 'manual' ? o.advance : base.advance,
+    tie: o.tie === 'each' || o.tie === 'shared' ? o.tie : base.tie,
+    repeatCard: bool(o.repeatCard, base.repeatCard),
+    formula: o.formula === 'classic' || o.formula === 'plein' || o.formula === 'suivie' || o.formula === 'custom' ? o.formula : base.formula,
     public: {
       showLast: bool(p.showLast, base.public.showLast),
       showName: bool(p.showName, base.public.showName),
@@ -52,6 +61,12 @@ export function parsePhases(x: unknown): Phase[] | null {
   if (!Array.isArray(x) || x.length < 1 || x.length > 3) return null
   if (!x.every((p): p is Phase => (BINGO_PHASES as readonly string[]).includes(p as string))) return null
   return new Set(x).size === x.length ? x : null
+}
+
+/** Lots par étape : un entier de 1 à 20 pour chaque étape. */
+export function parseLots(x: unknown, phases: number): number[] | null {
+  if (!Array.isArray(x) || x.length !== phases) return null
+  return x.every((n) => Number.isInteger(n) && n >= 1 && n <= LOTS_MAX) ? (x as number[]) : null
 }
 
 /** Coches envoyées avec une demande : 15 au plus, toutes présentes sur le carton, sans doublon. */
@@ -86,9 +101,11 @@ export function parseClaim(body: unknown): Validated<{ code: string; token: stri
 
 /** Commandes de la régie (envoyées à bingo_admin après mise en forme). */
 export type AdminCommand =
-  | { action: 'launch' | 'new_game'; settings: BingoSettings; phases: Phase[]; playlistId?: string }
-  | { action: 'settings'; settings: BingoSettings; phases?: Phase[] }
-  | { action: 'start' | 'resume' | 'next_phase' | 'new_round' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
+  | { action: 'launch' | 'new_game'; settings: BingoSettings; phases: Phase[]; lots?: number[]; playlistId?: string }
+  | { action: 'new_round'; settings?: BingoSettings; phases?: Phase[]; lots?: number[] }
+  | { action: 'settings'; settings: BingoSettings; phases?: Phase[]; lots?: number[] }
+  | { action: 'next_phase' | 'advance' | 'jump_final'; expect?: number }
+  | { action: 'start' | 'resume' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
   | { action: 'draw'; expect: number }
   | { action: 'auto'; mode: AutoMode; ms?: number }
   | { action: 'decide'; claimId: number; accept: boolean; name?: string }
@@ -106,16 +123,34 @@ export function parseAdmin(body: unknown): Validated<{ sessionId: string; comman
       const phases = body.phases === undefined ? [...BINGO_PHASES] : parsePhases(body.phases)
       if (!phases) return bad
       if (body.playlistId !== undefined && body.playlistId !== null && !isUuid(body.playlistId)) return bad
-      command = { action: a, settings: parseSettings(body.settings), phases, ...(isUuid(body.playlistId) ? { playlistId: body.playlistId } : {}) }
+      const lots = body.lots === undefined ? undefined : parseLots(body.lots, phases.length)
+      if (lots === null) return bad
+      command = { action: a, settings: parseSettings(body.settings), phases, ...(lots ? { lots } : {}), ...(isUuid(body.playlistId) ? { playlistId: body.playlistId } : {}) }
+      break
+    }
+    case 'new_round': {
+      // Nouvelle partie de la soirée : mêmes joueurs et mêmes cartons (téléphones et papier).
+      const phases = body.phases === undefined ? undefined : parsePhases(body.phases)
+      if (phases === null) return bad
+      const lots = body.lots === undefined ? undefined : parseLots(body.lots, phases?.length ?? -1)
+      if (lots === null || (lots && !phases)) return bad
+      command = { action: 'new_round', ...(body.settings !== undefined ? { settings: parseSettings(body.settings) } : {}), ...(phases ? { phases } : {}), ...(lots ? { lots } : {}) }
       break
     }
     case 'settings': {
       const phases = body.phases === undefined ? undefined : parsePhases(body.phases)
       if (phases === null) return bad
-      command = { action: 'settings', settings: parseSettings(body.settings), ...(phases ? { phases } : {}) }
+      const lots = body.lots === undefined ? undefined : parseLots(body.lots, phases?.length ?? -1)
+      if (lots === null || (lots && !phases)) return bad
+      command = { action: 'settings', settings: parseSettings(body.settings), ...(phases ? { phases } : {}), ...(lots ? { lots } : {}) }
       break
     }
-    case 'start': case 'resume': case 'next_phase': case 'new_round': case 'heartbeat': case 'exit': case 'paper_clear': case 'paper_list': case 'reveal':
+    case 'next_phase': case 'advance': case 'jump_final':
+      // expect = étape affichée : un double clic ou un renvoi ne saute jamais deux étapes.
+      if (body.expect !== undefined && (!Number.isInteger(body.expect) || (body.expect as number) < 0 || (body.expect as number) > 3)) return bad
+      command = { action: a, ...(body.expect !== undefined ? { expect: body.expect as number } : {}) }
+      break
+    case 'start': case 'resume': case 'heartbeat': case 'exit': case 'paper_clear': case 'paper_list': case 'reveal':
       command = { action: a }
       break
     case 'draw':
