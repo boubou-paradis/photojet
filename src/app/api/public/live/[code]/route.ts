@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const admin = getPublicAdmin()
   const busy = NextResponse.json({ error: 'Base momentanément indisponible.' }, { status: 503, headers: NO_STORE })
 
-  // demimot_active est facultative : si la base ne la connaît pas, lecture sans elle.
+  // demimot_active et bingo_active sont facultatives : si la base ne la connaît pas, lecture sans elle.
   const { data, error } = await selectWithOptionalColumns(['is_active', 'user_id', ...LIVE_SESSION_COLUMNS], (columns) =>
     admin.from('sessions').select(columns).eq('code', code).maybeSingle(),
   )
@@ -58,6 +58,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   if (row.quiz_active !== true && row.quiz_lobby_visible !== true) session.quiz_questions = null
   // Absente ou illisible : À Demi-Mot inactif.
   session.demimot_active = row.demimot_active === true
+  session.bingo_active = row.bingo_active === true
 
   return NextResponse.json({ session, photos: photos.data, messages: messages.data }, { headers: NO_STORE })
 }

@@ -1,0 +1,11 @@
+AnimaBingo - bruitages (page animateur uniquement)
+Générés le 2026-11-19 avec ElevenLabs (effets sonores), compte AnimaJet.
+Niveau ramené à -19 LUFS (la voix Claire est à -18 LUFS), fondu de sortie 0,3 s.
+
+debut.mp3   jingle d'ouverture (avant « C'est parti ! »)
+boule.mp3   boule qui sort de la sphère (avant chaque numéro)
+alerte.mp3  alerte de demande (avant « Une quine est annoncée »)
+gagne.mp3   fanfare (avant « Et c'est gagné ! »)
+refus.mp3   trombone (avant « Fausse alerte »)
+phase.mp3   transition (avant « On joue maintenant pour… »)
+fin.mp3     applaudissements (avant « La partie est terminée »)

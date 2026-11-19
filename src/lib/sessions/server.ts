@@ -55,7 +55,7 @@ async function forceActivate(admin: AdminClient, sessionId: string, userId: stri
 // Nom et activité des sessions en conflit. Si l'activité ne peut pas être lue,
 // on affiche l'avertissement renforcé : il ne bloque rien, il prévient seulement.
 async function describeSessions(admin: AdminClient, ids: string[]): Promise<ActiveSessionInfo[]> {
-  // demimot_active est facultative : si la base ne la connaît pas, lecture sans elle.
+  // demimot_active et bingo_active sont facultatives : si la base ne la connaît pas, lecture sans elle.
   const { data, error } = await selectWithOptionalColumns(['id', 'name', ...GAME_ACTIVITY_COLUMNS], (columns) =>
     admin.from('sessions').select(columns).in('id', ids),
   )

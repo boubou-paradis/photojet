@@ -33,6 +33,7 @@ export const SEO_PAGES: SeoPage[] = [
   { slug: 'jeu-buzzer', label: 'AnimaBuzz', blurb: 'Le buzzer live : le téléphone de chaque invité devient un vrai buzzer de jeu.', category: 'animation', priority: 0.8 },
   { slug: 'jeu-vote', label: 'AnimaVote', blurb: 'Le vote live : vos invités élisent leur favori depuis leur téléphone.', category: 'animation', priority: 0.8 },
   { slug: 'jeu-a-demi-mot', label: 'À Demi-Mot', blurb: 'Le jeu d’expressions à deviner : les équipes buzzent pour trouver la phrase cachée.', category: 'animation', priority: 0.8 },
+  { slug: 'jeu-animabingo', label: 'AnimaBingo', blurb: 'Le loto animé : tirage sur écran géant, cartons sur téléphone ou papier.', category: 'animation', priority: 0.8 },
   { slug: 'partage-photo-evenement', label: 'Partage photo en direct', blurb: 'Les invités envoient leurs photos, elles s’affichent en direct.', category: 'animation', priority: 0.8 },
   { slug: 'borne-photo', label: 'Borne photo', blurb: 'Une borne photo virtuelle, sans matériel à louer.', category: 'animation', priority: 0.8 },
 

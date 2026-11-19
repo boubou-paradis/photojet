@@ -173,4 +173,29 @@ describe('selectWithOptionalColumns (aussi utilisé par le basculement de sessio
     expect(run).toHaveBeenCalledTimes(2)
     expect(run.mock.calls[1][0]).toBe('id, name, vote_active')
   })
+
+  it('AnimaBingo pas encore migré : seule bingo_active est retirée, À Demi-Mot reste lu', async () => {
+    const run = vi.fn(async (select: string) =>
+      select.includes('bingo_active')
+        ? { data: null, error: { code: '42703', message: 'column sessions.bingo_active does not exist' } }
+        : { data: [{ id: 'x' }], error: null },
+    )
+    const result = await selectWithOptionalColumns(['id', 'demimot_active', 'bingo_active'], run)
+    expect(result.error).toBeNull()
+    expect(run).toHaveBeenCalledTimes(2)
+    expect(run.mock.calls[1][0]).toBe('id, demimot_active')
+  })
+
+  it('les deux colonnes absentes : deux relectures au plus, puis sans elles', async () => {
+    const run = vi.fn(async (select: string) => {
+      const missing = ['demimot_active', 'bingo_active'].find((c) => select.includes(c))
+      return missing
+        ? { data: null, error: { code: '42703', message: `column sessions.${missing} does not exist` } }
+        : { data: [{ id: 'x' }], error: null }
+    })
+    const result = await selectWithOptionalColumns(['id', 'demimot_active', 'bingo_active'], run)
+    expect(result.error).toBeNull()
+    expect(run).toHaveBeenCalledTimes(3)
+    expect(run.mock.calls[2][0]).toBe('id')
+  })
 })

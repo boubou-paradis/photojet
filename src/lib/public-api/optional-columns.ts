@@ -8,7 +8,7 @@
 // continuent de fonctionner normalement. Toute autre erreur reste une erreur.
 
 /** Colonnes facultatives : leur absence ne doit jamais casser une lecture. */
-export const OPTIONAL_SESSION_COLUMNS: readonly string[] = ['demimot_active']
+export const OPTIONAL_SESSION_COLUMNS: readonly string[] = ['demimot_active', 'bingo_active']
 
 interface DbError {
   code?: string | null
@@ -38,8 +38,17 @@ export async function selectWithOptionalColumns<R extends { error: DbError | nul
   columns: readonly string[],
   run: (select: string) => PromiseLike<R>,
 ): Promise<R> {
-  const first = await run(columns.join(', '))
-  if (!isMissingOptionalColumn(first.error)) return first
-  console.warn('[public-api] Colonne facultative absente de la base, lecture sans elle :', first.error?.message)
-  return run(withoutOptionalColumns(columns).join(', '))
+  // Seule la colonne absente est retirée (une migration appliquée et une autre
+  // pas encore : le jeu déjà installé reste visible). Si l'erreur ne permet
+  // pas de savoir laquelle, toutes les facultatives sont retirées.
+  let current = [...columns]
+  let result = await run(current.join(', '))
+  for (let attempt = 0; attempt < OPTIONAL_SESSION_COLUMNS.length && isMissingOptionalColumn(result.error); attempt++) {
+    console.warn('[public-api] Colonne facultative absente de la base, lecture sans elle :', result.error?.message)
+    const text = [result.error?.message, result.error?.details, result.error?.hint].filter(Boolean).join(' ')
+    const named = OPTIONAL_SESSION_COLUMNS.filter((c) => current.includes(c) && text.includes(c))
+    current = named.length ? current.filter((c) => !named.includes(c)) : withoutOptionalColumns(current)
+    result = await run(current.join(', '))
+  }
+  return result
 }

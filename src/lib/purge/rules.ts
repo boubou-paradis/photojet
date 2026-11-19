@@ -152,6 +152,7 @@ const OWNER_RULES: [RegExp, 'session' | 'user'][] = [
   [new RegExp(`^promos/(${UUID})/`), 'session'],
   [new RegExp(`^vote-photos/(${UUID})/`), 'session'],
   [new RegExp(`^buzzer-media/(${UUID})/`), 'user'],
+  [new RegExp(`^bingo-music/(${UUID})/`), 'user'],
   [new RegExp(`^borne-templates/(${UUID})/`), 'user'],
 ]
 

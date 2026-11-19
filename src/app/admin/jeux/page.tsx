@@ -84,9 +84,9 @@ const games = [
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
     notice: '/animabuzz-regles.pdf',
-    // Grand écran : 2e ligne avec AnimaVote et À Demi-Mot, le trio centré
-    // (colonnes 2 à 4 sur 5).
-    gridClass: 'lg:col-start-2',
+    // Grand écran : 2e ligne de 4 (avec AnimaVote, À Demi-Mot, AnimaBingo),
+    // centrée par un décalage d'une demi-colonne + demi-gouttière (gap-6 = 1,5rem).
+    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'vote',
@@ -99,10 +99,9 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
     notice: '/animavote-regles.pdf',
-    // Tablette (3 colonnes) : dernière ligne avec À Demi-Mot, la paire centrée
-    // (décalage d'une demi-colonne + demi-gouttière, gap-6 = 1,5rem).
-    // Grand écran : à la suite d'AnimaBuzz, sans décalage.
-    gridClass: 'md:col-start-2 md:-translate-x-[calc(50%+0.75rem)] lg:col-start-auto lg:translate-x-0',
+    // Tablette (3 colonnes) : 9 jeux = 3 lignes pleines, sans décalage.
+    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
+    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'demimot',
@@ -116,8 +115,21 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
     notice: '/a-demi-mot-regles.pdf',
-    // Tablette : même décalage qu'AnimaVote (paire centrée). Grand écran : à la suite.
-    gridClass: 'md:-translate-x-[calc(50%+0.75rem)] lg:translate-x-0',
+    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
+    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
+  },
+  {
+    id: 'bingo',
+    name: 'AnimaBingo',
+    image: '/images/games/animabingo.png',
+    description: 'Le loto 90 boules : cartons sur téléphone ou papier, quine vérifiée en un clic',
+    path: '/admin/jeux/bingo',
+    available: true,
+    glowColor: 'rgba(212, 175, 55, 0.5)',
+    borderHover: 'hover:border-[#D4AF37]',
+    accentColor: 'text-[#D4AF37]',
+    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
+    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
 ]
 

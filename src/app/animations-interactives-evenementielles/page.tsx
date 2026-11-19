@@ -41,6 +41,7 @@ const animations = [
   { name: 'AnimaBuzz', href: '/jeu-buzzer', img: '/images/games/animabuzz-xtreme.png', desc: 'Le buzzer live : chaque téléphone devient un vrai buzzer, le plus rapide prend la main.' },
   { name: 'AnimaVote', href: '/jeu-vote', img: '/images/games/animavote.png', desc: 'Le vote live : la salle élit son favori au téléphone, révélation en podium sur écran géant.' },
   { name: 'À Demi-Mot', href: '/jeu-a-demi-mot', img: '/images/games/a-demi-mot-v2.png', desc: 'Les lettres tombent une à une : la première équipe qui buzze devine l’expression sur écran géant.' },
+  { name: 'AnimaBingo', href: '/jeu-animabingo', img: '/images/games/animabingo.png', desc: 'Le loto animé : les boules tombent sur écran géant, les invités jouent sur leur téléphone ou sur papier.' },
   { name: 'Partage photo en direct', href: '/partage-photo-evenement', img: '/photo-qr-partage.png', desc: 'Les photos des invités s\'affichent en direct sur écran géant, album partagé à la clé.' },
   { name: 'Borne photo', href: '/borne-photo', img: '/images/borne-photo.png', desc: 'Le photobooth nouvelle génération : impression instantanée et album connecté.' },
 ]

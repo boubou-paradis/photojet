@@ -1,6 +1,6 @@
 # AnimaJet
 
-> Plateforme SaaS française d'animations interactives pour les pros de l'événementiel (DJ, animateurs, mariages, entreprises, bars, campings). Les invités participent depuis leur téléphone — quiz, blind test, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz, AnimaVote, À Demi-Mot, partage et impression photo — et tout s'affiche en direct sur écran géant. Sans application à installer. Abonnement 29,90 €/mois (sans engagement), Pass Événement 14,90 € le week-end, essai gratuit 24h en semaine. Éditeur : MG Events Animation. Site en français.
+> Plateforme SaaS française d'animations interactives pour les pros de l'événementiel (DJ, animateurs, mariages, entreprises, bars, campings). Les invités participent depuis leur téléphone — quiz, blind test, roue de la destinée, photo mystère, le bon ordre, Matching, AnimaBuzz, AnimaVote, À Demi-Mot, AnimaBingo (loto), partage et impression photo — et tout s'affiche en direct sur écran géant. Sans application à installer. Abonnement 29,90 €/mois (sans engagement), Pass Événement 14,90 € le week-end, essai gratuit 24h en semaine. Éditeur : MG Events Animation. Site en français.
 
 ## Fonctionnalités & animations
 
@@ -15,6 +15,7 @@
 - [AnimaBuzz](https://animajet.fr/jeu-buzzer): le téléphone de chaque invité devient un vrai buzzer de jeu.
 - [AnimaVote](https://animajet.fr/jeu-vote): vote du public en direct sur téléphone, résultats en direct ou révélés en podium.
 - [À Demi-Mot](https://animajet.fr/jeu-a-demi-mot): jeu d'équipes, une expression se dévoile lettre par lettre sur écran géant, les capitaines buzzent depuis leur téléphone pour la deviner.
+- [AnimaBingo](https://animajet.fr/jeu-animabingo): loto 90 boules animé sur écran géant, cartons sur téléphone ou papier, quines vérifiées en un clic.
 - [Partage photo en direct](https://animajet.fr/partage-photo-evenement): les invités envoient leurs photos, affichées en direct sur écran géant.
 - [Borne photo](https://animajet.fr/borne-photo): borne photo virtuelle, sans matériel à louer.
 - [Impression photo sur place](https://animajet.fr/impression-photo-evenement): les invités impriment leurs souvenirs pendant l'événement.

@@ -25,7 +25,7 @@ export default function MentionsLegalesPage() {
         </Link>
 
         <h1 className="text-3xl sm:text-4xl font-bold text-[#D4AF37] mb-2">Mentions Légales</h1>
-        <p className="text-gray-400 mb-10">Dernière mise à jour : avril 2026</p>
+        <p className="text-gray-400 mb-10">Dernière mise à jour : novembre 2026</p>
 
         <div className="space-y-12 leading-relaxed">
 
@@ -101,7 +101,7 @@ export default function MentionsLegalesPage() {
                 <h3 className="text-lg font-semibold text-white mb-2">3.3 Description du service</h3>
                 <p className="mb-2">AnimaJet permet aux utilisateurs abonnés de :</p>
                 <ul className="list-disc ml-6 space-y-1">
-                  <li>Créer et diffuser des animations interactives (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz, AnimaVote, À Demi-Mot)</li>
+                  <li>Créer et diffuser des animations interactives (Photo Mystère, Le Bon Ordre, Roue de la Destinée, Quiz, Matching, AnimaBuzz, AnimaVote, À Demi-Mot, AnimaBingo)</li>
                   <li>Activer un système de partage de photos en live</li>
                   <li>Activer une borne photo numérique</li>
                   <li>Générer des QR codes permettant aux participants de rejoindre les animations depuis leur smartphone</li>

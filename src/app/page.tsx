@@ -92,6 +92,12 @@ const animations = [
     desc: 'Une expression se dévoile lettre par lettre sur l\'écran géant : la première équipe qui buzze tente de la deviner.',
   },
   {
+    name: 'AnimaBingo',
+    img: '/images/games/animabingo.png',
+    href: '/jeu-animabingo',
+    desc: 'Le loto animé : les boules tombent sur l\'écran géant, les invités posent leurs jetons sur leur téléphone ou sur papier.',
+  },
+  {
     name: 'Partage photo en direct',
     img: '/photo-qr-partage.png',
     href: '/partage-photo-evenement',

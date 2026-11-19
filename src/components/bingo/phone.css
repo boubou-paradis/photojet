@@ -1,0 +1,156 @@
+/* © 2025 AnimaJet - MG Events Animation. Tous droits réservés. */
+/* AnimaBingo — téléphone du joueur (maquette telephone.html). Rangé sous .bgo-phone. */
+
+.bgo-phone { min-height: 100dvh; background: radial-gradient(500px 300px at 50% -40px, rgba(139, 77, 255, .35), transparent 70%), linear-gradient(180deg, #0d0a1a, #06050c 60%);
+  font-family: var(--font-poppins), system-ui, sans-serif; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+.bgo-phone .app { position: relative; min-height: 100dvh; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column;
+  padding: max(12px, env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom)); }
+
+.bgo-phone header { display: flex; align-items: center; gap: 10px; padding: 4px 4px 10px; }
+.bgo-phone header .who { flex: 1; min-width: 0; }
+.bgo-phone header .who b { display: block; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bgo-phone header .who span { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.bgo-phone .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.bgo-phone .dot.off { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: bgp-blink 1.2s ease-in-out infinite; }
+.bgo-phone .pill { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .12em; white-space: nowrap; color: #1a1206; background: linear-gradient(180deg, #fbe9a8, #d9b448); }
+
+/* bandeaux d'état */
+.bgo-phone .strip { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.35;
+  background: rgba(255, 255, 255, .05); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .18); }
+.bgo-phone .strip.warn { color: #ffd28a; background: rgba(240, 168, 48, .1); box-shadow: inset 0 0 0 1px rgba(240, 168, 48, .45); }
+.bgo-phone .strip.win { color: var(--gold-hi); background: rgba(212, 175, 55, .1); box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .45); }
+.bgo-phone .strip .grow { flex: 1; min-width: 0; }
+.bgo-phone .last { justify-content: space-between; }
+.bgo-phone .last small { display: block; font-size: 11px; letter-spacing: .2em; color: var(--muted); font-weight: 700; }
+.bgo-phone .last em { font-style: normal; font-size: 15px; font-weight: 700; text-transform: capitalize; }
+
+/* onglets des cartons */
+.bgo-phone .tabs { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; margin-bottom: 12px; padding: 4px; border-radius: 16px; background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .15); }
+.bgo-phone .tab { border: 0; font: inherit; cursor: pointer; border-radius: 12px; padding: 8px 4px; text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; background: transparent; }
+.bgo-phone .tab b { display: block; font-size: 15px; color: var(--text); }
+.bgo-phone .tab .dots { display: flex; gap: 3px; justify-content: center; margin-top: 5px; }
+.bgo-phone .tab .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(164, 155, 196, .3); }
+.bgo-phone .tab .dots i.f { background: var(--gold); }
+.bgo-phone .tab.on { background: linear-gradient(180deg, #2d2152, #1a1333); box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .55); color: var(--gold-hi); }
+
+/* le carton */
+.bgo-phone .card { position: relative; border-radius: 18px; padding: 10px 8px 12px;
+  background: repeating-linear-gradient(45deg, rgba(120, 90, 40, .025) 0 2px, transparent 2px 6px), linear-gradient(180deg, #fffdf7, #f4eee1);
+  box-shadow: 0 0 0 1.5px #d9bd6a, 0 0 0 5px #15102a, 0 0 0 6px rgba(212, 175, 55, .35), 0 18px 40px rgba(0, 0, 0, .55); }
+.bgo-phone .card.frozen { filter: saturate(.75); }
+.bgo-phone .card-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 8px; color: #4b3f68; font-size: 11px; font-weight: 700; letter-spacing: .18em; }
+.bgo-phone .card-head b { color: var(--ink); letter-spacing: .06em; font-size: 14px; }
+.bgo-phone .rows { display: grid; gap: 6px; }
+.bgo-phone .row { display: grid; grid-template-columns: repeat(9, 1fr) 14px; gap: 3px; align-items: center; }
+.bgo-phone .cell { position: relative; height: clamp(46px, 9vh, 80px); border-radius: 9px; display: grid; place-items: center; border: 0; padding: 0; font: inherit; }
+.bgo-phone .cell.empty { background: repeating-linear-gradient(135deg, rgba(75, 63, 104, .07) 0 3px, transparent 3px 7px); box-shadow: inset 0 0 0 1px rgba(75, 63, 104, .08); }
+.bgo-phone .cell.n { cursor: pointer; background: linear-gradient(180deg, #ffffff, #f1ebde); box-shadow: inset 0 0 0 1px rgba(75, 63, 104, .18), 0 2px 0 rgba(75, 63, 104, .14); touch-action: manipulation; transition: transform .12s var(--ease-out); }
+.bgo-phone .cell.n:active { transform: scale(.92); }
+.bgo-phone .cell.n:focus-visible { outline: 3px solid var(--violet-hot); outline-offset: 1px; }
+.bgo-phone .cell.n span { position: relative; z-index: 2; font-size: clamp(19px, 6.2vw, 26px); font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+.bgo-phone .cell.m::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(calc(100% - 3px), 54px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(196, 160, 255, .95), rgba(123, 63, 228, .9) 55%, rgba(58, 22, 130, .95));
+  box-shadow: 0 0 0 2px #e9cd78, 0 0 0 3px rgba(90, 64, 10, .6), 0 4px 8px rgba(43, 18, 96, .45), inset 0 2px 3px rgba(255, 255, 255, .5); animation: bgp-token .22s var(--ease-spring); }
+.bgo-phone .cell.m span { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+.bgo-phone .cell.m::after { content: '✓'; position: absolute; right: 1px; top: 1px; z-index: 3; width: 15px; height: 15px; border-radius: 50%; background: #e9cd78; color: #2b1260; font-size: 10px; font-weight: 900; display: grid; place-items: center; }
+.bgo-phone .cell.wrong::before { background: radial-gradient(circle at 35% 30%, rgba(255, 210, 150, .95), rgba(214, 140, 40, .92) 60%, rgba(120, 70, 10, .95)); }
+.bgo-phone .prog { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.bgo-phone .prog i { width: 6px; height: 6px; border-radius: 50%; background: rgba(75, 63, 104, .2); }
+.bgo-phone .prog i.f { background: #7b3fe4; }
+.bgo-phone .prog.full i { background: var(--gold); box-shadow: 0 0 4px var(--gold); }
+.bgo-phone .legend { margin: 12px 4px 0; display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); }
+.bgo-phone .legend b { color: var(--text); }
+
+/* bouton QUINE */
+.bgo-phone .spacer { flex: 1; min-height: 14px; }
+.bgo-phone .quine { position: relative; width: 100%; min-height: 76px; border: 0; border-radius: 22px; cursor: pointer; font: inherit; font-size: 32px; font-weight: 900; letter-spacing: .06em; color: #1a1206; line-height: 1.05; padding: 8px;
+  background: linear-gradient(180deg, #fff1bd 0%, #f0cf6a 30%, #c99a2a 70%, #e9c460 100%); touch-action: manipulation;
+  box-shadow: inset 0 2px 0 #fffbe8, inset 0 -5px 0 rgba(90, 60, 0, .35), 0 0 0 3px #2b1260, 0 0 0 5px rgba(166, 107, 255, .55), 0 0 40px rgba(166, 107, 255, .35), 0 12px 24px rgba(0, 0, 0, .5); }
+.bgo-phone .quine:active:not(:disabled) { transform: translateY(3px) scale(.985); }
+.bgo-phone .quine small { display: block; font-size: 11px; letter-spacing: .18em; font-weight: 700; color: #5a4210; margin-top: 4px; }
+.bgo-phone .quine:disabled { cursor: default; filter: grayscale(.85) brightness(.6); box-shadow: 0 0 0 3px #2b1260; font-size: 18px; letter-spacing: .1em; }
+.bgo-phone .hint { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* couches plein écran */
+.bgo-phone .sheet { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding: max(28px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom)); overflow-y: auto; }
+.bgo-phone .sheet > * { position: relative; }
+.bgo-phone .sheet h1 { font-size: 40px; font-weight: 900; line-height: 1.05; letter-spacing: .02em; margin: 0; }
+.bgo-phone .sheet p { margin: 14px 0 0; font-size: 16px; color: #d8cff3; line-height: 1.5; max-width: 340px; }
+.bgo-phone .sheet .btn { margin-top: 22px; width: 100%; max-width: 330px; }
+.bgo-phone .verif { background: rgba(8, 6, 16, .9); }
+.bgo-phone .spin { width: 84px; height: 84px; border-radius: 50%; margin-bottom: 26px; background: conic-gradient(from 0deg, transparent 0 60%, #a66bff 85%, #f6e3a1 100%);
+  -webkit-mask: radial-gradient(circle, transparent 34px, #000 35px); mask: radial-gradient(circle, transparent 34px, #000 35px); animation: bgp-spin 1.1s linear infinite; }
+.bgo-phone .steps { margin-top: 26px; display: grid; gap: 12px; text-align: left; font-size: 15px; }
+.bgo-phone .steps div { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+.bgo-phone .steps i { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; }
+.bgo-phone .steps .done { color: var(--text); } .bgo-phone .steps .done i { background: var(--ok); color: #06301f; }
+.bgo-phone .steps .now i { box-shadow: inset 0 0 0 2px #a66bff; }
+.bgo-phone .steps .wait { color: #ffd28a; } .bgo-phone .steps .wait i { box-shadow: inset 0 0 0 2px var(--amber); animation: bgp-blink 1.2s ease-in-out infinite; }
+.bgo-phone .win { background: radial-gradient(400px 400px at 50% 40%, rgba(246, 210, 110, .35), transparent 70%), radial-gradient(500px 500px at 50% 110%, rgba(139, 77, 255, .5), transparent 70%), #0b0817; }
+.bgo-phone .crown { width: 110px; height: 80px; margin-bottom: 18px; animation: bgp-pop .6s var(--ease-spring) both; }
+.bgo-phone .nope { background: radial-gradient(400px 300px at 50% 30%, rgba(240, 168, 48, .18), transparent 70%), #0d0a1a; }
+.bgo-phone .nope h1 { color: #ffd28a; }
+.bgo-phone .mini { margin-top: 22px; width: 100%; max-width: 330px; padding: 8px; border-radius: 14px; background: #f7f2e7; }
+.bgo-phone .mini .row { grid-template-columns: repeat(9, 1fr); gap: 2px; }
+.bgo-phone .mini .cell { height: 30px; border-radius: 6px; cursor: default; }
+.bgo-phone .mini .cell span { font-size: 13px; }
+.bgo-phone .mini .cell.m::before { width: 24px; } .bgo-phone .mini .cell.m::after { display: none; }
+.bgo-phone .confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.bgo-phone .confetti i { position: absolute; top: -20px; width: 7px; height: 11px; border-radius: 2px; animation: bgp-fall var(--d, 5s) linear var(--w, 0s) infinite; }
+
+.bgo-phone .toast { position: fixed; left: 12px; right: 12px; margin: 0 auto; width: fit-content; top: calc(10px + env(safe-area-inset-top)); z-index: 40; display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; background: rgba(30, 22, 56, .96); box-shadow: 0 0 0 1px rgba(166, 107, 255, .4), 0 10px 24px rgba(0, 0, 0, .5); }
+.bgo-phone .toast i { flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(166, 107, 255, .3); border-top-color: #a66bff; animation: bgp-spin .9s linear infinite; }
+
+/* accueil / fermé */
+.bgo-phone .hello { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; padding: 20px 8px; }
+.bgo-phone .hello h1 { margin: 18px 0 0; font-size: 44px; font-weight: 900; letter-spacing: .04em; line-height: 1; }
+.bgo-phone .hello p { margin: 10px 0 0; color: #d8cff3; font-size: 16px; line-height: 1.5; max-width: 340px; }
+.bgo-phone form { width: 100%; max-width: 360px; margin-top: 26px; display: grid; gap: 10px; text-align: left; }
+.bgo-phone label { font-size: 13px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.bgo-phone .input { width: 100%; height: 56px; padding: 0 16px; border-radius: 14px; border: 0; font: inherit; font-size: 18px; font-weight: 600; color: var(--text);
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .35); }
+.bgo-phone .input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--violet-hot); }
+.bgo-phone form .btn { height: 58px; font-size: 18px; margin-top: 6px; }
+.bgo-phone .err { color: #ffb4b4; font-size: 14px; }
+.bgo-phone .link { margin-top: 18px; color: var(--muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+
+@keyframes bgp-blink { 50% { opacity: .35 } }
+@keyframes bgp-spin { to { transform: rotate(360deg) } }
+@keyframes bgp-token { from { transform: translate(-50%, -50%) scale(.3); opacity: 0 } to { transform: translate(-50%, -50%) scale(1); opacity: 1 } }
+@keyframes bgp-pop { from { transform: scale(.4); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes bgp-fall { from { transform: translateY(-20px) rotate(0) } to { transform: translateY(110vh) rotate(var(--r, 540deg)) } }
+@media (prefers-reduced-motion: reduce) { .bgo-phone *, .bgo-phone *::before { animation: none !important; transition: none !important; } }
+
+/* Loto musical : carton en titres (3 blocs de 5 boutons pleine largeur). */
+.bgo-phone .mrows { display: grid; gap: 10px; }
+.bgo-phone .mrow { display: grid; gap: 4px; }
+.bgo-phone .mrow-h { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #4b3f68; }
+.bgo-phone .mrow-h .prog { flex-direction: row; }
+.bgo-phone .mrow-h.full { color: #8a6516; }
+.bgo-phone .mcell { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; width: 100%; min-height: 48px; padding: 6px 40px 6px 12px; border: 0; border-radius: 11px; font: inherit; text-align: left; cursor: pointer; touch-action: manipulation;
+  background: linear-gradient(180deg, #ffffff, #f1ebde); box-shadow: inset 0 0 0 1px rgba(75, 63, 104, .18), 0 2px 0 rgba(75, 63, 104, .14); transition: transform .12s var(--ease-out); }
+.bgo-phone .mcell:active { transform: scale(.98); }
+.bgo-phone .mcell:focus-visible { outline: 3px solid var(--violet-hot); outline-offset: 1px; }
+.bgo-phone .mcell b { max-width: 100%; font-size: 15px; font-weight: 800; color: var(--ink); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgo-phone .mcell small { max-width: 100%; font-size: 12px; color: #6a5f86; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgo-phone .mcell::after { content: ''; position: absolute; right: 10px; top: 50%; width: 24px; height: 24px; transform: translateY(-50%); border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(75, 63, 104, .25); }
+.bgo-phone .mcell.m { background: linear-gradient(180deg, #8a4dff, #5a22c8); box-shadow: inset 0 0 0 2px #e9cd78, 0 2px 0 rgba(43, 18, 96, .5); }
+.bgo-phone .mcell.m b, .bgo-phone .mcell.m small { color: #fff; }
+.bgo-phone .mcell.m::after { content: '✓'; display: grid; place-items: center; background: #e9cd78; color: #2b1260; font-size: 14px; font-weight: 900; box-shadow: none; }
+.bgo-phone .mcell.wrong { background: linear-gradient(180deg, #ffcf8a, #d68c28); box-shadow: inset 0 0 0 2px #784610; }
+.bgo-phone .mcell.wrong b, .bgo-phone .mcell.wrong small { color: #2a1700; }
+.bgo-phone .mcell:disabled { cursor: default; }
+.bgo-phone .mini.music .mcell { min-height: 30px; padding: 3px 30px 3px 8px; }
+.bgo-phone .mini.music .mcell b { font-size: 12px; }
+.bgo-phone .mini.music .mcell small { display: none; }
+.bgo-phone .mini.music .mcell::after { width: 16px; height: 16px; font-size: 10px; right: 6px; }
+.bgo-phone .mini.music .mrows { gap: 6px; }
+.bgo-phone .strip.last .song { display: block; font-size: 17px; font-weight: 800; color: var(--text); line-height: 1.2; }
+.bgo-phone .strip.last .song small { display: block; font-size: 13px; font-weight: 600; letter-spacing: normal; color: var(--muted); }
+.bgo-phone .strip.last .eqp { display: flex; gap: 3px; align-items: flex-end; height: 26px; }
+.bgo-phone .strip.last .eqp i { width: 5px; border-radius: 3px; background: linear-gradient(180deg, #f6e3a1, #a66bff); animation: bgo-eqp .8s ease-in-out infinite alternate; }
+.bgo-phone .strip.last .eqp i:nth-child(2) { animation-delay: -.3s; } .bgo-phone .strip.last .eqp i:nth-child(3) { animation-delay: -.55s; } .bgo-phone .strip.last .eqp i:nth-child(4) { animation-delay: -.15s; }
+@keyframes bgo-eqp { from { height: 25%; } to { height: 100%; } }
+@media (prefers-reduced-motion: reduce) { .bgo-phone .strip.last .eqp i { animation: none; height: 70%; } }

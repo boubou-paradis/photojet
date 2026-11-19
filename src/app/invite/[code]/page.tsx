@@ -28,6 +28,7 @@ interface InviteState {
   buzzerActive: boolean
   voteActive: boolean
   demimotActive?: boolean
+  bingoActive?: boolean
 }
 
 // Une panne ou une session inconnue donne null.
@@ -207,6 +208,26 @@ export default function InvitePage() {
               router.push(`/demimot/join/${code}`)
               return
             }
+          }
+        }
+
+        // AnimaBingo : même QR que la session. Redirige si la partie est en
+        // direct, ou si ce téléphone y joue déjà (cartons gardés en mémoire)
+        // et que la partie existe toujours, même régie en panne : un joueur
+        // ne perd jamais sa partie. Sauf « juste des photos ».
+        let skipBingo = photosOnly
+        try {
+          if (photosOnly) sessionStorage.setItem(`bingo-photos-only-${code}`, '1')
+          skipBingo ||= sessionStorage.getItem(`bingo-photos-only-${code}`) === '1'
+        } catch { /* navigation privée */ }
+        if (!skipBingo && state.bingoActive) {
+          const status = await fetch(`/api/bingo/status?code=${encodeURIComponent(code)}`)
+            .then((r) => r.json()).catch(() => null)
+          let playing = false
+          try { playing = localStorage.getItem(`animabingo:${code.toUpperCase()}`) !== null } catch { /* stockage bloqué */ }
+          if (status?.live || (playing && status?.present)) {
+            router.push(`/bingo/${code}`)
+            return
           }
         }
 

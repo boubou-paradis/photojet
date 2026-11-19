@@ -21,6 +21,7 @@ export const GAME_ACTIVITY_COLUMNS = [
   'buzzer_active',
   'vote_active',
   'demimot_active',
+  'bingo_active',
 ] as const
 
 export interface ActiveSessionInfo {

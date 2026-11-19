@@ -19,6 +19,7 @@ export const GAMES = [
   { name: 'AnimaBuzz', href: '/jeu-buzzer' },
   { name: 'AnimaVote', href: '/jeu-vote' },
   { name: 'À Demi-Mot', href: '/jeu-a-demi-mot' },
+  { name: 'AnimaBingo', href: '/jeu-animabingo' },
 ] as const
 
 export const GAMES_COUNT = GAMES.length
@@ -28,7 +29,7 @@ const NOMBRES = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'
 export const GAMES_COUNT_WORDS = NOMBRES[GAMES_COUNT] ?? String(GAMES_COUNT)
 
 const names: string[] = GAMES.map((g) => g.name)
-/** « Quiz, Roue de la Destinée, Photo Mystère, Le Bon Ordre, Matching, AnimaBuzz, AnimaVote, À Demi-Mot » */
+/** « Quiz, Roue de la Destinée, Photo Mystère, Le Bon Ordre, Matching, AnimaBuzz, AnimaVote, À Demi-Mot, AnimaBingo » */
 export const GAME_NAMES = names.join(', ')
-/** « Quiz, Roue de la Destinée, …, AnimaVote et À Demi-Mot » */
+/** « Quiz, Roue de la Destinée, …, À Demi-Mot et AnimaBingo » */
 export const GAME_NAMES_AND = `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`

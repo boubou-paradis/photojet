@@ -11,9 +11,9 @@ import { INVITE_SESSION_COLUMNS } from '@/lib/public-api/columns'
 import { selectWithOptionalColumns } from '@/lib/public-api/optional-columns'
 import { NO_STORE, getPublicAdmin, isPubliclyVisible, pickColumns, type SessionVisibilityRow } from '@/lib/public-api/server'
 
-// demimot_active est facultative : si la base ne la connaît pas, lecture sans elle
-// (À Demi-Mot inactif, les autres jeux redirigent normalement).
-const FLAGS = ['is_active', 'quiz_active', 'quiz_lobby_visible', 'affinity_active', 'buzzer_active', 'vote_active', 'demimot_active']
+// demimot_active et bingo_active sont facultatives : si la base ne les connaît pas,
+// lecture sans elles (jeu concerné inactif, les autres jeux redirigent normalement).
+const FLAGS = ['is_active', 'quiz_active', 'quiz_lobby_visible', 'affinity_active', 'buzzer_active', 'vote_active', 'demimot_active', 'bingo_active']
 
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
@@ -40,6 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       buzzerActive: row.buzzer_active === true,
       voteActive: row.vote_active === true,
       demimotActive: row.demimot_active === true,
+      bingoActive: row.bingo_active === true,
     },
     { headers: NO_STORE },
   )

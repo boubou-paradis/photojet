@@ -1,0 +1,206 @@
+/* © 2025 AnimaJet - MG Events Animation. Tous droits réservés. */
+/* AnimaBingo — grand écran. Scène fixe 1920×1080 mise à l'échelle (comme la
+   maquette validée). Tout est rangé sous .bgo-screen. */
+
+.bgo-screen { position: fixed; inset: 0; background: #05040b; overflow: hidden; color: var(--text); font-family: var(--font-poppins), system-ui, sans-serif; }
+.bgo-screen[data-fake-fs] { z-index: 9999; }
+.bgo-screen .fit { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.bgo-screen .stage { position: absolute; inset: 0; overflow: hidden; }
+
+/* décor */
+.bgo-screen .bg { position: absolute; inset: 0;
+  background:
+    radial-gradient(1100px 620px at 30% 46%, rgba(110, 50, 230, .30), transparent 70%),
+    radial-gradient(900px 500px at 78% 40%, rgba(60, 40, 160, .22), transparent 70%),
+    radial-gradient(1400px 400px at 50% 102%, rgba(139, 77, 255, .22), transparent 70%),
+    linear-gradient(180deg, #07060f 0%, #0b0819 55%, #05040a 100%); }
+.bgo-screen .bg.goldbg { background: radial-gradient(1200px 700px at 50% 45%, rgba(246, 210, 110, .35), transparent 70%), radial-gradient(1600px 500px at 50% 105%, rgba(166, 107, 255, .35), transparent 70%), linear-gradient(180deg, #0d0a06, #0a0714 60%, #050409); }
+.bgo-screen .beams { position: absolute; inset: 0; mix-blend-mode: screen; pointer-events: none; }
+.bgo-screen .beam { position: absolute; top: -120px; width: 260px; height: 1000px; transform-origin: 50% 0;
+  background: linear-gradient(180deg, rgba(255, 236, 190, .30), rgba(255, 236, 190, 0) 85%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%); filter: blur(6px); opacity: var(--bo, .55); transition: opacity .8s; }
+.bgo-screen .beam.v { background: linear-gradient(180deg, rgba(170, 120, 255, .38), rgba(170, 120, 255, 0) 85%); }
+.bgo-screen .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 300px;
+  background: linear-gradient(180deg, rgba(10, 8, 20, 0), rgba(10, 8, 20, .9) 30%, #040309); border-top: 1px solid rgba(139, 77, 255, .12); }
+.bgo-screen .floor::before { content: ''; position: absolute; left: 8%; right: 40%; top: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(212, 175, 55, .5), transparent); }
+.bgo-screen .dust { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #f6e3a1; filter: blur(.5px); }
+
+/* machine « La Couronne » */
+.bgo-screen .machine { position: absolute; width: 640px; height: 820px; transform-origin: 0 0; -webkit-box-reflect: below -8px linear-gradient(transparent 78%, rgba(255, 255, 255, .14)); }
+.bgo-screen .orb { position: absolute; left: 85px; top: 40px; width: 470px; height: 470px; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgba(139, 77, 255, .05) 0 52%, rgba(139, 77, 255, .22) 82%, rgba(190, 150, 255, .45) 100%), radial-gradient(circle at 50% 110%, rgba(139, 77, 255, .35), transparent 60%);
+  box-shadow: inset 0 0 0 2px rgba(220, 200, 255, .35), inset 0 0 60px rgba(139, 77, 255, .35), 0 0 80px rgba(139, 77, 255, .25); transition: box-shadow .5s; }
+.bgo-screen .orb .pos { position: absolute; }
+.bgo-screen .glass-hi { position: absolute; left: 85px; top: 40px; width: 470px; height: 470px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse 120px 60px at 32% 18%, rgba(255, 255, 255, .55), transparent 70%), radial-gradient(ellipse 30px 90px at 84% 52%, rgba(255, 255, 255, .22), transparent 70%), radial-gradient(circle at 50% 50%, transparent 66%, rgba(255, 255, 255, .08) 70%, transparent 74%); }
+.bgo-screen .rings { position: absolute; left: 0; top: 0; pointer-events: none; }
+.bgo-screen .collar { position: absolute; left: 245px; top: 500px; width: 150px; height: 46px; border-radius: 10px 10px 22px 22px; background: var(--brushed-gold); box-shadow: inset 0 -6px 10px rgba(60, 40, 0, .5), 0 6px 18px rgba(0, 0, 0, .6); }
+.bgo-screen .base { position: absolute; left: 130px; top: 540px; width: 380px; height: 170px; clip-path: polygon(16% 0, 84% 0, 100% 100%, 0 100%); background: linear-gradient(180deg, #1c1830 0%, #0c0a16 40%, #050409 100%); }
+.bgo-screen .base::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--brushed-gold); }
+.bgo-screen .lightstrip { position: absolute; left: 160px; top: 650px; width: 320px; height: 8px; border-radius: 8px; background: linear-gradient(90deg, transparent, #a66bff 20%, #e6d4ff 50%, #a66bff 80%, transparent); box-shadow: 0 0 24px 6px rgba(166, 107, 255, .6); }
+.bgo-screen .plinth { position: absolute; left: 90px; top: 706px; width: 460px; height: 26px; border-radius: 6px; background: linear-gradient(180deg, #2a2340, #0b0914); box-shadow: inset 0 2px 0 rgba(212, 175, 55, .6), 0 20px 40px rgba(0, 0, 0, .7); }
+.bgo-screen .tube { position: absolute; left: 470px; top: 420px; width: 170px; height: 240px; pointer-events: none; }
+.bgo-screen .cradle { position: absolute; left: 560px; top: 600px; width: 100px; height: 44px; border-radius: 0 0 50px 50px; background: linear-gradient(180deg, #1b1630, #07060d); box-shadow: inset 0 3px 0 #e2c264, 0 0 30px rgba(212, 175, 55, .35); }
+.bgo-screen .in-cradle { position: absolute; left: 574px; top: 548px; animation: bgo-land .7s var(--ease-spring) both; }
+.bgo-screen .machine.hot .orb { box-shadow: inset 0 0 0 2px rgba(240, 225, 255, .55), inset 0 0 90px rgba(166, 107, 255, .65), 0 0 140px rgba(166, 107, 255, .55); }
+.bgo-screen .machine.hot .lightstrip { box-shadow: 0 0 40px 14px rgba(190, 140, 255, .85); }
+.bgo-screen .machine.freeze .orb { box-shadow: inset 0 0 0 2px rgba(240, 168, 48, .5), inset 0 0 60px rgba(240, 168, 48, .25), 0 0 80px rgba(240, 168, 48, .25); }
+.bgo-screen .machine.freeze .lightstrip { background: linear-gradient(90deg, transparent, #f0a830 30%, #ffe3ae 50%, #f0a830 70%, transparent); box-shadow: 0 0 30px 8px rgba(240, 168, 48, .55); }
+.bgo-screen .machine.gold .orb { box-shadow: inset 0 0 0 3px rgba(255, 236, 170, .8), inset 0 0 100px rgba(246, 210, 110, .55), 0 0 180px rgba(246, 210, 110, .6); }
+.bgo-screen .machine.gold .lightstrip { background: linear-gradient(90deg, transparent, #f1d27a 20%, #fff6d2 50%, #f1d27a 80%, transparent); box-shadow: 0 0 50px 18px rgba(246, 210, 110, .8); }
+.bgo-screen .machine.idle .orb .pos { animation: bgo-drift var(--t, 6s) ease-in-out infinite; }
+.bgo-screen .machine.hot .orb .pos { animation: bgo-tumble var(--t2, 1.1s) linear infinite; }
+@keyframes bgo-tumble { 0% { transform: translate(0, 0) rotate(0) } 33% { transform: translate(var(--dx), var(--dy)) rotate(120deg) } 66% { transform: translate(calc(var(--dx) * -.6), calc(var(--dy) * .4)) rotate(250deg) } 100% { transform: translate(0, 0) rotate(360deg) } }
+@keyframes bgo-drift { 50% { transform: translate(var(--dx), var(--dy)) rotate(18deg) } }
+@keyframes bgo-land { 0% { transform: translate(-70px, -120px) scale(.6); opacity: 0 } 100% { transform: none; opacity: 1 } }
+
+/* bandeaux */
+.bgo-screen .top { position: absolute; left: 64px; right: 64px; top: 34px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.bgo-screen .brand { display: flex; align-items: center; gap: 16px; min-width: 360px; }
+.bgo-screen .brand b { font-size: 30px; font-weight: 800; letter-spacing: .06em; display: block; line-height: 1.1; }
+.bgo-screen .brand small { display: block; font-size: 14px; letter-spacing: .3em; color: var(--muted); font-weight: 600; }
+.bgo-screen .plate { position: relative; display: inline-flex; align-items: center; gap: 14px; padding: 10px 28px; border-radius: 999px;
+  background: linear-gradient(180deg, #1d1636, #0b0817); box-shadow: 0 0 0 2px #0b0817, 0 10px 30px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .12); }
+.bgo-screen .plate::before { content: ''; position: absolute; inset: -3px; border-radius: inherit; padding: 3px; background: var(--brushed-gold);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.bgo-screen .phase { font-size: 40px; font-weight: 900; letter-spacing: .12em; padding: 12px 44px; white-space: nowrap; }
+.bgo-screen .phase em { font-style: normal; font-size: 20px; font-weight: 600; color: var(--muted); letter-spacing: .08em; }
+.bgo-screen .event { text-align: right; font-size: 18px; color: var(--muted); font-weight: 500; min-width: 360px; max-width: 520px; }
+.bgo-screen .event b { display: block; color: var(--text); font-size: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.bgo-screen .panel { position: absolute; left: 1080px; top: 150px; width: 780px; padding: 26px 28px 28px; border-radius: 26px;
+  background: linear-gradient(180deg, rgba(26, 19, 50, .78), rgba(10, 8, 20, .82));
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, .28), inset 0 1px 0 rgba(255, 255, 255, .06), 0 40px 80px rgba(0, 0, 0, .6); }
+.bgo-screen .panel h3 { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 18px; }
+.bgo-screen .panel h3 span:first-child { font-size: 16px; letter-spacing: .3em; color: var(--muted); font-weight: 600; }
+.bgo-screen .panel h3 span:last-child { font-size: 18px; color: var(--muted); }
+.bgo-screen .panel h3 b { color: var(--gold-hi); font-size: 26px; }
+.bgo-screen .panel .board { --gap: 8px; --tile-font: 30px; }
+
+.bgo-screen .fullboard { position: absolute; left: 160px; right: 160px; top: 150px; }
+.bgo-screen .fullboard .panel { position: relative; left: 0; top: 0; width: 100%; padding: 26px 34px 30px; }
+.bgo-screen .fullboard .board { --gap: 12px; --tile-font: 44px; --tile-ratio: 1.95; --tile-radius: 14px; }
+
+.bgo-screen .bottom { position: absolute; left: 64px; right: 64px; bottom: 30px; height: 96px; display: flex; align-items: center; gap: 32px; padding: 0 28px; border-radius: 24px;
+  background: linear-gradient(180deg, rgba(22, 17, 41, .92), rgba(9, 7, 17, .95)); box-shadow: 0 0 0 1px rgba(139, 77, 255, .22), 0 20px 50px rgba(0, 0, 0, .6); }
+.bgo-screen .count b { font-size: 44px; font-weight: 800; }
+.bgo-screen .count span { font-size: 18px; color: var(--muted); margin-left: 6px; }
+.bgo-screen .count small { display: block; font-size: 13px; letter-spacing: .26em; color: var(--muted); font-weight: 600; }
+.bgo-screen .bar { width: 200px; height: 6px; border-radius: 6px; background: #241c3d; overflow: hidden; margin-top: 6px; }
+.bgo-screen .bar i { display: block; height: 100%; background: var(--brushed-gold); transition: width .6s var(--ease-out); }
+.bgo-screen .recent { display: flex; align-items: center; gap: 14px; padding-left: 28px; border-left: 1px solid rgba(164, 155, 196, .18); }
+.bgo-screen .recent small { font-size: 13px; letter-spacing: .26em; color: var(--muted); font-weight: 600; margin-right: 6px; }
+.bgo-screen .status { margin-left: auto; display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 20px; letter-spacing: .06em;
+  background: rgba(139, 77, 255, .16); box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .5); white-space: nowrap; }
+.bgo-screen .status.pause { background: rgba(240, 168, 48, .14); box-shadow: inset 0 0 0 1px rgba(240, 168, 48, .55); color: #ffd28a; }
+.bgo-screen .status i { width: 12px; height: 12px; border-radius: 50%; background: #a66bff; box-shadow: 0 0 12px #a66bff; }
+.bgo-screen .status.pause i { background: #f0a830; box-shadow: 0 0 12px #f0a830; border-radius: 2px; }
+.bgo-screen .join { display: flex; align-items: center; gap: 14px; padding-left: 28px; border-left: 1px solid rgba(164, 155, 196, .18); font-size: 15px; color: var(--muted); }
+.bgo-screen .join b { display: block; color: var(--text); font-size: 20px; letter-spacing: .1em; }
+.bgo-screen .qr-mini { background: #fff; padding: 5px; border-radius: 8px; line-height: 0; width: 72px; }
+.bgo-screen .next { position: absolute; left: 250px; top: 880px; width: 640px; text-align: center; font-size: 22px; letter-spacing: .3em; color: var(--muted); font-weight: 600; }
+.bgo-screen .next b { color: var(--text); font-size: 30px; }
+
+/* boule héros */
+.bgo-screen .hero { position: absolute; left: 230px; top: 165px; width: 640px; text-align: center; }
+.bgo-screen .hero .ball { margin: 0 auto; animation: bgo-hero .9s var(--ease-spring) both; }
+.bgo-screen .hero .ball .ball-med { inset: 17%; }
+.bgo-screen .hero .ball .ball-med span { font-size: calc(var(--s) * .37); }
+.bgo-screen .hero .halo { position: absolute; left: 50%; top: 260px; width: 900px; height: 900px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(246, 227, 161, .26), rgba(166, 107, 255, .14) 35%, transparent 62%); }
+.bgo-screen .hero .rays { position: absolute; left: 50%; top: 260px; width: 1100px; height: 1100px; translate: -50% -50%; border-radius: 50%; opacity: .32;
+  background: repeating-conic-gradient(from 0deg, rgba(246, 227, 161, .35) 0 3deg, transparent 3deg 15deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 60%); mask: radial-gradient(circle, #000 18%, transparent 60%); animation: bgo-spin 40s linear infinite; }
+.bgo-screen .words { position: relative; margin-top: 26px; font-size: 46px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; animation: bgo-up .6s .35s var(--ease-out) both; }
+@keyframes bgo-hero { 0% { transform: translate(260px, 300px) scale(.18) rotate(-160deg); opacity: 0 } 60% { opacity: 1 } 100% { transform: none } }
+@keyframes bgo-up { from { transform: translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes bgo-spin { to { rotate: 360deg } }
+
+/* accueil */
+.bgo-screen .title { position: absolute; left: 0; right: 0; top: 54px; text-align: center; }
+.bgo-screen .title h1 { font-size: 112px; font-weight: 900; letter-spacing: .04em; line-height: 1; margin: 0; }
+.bgo-screen .title p { margin: 14px 0 0; font-size: 22px; letter-spacing: .4em; color: var(--muted); font-weight: 600; }
+.bgo-screen .qrcard { position: absolute; right: 120px; top: 300px; width: 520px; padding: 40px; border-radius: 30px; text-align: center;
+  background: linear-gradient(180deg, rgba(26, 19, 50, .85), rgba(10, 8, 20, .9)); box-shadow: 0 0 0 1px rgba(212, 175, 55, .35), 0 40px 90px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.bgo-screen .qrcard .qr { display: inline-block; background: #fff; padding: 18px; border-radius: 18px; line-height: 0; width: 336px; box-shadow: 0 0 0 6px rgba(212, 175, 55, .25); }
+.bgo-screen .qrcard h2 { margin: 28px 0 0; font-size: 36px; font-weight: 800; line-height: 1.15; }
+.bgo-screen .qrcard .code { margin-top: 12px; font-size: 20px; color: var(--muted); }
+.bgo-screen .qrcard .code b { color: var(--text); letter-spacing: .14em; }
+.bgo-screen .ready { position: absolute; left: 120px; top: 360px; width: 520px; }
+.bgo-screen .ready b { font-size: 150px; font-weight: 900; line-height: .9; display: block; }
+.bgo-screen .ready span { font-size: 34px; font-weight: 700; letter-spacing: .12em; }
+.bgo-screen .ready p { margin: 26px 0 0; font-size: 22px; color: var(--muted); line-height: 1.5; }
+.bgo-screen .ready .pills { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
+.bgo-screen .ready .pills span { font-size: 17px; letter-spacing: .04em; font-weight: 600; padding: 9px 18px; border-radius: 999px; background: rgba(139, 77, 255, .14); box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .35); }
+
+/* moments */
+.bgo-screen .moment { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 80px; }
+.bgo-screen .moment h1 { font-size: 200px; font-weight: 900; line-height: .95; letter-spacing: .02em; margin: 0; filter: drop-shadow(0 10px 40px rgba(212, 175, 55, .35)); animation: bgo-pop .8s var(--ease-spring) both; }
+.bgo-screen .moment h2 { font-size: 92px; font-weight: 900; letter-spacing: .03em; margin: 28px 0 0; }
+.bgo-screen .moment .sub { margin-top: 20px; font-size: 34px; color: #e3d9ff; font-weight: 600; letter-spacing: .06em; }
+.bgo-screen .veil { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(5, 4, 11, .55), rgba(5, 4, 11, .92) 70%); }
+.bgo-screen .pulse-ring { position: absolute; left: 50%; top: 50%; width: 760px; height: 760px; border-radius: 50%; transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px rgba(240, 168, 48, .5), 0 0 0 26px rgba(240, 168, 48, .07), 0 0 0 60px rgba(240, 168, 48, .04); animation: bgo-pulse 1.6s ease-in-out infinite; }
+.bgo-screen .dots { margin-top: 34px; display: flex; gap: 14px; }
+.bgo-screen .dots i { width: 16px; height: 16px; border-radius: 50%; background: #f0a830; box-shadow: 0 0 14px #f0a830; animation: bgo-blink 1.2s ease-in-out infinite; }
+.bgo-screen .dots i:nth-child(2) { animation-delay: .2s; } .bgo-screen .dots i:nth-child(3) { animation-delay: .4s; }
+.bgo-screen .winner { margin-top: 30px; padding: 26px 70px; border-radius: 28px; background: linear-gradient(180deg, rgba(40, 28, 74, .9), rgba(16, 11, 30, .95)); box-shadow: 0 0 0 2px rgba(246, 227, 161, .6), 0 0 80px rgba(212, 175, 55, .35); animation: bgo-up .6s .3s var(--ease-out) both; max-width: 1500px; }
+.bgo-screen .winner b { display: block; font-size: 84px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; overflow-wrap: anywhere; }
+.bgo-screen .winner span { font-size: 28px; color: var(--muted); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.bgo-screen .wgrid { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; max-width: 1700px; }
+.bgo-screen .wcard { padding: 22px 34px; border-radius: 22px; text-align: center; min-width: 360px; background: linear-gradient(180deg, rgba(40, 28, 74, .9), rgba(16, 11, 30, .95)); box-shadow: 0 0 0 2px rgba(246, 227, 161, .5), 0 20px 50px rgba(0, 0, 0, .5); animation: bgo-up .6s var(--ease-out) both; }
+.bgo-screen .wcard b { display: block; font-size: 52px; font-weight: 800; text-transform: uppercase; overflow-wrap: anywhere; }
+.bgo-screen .wcard span { font-size: 22px; color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.bgo-screen .wcard small { display: block; font-size: 18px; color: var(--gold-hi); letter-spacing: .2em; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+.bgo-screen .tag { display: inline-block; padding: 10px 28px; border-radius: 999px; font-size: 22px; font-weight: 700; letter-spacing: .3em; color: var(--muted); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .35); text-transform: uppercase; }
+.bgo-screen .tag.amber { color: #ffd28a; box-shadow: inset 0 0 0 1px rgba(240, 168, 48, .6); }
+.bgo-screen .tag.gold { color: var(--gold-hi); box-shadow: inset 0 0 0 1px rgba(246, 227, 161, .5); }
+.bgo-screen .rings-big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: .8; }
+@keyframes bgo-pop { 0% { transform: scale(.4); opacity: 0 } 100% { transform: none; opacity: 1 } }
+@keyframes bgo-pulse { 50% { transform: translate(-50%, -50%) scale(1.04); } }
+@keyframes bgo-blink { 50% { opacity: .25; } }
+
+/* confettis (CSS seul) */
+.bgo-screen .confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.bgo-screen .confetti i { position: absolute; top: -30px; width: 12px; height: 18px; border-radius: 2px; animation: bgo-fall var(--d, 6s) linear var(--w, 0s) infinite; }
+@keyframes bgo-fall { 0% { transform: translate(0, -40px) rotate(0) } 100% { transform: translate(var(--x, 40px), 1140px) rotate(var(--r, 540deg)) } }
+
+/* pause / reconnexion */
+.bgo-screen .paused { position: absolute; left: 50%; bottom: 146px; transform: translateX(-50%); padding: 16px 34px; border-radius: 999px; font-size: 26px; font-weight: 700; letter-spacing: .04em; color: #ffd28a;
+  background: rgba(20, 14, 6, .9); box-shadow: inset 0 0 0 2px rgba(240, 168, 48, .6), 0 20px 50px rgba(0, 0, 0, .6); z-index: 5; white-space: nowrap; }
+.bgo-screen .reco { position: absolute; right: 70px; top: 130px; padding: 8px 18px; border-radius: 999px; font-size: 18px; font-weight: 600; color: #ffc2c2; background: rgba(40, 10, 14, .8); box-shadow: inset 0 0 0 1px rgba(255, 107, 107, .5); z-index: 5; }
+
+.bgo-screen .fs { position: absolute; right: 18px; top: 18px; z-index: 20; width: 44px; height: 44px; border-radius: 12px; border: 0; display: grid; place-items: center; cursor: pointer;
+  color: #fff; background: rgba(255, 255, 255, .08); opacity: 0; transition: opacity .3s; }
+.bgo-screen:hover .fs, .bgo-screen .fs:focus-visible { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bgo-screen *, .bgo-screen *::before, .bgo-screen *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Loto musical ---------- */
+.bgo-screen .mnow { position: absolute; left: 64px; top: 150px; width: 980px; height: 780px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 22px; }
+.bgo-screen .mnow .tag { font-size: 22px; letter-spacing: .3em; font-weight: 800; color: var(--gold-hi); padding: 10px 26px; border-radius: 999px; box-shadow: inset 0 0 0 2px rgba(212, 175, 55, .55); background: rgba(10, 8, 20, .6); }
+.bgo-screen .mnow h2 { margin: 0; font-size: 96px; font-weight: 900; line-height: 1.02; letter-spacing: -.02em; max-width: 960px; }
+.bgo-screen .mnow h2.mtitle { font-size: clamp(64px, 7vw, 120px); overflow-wrap: anywhere; }
+.bgo-screen .mnow p { margin: 0; font-size: 30px; color: #d8d0f3; }
+.bgo-screen .mnow p.artist { font-size: 44px; font-weight: 600; color: #e9e2ff; }
+.bgo-screen .mnow.hero h2 { animation: bgo-mtitle .8s var(--ease-spring) both; }
+.bgo-screen .mnow.hero p.artist { animation: bgo-mtitle .8s .2s var(--ease-spring) both; }
+@keyframes bgo-mtitle { from { opacity: 0; transform: translateY(40px) scale(.86); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bgo-screen .mnow.hero h2, .bgo-screen .mnow.hero p.artist { animation: none; } }
+.bgo-screen .meq { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+.bgo-screen .meq i { width: 16px; height: 25%; border-radius: 8px; background: linear-gradient(180deg, #fff3c4, #d4af37 45%, #a66bff); box-shadow: 0 0 18px rgba(166, 107, 255, .45);
+  animation: bgo-meq calc(.6s + var(--k) * .05s) ease-in-out infinite alternate; animation-delay: calc(var(--k) * -.17s); }
+.bgo-screen .meq.big { height: 260px; gap: 18px; }
+.bgo-screen .meq.big i { width: 34px; border-radius: 14px; }
+@keyframes bgo-meq { from { height: 14%; } to { height: 100%; } }
+@media (prefers-reduced-motion: reduce) { .bgo-screen .meq i { animation: none; height: 60%; } }
+.bgo-screen .mlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); height: 690px; gap: 4px 10px; }
+.bgo-screen .mlist li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 10px; line-height: 1.2; overflow: hidden; border-radius: 10px; background: rgba(255, 255, 255, .035); color: rgba(216, 208, 243, .55); font-size: var(--fs); }
+.bgo-screen .mlist li b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bgo-screen .mlist li .k { flex: none; min-width: 1.6em; text-align: right; font-weight: 800; font-size: .8em; color: #a66bff; }
+.bgo-screen .mlist li.on { background: rgba(166, 107, 255, .2); color: #fff; box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .4); }
+.bgo-screen .mlist li.last { background: linear-gradient(180deg, #fbe9a8, #d4af37); color: #1a1206; box-shadow: 0 0 30px rgba(212, 175, 55, .45); }
+.bgo-screen .mlist li.last .k { color: #1a1206; }
+.bgo-screen .mlist.full li { padding: 0 14px; }
+.bgo-screen .recent .rtitle { max-width: 230px; padding: 8px 14px; border-radius: 12px; background: rgba(166, 107, 255, .16); box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .35); font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

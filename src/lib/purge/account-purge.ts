@@ -148,6 +148,7 @@ async function listOwnedFiles(db: SupabaseClient, userId: string, sessionIds: st
     keep(await listAll(db, `vote-photos/${sid}`))
   }
   keep(await listAll(db, `buzzer-media/${userId}`))
+  keep(await listAll(db, `bingo-music/${userId}`))
   keep(await listAll(db, `borne-templates/${userId}`))
   keep(await listAll(db, `promos/defaults-${userId}`))
   for (const folder of ['backgrounds', 'logos']) keep(await listAll(db, folder, `defaults-${userId}`))
@@ -198,7 +199,7 @@ export async function buildReferenceIndex(db: SupabaseClient): Promise<Reference
     const p = toPhotosPath(r.storage_path)
     if (p) add(sessionOwner.get(r.session_id), p)
   }
-  for (const t of ['saved_quizzes', 'saved_mysteries', 'saved_buzzer_sets', 'borne_templates', 'account_display_defaults']) {
+  for (const t of ['saved_quizzes', 'saved_mysteries', 'saved_buzzer_sets', 'saved_bingo_playlists', 'borne_templates', 'account_display_defaults']) {
     for (const r of await readAllRows<Record<string, unknown>>(db, t, '*')) addAll(r.user_id as string, r)
   }
   for (const t of ['vote_drafts', 'buzzer_prep_sets']) {
@@ -210,7 +211,7 @@ export async function buildReferenceIndex(db: SupabaseClient): Promise<Reference
 
 // ---------- Plan d'un compte ----------
 const SESSION_TABLES = ['messages', 'photos', 'print_requests', 'borne_connections', 'demimot_buzzes', 'demimot_teams', 'demimot_runtime'] as const
-const USER_TABLES = ['saved_quizzes', 'saved_mysteries', 'saved_matchings', 'saved_buzzer_sets', 'borne_templates', 'account_display_defaults', 'demimot_puzzles', 'demimot_sets'] as const
+const USER_TABLES = ['saved_quizzes', 'saved_mysteries', 'saved_matchings', 'saved_buzzer_sets', 'saved_bingo_playlists', 'borne_templates', 'account_display_defaults', 'demimot_puzzles', 'demimot_sets'] as const
 
 async function countRows(db: SupabaseClient, table: string, col: string, values: string[]): Promise<number> {
   if (values.length === 0) return 0

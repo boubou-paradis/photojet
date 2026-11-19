@@ -213,6 +213,9 @@ export interface Session {
   // À Demi-Mot (identifiant technique demimot) : seul drapeau public. Équipes,
   // buzz et état vivent dans les tables demimot_* (serveur uniquement).
   demimot_active?: boolean
+  // AnimaBingo (identifiant technique bingo) : seul drapeau public. Partie,
+  // joueurs, cartons et demandes vivent dans les tables bingo_* (serveur uniquement).
+  bingo_active?: boolean
 }
 
 // Mystery Photo types

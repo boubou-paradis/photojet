@@ -29,6 +29,8 @@ import VoteGame from '@/components/games/VoteGame'
 import { useVoteStatus } from '@/hooks/useVoteStatus'
 import DemiMotGame from '@/components/games/DemiMotGame'
 import { useDemiMotStatus } from '@/hooks/useDemiMotStatus'
+import BingoGame from '@/components/games/BingoGame'
+import { useBingoStatus } from '@/hooks/useBingoStatus'
 import { usePromoPreload } from '@/hooks/usePromoPreload'
 import { useTrialWatermark } from '@/components/TrialWatermark'
 import { watermarkedPhotoUrl } from '@/lib/watermark/constants'
@@ -931,6 +933,7 @@ export default function LivePage() {
   const voteStatus = useVoteStatus(code, session?.vote_active === true)
   // À Demi-Mot : même principe, interrogé seulement quand À Demi-Mot est lancé.
   const demimotStatus = useDemiMotStatus(code, session?.demimot_active === true)
+  const bingoStatus = useBingoStatus(code, session?.bingo_active === true)
 
   const transitionType = session?.transition_type || 'fade'
   const currentItem = slideshowItems[currentIndex]
@@ -1403,6 +1406,9 @@ export default function LivePage() {
 
   // À Demi-Mot : juste avant AnimaVote (les jeux s'excluent). Affiché seulement si
   // le serveur confirme qu'il est en direct (signal de vie frais, aucun autre jeu).
+  if (session.bingo_active && bingoStatus.present) {
+    return <BingoGame session={session} status={bingoStatus} />
+  }
   if (session.demimot_active && demimotStatus.live) {
     return <DemiMotGame session={session} status={demimotStatus} />
   }
