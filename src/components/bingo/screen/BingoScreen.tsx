@@ -15,6 +15,7 @@ import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import QRCode from '@/components/QRCode'
 import { PHASE_LABELS } from '@/lib/bingo/constants'
 import { inWords, lotInfo, nextPhase } from '@/lib/bingo/display'
+import { formulaTitle } from '@/lib/bingo/formulas'
 import type { BingoPublicState, BingoWinner, Phase } from '@/lib/bingo/types'
 import { getInviteUrl } from '@/lib/utils'
 import { Ball, Board } from '../Ball'
@@ -91,7 +92,7 @@ function TopBar({ s, name }: { s: Live; name: string }) {
       )}
       <div className="event">
         <b>{name}</b>
-        Partie {s.round} · {left === 0 ? 'dernière étape' : `${left} étape${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}`}
+        <span data-testid="screen-partie">PARTIE {s.round} : {formulaTitle(s.phases, s.lots)}</span> · {left === 0 ? 'dernière étape' : `${left} étape${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}`}
       </div>
     </div>
   )
@@ -150,13 +151,17 @@ function Lobby({ s, code }: { s: Live; code: string }) {
   return (
     <>
       <Decor dust />
-      <div className="title"><h1 className="gold-text">ANIMABINGO</h1><p>{music ? 'LE LOTO MUSICAL VA COMMENCER' : 'LE GRAND TIRAGE VA COMMENCER'}</p></div>
+      <div className="title">
+        <h1 className="gold-text">ANIMABINGO</h1>
+        <p className="partie" data-testid="screen-lobby-partie">PARTIE {s.round} : <b>{formulaTitle(s.phases, s.lots)}</b></p>
+        <p>{music ? 'LE LOTO MUSICAL VA COMMENCER' : 'LE GRAND TIRAGE VA COMMENCER'}</p>
+      </div>
       <Machine x={640} y={250} scale={0.92} mode="idle" drawn={s.drawn} seed={4} />
       <div className="ready">
         <b className="gold-text" data-testid="screen-players">{s.players}</b>
         <span>{s.players > 1 ? 'JOUEURS PRÊTS' : 'JOUEUR PRÊT'}</span>
         <p>Chacun reçoit son carton sur son téléphone.<br />{music ? 'Reconnaissez les chansons, cochez les titres, criez' : 'Cochez vous-même, criez'} « {PHASE_LABELS[s.phases[0] ?? 'quine'].toUpperCase()} ! » avant les autres.</p>
-        <div className="pills">{s.phases.map((p) => <span key={p}>{PHASE_LABELS[p]}</span>)}</div>
+        <div className="pills">{s.phases.map((p, i) => <span key={p}>{PHASE_LABELS[p]}{(s.lots?.[i] ?? 1) > 1 ? ` × ${s.lots?.[i]}` : ''}</span>)}</div>
       </div>
       <div className="qrcard">
         <div className="qr"><QRCode value={getInviteUrl(code)} size={300} level="M" fgColor="#0a0a14" style={{ width: '100%', height: 'auto' }} /></div>

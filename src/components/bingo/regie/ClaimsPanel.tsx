@@ -12,6 +12,9 @@ import type { PendingClaim } from '@/lib/bingo/server'
 import type { BingoPublicState, Phase } from '@/lib/bingo/types'
 import { MiniCard } from './MiniCard'
 
+/** Demandes compactes affichées sous la première (le reste attend son tour). */
+const MORE = 3
+
 function ago(iso: string, offset: number) {
   const s = Math.max(0, Math.round((Date.now() + offset - Date.parse(iso)) / 1000))
   return s < 60 ? `il y a ${s} s` : `il y a ${Math.floor(s / 60)} min`
@@ -42,7 +45,7 @@ export function ClaimsPanel({ claims, state, phase, busyId, offset, onDecide, ti
   return (
     <div className="box claims alert" data-testid="claims-panel" aria-live="polite">
       <h2><span>{label} en attente</span><span>{claims.length}</span></h2>
-      {claims.map((c, i) => {
+      {claims.slice(0, 1).map((c) => {
         const drawn = drawnAll.slice(0, c.drawCount)
         const v = verdictText(c.check, c.phase)
         return (
@@ -55,7 +58,7 @@ export function ClaimsPanel({ claims, state, phase, busyId, offset, onDecide, ti
             {c.lateBy !== null && c.lateBy > 0 && (
               <div className="note">Combinaison complète depuis {c.lateBy} boule{c.lateBy > 1 ? 's' : ''} (annoncée en retard).</div>
             )}
-            <MiniCard cells={c.cells} drawn={drawn} marks={c.marks} check={c.check} legend={i === 0} titles={titles} />
+            <MiniCard cells={c.cells} drawn={drawn} marks={c.marks} check={c.check} legend={claims.length === 1} titles={titles} />
             <div className="actions">
               <button className={`btn ${c.check.valid ? 'ok' : 'ghost'}`} disabled={busyId !== null} onClick={() => onDecide(c, true)} data-testid="claim-accept">✓ Valider</button>
               <button className="btn no" disabled={busyId !== null} onClick={() => onDecide(c, false)} data-testid="claim-reject">Refuser</button>
@@ -63,7 +66,22 @@ export function ClaimsPanel({ claims, state, phase, busyId, offset, onDecide, ti
           </div>
         )
       })}
-      <div className="note">Plusieurs demandes sur la même boule = plusieurs gagnants. Valider ne relance pas le tirage : vous gardez la main.</div>
+      {/* Les suivantes en lignes compactes : Valider / Refuser toujours visibles, sans défilement. */}
+      {claims.slice(1, 1 + MORE).map((c) => {
+        const v = verdictText(c.check, c.phase)
+        return (
+          <div className="claim mini" key={c.id} data-testid="claim">
+            <div className="t">
+              <b>{c.name ?? 'Joueur'}</b>
+              <span className={v.tone}>{v.tone === 'ok' ? '✓' : '⚠'} carton n° {c.serial} · boule n° {c.drawCount}</span>
+            </div>
+            <button className={`btn sm ${c.check.valid ? 'ok' : 'ghost'}`} disabled={busyId !== null} onClick={() => onDecide(c, true)} data-testid="claim-accept">✓ Valider</button>
+            <button className="btn sm no" disabled={busyId !== null} onClick={() => onDecide(c, false)} data-testid="claim-reject">Refuser</button>
+          </div>
+        )
+      })}
+      {claims.length > 1 + MORE && <div className="note" data-testid="claims-more">+ {claims.length - 1 - MORE} autre{claims.length - 1 - MORE > 1 ? 's' : ''} demande{claims.length - 1 - MORE > 1 ? 's' : ''} : elles apparaissent ici dès que vous décidez.</div>}
+      {claims.length === 1 && <div className="note">Plusieurs demandes sur la même boule = plusieurs gagnants. Valider ne relance pas le tirage : vous gardez la main.</div>}
     </div>
   )
 }

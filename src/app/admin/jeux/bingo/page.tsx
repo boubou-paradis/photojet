@@ -28,7 +28,8 @@ import { MusicBoard, MusicDeck, useMusicPlayer } from '@/components/bingo/regie/
 import { MusicPicker } from '@/components/bingo/regie/MusicPicker'
 import { PlaylistLibrary } from '@/components/bingo/regie/PlaylistLibrary'
 import { SettingsForm } from '@/components/bingo/regie/SettingsForm'
-import { AUTO_ADVANCE_MS, StepButton, StepLinks } from '@/components/bingo/regie/StepControl'
+import { AUTO_ADVANCE_MS, RoundLabel, StepButton } from '@/components/bingo/regie/StepControl'
+import { FormulaButton, FormulaPanel, FormulaPicker } from '@/components/bingo/regie/FormulaControl'
 import { useBingoChannel } from '@/hooks/useBingoChannel'
 import { useBingoVoice } from '@/hooks/useBingoVoice'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
@@ -74,6 +75,7 @@ export default function BingoAdminPage() {
   const [netLost, setNetLost] = useState(false)
   const [confirmReq, setConfirmReq] = useState<ConfirmRequest | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [formulaOpen, setFormulaOpen] = useState(false)
   const [autoSec, setAutoSec] = useState(8)
   const [now, setNow] = useState(() => Date.now())
   // Loto musical : mode choisi avant le lancement, playlist et bibliothèque du compte.
@@ -324,7 +326,11 @@ export default function BingoAdminPage() {
       toast.error('Choisissez une playlist prête à jouer (au moins 30 titres).')
       return
     }
-    const r = await run({ action: 'launch', settings: draft, phases: draftPhases, lots: normalizeLots(draftPhases, draftLots), ...(fresh && mode === 'music' ? { playlistId } : {}) }, { key: 'launch' })
+    // Reprise : la formule choisie dans la régie reste celle de la base.
+    const cur = snap?.state.active ? snap.state : null
+    const phases = cur ? cur.phases : draftPhases
+    const lots = cur ? normalizeLots(cur.phases, cur.lots) : normalizeLots(draftPhases, draftLots)
+    const r = await run({ action: 'launch', settings: draft, phases, lots, ...(fresh && mode === 'music' ? { playlistId } : {}) }, { key: 'launch' })
     if (!r?.ok) return
     window.open(`/live/${session.code}`, 'photojet-live')
     if (isState(r.data) && r.data.active && r.data.resumedGame) {
@@ -344,7 +350,7 @@ export default function BingoAdminPage() {
       message: playing
         ? 'La partie en cours s’arrête. On repart avec toutes les boules, et les jetons sont vidés sur tous les téléphones.'
         : 'On repart avec toutes les boules, et les jetons sont vidés sur tous les téléphones.',
-      note: 'Chacun garde ses cartons (téléphones et papier) : personne ne rescanne. La formule se change dans Réglages avant la première boule.',
+      note: 'Chacun garde ses cartons (téléphones et papier) : personne ne rescanne. Vous choisirez ensuite la formule de la nouvelle partie.',
       check: 'J’ai compris : nouvelles boules, mêmes cartons.',
       confirm: 'Lancer la nouvelle partie',
       onConfirm: async () => {
@@ -374,8 +380,8 @@ export default function BingoAdminPage() {
     },
   })
 
-  async function saveSettings(next: BingoSettings, phases?: Phase[], lots?: number[]) {
-    const r = await run({ action: 'settings', settings: next, ...(phases ? { phases, ...(lots ? { lots } : {}) } : {}) }, { key: 'settings' })
+  async function saveSettings(next: BingoSettings) {
+    const r = await run({ action: 'settings', settings: next }, { key: 'settings' })
     if (r?.ok) {
       // Copie locale à jour tout de suite : un 2e appui rapide (touche B) part du bon réglage.
       setSnap((cur) => (cur ? { ...cur, settings: next } : cur))
@@ -403,7 +409,7 @@ export default function BingoAdminPage() {
   useRemoteControl({
     active: hasGame && !held && remoteOn && status !== 'finished',
     phase: `${status}|${live?.phaseIndex ?? ''}|${live?.round ?? ''}`,
-    isBlocked: () => !!confirmReq || settingsOpen,
+    isBlocked: () => !!confirmReq || settingsOpen || formulaOpen,
     onNext: async () => {
       if (!live) return
       if (live.status === 'lobby') await run({ action: 'start' })
@@ -462,12 +468,15 @@ export default function BingoAdminPage() {
       canWin={!!live && !held && phase !== null && ['running', 'checking', 'celebrating'].includes(live.status)}
       titles={titles}
       drawnFull={drawnFull}
+      compact={hasGame}
     />
   )
 
   // Le gros bouton ne remplace TIRER qu'après un gagnant validé ou en fin de partie.
   const stepButton = live && (live.status === 'celebrating' || live.status === 'finished') ? <StepButton live={live} held={held} busy={busy} run={run} offset={offset} onNewGame={askNewGame} /> : null
-  const stepLinks = live ? <StepLinks live={live} held={held} busy={busy} run={run} askConfirm={setConfirmReq} /> : null
+  const stepLinks = live ? <FormulaButton live={live} held={held} onOpen={() => setFormulaOpen(true)} /> : null
+  // Avant la première boule, le tableau encore vide laisse la place au choix de la formule.
+  const choosing = !!live && live.status === 'lobby' && live.count === 0
 
   return (
     <div className={`bgo regie${hasGame ? ' direct' : ''}`} data-testid="bingo-regie" data-status={status} data-held={held ? '1' : '0'}>
@@ -477,12 +486,12 @@ export default function BingoAdminPage() {
           Retour
         </Button>
         <Ball n={live?.last ?? 77} size={30} label="AnimaBingo" />
-        <h1>AnimaBingo <span>· Régie · session {session.code}</span></h1>
+        <h1 title={`AnimaBingo · Régie · session ${session.code}`}>AnimaBingo <span><span className="long">· Régie · session</span> · {session.code}</span></h1>
         {hasGame && (
           <>
             <span className={`chip ${offline ? 'bad' : ''}`} data-testid="regie-net"><i />{offline ? 'Connexion perdue…' : 'En ligne'}</span>
             <span className="chip"><b>{live!.players}</b> joueur{live!.players > 1 ? 's' : ''}</span>
-            {live!.pending > 0 && <span className="chip warn"><i />{live!.pending} demande{live!.pending > 1 ? 's' : ''} en attente</span>}
+            {live!.pending > 0 && <span className="chip warn" title="Demandes en attente de vérification"><i />{live!.pending} demande{live!.pending > 1 ? 's' : ''}</span>}
           </>
         )}
         <div className="right">
@@ -534,11 +543,12 @@ export default function BingoAdminPage() {
 
       {!hasGame ? (
         <div className="setup" data-testid="bingo-setup">
+          <div className="setup-left">
           <div className="box">
             <h3>Préparer le loto</h3>
             <p className="lead">
-              Les joueurs scannent le QR code de la soirée et reçoivent leurs cartons sur leur téléphone ; vous tirez les boules ici,
-              l’écran géant les montre à toute la salle. Les cartons papier se jouent en même temps.
+              Les joueurs scannent le QR code de la soirée et reçoivent leurs cartons sur leur téléphone. Vous tirez les boules ici,
+              l’écran géant les montre à toute la salle. La formule (classique, quine suivie, carton plein…) se choisit dans la régie, avant chaque partie.
             </p>
             <MusicPicker
               mode={mode}
@@ -554,19 +564,12 @@ export default function BingoAdminPage() {
             </button>
             <p className="note" style={{ textAlign: 'center' }}>Lancer AnimaBingo met en pause le jeu en cours sur l’écran géant (sans rien effacer).</p>
           </div>
-          <div className="box setup-settings">
-            <h3>Réglages de la partie</h3>
-            <SettingsForm
-              settings={draft}
-              onChange={setDraft}
-              phases={draftPhases}
-              lots={draftLots}
-              onPhases={(p, l) => { setDraftPhases(p); setDraftLots(l) }}
-              phasesLocked={false}
-              onTestVoice={voice.test}
-            />
+          {paperBox}
           </div>
-          <div className="setup-paper">{paperBox}</div>
+          <div className="box setup-settings">
+            <h3>Réglages de la soirée</h3>
+            <SettingsForm settings={draft} onChange={setDraft} onTestVoice={voice.test} />
+          </div>
         </div>
       ) : (
         <div className="rgrid">
@@ -601,9 +604,12 @@ export default function BingoAdminPage() {
             links={stepLinks}
           />
           )}
-          <CenterColumn live={live!} held={held} music={music} drawnFull={drawnFull} />
+          {choosing
+            ? <div className="col-center"><FormulaPicker live={live!} held={held} busy={busy} run={run} /></div>
+            : <CenterColumn live={live!} music={music} drawnFull={drawnFull} />}
           <div className="col-right">
             <ClaimsPanel claims={snap?.claims ?? []} state={live} phase={phase} busyId={decidingId} offset={offset} onDecide={(c, a) => void decide(c, a)} titles={titles} drawnFull={drawnFull} />
+            {!(snap?.claims?.length) && <WinnersBox live={live!} music={!!music} />}
             {paperBox}
           </div>
         </div>
@@ -612,16 +618,13 @@ export default function BingoAdminPage() {
       {settingsOpen && settings && live && (
         <SettingsModal
           initial={settings}
-          phases={live.phases}
-          lots={normalizeLots(live.phases, live.lots)}
-          phasesLocked={live.count > 0 || live.status !== 'lobby'}
           onClose={() => setSettingsOpen(false)}
-          onSave={async (s, p, l) => {
-            const changed = p.join() !== live.phases.join() || l.join() !== normalizeLots(live.phases, live.lots).join()
-            if (await saveSettings(s, changed && live.count === 0 ? p : undefined, changed && live.count === 0 ? l : undefined)) setSettingsOpen(false)
-          }}
+          onSave={async (s) => { if (await saveSettings(s)) setSettingsOpen(false) }}
           onTestVoice={voice.test}
         />
+      )}
+      {formulaOpen && live && !held && (
+        <FormulaPanel live={live} busy={busy} run={run} askConfirm={(r) => { setFormulaOpen(false); setConfirmReq(r) }} onClose={() => setFormulaOpen(false)} />
       )}
       {libraryOpen && (
         <PlaylistLibrary onClose={() => setLibraryOpen(false)} onChanged={setPlaylists} notify={notify} askConfirm={setConfirmReq} />
@@ -653,7 +656,7 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
   const canDraw = !held && live.status === 'running' && live.count < 90
   let hint = <>Télécommande : <kbd>Page ↓</kbd> tirer · <kbd>Page ↑</kbd> pause auto · <kbd>B</kbd> machine / tableau</>
   if (held) hint = <>AnimaBingo est en pause (autre jeu à l’écran).</>
-  else if (live.status === 'lobby') hint = <>Les joueurs rejoignent la partie. Commencez quand la salle est prête.</>
+  else if (live.status === 'lobby') hint = <>Choisissez la formule, puis commencez quand la salle est prête.</>
   else if (locked) hint = <>Tirage bloqué pendant la vérification.</>
   else if (live.status === 'celebrating') hint = <>Gagnant validé : remettez le lot, puis continuez.</>
   else if (live.status === 'finished') hint = <>Partie terminée. Les joueurs gardent leurs cartons.</>
@@ -670,11 +673,11 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
       </div>
       {live.status === 'lobby' ? (
         <button className="draw" onClick={onStart} disabled={held || busy !== null} data-testid="start">
-          <div><b style={{ fontSize: 26 }}>COMMENCER</b><small>LA PARTIE</small></div>
+          <RoundLabel lines={['COMMENCER']} bottom="LA PARTIE" />
         </button>
       ) : step ?? (
         <button className="draw" onClick={onDraw} disabled={!canDraw || tooSoon} data-testid="draw" aria-label="Tirer la boule suivante">
-          <div><b>TIRER</b><small>BOULE SUIVANTE</small></div>
+          <RoundLabel lines={['TIRER']} bottom="BOULE SUIVANTE" />
         </button>
       )}
       {links}
@@ -692,8 +695,16 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
             </div>
             <div className="lbl">
               <b style={autoMode === 'paused' ? { color: '#ffd28a' } : undefined}>{autoMode === 'paused' ? 'AUTO EN PAUSE' : `AUTO — ${Math.round(live.autoMs / 1000)} s`}</b>
-              <span>{autoMode === 'paused' ? (locked ? 'Mis en pause : demande à vérifier' : 'Reprenez quand vous voulez') : secLeft !== null ? `Prochaine boule dans ${secLeft} s` : 'En attente'}</span>
+              <span>{autoMode === 'paused' ? (locked ? 'Demande à vérifier' : 'Reprenez quand vous voulez') : secLeft !== null ? `Prochaine boule dans ${secLeft} s` : 'En attente'}</span>
             </div>
+            <button
+              className={`btn sm ${autoMode === 'paused' ? 'amber' : 'gold'}`}
+              onClick={() => onAuto(autoMode === 'paused' ? 'auto' : 'paused')}
+              disabled={held || busy === 'auto'}
+              data-testid="auto-toggle"
+            >
+              {autoMode === 'paused' ? '▶ REPRENDRE' : 'II PAUSE'}
+            </button>
           </div>
           <div className="range">
             4 s
@@ -708,23 +719,14 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
             />
             20 s
           </div>
-          <button
-            className={`btn wide ${autoMode === 'paused' ? 'amber' : 'gold'}`}
-            onClick={() => onAuto(autoMode === 'paused' ? 'auto' : 'paused')}
-            disabled={held || busy === 'auto'}
-            data-testid="auto-toggle"
-          >
-            {autoMode === 'paused' ? '▶ REPRENDRE' : 'II PAUSE'}
-          </button>
         </>
       )}
     </div>
   )
 }
 
-function CenterColumn({ live, held, music, drawnFull }: {
+function CenterColumn({ live, music, drawnFull }: {
   live: Live
-  held: boolean
   music: RegieMusic | null
   drawnFull?: readonly number[]
 }) {
@@ -732,9 +734,9 @@ function CenterColumn({ live, held, music, drawnFull }: {
   const lot = lotInfo(live)
   const lotsOf = (i: number) => live.lots?.[i] ?? 1
   return (
-    <div>
-      <div className="box">
-        <h2><span>Déroulé</span><span>{music ? `${(drawnFull ?? live.drawn).length} / ${music.tracks.length} morceaux` : `${live.count} / 90 sorties`}</span></h2>
+    <div className="col-center">
+      <div className="box center-box">
+        <h2><span>Partie {live.round} · déroulé</span><span>{music ? `${(drawnFull ?? live.drawn).length} / ${music.tracks.length} morceaux` : `${live.count} / 90 sorties`}</span></h2>
         <div className="phases">
           {live.phases.map((p, i) => (
             <div key={p} className={`ph ${i < live.phaseIndex ? 'done' : i === live.phaseIndex ? 'now' : ''}`}>
@@ -755,47 +757,53 @@ function CenterColumn({ live, held, music, drawnFull }: {
             <Board drawn={live.drawn} last={live.last} className="rboard" />
             <div className="hist">
               <small>Historique</small>
-              {hist.map((n) => <Ball key={n} n={n} size={36} />)}
+              {hist.map((n) => <Ball key={n} n={n} size={32} />)}
             </div>
           </>
         )}
-
-        {!held && live.status === 'finished' && (
-          <div className="banner info" style={{ margin: '12px 0 0' }} data-testid="finished">
-            Partie terminée. « Nouvelle partie » repart avec {music ? 'tous les titres' : 'les 90 boules'} : chacun garde ses cartons.
-          </div>
-        )}
       </div>
-
-      {live.winners.length > 0 && (
-        <div className="box" data-testid="winners">
-          <h2><span>Gagnants{live.round > 1 ? ` · partie ${live.round}` : ''}</span><span>{live.winners.length}</span></h2>
-          {[...live.winners].reverse().map((w, i) => (
-            <div key={i} className="opt">
-              <div className="t">
-                <b>{w.name ?? `Carton n° ${w.serial}`}</b>
-                <span>{PHASE_LABELS[w.phase]}{w.lot && lotsOf(live.phases.indexOf(w.phase)) > 1 ? ` · lot ${w.lot}` : ''} · carton {w.kind === 'paper' ? 'papier ' : ''}n° {w.serial} · {music ? 'au morceau' : 'à la boule'} n° {w.drawCount}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
 
-function SettingsModal({ initial, phases, lots, phasesLocked, onClose, onSave, onTestVoice }: {
+/** Gagnants de la partie (colonne de droite) : les plus récents, sans jamais défiler. */
+function WinnersBox({ live, music }: { live: Live; music: boolean }) {
+  const max = useFitCount()
+  if (!live.winners.length) return null
+  const lotsOf = (p: Phase) => live.lots?.[live.phases.indexOf(p)] ?? 1
+  const list = [...live.winners].reverse()
+  return (
+    <div className="box winners" data-testid="winners">
+      <h2><span>Gagnants · partie {live.round}</span><span>{live.winners.length}</span></h2>
+      {list.slice(0, max).map((w, i) => (
+        <div key={i} className="w">
+          <b>{w.name ?? `Carton n° ${w.serial}`}</b>
+          <span>{PHASE_LABELS[w.phase]}{w.lot && lotsOf(w.phase) > 1 ? ` · lot ${w.lot}` : ''} · {w.kind === 'paper' ? 'papier ' : ''}n° {w.serial} · {music ? 'morceau' : 'boule'} {w.drawCount}</span>
+        </div>
+      ))}
+      {list.length > max && <div className="note">+ {list.length - max} gagnant{list.length - max > 1 ? 's' : ''} plus tôt dans la partie</div>}
+    </div>
+  )
+}
+
+/** Nombre de gagnants affichables selon la hauteur de l'écran (pas de défilement). */
+function useFitCount() {
+  const [h, setH] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight))
+  useEffect(() => {
+    const on = () => setH(window.innerHeight)
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  return h < 850 ? 4 : h < 1000 ? 7 : 10
+}
+
+function SettingsModal({ initial, onClose, onSave, onTestVoice }: {
   initial: BingoSettings
-  phases: Phase[]
-  lots: number[]
-  phasesLocked: boolean
   onClose: () => void
-  onSave: (s: BingoSettings, p: Phase[], l: number[]) => Promise<void>
+  onSave: (s: BingoSettings) => Promise<void>
   onTestVoice: () => void
 }) {
   const [s, setS] = useState(initial)
-  const [p, setP] = useState(phases)
-  const [l, setL] = useState(lots)
   const [saving, setSaving] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -804,13 +812,13 @@ function SettingsModal({ initial, phases, lots, phasesLocked, onClose, onSave, o
   }, [onClose])
   return (
     <div className="bgo-modal" role="dialog" aria-modal="true" aria-label="Réglages d’AnimaBingo" data-testid="settings-modal">
-      <div className="card bgo" style={{ width: 'min(640px, 100%)', maxHeight: '90dvh', overflowY: 'auto', boxShadow: '0 0 0 1px rgba(139,77,255,.3), 0 30px 60px rgba(0,0,0,.6)' }}>
-        <h4>Réglages</h4>
-        <p className="note" style={{ marginTop: 0 }}>Les cartons déjà distribués ne changent pas ; le nombre de cartons s’applique aux nouveaux joueurs.</p>
-        <SettingsForm settings={s} onChange={setS} phases={p} lots={l} onPhases={(np, nl) => { setP(np); setL(nl) }} phasesLocked={phasesLocked} onTestVoice={onTestVoice} />
+      <div className="card bgo" style={{ width: 'min(640px, 100%)', boxShadow: '0 0 0 1px rgba(139,77,255,.3), 0 30px 60px rgba(0,0,0,.6)' }}>
+        <h4>Réglages de la soirée</h4>
+        <p className="note" style={{ marginTop: 0 }}>Les cartons déjà distribués ne changent pas ; le nombre de cartons s’applique aux nouveaux joueurs. La formule se change avec le bouton « Formule » de la régie.</p>
+        <SettingsForm settings={s} onChange={setS} onTestVoice={onTestVoice} />
         <div className="acts">
           <button className="btn ghost" onClick={onClose}>Annuler</button>
-          <button className="btn gold" disabled={saving} onClick={async () => { setSaving(true); await onSave(s, p, l); setSaving(false) }} data-testid="save-settings">
+          <button className="btn gold" disabled={saving} onClick={async () => { setSaving(true); await onSave(s); setSaving(false) }} data-testid="save-settings">
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>

@@ -430,6 +430,7 @@ export async function runAdmin(admin: SupabaseClient, sessionId: string, command
     case 'new_round': return call({ ...(command.settings ? { settings: command.settings } : {}), ...(command.phases ? { phases: command.phases } : {}), ...(command.lots ? { lots: command.lots } : {}) })
     case 'settings': return call({ settings: command.settings, ...(command.phases ? { phases: command.phases } : {}), ...(command.lots ? { lots: command.lots } : {}) })
     case 'next_phase': case 'advance': case 'jump_final': return call(command.expect !== undefined ? { expect: command.expect } : {})
+    case 'formula': return call({ phases: command.phases, lots: command.lots, ...(command.expect !== undefined ? { expect: command.expect } : {}) })
     case 'draw': return call({ expect: command.expect })
     case 'auto': return call({ mode: command.mode, ...(command.ms ? { ms: command.ms } : {}) })
     case 'decide': return call({ claimId: command.claimId, accept: command.accept, ...(command.name ? { name: command.name } : {}) })

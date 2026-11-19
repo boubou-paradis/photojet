@@ -42,3 +42,13 @@ export function detectFormula(phases: readonly Phase[], lots: readonly number[])
   }
   return 'custom'
 }
+
+/** Nom de la formule pour le grand écran : « CARTON PLEIN », « QUINE SUIVIE »… */
+export function formulaTitle(phases: readonly Phase[], lots: readonly number[] | null | undefined): string {
+  const l = normalizeLots(phases, lots)
+  const id = detectFormula(phases, l)
+  if (id === 'plein') return 'CARTON PLEIN'
+  if (id !== 'custom') return FORMULAS[id].label.toUpperCase()
+  const names: Record<Phase, string> = { quine: 'QUINE', double: 'DOUBLE QUINE', plein: 'CARTON PLEIN' }
+  return phases.map((p, i) => `${names[p]}${l[i] > 1 ? ` ×${l[i]}` : ''}`).join(' · ')
+}

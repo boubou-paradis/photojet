@@ -10,7 +10,7 @@
 // Chaque commande envoie l'étape affichée (expect) : un double clic ou un
 // renvoi après coupure ne saute jamais deux étapes.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { PHASE_LABELS } from '@/lib/bingo/constants'
 import { lotInfo, nextPhase } from '@/lib/bingo/display'
 import type { BingoPublicState, Phase } from '@/lib/bingo/types'
@@ -22,6 +22,27 @@ type Run = (b: AdminBody, o?: { quiet?: boolean; key?: string }) => Promise<Admi
 
 const TO: Record<Phase, string> = { quine: 'À LA QUINE', double: 'À LA DOUBLE QUINE', plein: 'AU CARTON PLEIN' }
 const to = (p: Phase) => TO[p].toLowerCase()
+/** Gros texte du bouton rond, une ligne par élément (jamais un mot coupé). */
+const TO_LINES: Record<Phase, string[]> = { quine: ['À LA', 'QUINE'], double: ['À LA', 'DOUBLE', 'QUINE'], plein: ['AU', 'CARTON', 'PLEIN'] }
+
+/**
+ * Texte d'un bouton rond : la taille suit le diamètre (--d) et la ligne la
+ * plus longue, pour que tout reste dans le cercle avec une marge confortable
+ * (au moins 12 % du rayon), quelle que soit la taille d'écran.
+ */
+export function RoundLabel({ lines, top, bottom, extra }: { lines: string[]; top?: string; bottom?: string; extra?: ReactNode }) {
+  const longest = Math.max(...lines.map((l) => l.length))
+  const smalls = (top ? 1 : 0) + (bottom ? 1 : 0) + (extra ? 1 : 0)
+  const fs = Math.min(0.2, 0.8 / (longest * 0.76), (0.62 - smalls * 0.085) / (lines.length * 1.06))
+  return (
+    <div className="rl" style={{ '--fs': fs.toFixed(4) } as CSSProperties}>
+      {top && <small>{top}</small>}
+      {lines.map((l) => <b key={l}>{l}</b>)}
+      {bottom && <small>{bottom}</small>}
+      {extra}
+    </div>
+  )
+}
 
 /** Passage automatique : 8 s après le dernier gagnant validé (même délai que la base). */
 export const AUTO_ADVANCE_MS = 8000
@@ -49,7 +70,7 @@ export function StepButton({ live, held, busy, run, offset, onNewGame }: {
   if (live.status === 'finished') {
     return (
       <button className="draw step" onClick={onNewGame} disabled={held || busy !== null} data-testid="step-new-game" aria-label="Nouvelle partie avec les mêmes cartons">
-        <div><b>NOUVELLE</b><b>PARTIE</b><small>MÊMES CARTONS</small></div>
+        <RoundLabel lines={['NOUVELLE', 'PARTIE']} bottom="MÊMES CARTONS" />
       </button>
     )
   }
@@ -58,7 +79,7 @@ export function StepButton({ live, held, busy, run, offset, onNewGame }: {
   if (!lot.done) {
     return (
       <button className="draw step" onClick={() => void run({ action: 'resume' }, { key: 'resume' })} disabled={held || busy !== null || pending} data-testid="step-resume">
-        <div><b>CONTINUER</b><small>LOT {Math.min(lot.n, lot.used + 1)} / {lot.n}</small></div>
+        <RoundLabel lines={['CONTINUER']} bottom={`LOT ${Math.min(lot.n, lot.used + 1)} / ${lot.n}`} />
       </button>
     )
   }
@@ -71,11 +92,11 @@ export function StepButton({ live, held, busy, run, offset, onNewGame }: {
       disabled={held || busy !== null || pending}
       data-testid="step-next"
     >
-      <div>
-        <small>{next ? 'PASSER' : 'TERMINER'}</small>
-        <b>{next ? TO[next] : 'LA PARTIE'}</b>
-        {secLeft !== null && <small data-testid="step-auto">AUTO DANS {secLeft} S</small>}
-      </div>
+      <RoundLabel
+        top={next ? 'PASSER' : 'TERMINER'}
+        lines={next ? TO_LINES[next] : ['LA PARTIE']}
+        extra={secLeft !== null ? <small data-testid="step-auto">AUTO DANS {secLeft} S</small> : undefined}
+      />
     </button>
   )
 }

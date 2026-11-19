@@ -12,6 +12,7 @@ export type AdminBody =
   | { action: 'new_round'; settings?: BingoSettings; phases?: Phase[]; lots?: number[] }
   | { action: 'settings'; settings: BingoSettings; phases?: Phase[]; lots?: number[] }
   | { action: 'next_phase' | 'advance' | 'jump_final'; expect?: number }
+  | { action: 'formula'; phases: Phase[]; lots: number[]; expect?: number }
   | { action: 'start' | 'resume' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
   | { action: 'draw'; expect: number }
   | { action: 'auto'; mode: 'manual' | 'auto' | 'paused'; ms?: number }

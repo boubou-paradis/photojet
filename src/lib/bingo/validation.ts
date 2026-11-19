@@ -105,6 +105,7 @@ export type AdminCommand =
   | { action: 'new_round'; settings?: BingoSettings; phases?: Phase[]; lots?: number[] }
   | { action: 'settings'; settings: BingoSettings; phases?: Phase[]; lots?: number[] }
   | { action: 'next_phase' | 'advance' | 'jump_final'; expect?: number }
+  | { action: 'formula'; phases: Phase[]; lots: number[]; expect?: number }
   | { action: 'start' | 'resume' | 'heartbeat' | 'exit' | 'paper_clear' | 'paper_list' | 'reveal' }
   | { action: 'draw'; expect: number }
   | { action: 'auto'; mode: AutoMode; ms?: number }
@@ -143,6 +144,15 @@ export function parseAdmin(body: unknown): Validated<{ sessionId: string; comman
       const lots = body.lots === undefined ? undefined : parseLots(body.lots, phases?.length ?? -1)
       if (lots === null || (lots && !phases)) return bad
       command = { action: 'settings', settings: parseSettings(body.settings), ...(phases ? { phases } : {}), ...(lots ? { lots } : {}) }
+      break
+    }
+    case 'formula': {
+      // Formule choisie en direct : la base protège les étapes jouées et les lots gagnés.
+      const phases = parsePhases(body.phases)
+      const lots = phases ? parseLots(body.lots, phases.length) : null
+      if (!phases || !lots) return bad
+      if (body.expect !== undefined && (!Number.isInteger(body.expect) || (body.expect as number) < 0 || (body.expect as number) > 3)) return bad
+      command = { action: 'formula', phases, lots, ...(body.expect !== undefined ? { expect: body.expect as number } : {}) }
       break
     }
     case 'next_phase': case 'advance': case 'jump_final':

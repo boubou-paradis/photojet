@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RegieMusic } from '@/lib/bingo/server'
 import type { BingoPublicState } from '@/lib/bingo/types'
+import { RoundLabel } from './StepControl'
 
 type Live = Extract<BingoPublicState, { active: true }>
 
@@ -197,15 +198,15 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
 
       {live.status === 'lobby' ? (
         <button className="draw" onClick={onStart} disabled={held || busy !== null} data-testid="start">
-          <div><b style={{ fontSize: 26 }}>COMMENCER</b><small>LA PARTIE</small></div>
+          <RoundLabel lines={['COMMENCER']} bottom="LA PARTIE" />
         </button>
       ) : hidden ? (
         <button className="draw reveal" onClick={onReveal} disabled={held || busy !== null} data-testid="reveal" aria-label="Révéler le titre à la salle">
-          <div><b style={{ fontSize: 26 }}>RÉVÉLER</b><small>LE TITRE</small></div>
+          <RoundLabel lines={['RÉVÉLER']} bottom="LE TITRE" />
         </button>
       ) : step ?? (
         <button className="draw" onClick={onDraw} disabled={!canDraw || tooSoon} data-testid="draw" aria-label="Tirer le morceau suivant">
-          <div><b>TIRER</b><small>MORCEAU SUIVANT</small></div>
+          <RoundLabel lines={['TIRER']} bottom="MORCEAU SUIVANT" />
         </button>
       )}
       {links}

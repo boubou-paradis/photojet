@@ -131,13 +131,17 @@
 .bgo .current .ball { margin: 2px auto 8px; }
 .bgo .current .w { font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; min-height: 22px; }
 .bgo .draw {
-  position: relative; display: grid; place-items: center; margin: 18px auto 6px; width: 176px; height: 176px; border-radius: 50%; border: 0; cursor: pointer; font: inherit; color: #1a1206;
+  --d: clamp(150px, 21vh, 184px);
+  position: relative; display: grid; place-items: center; margin: 18px auto 24px; width: var(--d); height: var(--d); border-radius: 50%; border: 0; cursor: pointer; font: inherit; color: #1a1206; padding: 0;
   background: radial-gradient(circle at 40% 30%, #fff4c9, #f0cf6a 40%, #b98d22 80%, #8a6a12);
   box-shadow: inset 0 3px 0 #fffbe8, inset 0 -8px 14px rgba(90, 60, 0, .45), 0 0 0 6px #1b1433, 0 0 0 8px rgba(212, 175, 55, .55), 0 0 50px rgba(212, 175, 55, .25), 0 18px 30px rgba(0, 0, 0, .5);
   transition: transform .12s var(--ease-out), filter .2s;
 }
-.bgo .draw b { font-size: 36px; font-weight: 900; letter-spacing: .06em; line-height: 1; display: block; }
-.bgo .draw small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .16em; margin-top: 6px; color: #5a4210; }
+/* Texte du bouton rond (RoundLabel) : taille calculée sur le diamètre et la ligne la plus longue. */
+.bgo .draw .rl { display: grid; justify-items: center; gap: calc(var(--d) * .012); max-width: 82%; text-align: center; }
+.bgo .draw .rl b { font-size: calc(var(--d) * var(--fs, .2)); font-weight: 900; letter-spacing: .03em; line-height: 1.02; display: block; white-space: nowrap; }
+.bgo .draw .rl small { display: block; font-size: max(10px, calc(var(--d) * .062)); font-weight: 800; letter-spacing: .1em; line-height: 1.2; color: #5a4210; white-space: nowrap; }
+.bgo .draw .rl b + small { margin-top: calc(var(--d) * .02); }
 .bgo .draw:active:not(:disabled) { transform: scale(.96); }
 .bgo .draw:focus-visible { outline: 3px solid var(--gold-hi); outline-offset: 6px; }
 .bgo .draw:disabled { filter: grayscale(.8) brightness(.55); cursor: not-allowed; }
@@ -145,7 +149,7 @@
 .bgo kbd { font: inherit; font-weight: 700; color: var(--text); padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .4); }
 .bgo .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0, 0, 0, .3); margin-top: 16px; }
 .bgo .seg button { border: 0; font: inherit; cursor: pointer; text-align: center; padding: 9px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--muted); background: transparent; }
-.bgo .seg button[aria-pressed='true'] { background: linear-gradient(180deg, #2d2152, #1d1538); color: #fff; box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .5); }
+.bgo .seg button[aria-pressed='true'], .bgo .seg button[aria-selected='true'] { background: linear-gradient(180deg, #2d2152, #1d1538); color: #fff; box-shadow: inset 0 0 0 1px rgba(166, 107, 255, .5); }
 .bgo .auto { margin-top: 14px; display: flex; align-items: center; gap: 14px; }
 .bgo .ring { position: relative; width: 68px; height: 68px; border-radius: 50%; background: conic-gradient(var(--violet-hot) var(--p, 0%), rgba(166, 107, 255, .15) 0); display: grid; place-items: center; flex: none; }
 .bgo .ring::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: #120d24; }
@@ -165,7 +169,7 @@
 .bgo .ph.now { background: linear-gradient(180deg, rgba(212, 175, 55, .16), rgba(212, 175, 55, .05)); box-shadow: inset 0 0 0 1.5px rgba(212, 175, 55, .7); }
 .bgo .ph.now b { color: var(--gold-hi); }
 .bgo .rboard { --gap: 5px; --tile-font: 16px; --tile-ratio: 1.35; --tile-radius: 7px; }
-.bgo .hist { margin-top: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 40px; }
+.bgo .hist { margin-top: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; overflow: hidden; min-height: 36px; }
 .bgo .hist small { font-size: 11px; letter-spacing: .2em; color: var(--muted); font-weight: 700; margin-right: 4px; }
 .bgo .row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
@@ -211,12 +215,14 @@
 
 /* ---------- Préparation ---------- */
 /* Pleine largeur comme les autres jeux : 3 colonnes (préparer + lancer | réglages | cartons papier). */
-.bgo .setup { padding: 22px 32px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+/* Préparation : deux panneaux côte à côte (préparer + cartons papier | réglages en onglets), jamais de défilement. */
+.bgo .setup { padding: 18px 32px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; align-items: start; max-width: 1500px; margin: 0 auto; }
 .bgo .setup > .box + .box { margin-top: 0; }
-@media (max-width: 1280px) { .bgo .setup { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 20px; } .bgo .setup > .setup-paper { grid-column: 1 / -1; } }
-@media (max-width: 900px) { .bgo .setup { grid-template-columns: 1fr; } }
+.bgo .setup-left > .box + .box { margin-top: 16px; }
+@media (max-width: 900px) { .bgo .setup { grid-template-columns: 1fr; padding: 16px; } }
+.bgo .seg.tabs { margin: 4px 0 6px; }
 .bgo .setup h3 { margin: 0 0 6px; font-size: 22px; font-weight: 800; }
-.bgo .setup p.lead { color: #cfc6ea; margin: 0 0 16px; line-height: 1.55; font-size: 15px; }
+.bgo .setup p.lead { color: #cfc6ea; margin: 0 0 12px; line-height: 1.5; font-size: 14.5px; }
 .bgo .opt { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid rgba(164, 155, 196, .12); }
 .bgo .opt:first-of-type { border-top: 0; }
 .bgo .opt .t { flex: 1; min-width: 0; }
@@ -236,7 +242,7 @@
 .bgo .order li b { flex: 1; }
 .bgo .order li .btn { padding: 4px 9px; font-size: 13px; }
 .bgo .order li.off { opacity: .5; }
-.bgo .launch { width: 100%; padding: 16px 14px; font-size: clamp(15px, 1.15vw, 18px); letter-spacing: .04em; margin-top: 16px; white-space: normal; line-height: 1.3; text-wrap: balance; }
+.bgo .launch { width: 100%; padding: 15px 14px; font-size: clamp(15px, 1.15vw, 18px); letter-spacing: .04em; margin-top: 12px; white-space: normal; line-height: 1.3; text-wrap: balance; }
 
 /* ---------- Confirmation (fenêtre maison, sans window.confirm) ---------- */
 .bgo-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(4, 3, 10, .72); backdrop-filter: blur(4px); }
@@ -310,30 +316,114 @@
 .bgo .order .lots { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .bgo .order .lots > span { min-width: 52px; text-align: center; color: var(--text); font-weight: 700; }
 
-/* Régie Direct : jamais de défilement de la page ; chaque colonne garde ses commandes en haut. */
+/* Régie Direct : ni la page ni les colonnes ne défilent. Chaque colonne est une
+   pile qui tient dans la hauteur de l'écran ; le tableau des 90 prend la place
+   qui reste (10 × 9, cases calculées sur la hauteur). */
 .bgo.regie.direct { height: calc(100dvh - 95px); min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-.bgo.regie.direct > .rgrid { flex: 1; min-height: 0; align-items: stretch; padding-top: 12px; padding-bottom: 12px; }
+.bgo.regie.direct .rtop { flex-wrap: nowrap; padding-top: 8px; padding-bottom: 8px; gap: 10px; }
+.bgo.regie.direct .rtop h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bgo.regie.direct .rtop .right { flex-wrap: nowrap; flex: none; }
+@media (max-width: 1500px) { .bgo.regie.direct .rtop h1 .long { display: none; } }
+.bgo.regie.direct > .rgrid { flex: 1; min-height: 0; align-items: stretch; padding-top: 12px; padding-bottom: 12px; gap: 16px; }
 .bgo.regie.direct > .rgrid > * { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .bgo.regie.direct .banner { margin-top: 8px; margin-bottom: 0; }
-.bgo .draw.step { width: 190px; height: 190px; }
-.bgo .draw.step b { font-size: 24px; letter-spacing: .03em; }
+.bgo.regie.direct .col-center { display: flex; flex-direction: column; }
+.bgo.regie.direct .center-box { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bgo.regie.direct .center-box .rboard { flex: 1 1 auto; min-height: 0; max-height: 640px; grid-template-rows: repeat(9, minmax(0, 1fr)); }
+.bgo.regie.direct .center-box .rboard .tile { aspect-ratio: auto; min-height: 0; font-size: clamp(13px, 2.1vh, 22px); }
+.bgo.regie.direct .col-right .box + .box { margin-top: 12px; }
+.bgo .step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 8px; }
 .bgo .draw.step.go { background: radial-gradient(circle at 40% 30%, #fff, #c9f5dd 35%, #3ddc97 70%, #17784c); color: #04220f; animation: bgo-step 1.6s ease-in-out infinite; }
-.bgo .draw.step.go small { color: #0d4a2c; }
+.bgo .draw.step.go .rl small { color: #0d4a2c; }
 @keyframes bgo-step { 50% { box-shadow: inset 0 3px 0 #fffbe8, 0 0 0 6px #1b1433, 0 0 0 8px rgba(61, 220, 151, .8), 0 0 70px rgba(61, 220, 151, .45), 0 18px 30px rgba(0, 0, 0, .5); } }
 @media (prefers-reduced-motion: reduce) { .bgo .draw.step.go { animation: none; } }
-.bgo .step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 2px 0 6px; }
-/* Écrans bas (1366×768) : boule et bouton plus compacts, tout tient sans défiler. */
-@media (max-height: 820px) {
-  .bgo.regie.direct .rtop { padding-top: 8px; padding-bottom: 8px; }
-  .bgo.regie.direct .current .ball { transform: scale(.72); margin: -14px auto -12px; }
-  .bgo.regie.direct .draw { width: 140px; height: 140px; margin: 8px auto 4px; }
-  .bgo.regie.direct .draw b { font-size: 28px; }
-  .bgo.regie.direct .draw.step { width: 156px; height: 156px; }
-  .bgo.regie.direct .draw.step b { font-size: 20px; }
-  .bgo.regie.direct .phases { margin-bottom: 8px; }
+/* Tirage automatique compact : anneau, libellé et pause sur une ligne. */
+.bgo .auto .ring { width: 54px; height: 54px; }
+.bgo .auto .ring::before { inset: 5px; }
+.bgo .auto .ring b { font-size: 19px; }
+.bgo .auto .lbl { flex: 1; min-width: 0; }
+.bgo .auto .lbl b { font-size: 14px; }
+.bgo .auto .lbl span { font-size: 12px; display: block; }
+.bgo .auto .btn { flex: none; }
+/* Écrans bas (768 / 900 px) : boule et marges plus serrées, tout tient. */
+@media (max-height: 940px) {
+  .bgo.regie.direct .current .ball { transform: scale(.7); margin: -18px auto -16px; }
+  .bgo.regie.direct .draw { margin: 10px auto 22px; }
+}
+/* 768 px de haut : un cran plus serré (tirage automatique compris). */
+@media (max-height: 800px) {
+  .bgo.regie.direct .current .ball { transform: scale(.62); margin: -23px auto -21px; }
+  .bgo.regie.direct .draw { --d: 150px; margin: 6px auto 18px; }
+  .bgo.regie.direct .current .w { font-size: 13px; min-height: 18px; }
+}
+@media (max-height: 940px) {
+  .bgo.regie.direct .box { padding: 14px; }
+  .bgo.regie.direct .box h2 { margin-bottom: 8px; }
+  .bgo.regie.direct .phases { margin-bottom: 8px; gap: 8px; }
   .bgo.regie.direct .ph { padding: 6px 10px; }
+  .bgo.regie.direct .ph b { font-size: 15px; }
   .bgo.regie.direct .seg { margin-top: 8px; }
+  .bgo.regie.direct .seg button { padding: 7px; }
   .bgo.regie.direct .hist { margin-top: 8px; }
+  .bgo.regie.direct .auto { margin-top: 8px; }
+  .bgo.regie.direct .range { margin-top: 6px; }
+  .bgo.regie.direct .empty { padding: 8px 6px; font-size: 13px; line-height: 1.5; }
+  .bgo.regie.direct .claim { padding: 10px; margin-bottom: 8px; }
+  .bgo.regie.direct .verdict { margin: 6px 0; padding: 6px 10px; font-size: 13px; }
+  .bgo.regie.direct .mc .c { height: 24px; }
+  .bgo.regie.direct .actions { margin-top: 8px; }
+  .bgo.regie.direct .actions .btn { padding: 10px; }
 }
 .bgo .ph .lotc { display: block; font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
 .bgo .ph.now .lotc { color: #ffe3ae; }
+
+/* Demandes suivantes : une ligne chacune, Valider / Refuser toujours visibles. */
+.bgo .claim.mini { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+.bgo .claim.mini .t { flex: 1; min-width: 0; }
+.bgo .claim.mini .t b { display: block; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgo .claim.mini .t span { display: block; font-size: 12px; color: var(--muted); }
+.bgo .claim.mini .t span.ok { color: #7ff0bf; }
+.bgo .claim.mini .t span.warn { color: #ffd28a; }
+
+/* Gagnants (colonne de droite). */
+.bgo .winners .w { padding: 7px 0; border-top: 1px solid rgba(164, 155, 196, .12); }
+.bgo .winners .w:first-of-type { border-top: 0; padding-top: 0; }
+.bgo .winners .w b { display: block; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bgo .winners .w span { display: block; font-size: 12px; color: var(--muted); }
+.bgo .paper-mini .field input.big { font-size: 20px; padding: 8px 10px; }
+
+/* Choix de la formule avant la partie (à la place du tableau vide). */
+.bgo .fpick h2 sup { font-size: 8px; }
+.bgo .fbig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bgo .fbig button { border: 0; font: inherit; cursor: pointer; text-align: left; padding: 12px 14px; border-radius: 14px; color: var(--text); background: rgba(0, 0, 0, .3); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .25); }
+.bgo .fbig button b { display: block; font-size: 18px; font-weight: 800; }
+.bgo .fbig button span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.bgo .fbig button[aria-pressed='true'] { background: linear-gradient(180deg, rgba(212, 175, 55, .22), rgba(212, 175, 55, .06)); box-shadow: inset 0 0 0 2px rgba(212, 175, 55, .85); }
+.bgo .fbig button[aria-pressed='true'] b { color: var(--gold-hi); }
+.bgo .fbig button:disabled { opacity: .5; cursor: not-allowed; }
+.bgo .fbig button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+.bgo .steps { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; }
+.bgo .steps li { list-style: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .25); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .15); min-height: 42px; }
+.bgo .steps li .num { width: 16px; color: var(--muted); font-weight: 700; flex: none; }
+.bgo .steps li > b { flex: 1; min-width: 0; font-size: 15px; }
+.bgo .steps li > b small { margin-left: 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.bgo .steps li .btn { padding: 4px 9px; font-size: 13px; border-radius: 8px; }
+.bgo .steps li .lots { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.bgo .steps li .lots > span { min-width: 52px; text-align: center; color: var(--text); font-weight: 700; }
+.bgo .steps li .mv { display: inline-flex; gap: 4px; min-width: 150px; justify-content: flex-end; }
+.bgo .steps li.played { opacity: .55; }
+.bgo .steps li.now { box-shadow: inset 0 0 0 1.5px rgba(212, 175, 55, .7); }
+.bgo .steps li.off { opacity: .55; }
+.bgo .steps li.off .btn { margin-left: auto; }
+
+/* Fenêtre « Formule » pendant la partie. */
+.bgo-modal .card.fpanel { width: min(640px, 100%); box-shadow: 0 0 0 1px rgba(212, 175, 55, .4), 0 30px 60px rgba(0, 0, 0, .6); }
+.bgo .fquick { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.bgo .fquick .btn { padding: 10px 14px; font-size: 14px; }
+.bgo .frecap { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .25); font-size: 13px; color: var(--muted); display: grid; gap: 3px; min-height: 42px; }
+.bgo .frecap b { color: var(--text); font-size: 14px; }
+.bgo .frecap em { font-style: normal; color: #ffd28a; font-weight: 700; }
+
+/* Loto musical (régie) : la liste des titres tient dans la colonne, sans défilement. */
+.bgo.regie.direct .center-box .mboard { flex: 1 1 auto; min-height: 0; max-height: none; overflow: hidden; grid-auto-rows: minmax(0, 1fr); grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 3px; }
+.bgo.regie.direct .center-box .mboard li { padding: 1px 6px; font-size: 11px; min-height: 0; overflow: hidden; }

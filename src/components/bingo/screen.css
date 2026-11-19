@@ -119,6 +119,10 @@
 .bgo-screen .title { position: absolute; left: 0; right: 0; top: 54px; text-align: center; }
 .bgo-screen .title h1 { font-size: 112px; font-weight: 900; letter-spacing: .04em; line-height: 1; margin: 0; }
 .bgo-screen .title p { margin: 14px 0 0; font-size: 22px; letter-spacing: .4em; color: var(--muted); font-weight: 600; }
+/* Annonce de la partie et de sa formule (« PARTIE 3 : CARTON PLEIN »). */
+.bgo-screen .title p.partie { margin-top: 18px; font-size: 34px; letter-spacing: .14em; color: var(--text); font-weight: 800; }
+.bgo-screen .title p.partie b { color: var(--gold-hi); font-weight: 900; }
+.bgo-screen .title p.partie + p { margin-top: 8px; font-size: 18px; }
 .bgo-screen .qrcard { position: absolute; right: 120px; top: 300px; width: 520px; padding: 40px; border-radius: 30px; text-align: center;
   background: linear-gradient(180deg, rgba(26, 19, 50, .85), rgba(10, 8, 20, .9)); box-shadow: 0 0 0 1px rgba(212, 175, 55, .35), 0 40px 90px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .08); }
 .bgo-screen .qrcard .qr { display: inline-block; background: #fff; padding: 18px; border-radius: 18px; line-height: 0; width: 336px; box-shadow: 0 0 0 6px rgba(212, 175, 55, .25); }

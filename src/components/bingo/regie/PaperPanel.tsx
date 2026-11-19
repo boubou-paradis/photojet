@@ -29,7 +29,9 @@ function download(bytes: Uint8Array, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
-export function PaperPanel({ sessionId, title, paper, state, onChanged, notify, askConfirm, canWin, titles = null, drawnFull }: {
+export function PaperPanel({ sessionId, title, paper, state, onChanged, notify, askConfirm, canWin, titles = null, drawnFull, compact = false }: {
+  /** Régie Direct : vérification seule ; fabrication et réimpression dans une fenêtre. */
+  compact?: boolean
   sessionId: string
   title: string
   paper: { count: number; first: number | null; last: number | null }
@@ -49,6 +51,7 @@ export function PaperPanel({ sessionId, title, paper, state, onChanged, notify, 
   const [busy, setBusy] = useState<string | null>(null)
   const [serial, setSerial] = useState('')
   const [result, setResult] = useState<PaperCheck | null>(null)
+  const [toolsOpen, setToolsOpen] = useState(false)
 
   async function pdfOf(filter?: (c: PaperCard) => boolean, label = 'cartons') {
     const list = await callAdmin<{ cards: PaperCard[]; titles?: { t: string; a: string }[] | null }>(sessionId, { action: 'paper_list' })
@@ -117,42 +120,8 @@ export function PaperPanel({ sessionId, title, paper, state, onChanged, notify, 
 
   const drawn = drawnFull ?? (state?.active ? state.drawn : [])
   const verdict = result?.check && result.phase ? verdictText(result.check, result.phase) : null
-  return (
-    <div className="box" data-testid="paper-panel">
-      <h2><span>Cartons papier</span><span>{paper.count ? `n° ${paper.first} à ${paper.last}` : 'aucun'}</span></h2>
-      {paper.count > 0 && (
-        <>
-          <div className="field">
-            <input
-              className="big"
-              inputMode="numeric"
-              autoComplete="off"
-              name="numero-carton"
-              placeholder="N° DU CARTON"
-              aria-label="Numéro du carton papier à vérifier"
-              value={serial}
-              onChange={(e) => setSerial(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              onKeyDown={(e) => { if (e.key === 'Enter') void check() }}
-              data-testid="paper-serial"
-            />
-            <button className="btn gold" onClick={() => void check()} disabled={!serial || busy !== null} data-testid="paper-check">Vérifier</button>
-          </div>
-          {result && (
-            <div style={{ marginTop: 12 }} data-testid="paper-result">
-              {verdict
-                ? <div className={`verdict ${verdict.tone}`}>{verdict.tone === 'ko' ? '✗ ' : '✓ '}{verdict.text} · carton n° {result.serial}</div>
-                : <div className="verdict ko">Aucune phase en jeu · carton n° {result.serial}</div>}
-              <MiniCard cells={result.cells} drawn={drawn} marks={drawn} check={result.check} titles={titles} />
-              {result.check?.valid && canWin && (
-                <div className="actions">
-                  <button className="btn ok" onClick={() => void declare()} disabled={busy !== null} data-testid="paper-win">✓ Déclarer gagnant</button>
-                  <button className="btn ghost" onClick={() => setResult(null)}>Fermer</button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+  const tools = (
+    <>
       <div className="field" style={{ marginTop: 14 }}>
         <input
           inputMode="numeric"
@@ -197,6 +166,61 @@ export function PaperPanel({ sessionId, title, paper, state, onChanged, notify, 
           >
             Supprimer
           </button>
+        </div>
+      )}
+    </>
+  )
+  return (
+    <div className={`box${compact ? ' paper-mini' : ''}`} data-testid="paper-panel">
+      <h2><span>Cartons papier</span><span>{paper.count ? `n° ${paper.first} à ${paper.last}` : 'aucun'}</span></h2>
+      {paper.count > 0 && (
+        <>
+          <div className="field">
+            <input
+              className="big"
+              inputMode="numeric"
+              autoComplete="off"
+              name="numero-carton"
+              placeholder="N° DU CARTON"
+              aria-label="Numéro du carton papier à vérifier"
+              value={serial}
+              onChange={(e) => setSerial(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              onKeyDown={(e) => { if (e.key === 'Enter') void check() }}
+              data-testid="paper-serial"
+            />
+            <button className="btn gold" onClick={() => void check()} disabled={!serial || busy !== null} data-testid="paper-check">Vérifier</button>
+          </div>
+          {result && (
+            <div className="bgo-modal" role="dialog" aria-modal="true" aria-label={`Carton papier n° ${result.serial}`}>
+              <div className="card bgo" style={{ boxShadow: '0 0 0 1px rgba(139,77,255,.3), 0 30px 60px rgba(0,0,0,.6)' }} data-testid="paper-result">
+                <h4>Carton papier n° {result.serial}</h4>
+                {verdict
+                  ? <div className={`verdict ${verdict.tone}`}>{verdict.tone === 'ko' ? '✗ ' : '✓ '}{verdict.text}</div>
+                  : <div className="verdict ko">Aucune étape en jeu</div>}
+                <MiniCard cells={result.cells} drawn={drawn} marks={drawn} check={result.check} titles={titles} legend />
+                <div className="acts">
+                  <button className="btn ghost" onClick={() => setResult(null)} data-testid="paper-close">Fermer</button>
+                  {result.check?.valid && canWin && (
+                    <button className="btn ok" onClick={() => void declare()} disabled={busy !== null} data-testid="paper-win">✓ Déclarer gagnant</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      {compact ? (
+        <div className="row-actions" style={{ marginTop: paper.count ? 10 : 0 }}>
+          <button className="btn sm ghost" onClick={() => setToolsOpen(true)} data-testid="paper-tools">{paper.count ? 'Fabriquer · réimprimer' : 'Fabriquer des cartons papier'}</button>
+        </div>
+      ) : tools}
+      {compact && toolsOpen && (
+        <div className="bgo-modal" role="dialog" aria-modal="true" aria-label="Cartons papier">
+          <div className="card bgo" style={{ boxShadow: '0 0 0 1px rgba(139,77,255,.3), 0 30px 60px rgba(0,0,0,.6)' }}>
+            <h4>Cartons papier</h4>
+            {tools}
+            <div className="acts"><button className="btn ghost" onClick={() => setToolsOpen(false)}>Fermer</button></div>
+          </div>
         </div>
       )}
     </div>
