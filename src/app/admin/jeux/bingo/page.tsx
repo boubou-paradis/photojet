@@ -18,6 +18,7 @@ import { ArrowLeft, Loader2, Volume2, VolumeX } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { Ball, Board } from '@/components/bingo/Ball'
 import '@/components/bingo/bingo.css'
 import { callAdmin, loadSnapshot, type AdminBody, type AdminResult } from '@/components/bingo/regie/api'
@@ -406,35 +407,82 @@ export default function BingoAdminPage() {
   // ---------- Télécommande : Page ↓ tirer · Page ↑ pause / reprise auto · B machine / tableau ----------
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   const status = live?.status ?? 'off'
+  // Une seule décision par touche : exécutée par la touche ET affichée par la
+  // légende (panneau « Touches » et ligne d'aide sous le gros bouton).
+  const remoteActive = hasGame && !held && remoteOn && status !== 'finished'
+  const remoteBlocked = () => !!confirmReq || settingsOpen || formulaOpen
+  const bingoNext: 'start' | 'reveal' | 'draw' | 'next_phase' | 'resume' | null =
+    !live ? null
+      : live.status === 'lobby' ? 'start'
+        : music && live.hidden ? 'reveal'
+          : live.status === 'running' ? 'draw'
+            // Page ↓ = le gros bouton : continuer l'étape ou passer à la suivante.
+            : live.status === 'celebrating' && live.pending === 0 ? (lotInfo(live).done ? 'next_phase' : 'resume')
+              : null
+  const bingoPrev: 'toggle' | 'pause_auto' | 'resume_auto' | null =
+    !live ? null
+      : music ? 'toggle'
+        : live.autoMode === 'auto' ? 'pause_auto'
+          : live.autoMode === 'paused' ? 'resume_auto'
+            : null
+  const bingoB: 'replay' | 'screen' | null = music ? 'replay' : settings ? 'screen' : null
   useRemoteControl({
-    active: hasGame && !held && remoteOn && status !== 'finished',
+    active: remoteActive,
     phase: `${status}|${live?.phaseIndex ?? ''}|${live?.round ?? ''}`,
-    isBlocked: () => !!confirmReq || settingsOpen || formulaOpen,
+    isBlocked: remoteBlocked,
     onNext: async () => {
       if (!live) return
-      if (live.status === 'lobby') await run({ action: 'start' })
-      else if (music && live.hidden) await reveal()
-      else if (live.status === 'running') await draw()
-      else if (live.status === 'celebrating' && live.pending === 0) {
-        // Page ↓ = le gros bouton : continuer l'étape ou passer à la suivante.
-        if (lotInfo(live).done) await run({ action: 'next_phase', expect: live.phaseIndex })
-        else await run({ action: 'resume' })
-      }
+      if (bingoNext === 'start') await run({ action: 'start' })
+      else if (bingoNext === 'reveal') await reveal()
+      else if (bingoNext === 'draw') await draw()
+      else if (bingoNext === 'next_phase') await run({ action: 'next_phase', expect: live.phaseIndex })
+      else if (bingoNext === 'resume') await run({ action: 'resume' })
     },
     onPrev: async () => {
       if (!live) return
-      if (music) return player.toggle()
-      if (live.autoMode === 'auto') await setAuto('paused')
-      else if (live.autoMode === 'paused') await setAuto('auto')
+      if (bingoPrev === 'toggle') return player.toggle()
+      if (bingoPrev === 'pause_auto') await setAuto('paused')
+      else if (bingoPrev === 'resume_auto') await setAuto('auto')
     },
     onSecondary: async () => {
-      if (music) return player.replay()
-      if (!settings) return
+      if (bingoB === 'replay') return player.replay()
+      if (bingoB !== 'screen' || !settings) return
       // L'état diffusé en direct est plus frais que la copie de la régie.
       const shown = live?.display.screen ?? settings.public.screen
       await saveSettings({ ...settings, public: { ...settings.public, screen: shown === 'board' ? 'machine' : 'board' } })
     },
   })
+  const shownScreen = live?.display.screen ?? settings?.public.screen
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    blocked: remoteBlocked(),
+    inactiveReason: held ? 'AnimaBingo est en pause (autre jeu à l’écran).' : status === 'finished' ? 'Partie terminée : télécommande coupée.' : undefined,
+    next: bingoNext === 'start' ? 'commencer la partie'
+      : bingoNext === 'reveal' ? 'révéler le titre'
+        : bingoNext === 'draw' ? (music ? 'tirer le morceau suivant' : 'tirer une boule')
+          : bingoNext === 'next_phase' ? 'passer à l’étape suivante'
+            : bingoNext === 'resume' ? 'continuer l’étape'
+              : null,
+    prev: bingoPrev === 'toggle' ? (player.playing ? 'mettre l’extrait en pause' : 'lire l’extrait')
+      : bingoPrev === 'pause_auto' ? 'mettre le tirage auto en pause'
+        : bingoPrev === 'resume_auto' ? 'reprendre le tirage auto'
+          : null,
+    secondary: bingoB === 'replay' ? 'rejouer l’extrait' : bingoB === 'screen' ? (shownScreen === 'board' ? 'afficher la machine' : 'afficher le tableau') : null,
+  }
+  // Ligne d'aide sous le gros bouton : mêmes décisions, libellés courts.
+  const hintKeys: [string, string | null][] = [
+    ['Page ↓', bingoNext === 'start' ? 'commencer' : bingoNext === 'reveal' ? 'révéler' : bingoNext === 'draw' ? 'tirer' : bingoNext === 'next_phase' ? 'étape suivante' : bingoNext === 'resume' ? 'continuer' : null],
+    ['Page ↑', bingoPrev === 'toggle' ? 'pause / lecture' : bingoPrev === 'pause_auto' ? 'pause auto' : bingoPrev === 'resume_auto' ? 'reprise auto' : null],
+    ['B', bingoB === 'replay' ? 'rejouer l’extrait' : bingoB === 'screen' ? 'machine / tableau' : null],
+  ]
+  const remoteHint: ReactNode = (
+    <>
+      Télécommande :{' '}
+      {hintKeys.filter(([, l]) => l).map(([k, l], i) => (
+        <span key={k}>{i > 0 && ' · '}<kbd>{k}</kbd> {l}</span>
+      ))}
+    </>
+  )
 
   // ---------- Rendu ----------
   if (loading) {
@@ -505,7 +553,7 @@ export default function BingoAdminPage() {
             {soundOn ? <Volume2 size={15} aria-hidden /> : <VolumeX size={15} aria-hidden />}
             {soundOn ? 'Son activé' : 'Son coupé'}
           </button>
-          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={hasGame && !held} finished={status === 'finished'} />
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={hasGame && !held} finished={status === 'finished'} legend={remoteLegend} compactLegend />
           {hasGame && !held && (
             <>
               <button className="btn sm gold" onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}>Écran géant</button>
@@ -584,6 +632,7 @@ export default function BingoAdminPage() {
               onStart={() => void run({ action: 'start' }, { key: 'start' })}
               onDraw={() => void draw()}
               onReveal={() => void reveal()}
+              remoteHint={remoteHint}
               step={stepButton}
               links={stepLinks}
             />
@@ -600,6 +649,7 @@ export default function BingoAdminPage() {
             onStart={() => void run({ action: 'start' }, { key: 'start' })}
             onAuto={(m) => void setAuto(m)}
             onInterval={(sec) => { if (live!.autoMode !== 'manual') void run({ action: 'auto', mode: live!.autoMode, ms: sec * 1000 }, { quiet: true }) }}
+            remoteHint={remoteHint}
             step={stepButton}
             links={stepLinks}
           />
@@ -636,7 +686,7 @@ export default function BingoAdminPage() {
 
 // ------------------------------------------------------------------ colonnes
 
-function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, onDraw, onStart, onAuto, onInterval, step, links }: {
+function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, onDraw, onStart, onAuto, onInterval, remoteHint, step, links }: {
   live: Live
   held: boolean
   busy: string | null
@@ -648,13 +698,15 @@ function DrawColumn({ live, held, busy, tooSoon, autoSec, setAutoSec, nextIn, on
   onStart: () => void
   onAuto: (m: 'manual' | 'auto' | 'paused') => void
   onInterval: (sec: number) => void
+  /** Ligne « Télécommande : … », calculée avec les touches réelles (jamais écrite à la main). */
+  remoteHint: ReactNode
   /** À la place de TIRER : continuer / passer à l'étape suivante / nouvelle partie. */
   step: ReactNode
   links: ReactNode
 }) {
   const locked = live.status === 'checking'
   const canDraw = !held && live.status === 'running' && live.count < 90
-  let hint = <>Télécommande : <kbd>Page ↓</kbd> tirer · <kbd>Page ↑</kbd> pause auto · <kbd>B</kbd> machine / tableau</>
+  let hint = remoteHint
   if (held) hint = <>AnimaBingo est en pause (autre jeu à l’écran).</>
   else if (live.status === 'lobby') hint = <>Choisissez la formule, puis commencez quand la salle est prête.</>
   else if (locked) hint = <>Tirage bloqué pendant la vérification.</>

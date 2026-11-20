@@ -55,6 +55,7 @@ import { SUBSCRIBE_HREF } from '@/lib/watermark/constants'
 import PhotoCropModal from './PhotoCropModal'
 import { MysteryExportModal, MysteryImportModal } from './MysteryTransferModals'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
@@ -1199,38 +1200,68 @@ export default function MysteryPage() {
   useLeaveGuard(gameActive || importing)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Une seule décision : exécutée par la touche (sur l'état relu en base au
+  // moment de l'appui) ET affichée par la légende (sur l'état de la régie).
+  type RoundState = { isPlaying: boolean; revealed: number; allRevealed: boolean; round: number; total: number }
+  const mysteryNext = (state: RoundState): 'next_round' | 'play' | 'reveal' | null => {
+    // Dernière manche, ou state local pas encore à jour : on ne fait rien.
+    if (state.allRevealed) return state.round < state.total && state.round === currentRound ? 'next_round' : null
+    if (!state.isPlaying && state.revealed === 0) return 'play'
+    return 'reveal'
+  }
+  const mysteryPrev = (state: RoundState): 'pause' | 'resume' | null => {
+    if (state.allRevealed) return null
+    if (state.isPlaying) return 'pause'
+    if (state.revealed > 0) return 'resume'
+    return null
+  }
+  const remoteActive = gameActive && remoteOn
+  const remoteBlocked = () =>
+    croppingIndex !== null ||
+    showSaveMysteryModal ||
+    showLoadMysteryModal ||
+    exportSnapshot !== null ||
+    showImportModal
   useRemoteControl({
-    active: gameActive && remoteOn,
+    active: remoteActive,
     phase: `${currentRound}|${isPlaying}`,
-    isBlocked: () =>
-      croppingIndex !== null ||
-      showSaveMysteryModal ||
-      showLoadMysteryModal ||
-      exportSnapshot !== null ||
-      showImportModal,
+    isBlocked: remoteBlocked,
     onNext: async () => {
       const state = await readRoundState()
       if (!state) return
-      if (state.allRevealed) {
-        // Dernière manche, ou state local pas encore à jour : on ne fait rien.
-        if (state.round < state.total && state.round === currentRound) { await nextRound(); return 1000 }
-        return
-      }
-      if (!state.isPlaying && state.revealed === 0) { await setPlaying(true); return }
-      await revealAll()
-      return 1500
+      const action = mysteryNext(state)
+      if (action === 'next_round') { await nextRound(); return 1000 }
+      if (action === 'play') { await setPlaying(true); return }
+      if (action === 'reveal') { await revealAll(); return 1500 }
     },
     onPrev: async () => {
       const state = await readRoundState()
-      if (!state || state.allRevealed) return
-      if (state.isPlaying) await setPlaying(false)
-      else if (state.revealed > 0) await setPlaying(true)
+      if (!state) return
+      const action = mysteryPrev(state)
+      if (action === 'pause') await setPlaying(false)
+      else if (action === 'resume') await setPlaying(true)
     },
     onSecondary: async () => {
       await triggerWinnerAnimation()
       return 1500
     },
   })
+  const localRound: RoundState = {
+    isPlaying,
+    revealed: revealedTiles.length,
+    allRevealed: revealedTiles.length >= cols * rows,
+    round: currentRound,
+    total: totalRounds,
+  }
+  const legendNext = mysteryNext(localRound)
+  const legendPrev = mysteryPrev(localRound)
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    blocked: remoteBlocked(),
+    next: legendNext === 'next_round' ? 'manche suivante' : legendNext === 'play' ? 'lancer le dévoilement (PLAY)' : legendNext === 'reveal' ? 'révéler toute la photo' : null,
+    prev: legendPrev === 'pause' ? 'mettre le dévoilement en pause' : legendPrev === 'resume' ? 'reprendre le dévoilement' : null,
+    secondary: 'animation du gagnant',
+  }
 
   if (loading) {
     return (
@@ -1298,7 +1329,7 @@ export default function MysteryPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} legend={remoteLegend} />
             <a href="/photo-mystere-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300 border border-cyan-400/30 hover:border-cyan-400">
                 <FileText className="h-4 w-4 mr-2" />

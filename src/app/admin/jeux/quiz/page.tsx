@@ -45,6 +45,7 @@ import { fetchUserSession } from '@/lib/session-select'
 import { Session, QuizQuestion, QuizParticipant, SavedQuiz } from '@/types/database'
 import { toast } from 'sonner'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { prepackagedQuizzes, PrepackagedQuiz } from '@/data/prepackaged-quizzes'
@@ -1987,23 +1988,38 @@ export default function QuizPage() {
   useLeaveGuard(gameActive || lobbyVisible || quizImporting)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Une seule décision : exécutée par la touche ET affichée par la légende.
+  const remoteActive = gameActive && remoteOn && !showPodium
+  const remoteBlocked = () =>
+    showCsvImportModal ||
+    showPrepackagedModal ||
+    showSaveQuizModal ||
+    showLoadQuizModal ||
+    exportQuestions !== null ||
+    importRequest !== null
+  const quizNext: 'start' | 'reveal' | 'next' | 'podium' =
+    !isAnswering && !showResults ? 'start'
+      : isAnswering ? 'reveal'
+        : currentQuestionIndex < questions.length - 1 ? 'next'
+          : 'podium'
   useRemoteControl({
-    active: gameActive && remoteOn && !showPodium,
+    active: remoteActive,
     phase: `${currentQuestionIndex}|${isAnswering}|${showResults}`,
-    isBlocked: () =>
-      showCsvImportModal ||
-      showPrepackagedModal ||
-      showSaveQuizModal ||
-      showLoadQuizModal ||
-      exportQuestions !== null ||
-      importRequest !== null,
+    isBlocked: remoteBlocked,
     onNext: async () => {
-      if (!isAnswering && !showResults) { await startQuestion(); return 1500 }
-      if (isAnswering) { await revealAnswer(); return 1500 }
-      if (currentQuestionIndex < questions.length - 1) { await nextQuestion(); return }
+      if (quizNext === 'start') { await startQuestion(); return 1500 }
+      if (quizNext === 'reveal') { await revealAnswer(); return 1500 }
+      if (quizNext === 'next') { await nextQuestion(); return }
       await displayPodium()
     },
   })
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    blocked: remoteBlocked(),
+    inactiveReason: showPodium ? 'Podium affiché : télécommande coupée.' : 'Les touches agissent une fois le quiz lancé.',
+    next: { start: `lancer la question ${currentQuestionIndex + 1}`, reveal: 'révéler la réponse', next: 'question suivante', podium: 'afficher le podium' }[quizNext],
+    prev: null,
+  }
 
   if (loading) {
     return (
@@ -2084,7 +2100,7 @@ export default function QuizPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={showPodium} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={showPodium} legend={remoteLegend} />
             <a href="/quiz-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400">
                 <FileText className="h-4 w-4 mr-2" />

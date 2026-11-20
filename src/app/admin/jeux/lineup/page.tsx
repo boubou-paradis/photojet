@@ -28,6 +28,7 @@ import { Session, WheelAudioSettings } from '@/types/database'
 import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
@@ -921,22 +922,34 @@ export default function LineupPage() {
   useLeaveGuard(gameActive)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Une seule décision : exécutée par la touche ET affichée par la légende.
+  const remoteActive = gameActive && remoteOn && !isGameOver
+  const canAward = !!currentNumber && (isRunning || isPaused)
+  const lineupB: 'pause' | 'resume' | 'start' | null =
+    isRunning ? 'pause' : isPaused ? 'resume' : timeLeft === clockDuration ? 'start' : null
   const remoteAward = async (team: 1 | 2) => {
-    if (!currentNumber || (!isRunning && !isPaused)) return
+    if (!canAward) return
     await awardPoints(team)
     return 1500 // un double appui donnerait aussi les points du numéro suivant
   }
   useRemoteControl({
-    active: gameActive && remoteOn && !isGameOver,
+    active: remoteActive,
     phase: `${isRunning}|${isPaused}|${currentNumber}`,
     onPrev: () => remoteAward(1),
     onNext: () => remoteAward(2),
     onSecondary: async () => {
-      if (isRunning) await pauseGame()
-      else if (isPaused) await resumeGame()
-      else if (timeLeft === clockDuration) await startGame()
+      if (lineupB === 'pause') await pauseGame()
+      else if (lineupB === 'resume') await resumeGame()
+      else if (lineupB === 'start') await startGame()
     },
   })
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    inactiveReason: isGameOver ? 'Partie terminée : télécommande coupée.' : undefined,
+    next: canAward ? `points à ${team2Name || 'l’équipe 2'}` : null,
+    prev: canAward ? `points à ${team1Name || 'l’équipe 1'}` : null,
+    secondary: lineupB === 'pause' ? 'mettre le chrono en pause' : lineupB === 'resume' ? 'reprendre le chrono' : lineupB === 'start' ? 'démarrer le chrono' : null,
+  }
 
   if (loading) {
     return (
@@ -998,7 +1011,7 @@ export default function LineupPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameOver} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameOver} legend={remoteLegend} />
             <a href="/le-bon-ordre-regles-du-jeu.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />

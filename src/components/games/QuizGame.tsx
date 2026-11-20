@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Maximize, Minimize, Trophy, Users, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { QuizQuestion, QuizParticipant } from '@/types/database'
@@ -62,6 +62,10 @@ const PARTICLES = Array.from({ length: 20 }, (_, i) => ({
   x: Math.random() * 100,
   size: 3 + Math.random() * 6,
 }))
+
+// Texte des réponses à l'écran : bornes de la taille automatique.
+const ANSWER_MIN_PX = 18
+const ANSWER_MAX_PX = 80
 
 export default function QuizGame({
   questions,
@@ -200,6 +204,53 @@ export default function QuizGame({
   }, [showResults, currentQuestionIndex, hasRevealPhoto, revealPhotoUrl, revealAnswerLabel, revealDuration, isInfinite])
 
   // Écran d'attente si pas de question
+  // Texte des 4 réponses : la plus grande taille COMMUNE qui tient dans les
+  // cases (taille des cases inchangée), calculée une fois par question et
+  // gardée à la révélation (mêmes cases, même largeur de texte : pas de saut).
+  const answersRef = useRef<HTMLDivElement>(null)
+  const answersKey = currentQuestion ? `${currentQuestion.id}|${currentQuestion.answers.join('|')}` : ''
+  const answering = isAnswering || showResults
+  useLayoutEffect(() => {
+    if (!answering) return
+    const fit = () => {
+      const grid = answersRef.current
+      if (!grid) return
+      const spans = [...grid.querySelectorAll<HTMLElement>('[data-answer-text]')]
+      if (!spans.length) return
+      const card = spans[0].parentElement
+      if (!card) return
+      const maxH = card.clientHeight - 32
+      const cap = Math.max(ANSWER_MIN_PX, Math.min(ANSWER_MAX_PX, card.clientHeight * 0.3))
+      // Mesure sans couper les mots : un mot trop long fait réduire la taille.
+      spans.forEach((s) => { s.style.overflowWrap = 'normal' })
+      const fits = (px: number) => {
+        grid.style.setProperty('--answer-px', `${px}px`)
+        return spans.every((s) => s.scrollWidth <= s.clientWidth + 1 && s.offsetHeight <= maxH)
+      }
+      let lo = ANSWER_MIN_PX
+      let hi = cap
+      if (fits(hi)) lo = hi
+      else {
+        for (let i = 0; i < 14 && hi - lo > 0.5; i++) {
+          const mid = (lo + hi) / 2
+          if (fits(mid)) lo = mid
+          else hi = mid
+        }
+      }
+      grid.style.setProperty('--answer-px', `${Math.floor(lo)}px`)
+      grid.dataset.answerPx = String(Math.floor(lo))
+      spans.forEach((s) => { s.style.overflowWrap = 'break-word' })
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    document.addEventListener('fullscreenchange', fit)
+    document.fonts?.ready.then(fit).catch(() => {})
+    return () => {
+      window.removeEventListener('resize', fit)
+      document.removeEventListener('fullscreenchange', fit)
+    }
+  }, [answering, answersKey])
+
   if (!currentQuestion) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a1a] via-[#1a0a2a] to-[#0a1a2a] flex items-center justify-center">
@@ -341,7 +392,7 @@ export default function QuizGame({
             </motion.div>
 
             {/* RÉPONSES */}
-          <div className="flex-1 grid grid-cols-2 gap-4 mb-6">
+          <div ref={answersRef} data-testid="quiz-answers" className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-4 mb-6">
             {currentQuestion.answers.map((answer, index) => {
               const color = ANSWER_COLORS[index]
               const isCorrect = index === currentQuestion.correctAnswer
@@ -353,10 +404,10 @@ export default function QuizGame({
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className="relative"
+                  className="relative min-h-0"
                 >
                   <div
-                    className={`relative h-full min-h-[120px] rounded-2xl overflow-hidden transition-all duration-300 ${
+                    className={`relative h-full min-h-0 rounded-2xl overflow-hidden transition-all duration-300 ${
                       showResults
                         ? isCorrect
                           ? 'ring-4 ring-green-400 ring-offset-4 ring-offset-[#0a0a1a]'
@@ -380,19 +431,23 @@ export default function QuizGame({
 
                     {/* Contenu */}
                     <div className="relative h-full flex items-center justify-between p-6">
-                      {/* Icône de forme */}
-                      <span className={`text-4xl ${color.text} opacity-50`}>
+                      {/* Icône de forme (largeur fixe, comme le bloc de droite) */}
+                      <span className={`w-20 shrink-0 text-center text-4xl ${color.text} opacity-50`}>
                         {color.icon}
                       </span>
 
-                      {/* Texte de la réponse */}
-                      <span className={`flex-1 text-xl md:text-2xl lg:text-3xl font-bold ${color.text} text-center px-4`}>
+                      {/* Texte de la réponse : taille commune aux 4 cases (--answer-px) */}
+                      <span
+                        data-answer-text
+                        className={`flex-1 min-w-0 font-bold ${color.text} text-center px-4`}
+                        style={{ fontSize: 'var(--answer-px, 30px)', lineHeight: 1.12, overflowWrap: 'break-word' }}
+                      >
                         {answer}
                       </span>
 
-                      {/* Indicateur correct/incorrect ou stats */}
+                      {/* Indicateur correct/incorrect ou stats : même largeur fixe que l'icône */}
                       {showResults ? (
-                        <div className="flex items-center gap-2">
+                        <div className="w-20 shrink-0 flex items-center justify-center gap-2">
                           <span className={`text-2xl font-bold ${color.text}`}>
                             {answerStats[index]}
                           </span>
@@ -403,7 +458,7 @@ export default function QuizGame({
                           ) : null}
                         </div>
                       ) : (
-                        <span className={`text-4xl ${color.text} opacity-50`}>
+                        <span className={`w-20 shrink-0 text-center text-4xl ${color.text} opacity-50`}>
                           {color.icon}
                         </span>
                       )}
@@ -454,8 +509,8 @@ export default function QuizGame({
             animate={{ y: 0, opacity: 1 }}
             className="flex justify-center"
           >
-            <div className="bg-[#D4AF37]/20 border border-[#D4AF37] rounded-full px-6 py-2">
-              <span className="text-[#D4AF37] font-bold text-lg">
+            <div className="bg-[#D4AF37]/20 border border-[#D4AF37] rounded-full px-8 py-2" data-testid="quiz-points">
+              <span className="text-[#D4AF37] font-bold text-2xl">
                 {currentQuestion.points} points
               </span>
             </div>
@@ -553,17 +608,18 @@ export default function QuizGame({
       {/* INDICATEUR EN COURS */}
       {isAnswering && (
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="absolute top-4 left-4 z-30"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-8 left-1/2 -translate-x-1/2 z-30"
+          data-testid="quiz-answer-now"
         >
-          <div className="flex items-center gap-2 bg-green-500/20 border border-green-500 rounded-full px-4 py-2 backdrop-blur-sm">
+          <div className="flex items-center gap-3 bg-green-500/20 border border-green-500 rounded-full px-6 py-2.5 backdrop-blur-sm">
             <motion.div
-              className="w-3 h-3 bg-green-500 rounded-full"
+              className="w-4 h-4 bg-green-500 rounded-full"
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
-            <span className="text-green-400 font-bold uppercase tracking-wider">
+            <span className="text-green-400 font-bold uppercase tracking-wider text-2xl whitespace-nowrap">
               Répondez !
             </span>
           </div>

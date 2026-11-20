@@ -18,6 +18,7 @@ import { LoadMatchingModal, SaveMatchingModal } from '@/components/affinity/Affi
 import AffinityQuestionCard from '@/components/affinity/AffinityQuestionCard'
 import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { AFFINITY_PACKS } from '@/data/affinity-packs'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
 import { useAmbianceMusic } from '@/hooks/useAmbianceMusic'
@@ -294,18 +295,33 @@ export default function MatchingPage() {
   // (bouton explicite) ; après la dernière révélation, elle rappelle de
   // cliquer sur « Terminer ». PageUp et B ne font rien dans Matching.
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Une seule décision : exécutée par la touche ET affichée par la légende.
+  const remoteActive = active && remoteOn && phase !== 'finished'
+  const matchingNext: 'start' | 'reveal' | 'next' | 'remind' | null =
+    phase === 'lobby' ? 'start'
+      : phase === 'question' || phase === 'closed' ? 'reveal'
+        : phase === 'revealed' ? (currentIndex < questions.length - 1 ? 'next' : 'remind')
+          : null
   useRemoteControl({
-    active: active && remoteOn && phase !== 'finished',
+    active: remoteActive,
     phase: `${phase}|${currentIndex}`,
     onNext: async () => {
-      if (phase === 'lobby') { await gameAction('start'); return 1500 }
-      if (phase === 'question' || phase === 'closed') { await gameAction('reveal'); return 1500 }
-      if (phase === 'revealed') {
-        if (currentIndex < questions.length - 1) { await gameAction('next'); return 1500 }
-        toast.info('Dernière question révélée : cliquez sur « Terminer la partie ».')
-      }
+      if (matchingNext === 'start') { await gameAction('start'); return 1500 }
+      if (matchingNext === 'reveal') { await gameAction('reveal'); return 1500 }
+      if (matchingNext === 'next') { await gameAction('next'); return 1500 }
+      if (matchingNext === 'remind') toast.info('Dernière question révélée : cliquez sur « Terminer la partie ».')
     },
   })
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    inactiveReason: phase === 'finished' ? 'Partie terminée : télécommande coupée.' : undefined,
+    next: matchingNext === 'start' ? 'lancer la 1re question'
+      : matchingNext === 'reveal' ? 'révéler la réponse'
+        : matchingNext === 'next' ? 'question suivante'
+          : matchingNext === 'remind' ? 'rappel : cliquez sur « Terminer la partie »'
+            : null,
+    prev: null,
+  }
 
   async function newGame() {
     if (!session) return
@@ -431,7 +447,7 @@ export default function MatchingPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={phase === 'finished'} />
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={phase === 'finished'} legend={remoteLegend} />
           <a href="/matching-regles.pdf" target="_blank" rel="noopener noreferrer">
             <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
               <FileText className="h-4 w-4 mr-2" />

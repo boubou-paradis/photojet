@@ -140,7 +140,7 @@ export function useMusicPlayer(live: Live | null, music: RegieMusic | null, held
   return { playing, pos, error, toggle, replay }
 }
 
-export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, onDraw, onReveal, step = null, links = null }: {
+export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, onDraw, onReveal, remoteHint, step = null, links = null }: {
   live: Live
   music: RegieMusic
   held: boolean
@@ -150,6 +150,8 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
   onStart: () => void
   onDraw: () => void
   onReveal: () => void
+  /** Ligne « Télécommande : … », calculée avec les touches réelles (jamais écrite à la main). */
+  remoteHint: React.ReactNode
   /** À la place de TIRER : continuer / passer à l'étape suivante / nouvelle partie. */
   step?: React.ReactNode
   links?: React.ReactNode
@@ -161,7 +163,7 @@ export function MusicDeck({ live, music, held, busy, tooSoon, player, onStart, o
   const canDraw = !held && live.status === 'running' && left > 0
   const len = track ? track.end - track.start : 0
 
-  let hint = <>Télécommande : <kbd>Page ↓</kbd> {hidden ? 'révéler' : 'tirer'} · <kbd>Page ↑</kbd> pause / lecture · <kbd>B</kbd> rejouer l’extrait</>
+  let hint = remoteHint
   if (held) hint = <>AnimaBingo est en pause (autre jeu à l’écran).</>
   else if (live.status === 'lobby') hint = <>Les joueurs rejoignent la partie. Commencez quand la salle est prête.</>
   else if (live.status === 'checking') hint = <>Tirage bloqué pendant la vérification.</>

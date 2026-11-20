@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase'
 import { compressImage, validateImageFile, extensionForMimeType, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
 import type { InviteSession } from '@/lib/public-api/columns'
+import { MESSAGE_MAX_LENGTH, cleanMessage, shapeMessageInput } from '@/lib/messages'
 
 type TabType = 'photo' | 'message'
 type UploadStatus = 'idle' | 'success' | 'pending'
@@ -116,7 +117,7 @@ export default function InvitePage() {
     }
   }, [])
 
-  const MAX_MESSAGE_LENGTH = 280
+  const MAX_MESSAGE_LENGTH = MESSAGE_MAX_LENGTH
 
   useEffect(() => {
     async function fetchSession() {
@@ -438,7 +439,7 @@ export default function InvitePage() {
         .from('messages')
         .insert({
           session_id: session.id,
-          content: message.trim(),
+          content: cleanMessage(message),
           author_name: messageAuthor || null,
           status: isApproved ? 'approved' : 'pending',
           approved_at: isApproved ? new Date().toISOString() : null,
@@ -1095,7 +1096,10 @@ export default function InvitePage() {
                         <Textarea
                           placeholder="Écrivez votre message de félicitations..."
                           value={message}
-                          onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+                          // Entrée = retour à la ligne (6 lignes au plus) ; l'envoi se fait par le bouton.
+                          onChange={(e) => setMessage(shapeMessageInput(e.target.value))}
+                          name="contenu-message"
+                          autoComplete="off"
                           className="min-h-[140px] bg-[#0D0D0F] border-white/10 focus:border-violet-500 text-white placeholder:text-gray-600 resize-none rounded-xl"
                         />
                         <div className={`absolute bottom-3 right-3 text-xs ${
@@ -1107,6 +1111,8 @@ export default function InvitePage() {
 
                       <Input
                         placeholder="Votre prénom (optionnel)"
+                        name="signature-message"
+                        autoComplete="off"
                         value={messageAuthor}
                         onChange={(e) => setMessageAuthor(e.target.value)}
                         className="h-12 bg-[#0D0D0F] border-white/10 focus:border-violet-500 text-white placeholder:text-gray-600 rounded-xl"

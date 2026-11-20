@@ -4,6 +4,7 @@
 'use client'
 
 import { useWindowFocus } from '@/hooks/useRemoteControl'
+import RemoteLegend, { type RemoteLegendData } from './RemoteLegend'
 
 interface RemoteControlBadgeProps {
   enabled: boolean
@@ -12,9 +13,13 @@ interface RemoteControlBadgeProps {
   gameActive: boolean
   /** Partie terminée : la télécommande est coupée, pas de badge. */
   finished?: boolean
+  /** Légende des touches pour l'état en cours (calculée par la régie). */
+  legend?: RemoteLegendData
+  /** En-tête très chargé (AnimaBingo) : sous 1500 px, bouton « Touches » en icône et pastille « Prête ». */
+  compactLegend?: boolean
 }
 
-export default function RemoteControlBadge({ enabled, onToggle, gameActive, finished = false }: RemoteControlBadgeProps) {
+export default function RemoteControlBadge({ enabled, onToggle, gameActive, finished = false, legend, compactLegend = false }: RemoteControlBadgeProps) {
   const focused = useWindowFocus()
   const showStatus = enabled && gameActive && !finished
 
@@ -23,7 +28,12 @@ export default function RemoteControlBadge({ enabled, onToggle, gameActive, fini
       {showStatus && (
         focused ? (
           <span data-testid="remote-badge" className="text-xs font-medium text-green-400 border border-green-500/30 bg-green-500/10 rounded-full px-2.5 py-1">
-            Télécommande prête
+            {compactLegend ? (
+              <>
+                <span className="max-[1499px]:hidden">Télécommande prête</span>
+                <span className="min-[1500px]:hidden">Prête</span>
+              </>
+            ) : 'Télécommande prête'}
           </span>
         ) : (
           <span data-testid="remote-badge" className="text-xs font-medium text-orange-300 border border-orange-500/30 bg-orange-500/10 rounded-full px-2.5 py-1 animate-pulse">
@@ -31,6 +41,7 @@ export default function RemoteControlBadge({ enabled, onToggle, gameActive, fini
           </span>
         )
       )}
+      {enabled && legend && <RemoteLegend data={legend} compact={compactLegend} />}
       <button
         type="button"
         role="switch"

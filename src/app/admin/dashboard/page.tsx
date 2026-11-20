@@ -66,6 +66,7 @@ import { getInviteUrl } from '@/lib/utils'
 import { applyDisplayDefaults } from '@/lib/display-defaults/client'
 import { pickSession } from '@/lib/session-select'
 import { getRememberedSessionId, rememberSessionId } from '@/lib/selected-session'
+import { cleanMessage } from '@/lib/messages'
 
 // Subscription Status Card Component
 function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subscription; isOwner?: boolean }) {
@@ -2068,7 +2069,7 @@ fetch(${JSON.stringify(imageUrl)})
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1">
-                                <p className="text-white text-sm leading-relaxed">&ldquo;{msg.content}&rdquo;</p>
+                                <p className="text-white text-sm leading-relaxed whitespace-pre-line break-words">&ldquo;{cleanMessage(msg.content)}&rdquo;</p>
                                 <div className="flex items-center gap-2 mt-2">
                                   {msg.author_name && (
                                     <span className="text-[#D4AF37] text-xs italic">— {msg.author_name}</span>

@@ -29,6 +29,7 @@ import PrepGamePanel, { isVoteOnly } from '@/components/buzzer/prep/PrepGamePane
 import { BUZZER_CSS } from '@/components/buzzer/styles'
 import AmbianceMusicControls from '@/components/affinity/AmbianceMusicControls'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useAmbianceMusic } from '@/hooks/useAmbianceMusic'
 import { useBuzzerSounds } from '@/hooks/useBuzzerSounds'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
@@ -46,7 +47,7 @@ import {
 } from '@/lib/buzzer/constants'
 import { remoteAction, type GameAction } from '@/lib/buzzer/machine'
 import type { PrepRound } from '@/lib/buzzer/prep'
-import { prepRemoteAction, type PrepAction, type PrepState } from '@/lib/buzzer/prep-flow'
+import { nextPrepStep, prepRemoteAction, type PrepAction, type PrepState } from '@/lib/buzzer/prep-flow'
 import type { ScoreAction, ScoresState } from '@/lib/buzzer/scores'
 import type { BuzzerActiveState, BuzzerAdminPlayer, BuzzerMode, BuzzerRoundSummary, BuzzerState } from '@/lib/buzzer/types'
 import { createClient } from '@/lib/supabase'
@@ -537,10 +538,14 @@ export default function BuzzerAdminPage() {
   // logique suivante. Jamais quitter, retirer ni rien de destructif.
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   // Manches préparées : même mapping, PageDown suit l'enchaînement des manches.
+  // Une seule décision (remoteAction / prepRemoteAction) : exécutée par la
+  // touche ET affichée par la légende.
+  const remoteActive = active && remoteOn && !!state
+  const prepOptions = { voteOnly: isVoteOnly(prepRound) }
   const runRemote = async (key: 'next' | 'prev') => {
     if (!state) return
     if (prepState) {
-      const action = prepRemoteAction(state, prepState, key, { voteOnly: isVoteOnly(prepRound) })
+      const action = prepRemoteAction(state, prepState, key, prepOptions)
       if (action === 'open') await act('open')
       else if (action) await actPrep(action)
       return
@@ -548,8 +553,31 @@ export default function BuzzerAdminPage() {
     const action = remoteAction(state, key)
     if (action) await act(action)
   }
+  const legendFor = (key: 'next' | 'prev'): string | null => {
+    if (!state) return null
+    if (prepState) {
+      const action = prepRemoteAction(state, prepState, key, prepOptions)
+      if (action === 'right') return 'bonne réponse'
+      if (action === 'wrong') return 'mauvaise réponse'
+      if (action === 'open') return 'rouvrir les buzzers'
+      // Sinon : l'étape suivante, celle que prepRemoteAction vient de choisir.
+      return action ? (nextPrepStep(state, prepState, prepOptions)?.label ?? null) : null
+    }
+    const action = remoteAction(state, key)
+    return action === 'open' ? 'ouvrir les buzzers'
+      : action === 'right' ? 'bonne réponse'
+        : action === 'wrong' ? 'mauvaise réponse'
+          : action === 'new_round' ? 'nouvelle manche'
+            : null
+  }
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    inactiveReason: state?.paused ? 'AnimaBuzz en pause.' : undefined,
+    next: legendFor('next'),
+    prev: legendFor('prev'),
+  }
   useRemoteControl({
-    active: active && remoteOn && !!state,
+    active: remoteActive,
     phase: state ? `${state.phase}|${state.roundNo}|${state.attempt}|${state.priority?.unit ?? ''}|${prepState ? `${prepState.step}:${prepState.roundIndex}` : ''}` : 'off',
     onNext: () => runRemote('next'),
     onPrev: () => runRemote('prev'),
@@ -660,7 +688,7 @@ export default function BuzzerAdminPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} legend={remoteLegend} />
             <a href="/animabuzz-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />

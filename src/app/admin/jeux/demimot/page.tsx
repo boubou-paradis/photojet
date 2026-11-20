@@ -18,6 +18,7 @@ import { ArrowLeft, FileText, ListOrdered, Loader2, LogOut, Monitor, Play, Radio
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { callAdmin, type AdminBody, type AdminResult, type Send } from '@/components/demimot/regie/api'
 import { RegieDirect, regieStatus, windowOf } from '@/components/demimot/regie/RegieDirect'
 import { RegiePrep } from '@/components/demimot/regie/RegiePrep'
@@ -232,30 +233,61 @@ export default function DemiMotAdminPage() {
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
   const status = regie ? regieStatus(regie) : 'off'
   const round = regie?.public.round ?? null
+  // Une seule décision : exécutée par la touche ET affichée par la légende.
+  const remoteActive = active && remoteOn && !!regie && tab === 'direct'
+  const demiPrev: 'judge_right' | 'turn_right' | 'letter' | null =
+    !regie ? null
+      : status === 'answering' && round?.buzz ? 'judge_right'
+        : status === 'turn' ? 'turn_right'
+          : (status === 'revealing' || status === 'ready') && round?.mode === 'reveal' ? 'letter'
+            : null
+  const demiNext: 'judge_wrong' | 'turn_wrong' | 'start' | 'reveal' | 'resume' | 'next' | 'finale' | null =
+    !regie ? null
+      : status === 'answering' && round?.buzz ? 'judge_wrong'
+        : status === 'turn' ? 'turn_wrong'
+          : status === 'waiting' ? 'start'
+            : status === 'ready' ? 'reveal'
+              : status === 'paused' ? 'resume'
+                : status === 'resolved' && round ? 'next'
+                  : status === 'final_intro' ? 'finale'
+                    : null
   useRemoteControl({
-    active: active && remoteOn && !!regie && tab === 'direct',
+    active: remoteActive,
     phase: `${status}|${round?.key ?? ''}|${regie?.private.buzzWindowId ?? ''}`,
     onPrev: async () => {
       if (!regie) return
-      if (status === 'answering' && round?.buzz) await send({ type: 'judge', correct: true, windowId: windowOf(regie) })
-      else if (status === 'turn') await send({ type: 'solveTurn', correct: true })
-      else if ((status === 'revealing' || status === 'ready') && round?.mode === 'reveal') await send({ type: 'revealLetter' })
+      if (demiPrev === 'judge_right') await send({ type: 'judge', correct: true, windowId: windowOf(regie) })
+      else if (demiPrev === 'turn_right') await send({ type: 'solveTurn', correct: true })
+      else if (demiPrev === 'letter') await send({ type: 'revealLetter' })
     },
     onNext: async () => {
       if (!regie) return
-      if (status === 'answering' && round?.buzz) await send({ type: 'judge', correct: false, windowId: windowOf(regie) })
-      else if (status === 'turn') await send({ type: 'solveTurn', correct: false })
-      else if (status === 'waiting') await send({ type: 'startGame' })
-      else if (status === 'ready') await send({ type: 'startReveal' })
-      else if (status === 'paused') await send({ type: 'resume' })
-      else if (status === 'resolved' && round) await send({ type: 'next', roundKey: round.key })
-      else if (status === 'final_intro') await send({ type: 'startFinale' })
+      if (demiNext === 'judge_wrong') await send({ type: 'judge', correct: false, windowId: windowOf(regie) })
+      else if (demiNext === 'turn_wrong') await send({ type: 'solveTurn', correct: false })
+      else if (demiNext === 'start') await send({ type: 'startGame' })
+      else if (demiNext === 'reveal') await send({ type: 'startReveal' })
+      else if (demiNext === 'resume') await send({ type: 'resume' })
+      else if (demiNext === 'next' && round) await send({ type: 'next', roundKey: round.key })
+      else if (demiNext === 'finale') await send({ type: 'startFinale' })
     },
     onSecondary: async () => {
       if (!regie) return
       await send({ type: 'display', display: regie.public.display === 'standings' ? 'board' : 'standings' })
     },
   })
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    inactiveReason: active && tab !== 'direct' ? 'La télécommande agit dans l’onglet Direct.' : undefined,
+    next: demiNext === 'judge_wrong' || demiNext === 'turn_wrong' ? 'mauvaise réponse'
+      : demiNext === 'start' ? 'démarrer la partie'
+        : demiNext === 'reveal' ? 'lancer le dévoilement'
+          : demiNext === 'resume' ? 'reprendre'
+            : demiNext === 'next' ? 'manche suivante'
+              : demiNext === 'finale' ? 'lancer la finale'
+                : null,
+    prev: demiPrev === 'judge_right' || demiPrev === 'turn_right' ? 'bonne réponse' : demiPrev === 'letter' ? 'révéler une lettre' : null,
+    secondary: !regie ? null : regie.public.display === 'standings' ? 'afficher le plateau' : 'afficher le classement',
+  }
 
   async function launch() {
     if (!session) return
@@ -336,7 +368,7 @@ export default function DemiMotAdminPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={status === 'podium'} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} finished={status === 'podium'} legend={remoteLegend} />
             <a href="/a-demi-mot-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />

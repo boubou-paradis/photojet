@@ -35,6 +35,7 @@ import { usePromoPreload } from '@/hooks/usePromoPreload'
 import { useTrialWatermark } from '@/components/TrialWatermark'
 import { watermarkedPhotoUrl } from '@/lib/watermark/constants'
 import { WheelSegment, QuizQuestion, QuizParticipant } from '@/types/database'
+import { cleanMessage } from '@/lib/messages'
 
 // Types for slideshow items
 type SlideshowItem =
@@ -199,7 +200,8 @@ function messageEdge(trial: boolean) {
 }
 
 function MessageDisplay({ message, sideReserve, trial }: { message: LiveMessage; sideReserve: number; trial: boolean }) {
-  const content = message.content
+  // Retours à la ligne gardés (6 lignes au plus) : texte simple, jamais de HTML.
+  const content = cleanMessage(message.content)
   const bubbleRef = useRef<HTMLDivElement>(null)
   const [fontPx, setFontPx] = useState<number | null>(null)
 
@@ -278,7 +280,7 @@ function MessageDisplay({ message, sideReserve, trial }: { message: LiveMessage;
             &ldquo;
           </motion.div>
 
-          {/* Message content : coupure entre les mots, un mot trop long passe à la ligne */}
+          {/* Message content : retours à la ligne respectés, coupure entre les mots, un mot trop long passe à la ligne */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -287,6 +289,7 @@ function MessageDisplay({ message, sideReserve, trial }: { message: LiveMessage;
             style={{
               fontSize: 'var(--msg-px, 40px)',
               lineHeight: 1.22,
+              whiteSpace: 'pre-line',
               overflowWrap: 'anywhere',
               textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}

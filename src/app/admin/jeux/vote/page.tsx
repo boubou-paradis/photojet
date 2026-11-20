@@ -23,6 +23,7 @@ import { VOTE_CSS } from '@/components/vote/styles'
 import { ADMIN_CSS } from '@/components/vote/admin/styles'
 import VoteSoundsPanel from '@/components/vote/admin/VoteSoundsPanel'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import VoteEditor, { DEFAULT_DRAFT, draftProblem, toEditorDraft, toPayload, type EditorDraft } from '@/components/vote/admin/VoteEditor'
 import PhotoCropModal from '@/app/admin/jeux/mystery/PhotoCropModal'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
@@ -353,13 +354,16 @@ export default function VoteAdminPage() {
     const timer = setTimeout(() => setConfirm(null), Math.max(0, confirm.until - Date.now()))
     return () => clearTimeout(timer)
   }, [confirm])
+  // Une seule décision (remoteAction) : exécutée par la touche ET affichée par la légende.
+  const remoteActive = active && remoteOn && !!event && editorMode === null
+  const voteNext = state?.event ? remoteAction(state, lastStep) : null
   useRemoteControl({
-    active: active && remoteOn && !!event && editorMode === null,
+    active: remoteActive,
     phase: remotePhase,
     isBlocked: () => crop !== null,
     onNext: async () => {
       if (!state?.event) return
-      const action = remoteAction(state, lastStep)
+      const action = voteNext
       if (!action) return
       if (remoteNeedsConfirm(action)) {
         const armed = confirmRef.current
@@ -376,6 +380,17 @@ export default function VoteAdminPage() {
     },
   })
   const confirmShown = confirm !== null && confirm.phase === remotePhase
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    blocked: crop !== null,
+    inactiveReason: editorMode !== null ? 'Fermez l’éditeur pour utiliser la télécommande.' : !event ? 'Les touches agissent une fois un vote préparé.' : undefined,
+    next: voteNext === 'open' ? 'ouvrir le vote'
+      : voteNext === 'close' ? (confirmShown ? 'appuyez encore pour fermer le vote' : 'fermer le vote (2 appuis en 3 s)')
+        : voteNext === 'reveal' ? 'révéler les résultats'
+          : voteNext === 'reveal_next' ? 'étape suivante de la révélation'
+            : null,
+    prev: null,
+  }
 
   async function launch() {
     if (!session) return
@@ -480,7 +495,7 @@ export default function VoteAdminPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={active} legend={remoteLegend} />
             <a href="/animavote-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />

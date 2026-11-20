@@ -33,6 +33,7 @@ import { toast } from 'sonner'
 import { compressAudio, needsAudioCompression } from '@/lib/audio-utils'
 import WheelPreview from '@/components/games/WheelPreview'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
+import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
@@ -862,17 +863,27 @@ export default function WheelPage() {
   useLeaveGuard(gameActive)
 
   const [remoteOn, setRemoteOn] = useRemoteSwitch()
+  // Une seule décision : exécutée par la touche ET affichée par la légende.
+  const remoteActive = gameActive && remoteOn && !isGameFinished
+  const wheelNext: 'spin' | 'stop' | null = !isSpinning ? 'spin' : spinMode === 'manual' ? 'stop' : null
+  const wheelPrev: 'clear' | null = result && !isSpinning ? 'clear' : null
   useRemoteControl({
-    active: gameActive && remoteOn && !isGameFinished,
+    active: remoteActive,
     phase: `${isSpinning}|${spinMode}|${result ?? ''}`,
     onNext: () => {
-      if (!isSpinning) { void spinWheel(); return spinMode === 'auto' ? 8500 : 0 }
-      if (spinMode === 'manual') { void stopWheel(); return 3500 }
+      if (wheelNext === 'spin') { void spinWheel(); return spinMode === 'auto' ? 8500 : 0 }
+      if (wheelNext === 'stop') { void stopWheel(); return 3500 }
     },
     onPrev: () => {
-      if (result && !isSpinning) void clearResult()
+      if (wheelPrev === 'clear') void clearResult()
     },
   })
+  const remoteLegend: RemoteLegendData = {
+    active: remoteActive,
+    inactiveReason: isGameFinished ? 'Partie terminée : télécommande coupée.' : undefined,
+    next: wheelNext === 'spin' ? 'faire tourner la roue' : wheelNext === 'stop' ? 'arrêter la roue (STOP)' : null,
+    prev: wheelPrev === 'clear' ? 'masquer le résultat' : null,
+  }
 
   if (loading) {
     return (
@@ -939,7 +950,7 @@ export default function WheelPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameFinished} />
+            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameFinished} legend={remoteLegend} />
             <a href="/roue-de-la-destinee-regles.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
                 <FileText className="h-4 w-4 mr-2" />
