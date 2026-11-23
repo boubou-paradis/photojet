@@ -49,6 +49,7 @@ import SessionSwitchDialog from '@/components/SessionSwitchDialog'
 import DisplayDefaultsCard from '@/components/DisplayDefaultsCard'
 import SocialShortcuts from '@/components/SocialShortcuts'
 import PromoAfficheDetail from '@/components/PromoAfficheDetail'
+import MusicRequestSettings from '@/components/settings/MusicRequestSettings'
 import { ACTIVATION_DENIED_MESSAGE, type ActiveSessionInfo } from '@/lib/sessions/activation'
 import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
@@ -1122,6 +1123,9 @@ export default function SettingsPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Demandes de musique - pleine largeur (table à part, enregistrement immédiat) */}
+            {selectedSession && <MusicRequestSettings sessionId={selectedSession.id} className="max-xl:order-6" />}
 
             {/* Affiches promotionnelles - pleine largeur */}
             <motion.div

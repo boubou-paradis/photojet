@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock, MessageCircle, Rocket, Sparkles, Printer } from 'lucide-react'
+import { Camera, ImagePlus, Send, X, Loader2, CheckCircle, Clock, MessageCircle, Rocket, Sparkles, Printer, Music } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,8 +12,9 @@ import { createClient } from '@/lib/supabase'
 import { compressImage, validateImageFile, extensionForMimeType, MAX_FILE_SIZE, formatFileSize } from '@/lib/image-utils'
 import type { InviteSession } from '@/lib/public-api/columns'
 import { MESSAGE_MAX_LENGTH, cleanMessage, shapeMessageInput } from '@/lib/messages'
+import MusicRequestTab from '@/components/invite/MusicRequestTab'
 
-type TabType = 'photo' | 'message'
+type TabType = 'photo' | 'message' | 'music'
 type UploadStatus = 'idle' | 'success' | 'pending'
 type SelectionSource = 'camera' | 'gallery'
 
@@ -30,6 +31,7 @@ interface InviteState {
   voteActive: boolean
   demimotActive?: boolean
   bingoActive?: boolean
+  musicEnabled?: boolean
 }
 
 // Une panne ou une session inconnue donne null.
@@ -75,6 +77,8 @@ export default function InvitePage() {
   const [session, setSession] = useState<InviteSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('photo')
+  // Demandes de musique : choix visible seulement si le DJ l'a activé.
+  const [musicEnabled, setMusicEnabled] = useState(false)
 
   // Photo states
   const [uploading, setUploading] = useState(false)
@@ -235,6 +239,7 @@ export default function InvitePage() {
         if (!state.session) throw new Error('session inactive')
 
         setSession(state.session)
+        setMusicEnabled(state.musicEnabled === true)
       } catch {
         // Un invité ne peut pas lire une session inactive : le serveur dit
         // seulement si l'événement est terminé ou pas actif.
@@ -746,7 +751,7 @@ export default function InvitePage() {
         </motion.div>
 
         {/* Tab Toggle */}
-        {messagesEnabled && (
+        {(messagesEnabled || musicEnabled) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -764,6 +769,7 @@ export default function InvitePage() {
               <Camera className="h-5 w-5" />
               Photo
             </button>
+            {messagesEnabled && (
             <button
               onClick={() => setActiveTab('message')}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all duration-300 ${
@@ -775,6 +781,21 @@ export default function InvitePage() {
               <MessageCircle className="h-5 w-5" />
               Message
             </button>
+            )}
+            {musicEnabled && (
+              <button
+                onClick={() => setActiveTab('music')}
+                data-testid="tab-music"
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all duration-300 ${
+                  activeTab === 'music'
+                    ? 'bg-gradient-to-r from-cyan-600 to-cyan-400 text-[#041318] shadow-lg shadow-cyan-500/20'
+                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Music className="h-5 w-5" />
+                Musique
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -1141,6 +1162,19 @@ export default function InvitePage() {
                   </div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* MUSIC TAB */}
+          {activeTab === 'music' && musicEnabled && (
+            <motion.div
+              key="music-tab"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
+              <MusicRequestTab code={code} />
             </motion.div>
           )}
         </AnimatePresence>

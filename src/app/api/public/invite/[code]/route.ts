@@ -10,6 +10,7 @@ import { isCodeLookupBlocked, recordCodeFailure, tooManyCodeAttempts } from '@/l
 import { INVITE_SESSION_COLUMNS } from '@/lib/public-api/columns'
 import { selectWithOptionalColumns } from '@/lib/public-api/optional-columns'
 import { NO_STORE, getPublicAdmin, isPubliclyVisible, pickColumns, type SessionVisibilityRow } from '@/lib/public-api/server'
+import { readMusicEnabled } from '@/lib/music/server'
 
 // demimot_active et bingo_active sont facultatives : si la base ne les connaît pas,
 // lecture sans elles (jeu concerné inactif, les autres jeux redirigent normalement).
@@ -32,6 +33,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     return NextResponse.json({ error: 'Session introuvable.' }, { status: 404, headers: NO_STORE })
   }
 
+  // Demandes de musique : table à part. Absente ou en panne = choix caché.
+  const musicEnabled = row.is_active === true
+    ? await readMusicEnabled(admin, row.id as string).then((v) => v === true).catch(() => false)
+    : false
+
   return NextResponse.json(
     {
       session: row.is_active === true ? pickColumns(row, INVITE_SESSION_COLUMNS) : null,
@@ -41,6 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       voteActive: row.vote_active === true,
       demimotActive: row.demimot_active === true,
       bingoActive: row.bingo_active === true,
+      musicEnabled,
     },
     { headers: NO_STORE },
   )

@@ -46,6 +46,7 @@ import {
   Zap,
   QrCode,
   Smartphone,
+  Music,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -67,6 +68,7 @@ import { applyDisplayDefaults } from '@/lib/display-defaults/client'
 import { pickSession } from '@/lib/session-select'
 import { getRememberedSessionId, rememberSessionId } from '@/lib/selected-session'
 import { cleanMessage } from '@/lib/messages'
+import MusicRequestsPanel, { useMusicRequests } from '@/components/dashboard/MusicRequestsPanel'
 
 // Subscription Status Card Component
 function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subscription; isOwner?: boolean }) {
@@ -222,7 +224,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [togglingModeration, setTogglingModeration] = useState(false)
-  const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'impressions'>('photos')
+  const [activeTab, setActiveTab] = useState<'photos' | 'messages' | 'impressions' | 'music'>('photos')
   const [printRequests, setPrintRequests] = useState<(PrintRequest & { photo?: Photo })[]>([])
   const [downloading, setDownloading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -233,6 +235,12 @@ export default function DashboardPage() {
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  // Demandes de musique : onglet visible si activé, ou s'il reste des demandes.
+  const music = useMusicRequests(selectedSession?.id, activeTab === 'music')
+  const showMusicTab = !!music.state && (music.state.enabled || music.state.counts.requests > 0)
+  useEffect(() => {
+    if (activeTab === 'music' && !showMusicTab) setActiveTab('photos')
+  }, [activeTab, showMusicTab])
   const trialWatermark = useTrialWatermark()
 
   // Ref pour éviter les stale closures dans les listeners async
@@ -1864,7 +1872,7 @@ fetch(${JSON.stringify(imageUrl)})
 
               {/* Content Section with Tabs - fills remaining space */}
               <div className="card-gold rounded-xl flex-1 flex flex-col min-h-0 overflow-hidden">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photos' | 'messages' | 'impressions')} className="flex flex-col flex-1 min-h-0">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'photos' | 'messages' | 'impressions' | 'music')} className="flex flex-col flex-1 min-h-0">
                   <div className="p-3 border-b border-[rgba(255,255,255,0.1)] flex-shrink-0 flex items-center justify-between gap-4">
                     <TabsList className="bg-[#2E2E33] border border-[rgba(255,255,255,0.1)]">
                       <TabsTrigger value="photos" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-[#1A1A1E]">
@@ -1887,6 +1895,17 @@ fetch(${JSON.stringify(imageUrl)})
                           {pendingPrintCount > 0 && (
                             <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-orange-500 text-white rounded-full animate-pulse">
                               {pendingPrintCount}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                      )}
+                      {showMusicTab && (
+                        <TabsTrigger value="music" data-testid="tab-music" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-[#041318]">
+                          <Music className="h-4 w-4 mr-2" />
+                          Musique ({music.state?.counts.requests ?? 0})
+                          {(music.state?.counts.pending ?? 0) > 0 && (
+                            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-[#FF9800] text-white rounded-full">
+                              {music.state?.counts.pending}
                             </span>
                           )}
                         </TabsTrigger>
@@ -2138,6 +2157,13 @@ fetch(${JSON.stringify(imageUrl)})
                       </div>
                     )}
                   </TabsContent>
+
+                  {/* Demandes de musique */}
+                  {showMusicTab && (
+                    <TabsContent value="music" className="flex-1 min-h-0 overflow-hidden m-0 p-3">
+                      <MusicRequestsPanel music={music} />
+                    </TabsContent>
+                  )}
 
                   {/* Impressions Tab */}
                   <TabsContent value="impressions" className="flex-1 overflow-auto m-0 p-4">
