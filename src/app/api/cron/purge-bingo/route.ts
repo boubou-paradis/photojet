@@ -33,6 +33,16 @@ export async function GET(request: NextRequest) {
     games = Number((data as { games?: number } | null)?.games ?? 0)
   }
 
+  // Tombola : même règle (24 h sans aucune activité), fonction SQL à part.
+  let tombolas = 0
+  const { data: tData, error: tError } = await admin.rpc('bingo_tombola_purge_stale')
+  if (tError) {
+    console.error('[Cron purge-bingo] tombola :', tError.message)
+    error = error ? `${error} ; tombola : ${tError.message}` : `tombola : ${tError.message}`
+  } else {
+    tombolas = Number((tData as { tombolas?: number } | null)?.tombolas ?? 0)
+  }
+
   let files = 0
   try {
     files = await purgeOrphanMusic(admin, 24 * 3600_000)
@@ -43,8 +53,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Trace d'audit : une ligne par passage, comme les autres purges.
-  const { error: logError } = await admin.from('purge_log').insert({ kind: 'bingo', files_deleted: files, reason: `parties=${games}`, error })
+  const { error: logError } = await admin.from('purge_log').insert({ kind: 'bingo', files_deleted: files, reason: `parties=${games} tombolas=${tombolas}`, error })
   if (logError) console.error('[Cron purge-bingo] purge_log :', logError.message)
 
-  return NextResponse.json({ success: !error, games, files, logged: !logError, error }, { status: error ? 500 : 200 })
+  return NextResponse.json({ success: !error, games, tombolas, files, logged: !logError, error }, { status: error ? 500 : 200 })
 }

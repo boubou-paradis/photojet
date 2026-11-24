@@ -17,6 +17,7 @@
 import { NextResponse } from 'next/server'
 import { BingoError, getBingoAdmin, regieSnapshot, requireSessionOwner, runAdmin } from '@/lib/bingo/server'
 import { isUuid, parseAdmin } from '@/lib/bingo/validation'
+import { tombolaExists } from '@/lib/bingo/tombola-server'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
   const userId = await requireSessionOwner(sessionId)
   if (!userId) return NextResponse.json({ error: 'Accès refusé.' }, { status: 403, headers: NO_STORE })
   try {
+    // Un seul jeu AnimaBingo à la fois : pas de loto tant qu'une tombola existe.
+    if ((command.action === 'launch' || command.action === 'new_game') && (await tombolaExists(getBingoAdmin(), sessionId))) {
+      return NextResponse.json(
+        { error: 'Une tombola est en cours : terminez-la avant de lancer un loto.', code: 'tombola_running' },
+        { status: 409, headers: NO_STORE },
+      )
+    }
     return NextResponse.json(await runAdmin(getBingoAdmin(), sessionId, command, userId), { headers: NO_STORE })
   } catch (e) {
     return fail(e)

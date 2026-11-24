@@ -1,0 +1,118 @@
+/* © 2025 AnimaJet - MG Events Animation. Tous droits réservés. */
+/* AnimaBingo · Tombola : écran géant, régie et téléphone. Chargé seulement
+   par les pages de la tombola : aucun effet sur le loto. */
+
+/* ---------- Boules de 3 et 4 chiffres ---------- */
+.bgo .ball.d3 .ball-med span { font-size: calc(var(--s) * .24); letter-spacing: -.05em; }
+.bgo .ball.d4 .ball-med span { font-size: calc(var(--s) * .19); letter-spacing: -.06em; }
+
+/* ---------- Écran géant (scène 1920×1080) ---------- */
+.tmb-screen .tmb-title { position: absolute; left: 0; right: 0; top: 46px; text-align: center; font-size: 56px; font-weight: 900; letter-spacing: .5em; padding-left: .5em; color: #f6e3a1; text-shadow: 0 0 40px rgba(212, 175, 55, .45); }
+.tmb-screen .tmb-lobby { position: absolute; left: 150px; right: 150px; top: 200px; bottom: 140px; display: flex; align-items: center; gap: 110px; }
+.tmb-screen .tmb-qr { flex: none; width: 440px; padding: 40px; border-radius: 34px; background: #fff; box-shadow: 0 0 0 6px rgba(212, 175, 55, .6), 0 30px 80px rgba(0, 0, 0, .6); }
+.tmb-screen .tmb-lobby-ball { flex: none; position: relative; width: 520px; height: 460px; display: grid; place-items: center; }
+.tmb-screen .tmb-lobby-ball .rings { position: absolute; inset: 0; }
+.tmb-screen .tmb-lobby-text h1 { font-size: 92px; font-weight: 900; line-height: 1.02; margin: 0 0 26px; }
+.tmb-screen .tmb-lobby-text p { font-size: 36px; color: #e3d9ff; margin: 10px 0; }
+.tmb-screen .tmb-lobby-text p b { color: #fff; }
+.tmb-screen .tmb-lobby-text .lead { font-size: 40px; color: #fff; margin-bottom: 30px; }
+.tmb-screen .tmb-lobby-text .soon { margin-top: 34px; color: var(--muted); font-size: 30px; }
+
+.tmb-screen .tmb-hero { position: absolute; left: 700px; top: 200px; width: 560px; height: 660px; display: flex; align-items: center; justify-content: center; }
+.tmb-screen .tmb-hero-in { display: flex; flex-direction: column; align-items: center; gap: 34px; animation: bgo-pop .8s var(--ease-spring) both; }
+.tmb-screen .tmb-hero-in.o-absent .ball, .tmb-screen .tmb-hero-in.o-already .ball { filter: grayscale(.85) brightness(.7); }
+.tmb-screen .tmb-lot { font-size: 110px; font-weight: 900; letter-spacing: .14em; line-height: 1; }
+.tmb-screen .tmb-lot.off { font-size: 64px; color: #ffd28a; letter-spacing: .08em; }
+.tmb-screen .tmb-suspense { font-size: 64px; font-weight: 800; text-align: center; line-height: 1.15; animation: tmb-breathe 1.2s ease-in-out infinite; }
+@keyframes tmb-breathe { 50% { opacity: .55; transform: scale(.97); } }
+
+.tmb-screen .tmb-winners { position: absolute; right: 90px; top: 190px; width: 520px; }
+.tmb-screen .tmb-winners h2 { font-size: 26px; letter-spacing: .4em; color: var(--muted); margin: 0 0 18px; font-weight: 800; }
+.tmb-screen .tmb-winners .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tmb-screen .tmb-winners .w { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 22px; border-radius: 16px; background: linear-gradient(180deg, rgba(36, 27, 68, .8), rgba(16, 12, 32, .9)); box-shadow: inset 0 0 0 1px rgba(139, 77, 255, .3); }
+.tmb-screen .tmb-winners .w small { font-size: 20px; color: var(--muted); font-weight: 600; }
+.tmb-screen .tmb-winners .w b { font-size: 44px; font-weight: 900; }
+.tmb-screen .tmb-winners .w.now { box-shadow: inset 0 0 0 3px #e9cd78, 0 0 30px rgba(212, 175, 55, .35); }
+.tmb-screen .tmb-winners .more { margin-top: 16px; font-size: 22px; color: var(--muted); }
+.tmb-screen .tmb-foot { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; font-size: 34px; color: #e3d9ff; font-weight: 600; }
+.tmb-screen .tmb-foot b { color: #f6e3a1; }
+.tmb-screen .tmb-qr-mini { position: absolute; left: 60px; bottom: 50px; width: 170px; padding: 10px; border-radius: 16px; background: #fff; text-align: center; color: #0a0a14; font-weight: 800; font-size: 16px; }
+
+/* ---------- Régie (aucun défilement : hauteur fixe) ---------- */
+.bgo.tmb-regie { height: calc(100dvh - 95px); min-height: 600px; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(900px 500px at 20% -10%, rgba(139, 77, 255, .22), transparent 70%), #0a0814; }
+.bgo.tmb-regie .rtop h1 em { font-style: normal; color: var(--gold-hi); }
+.bgo.tmb-regie .banner { margin: 10px 20px 0; padding: 9px 14px; }
+.bgo .tmb-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr) 320px; gap: 14px; padding: 14px 20px; }
+.bgo .tmb-grid > * { min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.bgo .tmb-grid .box + .box { margin-top: 0; }
+.bgo .tmb-grid .box { padding: 14px; }
+.bgo .tmb-draw-btn { width: 100%; padding: 18px 10px; font-size: 22px; border-radius: 16px; }
+.bgo .tmb-small { font-size: 12.5px; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.4; }
+.bgo .tmb-small b { color: var(--gold-hi); }
+.bgo .tmb-last { display: flex; align-items: center; gap: 14px; }
+.bgo .tmb-last .n { font-size: 30px; font-weight: 900; }
+.bgo .tmb-last .lot { color: var(--gold-hi); font-weight: 700; font-size: 14px; }
+.bgo .tmb-last .lot.off { color: #ffd28a; }
+.bgo .tmb-last .t { color: var(--muted); font-size: 12px; }
+.bgo .tmb-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.bgo .tmb-acts .btn { padding: 9px 6px; font-size: 13px; }
+.bgo .tmb-acts .full { grid-column: 1 / -1; }
+
+.bgo .tmb-center { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.bgo .tmb-big { display: flex; align-items: center; justify-content: center; gap: 26px; padding: 6px 0 14px; }
+.bgo .tmb-big .lbl { font-size: 13px; letter-spacing: .3em; color: var(--muted); font-weight: 700; }
+.bgo .tmb-big .v { font-size: 56px; font-weight: 900; line-height: 1; }
+.bgo .tmb-wgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-content: start; }
+.bgo .tmb-wgrid .w { padding: 6px 4px; border-radius: 10px; text-align: center; background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .18); }
+.bgo .tmb-wgrid .w small { display: block; font-size: 10px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.bgo .tmb-wgrid .w b { font-size: 19px; font-weight: 800; }
+.bgo .tmb-wgrid .w.now { box-shadow: inset 0 0 0 2px #e9cd78; }
+.bgo .tmb-out { margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+.bgo .tmb-out s { margin-right: 10px; color: #b9b0d6; }
+.bgo .tmb-rows div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; font-size: 13.5px; border-bottom: 1px solid rgba(164, 155, 196, .1); }
+.bgo .tmb-rows div:last-child { border-bottom: 0; }
+.bgo .tmb-rows b { color: #fff; text-align: right; }
+.bgo .tmb-rows .open { color: var(--ok); }
+.bgo .tmb-rows .closed { color: var(--amber); }
+.bgo .tmb-phone-from { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(212, 175, 55, .1); box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .4); color: var(--gold-hi); font-weight: 700; font-size: 14px; text-align: center; }
+
+/* Préparation */
+.bgo .tmb-setup { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 640px) minmax(0, 420px); gap: 18px; justify-content: center; align-content: start; padding: 18px 20px; }
+.bgo .tmb-ranges { display: flex; flex-direction: column; gap: 8px; }
+.bgo .tmb-range { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.bgo .tmb-range input { width: 92px; padding: 8px 10px; border-radius: 10px; border: 0; font: inherit; font-size: 15px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .3); }
+.bgo .tmb-range input:focus { outline: 2px solid var(--gold-hi); }
+.bgo .tmb-err { color: #ffb4b4; font-size: 13px; margin-top: 6px; }
+.bgo .tmb-switch { display: flex; align-items: center; gap: 10px; font-weight: 600; margin: 4px 0; cursor: pointer; }
+.bgo .tmb-switch input { width: 18px; height: 18px; accent-color: #d4af37; }
+
+/* Choix du jeu (3 cartes) */
+.bgo .tmb-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.bgo .tmb-pick button { text-align: left; padding: 12px; border-radius: 14px; border: 0; cursor: pointer; font: inherit; color: var(--text); background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .25); }
+.bgo .tmb-pick button b { display: block; font-size: 15px; margin-bottom: 4px; }
+.bgo .tmb-pick button span { font-size: 12px; color: var(--muted); }
+.bgo .tmb-pick button[aria-pressed='true'] { box-shadow: inset 0 0 0 2px #e9cd78; background: rgba(212, 175, 55, .08); }
+
+/* ---------- Téléphone ---------- */
+.bgo.tmb-phone { min-height: 100dvh; background: radial-gradient(500px 400px at 50% 0%, rgba(139, 77, 255, .3), transparent 70%), #07060d; padding: 26px 18px 40px; font-family: var(--font-poppins), system-ui, sans-serif; }
+.bgo.tmb-phone .app { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; text-align: center; }
+.bgo.tmb-phone .brand { font-size: 12px; letter-spacing: .32em; color: var(--muted); font-weight: 700; }
+.bgo.tmb-phone .ticket { position: relative; overflow: hidden; padding: 20px 18px 16px; border-radius: 22px; background: linear-gradient(180deg, #2a1f52, #150f2c); box-shadow: inset 0 0 0 2px #c9a43a, 0 20px 40px rgba(0, 0, 0, .5); }
+.bgo.tmb-phone .ticket::before, .bgo.tmb-phone .ticket::after { content: ''; position: absolute; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%; background: #07060d; box-shadow: inset 0 0 0 2px #c9a43a; }
+.bgo.tmb-phone .ticket::before { left: -13px; }
+.bgo.tmb-phone .ticket::after { right: -13px; }
+.bgo.tmb-phone .ticket .lbl { font-size: 12px; letter-spacing: .3em; color: #d8cdf5; font-weight: 700; }
+.bgo.tmb-phone .ticket .num { font-size: clamp(56px, 20vw, 84px); font-weight: 900; line-height: 1.05; margin: 6px 0; white-space: nowrap; }
+.bgo.tmb-phone .ticket .foot { font-size: 12px; color: var(--muted); }
+/* Ticket « vivant » : reflet qui passe et heure qui tourne (une capture d'écran se repère). */
+.bgo.tmb-phone .ticket .shine { position: absolute; inset: -40% -60%; background: linear-gradient(100deg, transparent 40%, rgba(255, 246, 210, .22) 50%, transparent 60%); animation: tmb-shine 3.2s linear infinite; pointer-events: none; }
+@keyframes tmb-shine { from { transform: translateX(-40%); } to { transform: translateX(40%); } }
+.bgo.tmb-phone .msg { font-size: 16px; line-height: 1.45; color: #e7e0ff; }
+.bgo.tmb-phone .msg b { color: var(--gold-hi); }
+.bgo.tmb-phone .win { padding: 18px; border-radius: 20px; background: linear-gradient(180deg, rgba(61, 220, 151, .16), rgba(20, 60, 45, .3)); box-shadow: inset 0 0 0 2px rgba(61, 220, 151, .6); }
+.bgo.tmb-phone .win h2 { margin: 0 0 8px; font-size: 26px; font-weight: 900; }
+.bgo.tmb-phone .win p { margin: 0; font-size: 16px; }
+.bgo.tmb-phone .win.off { background: rgba(240, 168, 48, .1); box-shadow: inset 0 0 0 2px rgba(240, 168, 48, .55); }
+.bgo.tmb-phone .card { padding: 18px; border-radius: 18px; background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(164, 155, 196, .2); }
+.bgo.tmb-phone .link { color: var(--muted); font-size: 13px; text-decoration: underline; }
+.bgo.tmb-phone .reco { font-size: 12px; color: #ffc2c2; }

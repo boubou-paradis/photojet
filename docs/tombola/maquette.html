@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette Tombola AnimaBingo</title>
+<style>
+  :root {
+    --night: #06050c; --night-2: #0d0a1a; --panel: #141024; --line: rgba(164,155,196,.18);
+    --violet: #8b4dff; --gold: #d4af37; --gold-hi: #f6e3a1; --ink: #15121f; --text: #f4f1ff;
+    --muted: #a49bc4; --ok: #3ddc97; --amber: #f0a830; --red: #ff6b7d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #020107; color: var(--text); font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; padding: 24px; }
+  h1.doc { font-size: 22px; margin: 0 0 4px; }
+  p.doc { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+  .label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 26px 0 10px; font-weight: 700; }
+  .gold-text { background: linear-gradient(180deg,#fff6d2 0%,#f1d27a 40%,#c69a2a 62%,#f7e3a0 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* Boule (même matière que le loto) */
+  .ball { --s: 120px; --c:#169bb8; --d:#08465a; position: relative; width: var(--s); height: var(--s); border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 50% 120%, rgba(166,107,255,.55) 0 30%, transparent 60%), radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--c) 55%, #fff) 0, var(--c) 34%, var(--d) 78%, #07040c 100%);
+    box-shadow: inset calc(var(--s)*-.07) calc(var(--s)*-.1) calc(var(--s)*.18) rgba(0,0,0,.55), inset calc(var(--s)*.03) calc(var(--s)*.04) calc(var(--s)*.1) rgba(255,255,255,.25), 0 calc(var(--s)*.12) calc(var(--s)*.22) rgba(0,0,0,.55); }
+  .ball .med { position: absolute; inset: 19%; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff 0, #f6f2ea 55%, #ddd5c6 100%);
+    box-shadow: 0 0 0 calc(var(--s)*.022) #e7cd7d, 0 0 0 calc(var(--s)*.034) rgba(90,64,10,.9); display: grid; place-items: center; }
+  .ball .med span { font-weight: 800; color: var(--ink); letter-spacing: -.04em; line-height: 1; font-size: calc(var(--s)*.3); }
+  .ball.d3 .med span { font-size: calc(var(--s)*.25); }
+  .ball.d4 .med span { font-size: calc(var(--s)*.2); }
+  .ball .spec { position: absolute; left: 16%; top: 9%; width: 36%; height: 22%; border-radius: 50%; background: radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%); transform: rotate(-24deg); }
+
+  .btn { border: 0; border-radius: 12px; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--text); background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px var(--line); font-family: inherit; }
+  .btn.gold { background: linear-gradient(100deg,#8a6a12 0%,#e9cd78 18%,#fff3c4 30%,#c9a43a 46%,#8a6a12 60%,#e4c670 78%,#fff0bb 88%,#a8852a 100%); color: #1b1405; box-shadow: none; }
+  .btn.warn { color: #ffd38a; box-shadow: inset 0 0 0 1px rgba(240,168,48,.5); background: rgba(240,168,48,.08); }
+  .btn.red { color: #ffb0ba; box-shadow: inset 0 0 0 1px rgba(255,107,125,.45); background: rgba(255,107,125,.07); }
+  .chip { display: inline-flex; gap: 6px; align-items: center; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px var(--line); color: #d8d0f3; }
+  .chip.ok { color: var(--ok); box-shadow: inset 0 0 0 1px rgba(61,220,151,.4); }
+  .box { background: linear-gradient(180deg, #161127, #100c1d); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--line); padding: 16px; }
+  .box h2 { margin: 0 0 12px; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* ---------- Choix du mode ---------- */
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 640px; }
+  .mode { border-radius: 14px; padding: 14px; background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px var(--line); }
+  .mode b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .mode small { color: var(--muted); font-size: 12px; line-height: 1.4; display: block; }
+  .mode.on { box-shadow: inset 0 0 0 2px var(--gold); background: rgba(212,175,55,.08); }
+
+  /* ---------- Régie 1366×768 ---------- */
+  .regie { width: 1366px; height: 768px; background: radial-gradient(1200px 600px at 30% -10%, #1d1438 0, var(--night) 60%); border-radius: 10px; overflow: hidden; display: grid; grid-template-rows: 58px 1fr; box-shadow: 0 0 0 1px #2a2340; }
+  .rtop { display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+  .rtop h1 { font-size: 17px; margin: 0; }
+  .rtop .sp { flex: 1; }
+  .rgrid { display: grid; grid-template-columns: 330px 1fr 330px; gap: 16px; padding: 16px 20px; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .draw { display: flex; flex-direction: column; gap: 12px; }
+  .draw .big { font-size: 22px; padding: 22px; border-radius: 16px; }
+  .hint { font-size: 12px; color: var(--muted); text-align: center; }
+  .last { display: flex; gap: 14px; align-items: center; }
+  .last .t { font-size: 13px; color: var(--muted); }
+  .last .n { font-size: 34px; font-weight: 800; }
+  .last .lot { color: var(--gold-hi); font-weight: 700; font-size: 15px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .center { align-items: center; justify-content: flex-start; }
+  .stage { width: 100%; display: flex; align-items: center; justify-content: center; gap: 26px; padding: 8px 0 2px; }
+  .stage .lotbig { font-size: 15px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+  .stage .lotnum { font-size: 52px; font-weight: 800; line-height: 1; }
+  .wins { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; width: 100%; }
+  .win { border-radius: 10px; padding: 6px 4px; text-align: center; background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 1px var(--line); }
+  .win i { display: block; font-style: normal; font-size: 10px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+  .win b { font-size: 19px; }
+  .win.new { box-shadow: inset 0 0 0 2px var(--gold); background: rgba(212,175,55,.1); }
+  .struck { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted); }
+  .struck span { padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.04); text-decoration: line-through; }
+  .kv { display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0; border-bottom: 1px solid rgba(164,155,196,.1); }
+  .kv:last-child { border-bottom: 0; }
+  .kv b { font-weight: 700; }
+  .range { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .range input { width: 74px; background: #0b0816; border: 1px solid var(--line); border-radius: 9px; color: var(--text); padding: 7px 9px; font: inherit; font-size: 14px; }
+  .muted { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+  /* dialogue de confirmation (dans la régie) */
+  .dlg { position: absolute; inset: 0; background: rgba(4,3,9,.6); display: grid; place-items: center; }
+  .dlg .card { width: 420px; padding: 22px; border-radius: 18px; background: #171128; box-shadow: inset 0 0 0 1px rgba(240,168,48,.5), 0 30px 80px rgba(0,0,0,.6); }
+  .dlg h3 { margin: 0 0 8px; font-size: 18px; }
+  .dlg p { margin: 0 0 16px; color: #d8d0f3; font-size: 14px; line-height: 1.5; }
+
+  /* ---------- Grand écran 1920×1080 (affiché à 50 %) ---------- */
+  .screenwrap { width: 960px; height: 540px; overflow: hidden; border-radius: 10px; box-shadow: 0 0 0 1px #2a2340; }
+  .screen { width: 1920px; height: 1080px; transform: scale(.5); transform-origin: 0 0; background: radial-gradient(1400px 800px at 25% 30%, #24164a 0, var(--night) 65%); position: relative; }
+  .screen .title { position: absolute; top: 56px; left: 0; right: 0; text-align: center; font-size: 46px; letter-spacing: .4em; font-weight: 800; }
+  .machine { position: absolute; left: 140px; top: 250px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle at 40% 30%, rgba(255,255,255,.08), rgba(139,77,255,.08) 55%, rgba(0,0,0,.2)); box-shadow: inset 0 0 0 6px rgba(212,175,55,.6), inset 0 0 80px rgba(139,77,255,.25); }
+  .machine .ball { position: absolute; }
+  .reveal { position: absolute; left: 760px; top: 220px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .reveal .lotlbl { font-size: 44px; letter-spacing: .35em; font-weight: 800; }
+  .winners { position: absolute; right: 90px; top: 220px; width: 420px; }
+  .winners h3 { font-size: 26px; letter-spacing: .3em; color: var(--muted); margin: 0 0 22px; text-transform: uppercase; }
+  .winners .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .winners .w { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px; border-radius: 16px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px var(--line); }
+  .winners .w i { font-style: normal; color: var(--muted); font-size: 22px; }
+  .winners .w b { font-size: 40px; }
+  .winners .w.new { box-shadow: inset 0 0 0 3px var(--gold); }
+  .screen .foot { position: absolute; bottom: 50px; left: 0; right: 0; text-align: center; font-size: 26px; color: var(--muted); }
+
+  /* lobby écran */
+  .lobby { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 0 160px; gap: 80px; }
+  .qr { width: 420px; height: 420px; border-radius: 28px; background: #fff; padding: 26px; display: grid; grid-template-columns: repeat(21, 1fr); gap: 0; }
+  .qr i { background: #000; }
+  .lobby h2 { font-size: 76px; margin: 0 0 20px; line-height: 1.05; }
+  .lobby p { font-size: 32px; color: #d8d0f3; margin: 0 0 18px; line-height: 1.4; }
+
+  /* ---------- Téléphone ---------- */
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; }
+  .phone { width: 300px; height: 620px; border-radius: 38px; padding: 14px; background: #000; box-shadow: 0 0 0 2px #2a2340; }
+  .phone .scr { height: 100%; border-radius: 28px; overflow: hidden; background: radial-gradient(500px 400px at 50% 0, #241645 0, var(--night) 70%); padding: 26px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+  .phone .head { font-size: 12px; letter-spacing: .3em; color: var(--muted); text-transform: uppercase; }
+  .ticket { width: 100%; border-radius: 20px; padding: 18px 14px 20px; background: linear-gradient(160deg, #2b1f52, #140f26); box-shadow: inset 0 0 0 2px rgba(212,175,55,.55); position: relative; overflow: hidden; }
+  .ticket::before, .ticket::after { content: ""; position: absolute; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%; background: var(--night); }
+  .ticket::before { left: -13px; } .ticket::after { right: -13px; }
+  .ticket small { display: block; font-size: 13px; letter-spacing: .25em; color: var(--muted); text-transform: uppercase; }
+  .ticket b { display: block; white-space: nowrap; font-size: 66px; line-height: 1.05; margin: 6px 0 2px; }
+  .ticket .shine { position: absolute; inset: -40% -60%; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%); }
+  .ticket em { font-style: normal; font-size: 12px; color: var(--muted); }
+  .phone .state { font-size: 15px; color: #d8d0f3; line-height: 1.45; }
+  .phone .state b { color: var(--gold-hi); }
+  .phone .won { width: 100%; border-radius: 20px; padding: 18px 14px; background: rgba(61,220,151,.1); box-shadow: inset 0 0 0 2px rgba(61,220,151,.55); }
+  .phone .won h4 { margin: 0 0 8px; font-size: 24px; }
+  .phone .won p { margin: 0; font-size: 15px; line-height: 1.45; }
+  .phone .closed { width: 100%; border-radius: 18px; padding: 16px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px var(--line); font-size: 15px; line-height: 1.5; }
+  .note { max-width: 1366px; color: var(--muted); font-size: 13px; line-height: 1.55; margin-top: 10px; }
+  .rel { position: relative; }
+</style>
+</head>
+<body>
+<h1 class="doc">AnimaBingo · mode Tombola (maquette)</h1>
+<p class="doc">Proposition à valider : rien n'est codé. Même machine, mêmes boules et même grand écran que le loto.</p>
+
+<div class="label">1 · Lancement d'AnimaBingo : choix du jeu</div>
+<div class="box" style="width:672px">
+  <h2>Préparer AnimaBingo</h2>
+  <div class="modes">
+    <div class="mode"><b>Loto</b><small>Cartons de 15 numéros, quine, double quine, carton plein.</small></div>
+    <div class="mode"><b>Loto musical</b><small>Les titres d'une playlist à la place des numéros.</small></div>
+    <div class="mode on"><b>Tombola</b><small>Tickets numérotés, un lot par numéro tiré.</small></div>
+  </div>
+  <div style="margin-top:16px; display:grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+    <div>
+      <div class="muted" style="margin-bottom:8px; color:#d8d0f3; font-weight:600">Tickets papier distribués</div>
+      <div class="range"><span class="muted">du</span><input value="1"><span class="muted">au</span><input value="250"><button class="btn" style="padding:6px 10px">✕</button></div>
+      <button class="btn" style="padding:7px 11px; font-size:13px">+ Ajouter une plage</button>
+    </div>
+    <div>
+      <div class="muted" style="margin-bottom:8px; color:#d8d0f3; font-weight:600">Tickets sur téléphone</div>
+      <div class="range"><span class="chip ok">● Activés</span></div>
+      <div class="muted">Chaque invité qui scanne le QR reçoit un ticket : <b style="color:var(--text)">n° 301, 302, 303…</b><br>(toujours après le papier, jamais de doublon)</div>
+    </div>
+  </div>
+  <button class="btn gold" style="width:100%; margin-top:16px; padding:14px">▶ Afficher la tombola sur l'écran géant</button>
+</div>
+
+<div class="label">2 · Régie pendant le tirage (1366 × 768, sans défilement)</div>
+<div class="regie">
+  <div class="rtop">
+    <h1>AnimaBingo · <span class="gold-text">Tombola</span></h1>
+    <span class="chip ok">● Écran géant en direct</span>
+    <span class="chip">Télécommande : PageDown = tirer</span>
+    <span class="sp"></span>
+    <button class="btn">Réglages</button>
+    <button class="btn">Retour au diaporama</button>
+    <button class="btn red">Terminer la tombola</button>
+  </div>
+  <div class="rgrid">
+    <div class="col">
+      <div class="box draw">
+        <h2>Tirage <span>12 lots attribués</span></h2>
+        <button class="btn gold big">🎟 Tirer un numéro</button>
+        <div class="hint">270 numéros dans la machine · lot suivant : <b style="color:var(--gold-hi)">Lot 13</b></div>
+      </div>
+      <div class="box">
+        <h2>Dernier numéro sorti</h2>
+        <div class="last">
+          <div class="ball d3" style="--s:84px; --c:#3466e0; --d:#13286f"><div class="med"><span>147</span></div><i class="spec"></i></div>
+          <div><div class="n">n° 147</div><div class="lot">Lot 12 · ticket papier</div><div class="t">sorti à 22:41</div></div>
+        </div>
+        <div class="two">
+          <button class="btn warn">Absent</button>
+          <button class="btn warn">Déjà gagnant</button>
+        </div>
+        <div class="hint" style="margin-top:8px">À la souris uniquement, avec confirmation.<br>Le numéro est retiré, on peut tirer à nouveau.</div>
+      </div>
+    </div>
+    <div class="col center box" style="padding:16px 18px">
+      <div class="stage">
+        <div class="ball d3" style="--s:170px; --c:#3466e0; --d:#13286f"><div class="med"><span>147</span></div><i class="spec"></i></div>
+        <div><div class="stage lotbig" style="padding:0; justify-content:flex-start">Lot</div><div class="lotnum gold-text">12</div></div>
+      </div>
+      <h2 style="width:100%; margin:12px 0 10px">Gagnants <span>dans l'ordre des lots</span></h2>
+      <div class="wins">
+        <div class="win"><i>Lot 1</i><b>47</b></div><div class="win"><i>Lot 2</i><b>213</b></div><div class="win"><i>Lot 3</i><b>8</b></div>
+        <div class="win"><i>Lot 4</i><b>305</b></div><div class="win"><i>Lot 5</i><b>119</b></div><div class="win"><i>Lot 6</i><b>66</b></div>
+        <div class="win"><i>Lot 7</i><b>242</b></div><div class="win"><i>Lot 8</i><b>311</b></div><div class="win"><i>Lot 9</i><b>90</b></div>
+        <div class="win"><i>Lot 10</i><b>178</b></div><div class="win"><i>Lot 11</i><b>23</b></div><div class="win new"><i>Lot 12</i><b>147</b></div>
+      </div>
+      <div style="width:100%; margin-top:14px">
+        <div class="muted" style="margin-bottom:6px">Retirés (ne comptent pas comme un lot)</div>
+        <div class="struck"><span>n° 99 · absent</span><span>n° 302 · absent</span><span>n° 51 · déjà gagnant</span></div>
+      </div>
+      <div class="muted" style="margin-top:auto; width:100%; text-align:center">Au-delà de 30 lots, la liste montre les 30 derniers (le reste dans « Voir tous les gagnants »).</div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <h2>Tickets</h2>
+        <div class="kv"><span>Papier</span><b>1 – 250</b></div>
+        <div class="kv"><span>Téléphone (à partir du n° 301)</span><b>34 tickets</b></div>
+        <div class="kv"><span>Total dans la tombola</span><b>284</b></div>
+        <div class="kv"><span>Encore dans la machine</span><b>270</b></div>
+        <button class="btn" style="width:100%; margin-top:10px; font-size:13px">+ Ajouter des tickets papier</button>
+        <div class="muted" style="margin-top:8px">Tirage commencé : on peut ajouter des plages, jamais en retirer.</div>
+      </div>
+      <div class="box">
+        <h2>Tickets téléphone</h2>
+        <div class="kv"><span>Distribution</span><b style="color:var(--amber)">Fermée</b></div>
+        <div class="muted">Fermée automatiquement au premier tirage. Un téléphone qui recharge retrouve toujours son numéro.</div>
+      </div>
+      <div class="box">
+        <h2>Écran géant</h2>
+        <div class="kv"><span>QR code « recevoir un ticket »</span><b>Lobby</b></div>
+        <div class="kv"><span>Annonce vocale (Claire)</span><b style="color:var(--ok)">Oui</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="label">2 bis · Confirmation « Absent »</div>
+<div class="rel" style="width:560px; height:250px; border-radius:10px; overflow:hidden; box-shadow: 0 0 0 1px #2a2340; background:#0b0816">
+  <div class="dlg"><div class="card">
+    <h3>Le n° 147 est absent ?</h3>
+    <p>Le numéro est retiré : il ne recevra pas de lot et ne pourra plus sortir. Le <b>Lot 12</b> sera remis en jeu au prochain tirage.</p>
+    <div class="two" style="margin:0"><button class="btn">Annuler</button><button class="btn warn">Oui, retirer le n° 147</button></div>
+  </div></div>
+</div>
+
+<div class="label">3 · Grand écran (1920 × 1080, affiché à 50 %) : numéro sorti</div>
+<div class="screenwrap"><div class="screen">
+  <div class="title gold-text">TOMBOLA</div>
+  <div class="machine">
+    <div class="ball" style="--s:66px; left:90px; top:330px; --c:#d42a52; --d:#6e0f26"><div class="med"><span>23</span></div><i class="spec"></i></div>
+    <div class="ball d3" style="--s:64px; left:170px; top:390px; --c:#1fa67f; --d:#09503b"><div class="med"><span>208</span></div><i class="spec"></i></div>
+    <div class="ball d3" style="--s:62px; left:260px; top:420px; --c:#e9a91c; --d:#7d5206"><div class="med"><span>131</span></div><i class="spec"></i></div>
+    <div class="ball" style="--s:66px; left:350px; top:395px; --c:#9d3fd3; --d:#45136a"><div class="med"><span>77</span></div><i class="spec"></i></div>
+    <div class="ball d3" style="--s:62px; left:420px; top:320px; --c:#169bb8; --d:#08465a"><div class="med"><span>316</span></div><i class="spec"></i></div>
+    <div class="ball d3" style="--s:60px; left:130px; top:250px; --c:#c2347f; --d:#5a0e37"><div class="med"><span>240</span></div><i class="spec"></i></div>
+    <div class="ball" style="--s:62px; left:300px; top:310px; --c:#e0682a; --d:#7a2c0c"><div class="med"><span>5</span></div><i class="spec"></i></div>
+  </div>
+  <div class="reveal">
+    <div class="ball d3" style="--s:420px; --c:#3466e0; --d:#13286f"><div class="med"><span>147</span></div><i class="spec"></i></div>
+    <div class="lotlbl gold-text">LOT 12</div>
+  </div>
+  <div class="winners">
+    <h3>Gagnants</h3>
+    <div class="grid">
+      <div class="w"><i>Lot 1</i><b>47</b></div><div class="w"><i>Lot 2</i><b>213</b></div>
+      <div class="w"><i>Lot 3</i><b>8</b></div><div class="w"><i>Lot 4</i><b>305</b></div>
+      <div class="w"><i>Lot 5</i><b>119</b></div><div class="w"><i>Lot 6</i><b>66</b></div>
+      <div class="w"><i>Lot 7</i><b>242</b></div><div class="w"><i>Lot 8</i><b>311</b></div>
+      <div class="w"><i>Lot 9</i><b>90</b></div><div class="w"><i>Lot 10</i><b>178</b></div>
+      <div class="w"><i>Lot 11</i><b>23</b></div><div class="w new"><i>Lot 12</i><b>147</b></div>
+    </div>
+  </div>
+  <div class="foot">Le numéro 147 se présente auprès de l'animateur 🎉</div>
+</div></div>
+
+<div class="label">3 bis · Grand écran avant le tirage (tickets téléphone)</div>
+<div class="screenwrap"><div class="screen">
+  <div class="title gold-text">TOMBOLA</div>
+  <div class="lobby">
+    <div class="qr" id="qr"></div>
+    <div>
+      <h2 class="gold-text">Votre ticket sur votre téléphone</h2>
+      <p>Scannez le QR code : vous recevez automatiquement un numéro de ticket.</p>
+      <p>Tickets papier : <b>1 à 250</b><br>Tickets téléphone : <b>34 distribués</b></p>
+      <p style="color:var(--muted); font-size:26px">Le tirage va bientôt commencer…</p>
+    </div>
+  </div>
+</div></div>
+
+<div class="label">4 · Téléphone de l'invité</div>
+<div class="phones">
+  <div class="phone"><div class="scr">
+    <div class="head">AnimaBingo · Tombola</div>
+    <div class="ticket"><i class="shine"></i><small>Votre ticket</small><b class="gold-text">n° 312</b><em>Gardez cette page ouverte</em></div>
+    <div class="state">Le tirage n'a pas encore commencé.<br>Si votre numéro sort, ce téléphone vous prévient.</div>
+  </div></div>
+  <div class="phone"><div class="scr">
+    <div class="head">AnimaBingo · Tombola</div>
+    <div class="ticket"><i class="shine"></i><small>Votre ticket</small><b class="gold-text">n° 312</b><em>Gardez cette page ouverte</em></div>
+    <div class="state">Tirage en cours : <b>12 lots</b> attribués.<br>Dernier numéro sorti : <b>147</b></div>
+  </div></div>
+  <div class="phone"><div class="scr">
+    <div class="head">AnimaBingo · Tombola</div>
+    <div class="won"><h4>🎉 Votre numéro est sorti !</h4><p>Présentez-vous auprès de l'animateur avec ce téléphone.</p></div>
+    <div class="ticket"><i class="shine"></i><small>Votre ticket</small><b class="gold-text">n° 312</b><em>Lot 13</em></div>
+  </div></div>
+  <div class="phone"><div class="scr">
+    <div class="head">AnimaBingo · Tombola</div>
+    <div class="closed">Le tirage a commencé : la distribution des tickets est terminée.<br><br>Bonne soirée ! 🎶</div>
+  </div></div>
+</div>
+<p class="note">Le ticket du téléphone est « vivant » (reflet animé, heure) : une capture d'écran envoyée par quelqu'un d'autre se repère au premier coup d'œil.<br>
+Si le n° 312 est ensuite déclaré absent, le téléphone affiche : « Votre numéro est sorti mais a été déclaré absent. »</p>
+
+<script>
+  // QR décoratif (maquette).
+  const q = document.getElementById('qr'); let s = 7;
+  for (let i = 0; i < 441; i++) { s = (s * 1103515245 + 12345) & 0x7fffffff; const x = i % 21, y = (i / 21) | 0;
+    const f = (a, b) => x >= a && x < a + 7 && y >= b && y < b + 7; const finder = f(0,0) || f(14,0) || f(0,14);
+    const on = finder ? !((x % 20 === 1 || x % 20 === 5 || x === 15 || x === 19) && y % 20 >= 1 && y % 20 <= 5 || (y % 20 === 1 || y % 20 === 5 || y === 15 || y === 19) && x % 20 >= 1 && x % 20 <= 5) || ((x%7)>=2 && (x%7)<=4 && (y%7)>=2 && (y%7)<=4) : (s >> 8) % 2 === 0;
+    const c = document.createElement('i'); if (!on) c.style.background = 'transparent'; q.appendChild(c); }
+</script>
+</body>
+</html>

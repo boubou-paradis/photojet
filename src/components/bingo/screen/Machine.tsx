@@ -44,7 +44,7 @@ export function GoldRings({ w, h, tilt1 = -16, tilt2 = 74, className = 'rings' }
 
 export type MachineMode = 'idle' | 'hot' | 'freeze' | 'gold'
 
-export function Machine({ x, y, scale = 1, mode = 'idle', drawn, cradle = null, seed = 3, style }: {
+export function Machine({ x, y, scale = 1, mode = 'idle', drawn, cradle = null, seed = 3, style, pool }: {
   x: number
   y: number
   scale?: number
@@ -54,10 +54,12 @@ export function Machine({ x, y, scale = 1, mode = 'idle', drawn, cradle = null, 
   cradle?: number | null
   seed?: number
   style?: CSSProperties
+  /** Tombola : numéros encore à tirer à montrer (sans : les 90 boules du loto, comme avant). */
+  pool?: readonly number[]
 }) {
   const balls = useMemo(() => {
     const out = new Set(drawn)
-    const left = Array.from({ length: 90 }, (_, i) => i + 1).filter((n) => !out.has(n))
+    const left = (pool ?? Array.from({ length: 90 }, (_, i) => i + 1)).filter((n) => !out.has(n))
     const r = rng(seed)
     const count = Math.min(26, left.length)
     const spread = mode === 'hot' || mode === 'gold'
@@ -84,7 +86,7 @@ export function Machine({ x, y, scale = 1, mode = 'idle', drawn, cradle = null, 
     })
     // Les boules ne bougent de place qu'au tirage suivant (nombre de boules sorties).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawn.length, seed, mode])
+  }, [drawn.length, seed, mode, pool])
 
   return (
     <div className={`machine ${mode}`} style={{ left: x, top: y, transform: `scale(${scale})`, ...style }} aria-hidden>

@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           '/buzzer/',
           '/vote/',
           '/bingo/',
+          '/tombola/',
           '/album/',
           '/trial/',
         ],

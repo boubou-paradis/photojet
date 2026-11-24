@@ -27,7 +27,8 @@ export const familyOf = (n: number): Family => FAMILIES[colOf(n)]
 
 /** Variables CSS d'une boule ou d'une case : --c (couleur), --d (ombre). */
 export const ballVars = (n: number): Record<string, string> => {
-  const f = familyOf(n)
+  // Tombola : numéros au-delà de 90 (le loto s'arrête à 90, rien ne change pour lui).
+  const f = n > 90 ? FAMILIES[(n * 4) % FAMILIES.length] : familyOf(n)
   return { '--c': f.c, '--d': f.d }
 }
 

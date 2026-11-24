@@ -1,0 +1,131 @@
+
+— Un seul jeu AnimaBingo à la fois
+OK    Loto lancé (préparation)
+OK    Tombola refusée pendant un loto (loto_running)
+OK    Régie tombola : lotoRunning = true
+OK    Loto quitté
+
+— Tombola papier seule (1–250)
+OK    Lancement papier 1–250
+OK    Statut : mode tombola, en direct
+OK    Loto refusé pendant la tombola (tombola_running)
+OK    Téléphone sans tickets téléphone : refus no_phone
+OK    Tirage 1 : caché pendant 0,9 s
+OK    Double clic (même expect) : aucun 2e numéro
+OK    Tirage trop rapide refusé (429)
+OK    Après la révélation : numéro visible, Lot 1
+OK    250 numéros tirés puis « tous sortis » (empty)
+OK    Aucun doublon sur 250
+OK    Tous entre 1 et 250
+OK    Quitter la tombola
+OK    Statut après sortie : plus de tombola
+
+— 300 numéros sans doublon
+OK    300 tirés, 300 distincts, 1 à 300, puis empty
+OK    Lots 1 à 300 dans l’ordre
+
+— Tombola téléphone seule
+OK    Lancement téléphone seul
+OK    Tickets n° 1 et n° 2
+OK    Même jeton = même numéro
+OK    Aucune donnée personnelle (colonnes du ticket)
+OK    Jeton jamais stocké en clair
+
+— Papier + téléphone, plusieurs plages
+OK    Lancement 1–250 + 260–270, téléphone à partir de 301
+OK    Plage qui touche les numéros téléphone refusée (overlap)
+OK    5 tickets téléphone : 301 à 305
+OK    Départ téléphone figé dès le premier ticket
+
+— Absent et Déjà gagnant
+OK    Distribution fermée au premier tirage
+OK    Nouveau téléphone après le tirage : refus closed
+OK    Téléphone déjà servi : même numéro
+OK    Rouvrir : nouveau ticket 306
+OK    Absent refusé sur un numéro qui n’est pas le dernier
+OK    Absent : n° retiré, pas de lot
+OK    Numéro suivant : Lot 2 remis en jeu
+OK    Déjà gagnant : retiré
+OK    Annulation : remis gagnant (Lot 2)
+OK    Un numéro absent ne ressort jamais
+OK    Tirage commencé : ajout de plage accepté
+OK    Tirage commencé : retrait de plage refusé
+
+— Régie : préparation (1366×768)
+OK    Régie du loto : 3e choix « Tombola »
+OK    Préparation : « Tickets téléphone à partir du n° 301 »
+OK    Papier jusqu’à 300 → téléphone à partir du n° 401
+OK    Champs de saisie : autocomplete="off"
+OK    Aucun défilement (préparation)
+OK    Lancée depuis la régie : tombola en base
+OK    Régie : « Tickets téléphone à partir du n° 301 »
+
+— Téléphones (Android et iPhone)
+OK    QR → page tombola → ticket n° 301
+OK    Aucun champ de saisie sur le téléphone
+OK    Téléphone rechargé : même numéro
+OK    QR rescanné : même numéro
+OK    iPhone : ticket n° 302
+OK    iPhone rechargé : même numéro
+OK    Régie : 2 tickets téléphone (relu en moins de 5 s)
+
+— Grand écran (1920×1080)
+OK    Écran avant le tirage : accueil avec QR
+
+— Tirage depuis la régie
+OK    Écran : suspense « Et le numéro gagnant est… »
+OK    Écran : LOT 1 affiché
+OK    Téléphone : « Tirage en cours », dernier numéro
+OK    Régie : distribution fermée au 1er tirage
+OK    Page ↓ : 2e numéro tiré
+
+— Absent à la souris, avec confirmation
+OK    Fenêtre de confirmation « … est absent ? »
+OK    Page ↓ bloquée pendant la confirmation
+OK    Absent enregistré
+OK    « Remettre gagnant » annule
+
+— Numéro du téléphone sorti
+OK    Téléphone : « 🎉 Votre numéro est sorti ! Présentez-vous… »
+OK    Rechargé : « Votre numéro est sorti » retrouvé
+OK    Ticket : Lot 148 affiché
+
+— Régie sans défilement après beaucoup de lots
+OK    Régie 1366×768 après ~250 lots : aucun défilement
+OK    Régie 1920×1080 : aucun défilement
+
+— Boules à 3 et 4 chiffres
+OK    Écran : n° 147 dans la boule, texte réduit (d3)
+OK    Écran : n° 147 tient dans la boule
+OK    Écran : n° 1234 dans la boule, texte réduit (d4)
+OK    Écran : n° 1234 tient dans la boule
+
+— Pannes
+OK    Régie en panne : tombola toujours présente (stale)
+OK    État public : paused = true
+OK    Régie rouverte : bandeau « Tombola reprise… rien n’a été perdu »
+OK    Reprise exacte (mêmes numéros, mêmes lots)
+OK    Signal de vie rétabli : en direct
+OK    Régie du loto ouverte : redirigée vers la tombola en cours
+OK    Autre jeu lancé : tombola en pause (held)
+OK    État public : held
+OK    Reprendre : tombola de retour à l’identique
+OK    Autre jeu éteint à la reprise
+
+— Fin de tombola
+OK    Terminer (double confirmation) : tout effacé
+OK    Téléphone : « La tombola est terminée »
+
+— Non-régression du loto
+OK    Loto lancé après la tombola
+OK    Statut : loto (sans mode tombola), en direct
+OK    Loto : commencer
+OK    Loto : boule tirée (1 à 90)
+OK    Loto : un joueur reçoit son carton
+OK    QR pendant un loto : page du loto (pas la tombola)
+OK    Tombola refusée pendant le loto
+OK    Loto quitté
+
+Nettoyage : 0 / 0 / 0 ligne(s) restante(s) (session / tombola / loto)
+
+93 OK, 0 ÉCHEC

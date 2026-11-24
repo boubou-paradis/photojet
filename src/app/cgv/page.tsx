@@ -230,6 +230,13 @@ export default function CGVPage() {
             <p>
               AnimaJet ne saurait être tenu responsable en cas de force majeure telle que définie par la jurisprudence française.
             </p>
+
+            <h3 className="text-lg font-semibold text-white mt-4 mb-2">10.3 Outils d&apos;animation, tirages et tombolas</h3>
+            <p>
+              AnimaJet fournit des outils d&apos;animation (tirages, jeux, lotos, tombolas). L&apos;organisateur est seul responsable de leur utilisation
+              et du respect de la réglementation applicable, notamment en matière de loteries et de jeux. AnimaJet ne gère aucune vente de tickets,
+              aucune mise ni aucune remise de lots.
+            </p>
           </section>
 
           {/* Article 11 */}

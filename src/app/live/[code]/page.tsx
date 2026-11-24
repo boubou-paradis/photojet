@@ -30,6 +30,7 @@ import { useVoteStatus } from '@/hooks/useVoteStatus'
 import DemiMotGame from '@/components/games/DemiMotGame'
 import { useDemiMotStatus } from '@/hooks/useDemiMotStatus'
 import BingoGame from '@/components/games/BingoGame'
+import TombolaGame from '@/components/bingo/tombola/TombolaGame'
 import { useBingoStatus } from '@/hooks/useBingoStatus'
 import { usePromoPreload } from '@/hooks/usePromoPreload'
 import { useTrialWatermark } from '@/components/TrialWatermark'
@@ -1407,6 +1408,10 @@ export default function LivePage() {
     )
   }
 
+  // AnimaBingo · Tombola : même règle que le loto (présente et aucun autre jeu).
+  if (session.bingo_active && bingoStatus.present && bingoStatus.mode === 'tombola') {
+    return <TombolaGame session={session} status={bingoStatus} />
+  }
   // À Demi-Mot : juste avant AnimaVote (les jeux s'excluent). Affiché seulement si
   // le serveur confirme qu'il est en direct (signal de vie frais, aucun autre jeu).
   if (session.bingo_active && bingoStatus.present) {

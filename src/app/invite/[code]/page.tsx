@@ -229,8 +229,17 @@ export default function InvitePage() {
           const status = await fetch(`/api/bingo/status?code=${encodeURIComponent(code)}`)
             .then((r) => r.json()).catch(() => null)
           let playing = false
+          // Tombola (mode AnimaBingo) : même règle, page /tombola, ticket gardé sur le téléphone.
+          if (status?.mode === 'tombola') {
+            let hasTicket = false
+            try { hasTicket = localStorage.getItem(`animatombola:${code.toUpperCase()}`) !== null } catch { /* stockage bloqué */ }
+            if (status.live || (hasTicket && status.present)) {
+              router.push(`/tombola/${code}`)
+              return
+            }
+          }
           try { playing = localStorage.getItem(`animabingo:${code.toUpperCase()}`) !== null } catch { /* stockage bloqué */ }
-          if (status?.live || (playing && status?.present)) {
+          if (status?.mode !== 'tombola' && (status?.live || (playing && status?.present))) {
             router.push(`/bingo/${code}`)
             return
           }

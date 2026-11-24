@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchPlaylists, type LibraryPlaylist } from '@/lib/bingo/music-client'
 import { SACEM_NOTE } from './PlaylistLibrary'
 
-export function MusicPicker({ mode, onMode, playlists, onPlaylists, playlistId, onPlaylist, onOpenLibrary }: {
+export function MusicPicker({ mode, onMode, playlists, onPlaylists, playlistId, onPlaylist, onOpenLibrary, onTombola }: {
   mode: 'numbers' | 'music'
   onMode: (m: 'numbers' | 'music') => void
   playlists: LibraryPlaylist[] | null
@@ -19,6 +19,8 @@ export function MusicPicker({ mode, onMode, playlists, onPlaylists, playlistId, 
   playlistId: string
   onPlaylist: (id: string) => void
   onOpenLibrary: () => void
+  /** Tombola (jeu AnimaBingo à part) : ouvre sa régie. Sans : 2 choix, comme avant. */
+  onTombola?: () => void
 }) {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -42,6 +44,7 @@ export function MusicPicker({ mode, onMode, playlists, onPlaylists, playlistId, 
       <div className="seg" role="group" aria-label="Type de loto" style={{ marginTop: 0 }}>
         <button type="button" aria-pressed={mode === 'numbers'} onClick={() => onMode('numbers')} data-testid="mode-numbers">Loto numéros</button>
         <button type="button" aria-pressed={mode === 'music'} onClick={() => onMode('music')} data-testid="mode-music">Loto musical</button>
+        {onTombola && <button type="button" aria-pressed={false} onClick={onTombola} data-testid="mode-tombola">Tombola</button>}
       </div>
       {mode === 'music' && (
         <>

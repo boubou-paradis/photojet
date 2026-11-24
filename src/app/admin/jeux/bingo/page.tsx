@@ -165,6 +165,16 @@ export default function BingoAdminPage() {
           return
         }
         let s = first.data
+        // Pas de loto mais une tombola en cours : on ouvre directement sa régie (reprise exacte).
+        if (!s.state.active) {
+          const t = await fetch(`/api/bingo/tombola/admin?sessionId=${encodeURIComponent(data.id)}`, { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null)).catch(() => null) as { state?: { active?: boolean } } | null
+          if (cancelled) return
+          if (t?.state?.active) {
+            router.replace(`/admin/jeux/bingo/tombola?session=${data.id}`)
+            return
+          }
+        }
         if (s.state.active && !s.held) {
           // Signal de vie : la partie repart exactement où elle était (tirage auto en pause).
           await callAdmin(data.id, { action: 'heartbeat' })
@@ -606,6 +616,7 @@ export default function BingoAdminPage() {
               playlistId={playlistId}
               onPlaylist={setPlaylistId}
               onOpenLibrary={() => setLibraryOpen(true)}
+              onTombola={() => router.push(`/admin/jeux/bingo/tombola?session=${session.id}`)}
             />
             <button className="btn gold launch" onClick={() => void launch()} disabled={busy !== null} data-testid="launch">
               {busy === 'launch' ? 'Lancement…' : '▶ Afficher AnimaBingo sur l’écran géant'}

@@ -14,6 +14,8 @@ export interface BingoLiveStatus {
   live: boolean
   present: boolean
   sessionId: string | null
+  /** 'tombola' : AnimaBingo en mode Tombola (sans : loto, comme avant). */
+  mode?: 'tombola'
 }
 
 const OFF: BingoLiveStatus = { live: false, present: false, sessionId: null }
@@ -33,7 +35,14 @@ export function useBingoStatus(code: string | undefined, enabled: boolean): Bing
         const res = await fetch(`/api/bingo/status?code=${encodeURIComponent(code)}`, { cache: 'no-store' })
         if (res.ok) {
           const data = (await res.json()) as Partial<BingoLiveStatus>
-          if (!cancelled) setStatus({ live: data.live === true, present: data.present === true, sessionId: data.sessionId ?? null })
+          if (!cancelled) {
+            setStatus({
+              live: data.live === true,
+              present: data.present === true,
+              sessionId: data.sessionId ?? null,
+              ...(data.mode === 'tombola' ? { mode: 'tombola' as const } : {}),
+            })
+          }
         }
       } catch {
         /* réseau instable : on garde le dernier statut connu */

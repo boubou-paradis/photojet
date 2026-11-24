@@ -41,6 +41,7 @@ export default function BingoPhonePage() {
   const params = useParams()
   const code = String(params.code ?? '').toUpperCase()
   const [ctl, s] = useController(code)
+  useTombolaSwitch(code, s.stage === 'closed')
 
   return (
     <main className="bgo bgo-phone" data-testid="bingo-phone" data-stage={s.stage}>
@@ -57,6 +58,29 @@ export default function BingoPhonePage() {
       {s.notice && <div className="toast" role="status" data-testid="phone-notice">{s.notice}</div>}
     </main>
   )
+}
+
+/**
+ * Plus de loto ouvert mais une tombola lancée : le téléphone y va tout seul
+ * (sans rescanner). Vérifié toutes les 5 s, seulement sur l'écran « pas de partie ».
+ */
+function useTombolaSwitch(code: string, enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return
+    let off = false
+    const check = async () => {
+      try {
+        const st = (await fetch(`/api/bingo/status?code=${encodeURIComponent(code)}`, { cache: 'no-store' }).then((r) => r.json())) as { mode?: string; live?: boolean }
+        if (!off && st.mode === 'tombola' && st.live) window.location.replace(`/tombola/${encodeURIComponent(code)}`)
+      } catch { /* réseau instable : on réessaie */ }
+    }
+    void check()
+    const t = setInterval(() => void check(), 5000)
+    return () => {
+      off = true
+      clearInterval(t)
+    }
+  }, [code, enabled])
 }
 
 function Hello({ title, text, children }: { title: string; text: string; children?: React.ReactNode }) {
