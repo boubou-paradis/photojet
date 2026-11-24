@@ -464,7 +464,7 @@ export class MachineEngine {
       this.key = v.drawKey
       const landIn = v.landAt === null ? -1 : (v.landAt - Date.now()) / 1000
       // vu en direct : la boule est aspirée et se pose au moment de l'annonce ; sinon (rechargement, retard) posée directement
-      if (v.drawKey !== null && v.count > 0 && landIn > -0.3) this.draw(v.out, Math.min(1.2, Math.max(0.45, landIn)))
+      if (v.drawKey !== null && v.count > 0 && landIn > -0.3) this.draw(v.out, Math.min(1.2, Math.max(0.3, landIn)))
       else this.placeOut(v.out)
     } else if (v.out !== null) this.label(v.out)
     else if (v.count === 0 && !this.drawAnim) this.placeOut(null)
