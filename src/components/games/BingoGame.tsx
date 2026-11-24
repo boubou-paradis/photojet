@@ -14,6 +14,7 @@ import { Maximize, Minimize } from 'lucide-react'
 import '@/components/bingo/bingo.css'
 import '@/components/bingo/screen.css'
 import { BingoScreen, type Live } from '@/components/bingo/screen/BingoScreen'
+import { useMachine3DPreload } from '@/components/bingo/three/Machine3D'
 import { Ball } from '@/components/bingo/Ball'
 import { useBingoChannel } from '@/hooks/useBingoChannel'
 import { useBingoTitles } from '@/hooks/useBingoTitles'
@@ -29,6 +30,7 @@ const detectMac = () => /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(
 
 export default function BingoGame({ session, status }: { session: LiveSession; status: BingoLiveStatus }) {
   const channel = useBingoChannel(status.sessionId, session.code, { getClient: createPublicClient })
+  useMachine3DPreload()
   const live: Live | null = channel.state?.active ? channel.state : null
   const titles = useBingoTitles(session.code, live?.music)
   const isMac = useSyncExternalStore(noopSubscribe, detectMac, () => false)

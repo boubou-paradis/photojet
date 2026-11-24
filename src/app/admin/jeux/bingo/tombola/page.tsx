@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { Ball } from '@/components/bingo/Ball'
+import { MachineSwitch } from '@/components/bingo/regie/MachineSwitch'
 import '@/components/bingo/bingo.css'
 import '@/components/bingo/tombola/tombola.css'
 import { ConfirmDialog, type ConfirmRequest } from '@/components/bingo/regie/ConfirmDialog'
@@ -473,6 +474,10 @@ export default function TombolaRegiePage() {
                 {live.draws.length || live.hidden ? '+ Ajouter des tickets papier' : 'Modifier les tickets papier'}
               </button>
               {(live.draws.length > 0 || live.hidden) && <div className="tmb-small">Tirage commencé : on peut ajouter des plages, jamais en retirer.</div>}
+              <div className="tmb-machine" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
+                <span className="tmb-small" style={{ margin: 0 }}>Machine du grand écran (ce PC)</span>
+                <MachineSwitch />
+              </div>
             </div>
             {live.phoneFrom !== null && (
               <div className="box">

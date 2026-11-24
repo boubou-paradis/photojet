@@ -17,6 +17,7 @@ import './tombola.css'
 import QRCode from '@/components/QRCode'
 import { Ball } from '@/components/bingo/Ball'
 import { GoldRings, Machine } from '@/components/bingo/screen/Machine'
+import { Machine3D, useMachine3DPreload } from '@/components/bingo/three/Machine3D'
 import { useTombolaChannel } from '@/hooks/useTombolaChannel'
 import type { BingoLiveStatus } from '@/hooks/useBingoStatus'
 import { lotsGiven, machineSample, rangesText, type TombolaLive } from '@/lib/bingo/tombola'
@@ -28,6 +29,7 @@ const noopSubscribe = () => () => {}
 const detectMac = () => /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
 
 export default function TombolaGame({ session, status }: { session: LiveSession; status: BingoLiveStatus }) {
+  useMachine3DPreload()
   const channel = useTombolaChannel(status.sessionId, session.code, { getClient: createPublicClient })
   const live: TombolaLive | null = channel.state?.active ? channel.state : null
   const isMac = useSyncExternalStore(noopSubscribe, detectMac, () => false)
@@ -132,10 +134,18 @@ function Drawing({ s, code, suspense }: { s: TombolaLive; code: string; suspense
   const last = s.draws[s.draws.length - 1] ?? null
   const shown = s.hidden ? null : last
   const pool = useMemo(() => machineSample(s, 60, s.draws.length + 7), [s])
+  // machine 3D : graine fixe → les mêmes boules restent dans la sphère d'un tirage à l'autre.
+  // L'arrivée n'est jouée qu'au passage caché → révélé vu en direct (après un rechargement : boule posée).
+  const inside = useMemo(() => machineSample(s, 26, 7), [s])
+  const view = { inside, out: shown?.n ?? null, drawKey: shown ? `t-${shown.seq}` : null, fresh: !!shown, spin: s.hidden }
   const winners = s.draws.filter((d) => d.o === 'winner').slice(-12)
   return (
     <>
-      <Machine x={70} y={170} scale={0.95} mode={s.hidden ? 'hot' : 'idle'} drawn={s.draws.map((d) => d.n)} pool={pool} seed={s.draws.length + 3} />
+      <Machine3D
+        box={{ left: 20, top: 150, width: 680, height: 780 }}
+        view={view}
+        fallback={<Machine x={70} y={170} scale={0.95} mode={s.hidden ? 'hot' : 'idle'} drawn={s.draws.map((d) => d.n)} pool={pool} seed={s.draws.length + 3} />}
+      />
       <div className="tmb-hero" data-testid="tombola-hero">
         {suspense || !shown ? (
           <div className="tmb-suspense"><span className="gold-text">Et le numéro gagnant est…</span></div>

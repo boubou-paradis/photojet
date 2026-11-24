@@ -20,6 +20,7 @@ import type { BingoPublicState, BingoWinner, Phase } from '@/lib/bingo/types'
 import { getInviteUrl } from '@/lib/utils'
 import { Ball, Board } from '../Ball'
 import { GoldRings, Machine, rng } from './Machine'
+import { Machine3D, stableInside, type MachineBox } from '../three/Machine3D'
 import { MusicDrawing } from './MusicScreen'
 import type { PublicTitle } from '@/lib/bingo/music'
 
@@ -27,6 +28,9 @@ export type Live = Extract<BingoPublicState, { active: true }>
 
 /** Durée d'affichage de la boule héros après son apparition. */
 export const HERO_MS = 5500
+
+/** Zone de la machine pendant le tirage (à gauche du tableau des numéros). */
+const DRAW_BOX: MachineBox = { left: 150, top: 125, width: 880, height: 750 }
 
 const PHASE_SUB: Record<Phase, string> = { quine: '1 ligne', double: '2 lignes', plein: '15 numéros' }
 const ANNOUNCED: Record<Phase, string> = { quine: 'QUINE ANNONCÉE !', double: 'DOUBLE QUINE ANNONCÉE !', plein: 'CARTON PLEIN ANNONCÉ !' }
@@ -144,6 +148,25 @@ function winnerSub(w: BingoWinner) {
   return `CARTON ${w.kind === 'paper' ? 'PAPIER ' : ''}N° ${w.serial}`
 }
 
+// ------------------------------------------------------------------ machine 3D
+
+const ALL_90 = Array.from({ length: 90 }, (_, i) => i + 1)
+/** Après la boule, l'arrivée 3D est jouée si on la voit en direct (pas après un rechargement). */
+const FRESH_MS = 2500
+
+/**
+ * Machine du loto : 3D si l'ordinateur suit, sinon exactement la machine 2D d'avant (`fallback`).
+ * Purement visuel : affiche le dernier numéro sorti, ne décide de rien et ne retarde rien.
+ */
+function LotoMachine({ s, now = 0, box, style, fallback }: { s: Live; now?: number; box: MachineBox; style?: CSSProperties; fallback: ReactNode }) {
+  const drawnKey = s.drawn.join(',')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const inside = useMemo(() => stableInside(ALL_90, new Set(s.drawn), s.gameId), [drawnKey, s.gameId])
+  const fresh = !!s.last && !!s.lastDrawAt && now > 0 && now - Date.parse(s.lastDrawAt) < FRESH_MS
+  const view = { inside, out: s.last, drawKey: `${s.gameId}-${s.count}`, fresh, spin: false }
+  return <Machine3D box={box} view={view} style={style} fallback={fallback} />
+}
+
 // ------------------------------------------------------------------ scènes
 
 function Lobby({ s, code }: { s: Live; code: string }) {
@@ -156,7 +179,7 @@ function Lobby({ s, code }: { s: Live; code: string }) {
         <p className="partie" data-testid="screen-lobby-partie">PARTIE {s.round} : <b>{formulaTitle(s.phases, s.lots)}</b></p>
         <p>{music ? 'LE LOTO MUSICAL VA COMMENCER' : 'LE GRAND TIRAGE VA COMMENCER'}</p>
       </div>
-      <Machine x={640} y={250} scale={0.92} mode="idle" drawn={s.drawn} seed={4} />
+      <LotoMachine s={s} box={{ left: 560, top: 230, width: 760, height: 790 }} fallback={<Machine x={640} y={250} scale={0.92} mode="idle" drawn={s.drawn} seed={4} />} />
       <div className="ready">
         <b className="gold-text" data-testid="screen-players">{s.players}</b>
         <span>{s.players > 1 ? 'JOUEURS PRÊTS' : 'JOUEUR PRÊT'}</span>
@@ -214,7 +237,7 @@ function Drawing({ s, name, code, now, titles }: { s: Live; name: string; code: 
       <TopBar s={s} name={name} />
       {hero && s.last ? (
         <>
-          <Machine x={230} y={330} scale={0.78} mode="idle" drawn={s.drawn} seed={3} style={{ opacity: 0.14, filter: 'saturate(.6)' }} />
+          <LotoMachine s={s} now={now} box={DRAW_BOX} style={{ opacity: 0.14, filter: 'saturate(.6)' }} fallback={<Machine x={230} y={330} scale={0.78} mode="idle" drawn={s.drawn} seed={3} style={{ opacity: 0.14, filter: 'saturate(.6)' }} />} />
           <div className="hero" data-testid="screen-hero" key={`${s.gameId}-${s.count}`}>
             <div className="rays" /><div className="halo" />
             <div style={{ position: 'relative' }}><Ball n={s.last} size={520} /></div>
@@ -223,7 +246,7 @@ function Drawing({ s, name, code, now, titles }: { s: Live; name: string; code: 
         </>
       ) : (
         <>
-          <Machine x={250} y={150} mode={spinning ? 'hot' : 'idle'} drawn={s.drawn} seed={spinning ? 8 : 3} cradle={spinning ? null : s.last} />
+          <LotoMachine s={s} now={now} box={DRAW_BOX} fallback={<Machine x={250} y={150} mode={spinning ? 'hot' : 'idle'} drawn={s.drawn} seed={spinning ? 8 : 3} cradle={spinning ? null : s.last} />} />
           {secs !== null && !spinning && <div className="next">PROCHAINE BOULE DANS <b>{secs}</b></div>}
         </>
       )}
@@ -238,7 +261,7 @@ function Checking({ s, code, titles }: { s: Live; code: string; titles: readonly
   return (
     <>
       <Decor opacity={0.25} />
-      <Machine x={640} y={210} mode="freeze" drawn={s.drawn} seed={3} style={{ opacity: 0.5 }} />
+      <LotoMachine s={s} box={{ left: 560, top: 190, width: 760, height: 790 }} style={{ opacity: 0.5 }} fallback={<Machine x={640} y={210} mode="freeze" drawn={s.drawn} seed={3} style={{ opacity: 0.5 }} />} />
       <div className="veil" />
       <div className="pulse-ring" />
       <div className="moment" data-testid="screen-checking">
@@ -269,7 +292,7 @@ function Celebrating({ s }: { s: Live }) {
   return (
     <>
       <Decor gold={plein} opacity={1} beams={[[200, -18, ''], [520, -6, ''], [860, 0, 'v'], [1180, 6, ''], [1500, 16, '']]} />
-      {plein && <Machine x={640} y={170} mode="gold" drawn={s.drawn} seed={5} style={{ opacity: 0.55 }} />}
+      {plein && <LotoMachine s={s} box={{ left: 560, top: 150, width: 760, height: 790 }} style={{ opacity: 0.55 }} fallback={<Machine x={640} y={170} mode="gold" drawn={s.drawn} seed={5} style={{ opacity: 0.55 }} />} />}
       <div className="veil" style={{ opacity: 0.6 }} />
       <Confetti n={plein ? 220 : 140} gold={plein} />
       <div className="moment" data-testid="screen-winner">

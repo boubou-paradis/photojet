@@ -213,3 +213,9 @@
 .bgo-screen .wlist { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 18px; max-width: 1600px; }
 .bgo-screen .wlist span { padding: 8px 20px; border-radius: 999px; font-size: 24px; font-weight: 700; color: #f1ebff; background: rgba(16, 11, 30, .85); box-shadow: inset 0 0 0 1.5px rgba(246, 227, 161, .35); }
 .bgo-screen .wlist small { margin-right: 10px; font-size: 15px; letter-spacing: .16em; color: var(--gold-hi); }
+
+/* Machine 3D (Three.js) : bords fondus dans le décor du grand écran, aucun cadre visible. */
+.m3d { pointer-events: none; transition: opacity .4s ease; }
+.m3d .m3d-canvas { display: block; width: 100%; height: 100%;
+  -webkit-mask-image: radial-gradient(ellipse 50% 52% at 50% 50%, #000 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 52% at 50% 50%, #000 72%, transparent 100%); }

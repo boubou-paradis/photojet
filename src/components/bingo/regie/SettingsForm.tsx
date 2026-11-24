@@ -10,6 +10,7 @@
 
 import { useState } from 'react'
 import type { BingoSettings } from '@/lib/bingo/types'
+import { MachineSwitch } from './MachineSwitch'
 
 function Switch({ on, onChange, label, testId }: { on: boolean; onChange: (v: boolean) => void; label: string; testId?: string }) {
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className="switch" onClick={() => onChange(!on)} data-testid={testId} />
@@ -79,6 +80,9 @@ export function SettingsForm({ settings, onChange, onTestVoice }: {
       </Opt>
       <Opt title="Prénom du gagnant à l’écran" help="Sinon, seul le numéro du carton gagnant est affiché.">
         <Switch on={settings.public.showName} onChange={(v) => pub({ showName: v })} label="Prénom du gagnant à l’écran" />
+      </Opt>
+      <Opt title="Machine du grand écran" help="3D si l’ordinateur suit (sinon 2D toute seule). Réglage de ce PC.">
+        <MachineSwitch />
       </Opt>
       </div>
       )}
