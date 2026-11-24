@@ -61,15 +61,20 @@ interface DrawAnim {
   total: number
   phase: 0 | 1 | 2 | 3
   land: number
+  /** Durée jusqu'au réceptacle (s) : la boule s'y pose au moment de l'annonce. */
+  T: number
+  /** Départ (performance.now) : l'animation suit l'horloge réelle, un à-coup ne la retarde pas. */
+  t0: number
 }
 
 /** Texture équirectangulaire d'une boule : même dessin que les textures Blender (deux pastilles numérotées). */
 function ballTexture(n: number): THREE.CanvasTexture {
-  const W = 512, H = 256, K = W / 1024
+  const W = 256, H = 128, K = W / 1024 // une boule fait ~45 px à l'écran
   const c = document.createElement('canvas'); c.width = W; c.height = H
   const g = c.getContext('2d')!
   const img = g.createImageData(W, H), d = img.data
-  const col = famOf(n), R = 0.72
+  // n = 0 : boule encore anonyme (suspense de la tombola), pastilles blanches sans numéro
+  const col = n > 0 ? famOf(n) : [236, 232, 242], R = 0.72
   for (let y = 0; y < H; y++) {
     const lat = Math.PI / 2 - ((y + 0.5) / H) * Math.PI, cl = Math.cos(lat)
     const shade = 0.82 + 0.18 * Math.min(1, Math.max(0, (lat + 1.2) / 2.4))
@@ -79,7 +84,7 @@ function ballTexture(n: number): THREE.CanvasTexture {
       let r = col[0] * shade, gg = col[1] * shade, b = col[2] * shade
       for (const sgn of [-1, 1]) {
         const ang = Math.acos(Math.max(-1, Math.min(1, py * sgn)))
-        const m = Math.max(0, Math.min(1, (R - ang) / 0.01))
+        const m = Math.max(0, Math.min(1, (R - ang) / 0.02))
         r = r * (1 - m) + 250 * m; gg = gg * (1 - m) + 250 * m; b = b * (1 - m) + 250 * m
         const ring = Math.max(0, 1 - Math.abs(ang - R - 0.012) / 0.007) * 0.35
         r *= 1 - ring; gg *= 1 - ring; b *= 1 - ring
@@ -88,7 +93,7 @@ function ballTexture(n: number): THREE.CanvasTexture {
     }
   }
   g.putImageData(img, 0, 0)
-  const s = String(n), fs = (({ 1: 200, 2: 180, 3: 130, 4: 100 } as Record<number, number>)[s.length] ?? 90) * K
+  const s = n > 0 ? String(n) : '', fs = (({ 1: 200, 2: 180, 3: 130, 4: 100 } as Record<number, number>)[s.length] ?? 90) * K
   g.fillStyle = '#0e0c14'; g.textAlign = 'center'; g.textBaseline = 'middle'
   g.font = `900 ${fs}px "Arial Black", Arial, sans-serif`
   for (const cx of [W / 4, (3 * W) / 4]) {
@@ -140,14 +145,19 @@ function studioGeometry(): THREE.BufferGeometry {
 }
 
 export interface MachineView {
-  /** Numéros visibles dans la sphère (encore à tirer), 26 au plus. */
+  /**
+   * Numéros encore dans la sphère. La sphère n'est remplie qu'à l'ouverture de l'écran ou au début
+   * d'une partie (count = 0) : pendant la partie elle ne fait que PERDRE des boules (jamais de boule ajoutée).
+   */
   inside: readonly number[]
-  /** Boule posée dans le réceptacle (dernier numéro sorti), ou null. */
+  /** Numéro de la boule tirée (réceptacle) ; null si aucune ou pas encore révélé (suspense de la tombola). */
   out: number | null
-  /** Identifiant du tirage affiché (change à chaque nouvelle boule). */
+  /** Identifiant du tirage en cours : le même avant et après la révélation. */
   drawKey: string | null
-  /** Le tirage vient d'avoir lieu (vu en direct) : on joue l'arrivée. Sinon : boule posée directement. */
-  fresh: boolean
+  /** Boules déjà sorties (0 = sphère pleine). */
+  count: number
+  /** Heure locale (Date.now) où la boule touche le réceptacle = annonce du numéro. */
+  landAt: number | null
   /** Brassage soutenu (suspense de la tombola). */
   spin: boolean
 }
@@ -243,8 +253,13 @@ export class MachineEngine {
     this.composer.addPass(new RenderPass(this.scene, this.camera))
     this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.12, 0.3, 9.0))
     this.composer.addPass(new OutputPass())
-    // compile les shaders maintenant (pas d'à-coup au premier tirage)
+    // compile les shaders et prépare les ombres maintenant, boules comprises (pas d'à-coup à la première apparition)
+    const warm = this.addBall(1, this.C)
     this.renderer.compile(this.scene, this.camera)
+    this.renderer.setSize(2, 2, false)
+    this.composer.setSize(2, 2)
+    this.composer.render()
+    this.removeBall(warm)
   }
 
   private track(...items: ({ dispose(): void } | { dispose(): void }[])[]) {
@@ -382,41 +397,62 @@ export class MachineEngine {
     b.mesh.material.map?.dispose(); b.mesh.material.map = ballTexture(n); b.mesh.material.needsUpdate = true; b.n = n
   }
 
-  /** Les boules libres deviennent exactement `inside` : les absentes sortent, les nouvelles tombent du haut de la sphère. */
-  private syncInside(inside: readonly number[]) {
+  /**
+   * Boules de la sphère : celles qui ne sont plus dans `inside` sortent (sans bruit).
+   * `refill` (ouverture de l'écran, début de partie) : les manquantes sont ajoutées, sinon JAMAIS.
+   */
+  private syncInside(inside: readonly number[], refill: boolean) {
     const want = new Set(inside)
-    const free = this.balls.filter((b) => b.free && !b.reserved)
-    for (const b of free) if (!want.has(b.n)) this.removeBall(b)
+    for (const b of this.balls.filter((x) => x.free && !x.reserved)) if (!want.has(b.n)) this.removeBall(b)
+    if (!refill) return
     const have = new Set(this.balls.filter((b) => b.free || b.reserved).map((b) => b.n))
     for (const n of inside) {
       if (have.has(n)) continue
-      const a = Math.random() * Math.PI * 2, rr = Math.random() * 0.4
-      this.addBall(n, this.C.clone().add(new THREE.Vector3(Math.cos(a) * rr, 0.35, Math.sin(a) * rr)), new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6)))
+      const a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * 0.6
+      this.addBall(n, this.C.clone().add(new THREE.Vector3(Math.cos(a) * rr, -0.2 + Math.random() * 0.5, Math.sin(a) * rr)), new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6)))
     }
+  }
+
+  /** Retire de la sphère toute autre boule portant ce numéro (une boule tirée n'y est jamais deux fois). */
+  private dropDuplicates(n: number, keep: Ball | null) {
+    for (const b of this.balls.filter((x) => x !== keep && x.n === n && x.free && !x.reserved)) this.removeBall(b)
   }
 
   private placeOut(n: number | null) {
     if (this.drawAnim) this.finishDraw()
     if (n === null) { if (this.inRecept) this.removeBall(this.inRecept); return }
-    if (this.inRecept?.n === n) return
-    if (this.inRecept) this.removeBall(this.inRecept)
-    const b = this.addBall(n, this.recept, this.showQuat)
-    b.free = false
-    this.inRecept = b
+    if (this.inRecept?.n !== n) {
+      if (this.inRecept) this.removeBall(this.inRecept)
+      const b = this.addBall(n, this.recept, this.showQuat)
+      b.free = false
+      this.inRecept = b
+    }
+    this.dropDuplicates(n, this.inRecept)
+  }
+
+  /** Numéro révélé après coup (tombola) : la boule en route ou déjà posée prend son numéro. */
+  private label(n: number) {
+    const b = this.drawAnim?.b ?? this.inRecept
+    if (!b) { this.placeOut(n); return }
+    if (b.n !== n) this.relabel(b, n)
+    this.dropDuplicates(n, b)
   }
 
   /** Applique l'état à montrer. Premier appel : tout est posé, physique pré-calculée (rien ne « tombe » à l'ouverture). */
   show(v: MachineView) {
     const first = this.key === null && this.balls.length === 0
     this.spinBase = v.spin ? 0.65 : 0
+    // première apparition : sphère remplie et boules déjà posées (rien ne « tombe »), puis le tirage en cours s'il y en a un
+    if (first) { this.syncInside(v.inside, true); this.simulate(2) }
     if (v.drawKey !== this.key) {
-      const live = !first && v.fresh && v.out !== null && this.key !== null
       this.key = v.drawKey
-      if (live) this.draw(v.out!)
+      const landIn = v.landAt === null ? -1 : (v.landAt - Date.now()) / 1000
+      // vu en direct : la boule est aspirée et se pose au moment de l'annonce ; sinon (rechargement, retard) posée directement
+      if (v.drawKey !== null && v.count > 0 && landIn > -0.3) this.draw(v.out, Math.min(1.2, Math.max(0.45, landIn)))
       else this.placeOut(v.out)
-    } else if (!this.drawAnim && (this.inRecept?.n ?? null) !== v.out) this.placeOut(v.out)
-    this.syncInside(v.inside)
-    if (first) this.simulate(2)
+    } else if (v.out !== null) this.label(v.out)
+    else if (v.count === 0 && !this.drawAnim) this.placeOut(null)
+    this.syncInside(v.inside, v.count === 0)
   }
 
   // ---------------------------------------------------------------- physique
@@ -490,25 +526,27 @@ export class MachineEngine {
   // ---------------------------------------------------------------- tirage
 
   /**
-   * Arrivée visuelle du numéro n (déjà tiré par le serveur).
-   * 0 → 0,35 s brassage ; → 0,75 s montée sous la bride ; → 1,6 s conduit ; rebond ; calme à 2,4 s.
+   * Sortie visuelle d'une boule (numéro déjà tiré par le serveur, ou inconnu pendant le suspense de la tombola).
+   * La boule est aspirée vers l'ouverture, remonte le conduit poussée par l'air et touche le réceptacle
+   * exactement à T secondes (annonce du numéro). Le brassage continue derrière ; calme avant 2,4 s.
    */
-  private draw(n: number) {
+  private draw(n: number | null, T: number) {
     if (this.drawAnim) this.finishDraw() // un nouveau tirage interrompt proprement le précédent
-    const free = this.balls.filter((b) => b.free && !b.reserved)
-    let b = free.find((x) => x.n === n)
-    if (!b) {
-      // le numéro n'est pas parmi les boules visibles : la boule la plus haute prend ce numéro
-      b = free.sort((p, q) => q.mesh.position.y - p.mesh.position.y)[0]
-      if (b) this.relabel(b, n)
-    }
-    if (!b) { this.placeOut(n); return }
-    b.reserved = true
     const inside = this.C.clone().addScaledVector(this.flDir, this.RI - this.BR - 0.02)
+    const free = this.balls.filter((b) => b.free && !b.reserved)
+    let b = n !== null ? free.find((x) => x.n === n) : undefined
+    if (!b) {
+      // numéro absent de la sphère ou encore inconnu : la boule la plus proche de l'ouverture est aspirée
+      b = free.sort((p, q) => p.mesh.position.distanceToSquared(inside) - q.mesh.position.distanceToSquared(inside))[0]
+      if (b && n !== null) { this.relabel(b, n); this.dropDuplicates(n, b) }
+    }
+    if (b && n === null) this.relabel(b, 0)
+    if (!b) { if (n !== null) this.placeOut(n); return }
+    b.reserved = true
     const pts = [inside, ...this.path, this.recept.clone()]
     const lens = [0]
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]))
-    this.drawAnim = { b, t: 0, start: null, inside, pts, lens, total: lens[lens.length - 1], phase: 0, land: 0 }
+    this.drawAnim = { b, t: 0, start: null, inside, pts, lens, total: lens[lens.length - 1], phase: 0, land: 0, T, t0: performance.now() }
   }
 
   private finishDraw() {
@@ -534,21 +572,24 @@ export class MachineEngine {
     const A = this.drawAnim
     let animI = 0
     if (A) {
-      A.t += dt
-      const t = A.t
-      animI = t < 0.35 ? t / 0.35 : t < 1.6 ? 1 : Math.max(0, 1 - (t - 1.6) / 0.8)
-      if (t >= 0.35 && A.phase === 0) { A.phase = 1; A.b.free = false; A.start = A.b.mesh.position.clone() }
+      A.t = (performance.now() - A.t0) / 1000
+      const t = A.t, T = A.T
+      const t1 = 0.08 * T, t2 = 0.38 * T // aspiration de t1 à t2, conduit de t2 à T
+      animI = A.phase === 3 ? 0 : 1 // le brassage retombe dès que la boule est posée
+      if (t >= t1 && A.phase === 0) { A.phase = 1; A.b.free = false; A.start = A.b.mesh.position.clone() }
       const m = A.b.mesh
       const prev = m.position.clone()
       if (A.phase === 1 && A.start) {
-        const u = Math.min(1, (t - 0.35) / 0.4), e = u * u * (3 - 2 * u)
-        const mid = A.start.clone().lerp(A.inside, 0.5).add(new THREE.Vector3(0, 0.25, 0))
+        // aspirée : part doucement puis accélère vers l'ouverture
+        const u = Math.min(1, (t - t1) / (t2 - t1)), e = u * u
+        const mid = A.start.clone().lerp(A.inside, 0.6).addScaledVector(this.flDir, 0.08)
         m.position.copy(A.start).lerp(mid, e).lerp(mid.clone().lerp(A.inside, e), e)
         m.material.emissive.setRGB(0.1, 0.08, 0.14).multiplyScalar(e)
         if (u >= 1) A.phase = 2
       } else if (A.phase === 2) {
-        const u = (t - 0.75) / 0.85
-        m.position.copy(this.pointAt(A, A.total * Math.min(1, u * u * 0.35 + u * 0.65)))
+        // poussée par l'air : entre vite dans le conduit, ralentit en arrivant au réceptacle
+        const u = Math.min(1, (t - t2) / (T - t2))
+        m.position.copy(this.pointAt(A, A.total * (1 - Math.pow(1 - u, 1.6))))
         if (u >= 1) { A.phase = 3; A.land = t }
       } else if (A.phase === 3) {
         const u = t - A.land
@@ -567,13 +608,14 @@ export class MachineEngine {
       }
       // fin du conduit puis réceptacle : le numéro se tourne vers le public
       if (A.phase >= 2) {
-        const u = A.phase === 2 ? Math.max(0, ((t - 0.75) / 0.85 - 0.6) / 0.4) : 1
-        if (u > 0) m.quaternion.slerp(this.showQuat, Math.min(1, u * u * 0.35 + (A.phase === 3 ? 0.25 : 0)))
+        const u = A.phase === 2 ? Math.max(0, ((t - t2) / (T - t2) - 0.55) / 0.45) : 1
+        if (u > 0) m.quaternion.slerp(this.showQuat, Math.min(1, u * u * 0.4 + (A.phase === 3 ? 0.3 : 0)))
       }
     }
-    // le suspense monte et redescend en douceur
+    // brassage : monte d'un coup au tirage, retombe en douceur (calme avant 2,4 s)
     const target = Math.max(animI, this.spinBase)
-    this.intensity += (target - this.intensity) * Math.min(1, dt * (target > this.intensity ? 8 : 3))
+    this.intensity += (target - this.intensity) * Math.min(1, dt * (target > this.intensity ? 12 : 3.2))
+    if (this.intensity < 0.01 && target === 0) this.intensity = 0
     this.omega = 0.45 + 2.6 * this.intensity
     if (this.drum) this.drum.rotation.x += this.omega * dt
     for (let i = 0; i < 4; i++) this.step(dt / 4)

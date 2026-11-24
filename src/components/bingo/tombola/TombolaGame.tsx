@@ -17,7 +17,7 @@ import './tombola.css'
 import QRCode from '@/components/QRCode'
 import { Ball } from '@/components/bingo/Ball'
 import { GoldRings, Machine } from '@/components/bingo/screen/Machine'
-import { Machine3D, useMachine3DPreload } from '@/components/bingo/three/Machine3D'
+import { Machine3D, useMachine3DPreload, useMachineClock } from '@/components/bingo/three/Machine3D'
 import { useTombolaChannel } from '@/hooks/useTombolaChannel'
 import type { BingoLiveStatus } from '@/hooks/useBingoStatus'
 import { lotsGiven, machineSample, rangesText, type TombolaLive } from '@/lib/bingo/tombola'
@@ -52,6 +52,7 @@ export default function TombolaGame({ session, status }: { session: LiveSession;
 
   // Fin du suspense (0,9 s) : relecture sans attendre la prochaine diffusion.
   const { refresh } = channel
+  useMachineClock(channel.clockOffsetMs)
   const revealAt = live?.hidden && live.lastDrawAt ? Date.parse(live.lastDrawAt) + 900 - channel.clockOffsetMs : null
   useEffect(() => {
     if (revealAt === null) return
@@ -136,8 +137,12 @@ function Drawing({ s, code, suspense }: { s: TombolaLive; code: string; suspense
   const pool = useMemo(() => machineSample(s, 60, s.draws.length + 7), [s])
   // machine 3D : graine fixe → les mêmes boules restent dans la sphère d'un tirage à l'autre.
   // L'arrivée n'est jouée qu'au passage caché → révélé vu en direct (après un rechargement : boule posée).
-  const inside = useMemo(() => machineSample(s, 26, 7), [s])
-  const view = { inside, out: shown?.n ?? null, drawKey: shown ? `t-${shown.seq}` : null, fresh: !!shown, spin: s.hidden }
+  // pendant le suspense la boule monte déjà (anonyme) et prend son numéro à l'annonce (0,9 s)
+  const inside = useMemo(() => machineSample(s, 60, 7), [s])
+  // pendant le suspense, le serveur ne montre ni le numéro ni l'heure d'annonce : tirage n° draws + 1, annoncé à lastDrawAt + 0,9 s
+  const seq = s.hidden ? s.draws.length + 1 : last?.seq ?? 0
+  const landAt = !seq ? null : s.revealAt ? Date.parse(s.revealAt) : s.lastDrawAt ? Date.parse(s.lastDrawAt) + 900 : null
+  const view = { inside, out: shown?.n ?? null, drawKey: seq ? `t-${seq}` : null, count: seq, landAt, spin: s.hidden }
   const winners = s.draws.filter((d) => d.o === 'winner').slice(-12)
   return (
     <>

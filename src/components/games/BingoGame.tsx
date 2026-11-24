@@ -14,7 +14,7 @@ import { Maximize, Minimize } from 'lucide-react'
 import '@/components/bingo/bingo.css'
 import '@/components/bingo/screen.css'
 import { BingoScreen, type Live } from '@/components/bingo/screen/BingoScreen'
-import { useMachine3DPreload } from '@/components/bingo/three/Machine3D'
+import { useMachine3DPreload, useMachineClock } from '@/components/bingo/three/Machine3D'
 import { Ball } from '@/components/bingo/Ball'
 import { useBingoChannel } from '@/hooks/useBingoChannel'
 import { useBingoTitles } from '@/hooks/useBingoTitles'
@@ -61,6 +61,7 @@ export default function BingoGame({ session, status }: { session: LiveSession; s
     return () => clearInterval(t)
   }, [])
   const serverNow = now + channel.clockOffsetMs
+  useMachineClock(channel.clockOffsetMs)
 
   // « Prochaine étape » : seulement quand la phase change sous nos yeux (jamais au chargement).
   // Comparaison avec la phase vue au rendu précédent (sans effet : pas de rendu en cascade).

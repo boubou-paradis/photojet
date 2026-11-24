@@ -151,19 +151,20 @@ function winnerSub(w: BingoWinner) {
 // ------------------------------------------------------------------ machine 3D
 
 const ALL_90 = Array.from({ length: 90 }, (_, i) => i + 1)
-/** Après la boule, l'arrivée 3D est jouée si on la voit en direct (pas après un rechargement). */
-const FRESH_MS = 2500
+/** Annonce du numéro (voix, téléphones) : 0,9 s après le tirage ; la boule 3D touche le réceptacle à cet instant. */
+const ANNOUNCE_MS = 900
 
 /**
  * Machine du loto : 3D si l'ordinateur suit, sinon exactement la machine 2D d'avant (`fallback`).
  * Purement visuel : affiche le dernier numéro sorti, ne décide de rien et ne retarde rien.
  */
-function LotoMachine({ s, now = 0, box, style, fallback }: { s: Live; now?: number; box: MachineBox; style?: CSSProperties; fallback: ReactNode }) {
+function LotoMachine({ s, box, style, fallback }: { s: Live; box: MachineBox; style?: CSSProperties; fallback: ReactNode }) {
   const drawnKey = s.drawn.join(',')
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const inside = useMemo(() => stableInside(ALL_90, new Set(s.drawn), s.gameId), [drawnKey, s.gameId])
-  const fresh = !!s.last && !!s.lastDrawAt && now > 0 && now - Date.parse(s.lastDrawAt) < FRESH_MS
-  const view = { inside, out: s.last, drawKey: `${s.gameId}-${s.count}`, fresh, spin: false }
+  // toutes les boules restantes sont dans la sphère : une de moins à chaque tirage
+  const landAt = s.revealAt ? Date.parse(s.revealAt) : s.lastDrawAt ? Date.parse(s.lastDrawAt) + ANNOUNCE_MS : null
+  const view = { inside, out: s.last, drawKey: `${s.gameId}-${s.count}`, count: s.count, landAt, spin: false }
   return <Machine3D box={box} view={view} style={style} fallback={fallback} />
 }
 
@@ -237,7 +238,7 @@ function Drawing({ s, name, code, now, titles }: { s: Live; name: string; code: 
       <TopBar s={s} name={name} />
       {hero && s.last ? (
         <>
-          <LotoMachine s={s} now={now} box={DRAW_BOX} style={{ opacity: 0.14, filter: 'saturate(.6)' }} fallback={<Machine x={230} y={330} scale={0.78} mode="idle" drawn={s.drawn} seed={3} style={{ opacity: 0.14, filter: 'saturate(.6)' }} />} />
+          <LotoMachine s={s} box={DRAW_BOX} style={{ opacity: 0.14, filter: 'saturate(.6)' }} fallback={<Machine x={230} y={330} scale={0.78} mode="idle" drawn={s.drawn} seed={3} style={{ opacity: 0.14, filter: 'saturate(.6)' }} />} />
           <div className="hero" data-testid="screen-hero" key={`${s.gameId}-${s.count}`}>
             <div className="rays" /><div className="halo" />
             <div style={{ position: 'relative' }}><Ball n={s.last} size={520} /></div>
@@ -246,7 +247,7 @@ function Drawing({ s, name, code, now, titles }: { s: Live; name: string; code: 
         </>
       ) : (
         <>
-          <LotoMachine s={s} now={now} box={DRAW_BOX} fallback={<Machine x={250} y={150} mode={spinning ? 'hot' : 'idle'} drawn={s.drawn} seed={spinning ? 8 : 3} cradle={spinning ? null : s.last} />} />
+          <LotoMachine s={s} box={DRAW_BOX} fallback={<Machine x={250} y={150} mode={spinning ? 'hot' : 'idle'} drawn={s.drawn} seed={spinning ? 8 : 3} cradle={spinning ? null : s.last} />} />
           {secs !== null && !spinning && <div className="next">PROCHAINE BOULE DANS <b>{secs}</b></div>}
         </>
       )}

@@ -5,7 +5,7 @@
 
 // AnimaBingo — machine 3D du grand écran, avec repli automatique sur la machine 2D :
 //   - pas de WebGL, contexte perdu, modèle introuvable ;
-//   - moins de 40 images/s pendant 6 s (PC trop lent) → 2D jusqu'à la fin de la soirée (onglet) ;
+//   - moins de 40 images/s pendant 6 s (PC trop lent) → 2D pour cette page ; un rechargement retente la 3D ;
 //   - « Réduire les animations » demandé par le système ;
 //   - « Machine 2D » choisie en régie (ou /live/<code>?machine=2d).
 // Un seul moteur par page : le canevas passe d'une scène à l'autre sans rechargement.
@@ -17,8 +17,18 @@ import type { MachineEngine, MachineView } from './MachineEngine'
 
 export type { MachineView }
 
-const FAIL_KEY = 'animajet.bingo.machine3d.off'
 const MIN_FPS = 40
+
+// écart horloge locale → serveur (ms) : l'heure d'annonce vient du serveur
+let clockOffset = 0
+/** Aligne la machine sur l'horloge du serveur (boule posée au moment exact de l'annonce). */
+export function useMachineClock(offsetMs: number) {
+  useEffect(() => {
+    clockOffset = offsetMs
+    ;(window as unknown as { __bingoMachineClock?: number }).__bingoMachineClock = offsetMs
+  }, [offsetMs])
+}
+const toLocal = (v: MachineView): MachineView => (v.landAt === null ? v : { ...v, landAt: v.landAt - clockOffset })
 const MAX_PIXELS = 1300 * 1100
 
 // ------------------------------------------------------------------ état partagé
@@ -42,14 +52,9 @@ let winStart = 0
 let winFrames = 0
 let slowWindows = 0
 
-function failedBefore(): string | null {
-  try { return window.sessionStorage.getItem(FAIL_KEY) } catch { return null }
-}
-
 function fail(reason: string) {
   if (status === 'failed') return
   status = 'failed'
-  try { window.sessionStorage.setItem(FAIL_KEY, reason) } catch { /* sans stockage : vaut pour la page */ }
   ;(window as unknown as { __bingoMachine3d?: unknown }).__bingoMachine3d = { status, reason }
   stopLoop()
   const e = engine
@@ -165,7 +170,7 @@ function useAllowed(): boolean {
   const pref = useSyncExternalStore(subscribeMachinePref, readMachinePref, () => '2d' as const)
   const reduced = useReducedMotion()
   const st = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
-  const [env] = useState(() => (typeof window === 'undefined' ? false : webglAvailable() && !failedBefore()))
+  const [env] = useState(() => (typeof window === 'undefined' ? false : webglAvailable()))
   return pref !== '2d' && !reduced && env && st !== 'failed'
 }
 
@@ -208,7 +213,7 @@ export function Machine3D({ box, view, fallback, style }: { box: MachineBox; vie
     mounted++
     host = el
     el.appendChild(canvas)
-    engine.show(viewRef.current)
+    engine.show(toLocal(viewRef.current))
     startLoop()
     return () => {
       mounted--
@@ -228,9 +233,9 @@ export function Machine3D({ box, view, fallback, style }: { box: MachineBox; vie
     }
   }, [allowed, st])
 
-  const viewKey = `${view.drawKey}|${view.out}|${view.fresh ? 1 : 0}|${view.spin ? 1 : 0}|${view.inside.join(',')}`
+  const viewKey = `${view.drawKey}|${view.out}|${view.count}|${view.landAt}|${view.spin ? 1 : 0}|${view.inside.join(',')}`
   useEffect(() => {
-    if (st === 'ready' && engine && host === ref.current) engine.show(viewRef.current)
+    if (st === 'ready' && engine && host === ref.current) engine.show(toLocal(viewRef.current))
   }, [viewKey, st])
 
   if (!allowed || st !== 'ready') return <>{fallback}</>
@@ -246,7 +251,7 @@ export function Machine3D({ box, view, fallback, style }: { box: MachineBox; vie
 }
 
 /** Échantillon stable de boules visibles : ordre pseudo-aléatoire fixe pour la partie, sans les numéros sortis. */
-export function stableInside(candidates: readonly number[], out: ReadonlySet<number>, seed: string, count = 26): number[] {
+export function stableInside(candidates: readonly number[], out: ReadonlySet<number>, seed: string, count = 90): number[] {
   let x = 2166136261
   for (let i = 0; i < seed.length; i++) x = Math.imul(x ^ seed.charCodeAt(i), 16777619) >>> 0
   const rnd = () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 4294967296 }
