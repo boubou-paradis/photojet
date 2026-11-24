@@ -65,6 +65,12 @@ interface DrawAnim {
   T: number
   /** Départ (performance.now) : l'animation suit l'horloge réelle, un à-coup ne la retarde pas. */
   t0: number
+  /** Numéro encore inconnu (suspense de la tombola) : la boule attend en bout de conduit. */
+  hold: boolean
+  /** Progression dans le conduit (0 → 1) à l'image précédente. */
+  u: number
+  /** Numéro arrivé pendant l'attente : la boule finit sa course à partir de cet instant. */
+  release: { at: number; u: number } | null
 }
 
 /** Texture équirectangulaire d'une boule : même dessin que les textures Blender (deux pastilles numérotées). */
@@ -143,6 +149,10 @@ function studioGeometry(): THREE.BufferGeometry {
   g.setIndex(idx); g.computeVertexNormals()
   return g
 }
+
+/** Boule anonyme : elle attend à 85 % du conduit que le numéro arrive, puis se pose en 0,25 s. */
+const HOLD_U = 0.85
+const RELEASE_MS = 250
 
 export interface MachineView {
   /**
@@ -436,6 +446,12 @@ export class MachineEngine {
     if (!b) { this.placeOut(n); return }
     if (b.n !== n) this.relabel(b, n)
     this.dropDuplicates(n, b)
+    const A = this.drawAnim
+    if (A?.hold) {
+      A.hold = false
+      // la boule attendait au bout du conduit : elle se pose maintenant, en même temps que le numéro à l'écran
+      if (A.u >= HOLD_U - 1e-3) A.release = { at: performance.now(), u: A.u }
+    }
   }
 
   /** Applique l'état à montrer. Premier appel : tout est posé, physique pré-calculée (rien ne « tombe » à l'ouverture). */
@@ -546,7 +562,7 @@ export class MachineEngine {
     const pts = [inside, ...this.path, this.recept.clone()]
     const lens = [0]
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + pts[i].distanceTo(pts[i - 1]))
-    this.drawAnim = { b, t: 0, start: null, inside, pts, lens, total: lens[lens.length - 1], phase: 0, land: 0, T, t0: performance.now() }
+    this.drawAnim = { b, t: 0, start: null, inside, pts, lens, total: lens[lens.length - 1], phase: 0, land: 0, T, t0: performance.now(), hold: n === null, u: 0, release: null }
   }
 
   private finishDraw() {
@@ -588,7 +604,10 @@ export class MachineEngine {
         if (u >= 1) A.phase = 2
       } else if (A.phase === 2) {
         // poussée par l'air : entre vite dans le conduit, ralentit en arrivant au réceptacle
-        const u = Math.min(1, (t - t2) / (T - t2))
+        let u = Math.min(1, (t - t2) / (T - t2))
+        if (A.hold) u = Math.min(u, HOLD_U)
+        else if (A.release) u = Math.min(1, A.release.u + ((performance.now() - A.release.at) / RELEASE_MS) * (1 - A.release.u))
+        A.u = u
         m.position.copy(this.pointAt(A, A.total * (1 - Math.pow(1 - u, 1.6))))
         if (u >= 1) { A.phase = 3; A.land = t }
       } else if (A.phase === 3) {
