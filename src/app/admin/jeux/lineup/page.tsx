@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import Image from 'next/image'
+import localFont from 'next/font/local'
 import {
   ArrowLeft,
   Loader2,
@@ -19,8 +20,12 @@ import {
   Upload,
   Trash2,
   FileText,
+  Check,
+  Sparkles,
+  Timer,
+  EyeOff,
+  Rocket,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
@@ -31,6 +36,17 @@ import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import rg from './regie.module.css'
+
+// Lettrage de la carte du jeu (Anton, licence OFL, hébergée dans le projet : aucun appel à Google)
+// Réglages audio du Bon Ordre (colonne lineup_audio, JSON) : musique + bruitages de l'écran public.
+// sfxEnabled absent = bruitages activés (aucune migration : simple clé ajoutée au JSON existant).
+type LineupAudioSettings = WheelAudioSettings & { sfxEnabled?: boolean }
+
+const cardFont = localFont({ src: './fonts/Anton-Regular.ttf', display: 'swap' })
+
+// Égaliseur décoratif de la carte « Musique du jeu » (hauteurs fixes, aucun calcul au rendu)
+const EQ_BARS = Array.from({ length: 26 }, (_, i) => ({ h: 18 + ((i * 37) % 32), d: -(i % 7) * 0.17 }))
 
 export default function LineupPage() {
   const [session, setSession] = useState<Session | null>(null)
@@ -55,7 +71,7 @@ export default function LineupPage() {
   const [showWinner, setShowWinner] = useState(false)
 
   // Audio state
-  const [audioSettings, setAudioSettings] = useState<WheelAudioSettings>({
+  const [audioSettings, setAudioSettings] = useState<LineupAudioSettings>({
     url: null,
     enabled: true,
     filename: null,
@@ -327,10 +343,11 @@ export default function LineupPage() {
         .getPublicUrl(filePath)
 
       // Update settings
-      const newSettings: WheelAudioSettings = {
+      const newSettings: LineupAudioSettings = {
         url: publicUrl,
         enabled: true,
         filename: file.name,
+        sfxEnabled: audioSettings.sfxEnabled,
       }
       setAudioSettings(newSettings)
 
@@ -365,10 +382,11 @@ export default function LineupPage() {
       }
 
       // Update settings
-      const newSettings: WheelAudioSettings = {
+      const newSettings: LineupAudioSettings = {
         url: null,
         enabled: false,
         filename: null,
+        sfxEnabled: audioSettings.sfxEnabled,
       }
       setAudioSettings(newSettings)
 
@@ -394,11 +412,47 @@ export default function LineupPage() {
   async function toggleAudioEnabled() {
     if (!session) return
 
-    const newSettings: WheelAudioSettings = {
+    const newSettings: LineupAudioSettings = {
       ...audioSettings,
       enabled: !audioSettings.enabled,
     }
     setAudioSettings(newSettings)
+
+    await supabase
+      .from('sessions')
+      .update({ lineup_audio: JSON.stringify(newSettings) })
+      .eq('id', session.id)
+  }
+
+  // Bruitages (sons FX) de l'écran public : enregistrés avec la musique et envoyés tout de suite à l'écran
+  async function toggleSfxEnabled() {
+    if (!session) return
+
+    const newSettings: LineupAudioSettings = {
+      ...audioSettings,
+      sfxEnabled: audioSettings.sfxEnabled === false,
+    }
+    setAudioSettings(newSettings)
+    audioSettingsRef.current = newSettings
+
+    if (gameActive) {
+      broadcastGameState({
+        gameActive: true,
+        currentNumber: currentNumberRef.current,
+        timeLeft: timeLeftRef.current,
+        isRunning,
+        isPaused,
+        isGameOver,
+        currentPoints: currentPointsRef.current,
+        team1Score: team1ScoreRef.current,
+        team2Score: team2ScoreRef.current,
+        team1Name: team1NameRef.current,
+        team2Name: team2NameRef.current,
+        showWinner,
+        clockDuration,
+        audioSettings: newSettings,
+      })
+    }
 
     await supabase
       .from('sessions')
@@ -953,20 +1007,20 @@ export default function LineupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+      <div className={`${rg.page} ${rg.center}`}>
+        <Loader2 className={rg.spin} />
       </div>
     )
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white mb-4">Aucune session trouvée</p>
-          <Button onClick={() => router.push('/admin/dashboard')}>
+      <div className={`${rg.page} ${rg.center}`}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ marginBottom: 16 }}>Aucune session trouvée</p>
+          <button className={`${rg.btn} ${rg.btnGold}`} onClick={() => router.push('/admin/dashboard')}>
             Retour au dashboard
-          </Button>
+          </button>
         </div>
       </div>
     )
@@ -978,81 +1032,68 @@ export default function LineupPage() {
   const gamePaused = isPaused && !isGameOver
   const gameEnded = isGameOver
 
-  return (
-    <div className="min-h-screen bg-[#0D0D0F] relative">
-      {/* Animated background effects - Gold/Violet premium theme */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-[#D4AF37]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
+  // Habillage « régie » AnimaJet 2.0 (maquette V1 validée le 25/11/2026) — handlers et états inchangés.
+  const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
+  const sfxOn = audioSettings.sfxEnabled !== false
+  const digits = (currentNumber || '-----').split('')
+  const teamButtons = currentNumber ? (
+    <div className={rg.r2}>
+      <button onClick={() => awardPoints(1)} className={cx(rg.big, rg.tm)} title="Touche 1 ou flèche gauche">
+        <Check /><span>{team1Name}</span><em>+{currentPoints}</em>
+      </button>
+      <button onClick={() => awardPoints(2)} className={cx(rg.big, rg.tm)} title="Touche 2 ou flèche droite">
+        <Check /><span>{team2Name}</span><em>+{currentPoints}</em>
+      </button>
+    </div>
+  ) : null
 
-      {/* Header */}
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
-              className="text-white hover:text-[#D4AF37]"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-[#D4AF37]" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Le Bon Ordre</h1>
-                <p className="text-sm text-[#6B6B70]">{session.name}</p>
-              </div>
+  return (
+    <div className={rg.page}>
+      <div className={rg.wrap}>
+        {/* En-tête */}
+        <header className={rg.top}>
+          <button className={rg.btn} onClick={() => router.push(`/admin/jeux?session=${session.id}`)}>
+            <ArrowLeft />
+            Retour
+          </button>
+          <div className={rg.vsep} />
+          <div className={rg.ttl}>
+            <div className={rg.thumb}><Image src="/images/games/le-bon-ordre-v2.png" alt="" fill sizes="100px" /></div>
+            <div>
+              <h1 className={`${rg.cardTitle} ${cardFont.className}`} data-t="LE BON ORDRE"><span>LE BON ORDRE</span></h1>
+              <small>{session.name}</small>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameOver} legend={remoteLegend} />
-            <a href="/le-bon-ordre-regles-du-jeu.pdf" target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
-                <FileText className="h-4 w-4 mr-2" />
-                Notice
-              </Button>
-            </a>
-            {gameActive && (
-              <Button
-                size="sm"
-                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-                className="bg-[#D4AF37] text-[#1A1A1E] hover:bg-[#F4D03F]"
-              >
-                <Monitor className="h-4 w-4 mr-2" />
-                Voir le diaporama
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+          <div className={rg.grow} />
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameOver} legend={remoteLegend} />
+          <div className={rg.vsep} />
+          <a href="/le-bon-ordre-regles-du-jeu.pdf" target="_blank" rel="noopener noreferrer" className={cx(rg.btn, rg.btnGold)}>
+            <FileText />
+            Notice
+          </a>
+          {gameActive && (
+            <button onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className={cx(rg.btn, rg.btnViolet)}>
+              <Monitor />
+              Voir le diaporama
+            </button>
+          )}
+        </header>
 
-      {/* Main content */}
-      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
           /* Configuration */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl p-6 space-y-6 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-4xl">🏃</span>
+          <section className={cx(rg.panel, rg.cfgPanel)}>
+            <div className={rg.head}>
+              <div className={`${rg.thumb} ${rg.thumbBig}`}><Image src="/images/games/le-bon-ordre-v2.png" alt="Le Bon Ordre" fill sizes="200px" priority /></div>
               <div>
-                <h2 className="text-xl font-bold text-white">Le Bon Ordre</h2>
-                <p className="text-gray-400 text-sm">Les équipes se placent dans l&apos;ordre affiché</p>
+                <h2 className={`${rg.cardTitle} ${cardFont.className}`} data-t="LE BON ORDRE"><span>LE BON ORDRE</span></h2>
+                <p>Les équipes se placent dans l&apos;ordre affiché</p>
               </div>
             </div>
 
             {/* Durée de la partie */}
-            <div>
-              <label className="text-white mb-2 block font-medium">Durée de la partie</label>
-              <div className="grid grid-cols-4 gap-2">
+            <div className={rg.box}>
+              <div className={rg.lab}><Timer />Durée de la partie</div>
+              <div className={rg.dur}>
                 {[30, 60, 90, 120].map(sec => (
                   <button
                     key={sec}
@@ -1060,63 +1101,60 @@ export default function LineupPage() {
                       setClockDuration(sec)
                       setTimeLeft(sec)
                     }}
-                    className={`py-3 rounded-xl font-bold transition-all ${
-                      clockDuration === sec
-                        ? 'bg-[#D4AF37] text-black'
-                        : 'bg-[#2E2E33] text-white hover:bg-[#3E3E43]'
-                    }`}
+                    className={clockDuration === sec ? rg.on : undefined}
                   >
                     {sec}s
                   </button>
                 ))}
               </div>
-              <p className="text-gray-500 text-xs mt-2">Le chrono est global pour toute la partie</p>
+              <div className={rg.hint}>Le chrono est global pour toute la partie</div>
             </div>
 
             {/* Noms des équipes */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className={rg.teams}>
               <div>
-                <label className="text-white mb-2 block font-medium">Équipe 1</label>
+                <label className={rg.lab}><Users />Équipe 1</label>
                 <input
                   value={team1Name}
                   onChange={(e) => setTeam1Name(e.target.value)}
                   placeholder="Nom équipe 1"
-                  className="w-full bg-[#2E2E33] text-white rounded-xl p-3 text-center font-bold border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
+                  className={rg.txt}
                 />
               </div>
+              <div className={rg.vl} />
               <div>
-                <label className="text-white mb-2 block font-medium">Équipe 2</label>
+                <label className={rg.lab}><Users />Équipe 2</label>
                 <input
                   value={team2Name}
                   onChange={(e) => setTeam2Name(e.target.value)}
                   placeholder="Nom équipe 2"
-                  className="w-full bg-[#2E2E33] text-white rounded-xl p-3 text-center font-bold border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
+                  className={rg.txt}
                 />
               </div>
             </div>
 
             {/* Section Audio */}
-            <div className="bg-[#1A1A1E] rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                  <Music className="h-4 w-4 text-violet-400" />
-                </div>
+            <div className={rg.music}>
+              <div className={rg.eq} aria-hidden>
+                {EQ_BARS.map((b, i) => <i key={i} style={{ height: b.h, animationDelay: `${b.d}s` }} />)}
+              </div>
+              <div className={rg.mRow}>
+                <div className={rg.mi}><Music /></div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Musique du jeu</h3>
-                  <p className="text-gray-400 text-xs">Son pendant le chrono</p>
+                  <h3>Musique du jeu</h3>
+                  <small>Son pendant le chrono</small>
                 </div>
               </div>
 
-              {/* Upload zone */}
               {!audioSettings.url ? (
-                <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-violet-500/50 transition-colors bg-[#242428]">
+                <label className={rg.drop}>
                   {audioUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                    <Loader2 className={rg.spin} />
                   ) : (
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Upload className="h-5 w-5" />
-                      <span className="text-sm">Uploader (MP3, WAV, OGG)</span>
-                    </div>
+                    <>
+                      <Upload />
+                      Uploader (MP3, WAV, OGG)
+                    </>
                   )}
                   <input
                     ref={audioInputRef}
@@ -1128,53 +1166,35 @@ export default function LineupPage() {
                   />
                 </label>
               ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 bg-[#242428] rounded-lg p-2">
-                    <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                      <Music className="h-4 w-4 text-violet-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-xs font-medium truncate">
-                        {audioSettings.filename || 'Fichier audio'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={toggleAudioPreview}
-                      className="p-1.5 rounded-lg bg-violet-500/20 text-violet-400 hover:bg-violet-500/30"
-                    >
-                      {isPreviewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                <>
+                  <div className={rg.aud}>
+                    <p><Music />{audioSettings.filename || 'Fichier audio'}</p>
+                    <button onClick={toggleAudioPreview} className={cx(rg.iconBtn, rg.iconPlay)} title={isPreviewPlaying ? 'Arrêter l’écoute' : 'Écouter'}>
+                      {isPreviewPlaying ? <Pause /> : <Play />}
                     </button>
-                    <button
-                      onClick={deleteAudio}
-                      className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button onClick={deleteAudio} className={cx(rg.iconBtn, rg.iconDel)} title="Supprimer la musique">
+                      <Trash2 />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between bg-[#242428] rounded-lg p-2">
-                    <div className="flex items-center gap-2">
-                      {audioSettings.enabled ? (
-                        <Volume2 className="h-3.5 w-3.5 text-violet-400" />
-                      ) : (
-                        <VolumeX className="h-3.5 w-3.5 text-gray-500" />
-                      )}
-                      <span className="text-white text-xs">Son activé</span>
-                    </div>
+                  <div className={rg.aud}>
+                    <p>{audioSettings.enabled ? <Volume2 /> : <VolumeX />}Son activé</p>
                     <button
                       onClick={toggleAudioEnabled}
-                      className={`relative w-10 h-5 rounded-full transition-colors ${
-                        audioSettings.enabled ? 'bg-violet-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                          audioSettings.enabled ? 'left-5' : 'left-0.5'
-                        }`}
-                      />
-                    </button>
+                      className={cx(rg.toggle, audioSettings.enabled && rg.toggleOn)}
+                      aria-label="Activer ou couper la musique"
+                    />
                   </div>
-                </div>
+                </>
               )}
+
+              <div className={rg.aud}>
+                <p>{sfxOn ? <Sparkles /> : <VolumeX />}Bruitages du jeu <small className={rg.sub}>tirage, chrono, alarme, points, victoire</small></p>
+                <button
+                  onClick={toggleSfxEnabled}
+                  className={cx(rg.toggle, sfxOn && rg.toggleOn)}
+                  aria-label="Activer ou couper les bruitages"
+                />
+              </div>
 
               {audioSettings.url && (
                 <audio
@@ -1186,124 +1206,69 @@ export default function LineupPage() {
             </div>
 
             {/* Bouton lancer */}
-            <button
-              onClick={launchGame}
-              disabled={launching}
-              className="w-full py-4 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {launching ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>🚀 Configurer et ouvrir le diaporama</>
-              )}
+            <button onClick={launchGame} disabled={launching} className={rg.cta}>
+              {launching ? <Loader2 className={rg.spin} /> : <><Rocket />Configurer et ouvrir le diaporama</>}
             </button>
-          </motion.div>
+          </section>
         ) : (
-          /* Control Panel */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
-          >
-            {/* Header avec status */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${
-                  isRunning ? 'bg-green-500' : isPaused ? 'bg-orange-500' : isGameOver ? 'bg-red-500' : 'bg-gray-500'
-                }`}></span>
-                <span className="text-white font-bold text-sm">
-                  {isRunning ? 'En cours' : isPaused ? 'En pause' : isGameOver ? 'Terminé' : 'Prêt'}
-                </span>
+          /* Pilotage */
+          <section className={rg.panel}>
+            <div className={rg.status}>
+              <div className={rg.st}>
+                <span className={cx(rg.dot, isRunning && rg.dotRun, !isRunning && isPaused && rg.dotPause, isGameOver && rg.dotEnd)} />
+                {isRunning ? 'En cours' : isPaused ? 'En pause' : isGameOver ? 'Terminé' : 'Prêt'}
               </div>
-              <div className="text-xs text-gray-500">
-                Espace = Start/Pause
+              <div className={rg.stRight}>
+                <button onClick={toggleSfxEnabled} className={cx(rg.fxBtn, sfxOn && rg.fxOn)} title="Bruitages de l'écran public (la musique n'est pas concernée)">
+                  {sfxOn ? <Volume2 /> : <VolumeX />}
+                  Bruitages {sfxOn ? 'activés' : 'coupés'}
+                </button>
+                <div className={rg.kbd}><b>Espace</b>Start / Pause</div>
               </div>
             </div>
 
-            {/* Scores côte à côte */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-[#1A1A1E] rounded-lg p-3 text-center">
-                <p className="text-gray-400 text-xs truncate">{team1Name}</p>
-                <p className="text-3xl font-bold text-white">{team1Score}</p>
+            {/* Scores + numéro + points + chrono */}
+            <div className={rg.board}>
+              <div className={rg.sc}>
+                <p>{team1Name}</p>
+                <b>{team1Score}</b>
               </div>
-              <div className="bg-[#1A1A1E] rounded-lg p-3 text-center">
-                <p className="text-gray-400 text-xs truncate">{team2Name}</p>
-                <p className="text-3xl font-bold text-white">{team2Score}</p>
+              <div className={rg.mid}>
+                <div className={rg.digits}>
+                  {digits.map((d, i) => <span key={i} className={currentNumber ? undefined : rg.e}>{d === '-' ? '–' : d}</span>)}
+                </div>
+                <div className={rg.meta}>
+                  <span className={cx(rg.pts, currentPoints === 30 ? rg.p30 : currentPoints === 20 ? rg.p20 : rg.p10)}>{currentPoints} pts</span>
+                  <span className={cx(rg.t, timeLeft <= 15 ? rg.tUrgent : timeLeft <= 30 && rg.tWarn)}>{timeLeft}s</span>
+                  {currentNumber && <small>{currentNumber.length} chiffres</small>}
+                </div>
               </div>
-            </div>
-
-            {/* Numéro + Points + Timer */}
-            <div className="bg-[#1A1A1E] rounded-lg p-3 mb-3 text-center">
-              <p className="text-4xl font-bold text-[#D4AF37] tracking-widest font-mono mb-1">
-                {currentNumber || '-----'}
-              </p>
-              {currentNumber && (
-                <p className="text-xs text-gray-500 mb-1">{currentNumber.length} chiffres</p>
-              )}
-              <div className="flex justify-center items-center gap-4">
-                <span className={`font-bold ${
-                  currentPoints === 30 ? 'text-green-400' :
-                  currentPoints === 20 ? 'text-yellow-400' :
-                  'text-orange-400'
-                }`}>
-                  {currentPoints} pts
-                </span>
-                <span className={`text-3xl font-bold font-mono ${
-                  timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'
-                }`}>
-                  {timeLeft}s
-                </span>
+              <div className={rg.sc}>
+                <p>{team2Name}</p>
+                <b>{team2Score}</b>
               </div>
             </div>
 
             {/* Boutons selon l'état du jeu */}
-            <div className="space-y-2">
+            <div className={rg.acts}>
               {/* Jeu pas encore commencé */}
               {gameNotStarted && (
-                <button
-                  onClick={startGame}
-                  className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
-                >
-                  <Play className="h-5 w-5" />
-                  🚀 DÉMARRER LA PARTIE
+                <button onClick={startGame} className={cx(rg.big, rg.go)}>
+                  <Play />
+                  DÉMARRER LA PARTIE
                 </button>
               )}
 
               {/* Jeu en cours */}
               {gameInProgress && (
                 <>
-                  <button
-                    onClick={pauseGame}
-                    className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                  >
-                    <Pause className="h-4 w-4" />
+                  <button onClick={pauseGame} className={cx(rg.big, rg.pa)}>
+                    <Pause />
                     PAUSE
                   </button>
-
-                  {/* Attribution des points */}
-                  {currentNumber && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => awardPoints(1)}
-                        className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm truncate px-2"
-                      >
-                        ✓ {team1Name}
-                      </button>
-                      <button
-                        onClick={() => awardPoints(2)}
-                        className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm truncate px-2"
-                      >
-                        ✓ {team2Name}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Passer au numéro suivant */}
-                  <button
-                    onClick={skipNumber}
-                    className="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center justify-center gap-2"
-                  >
-                    <SkipForward className="h-4 w-4" />
+                  {teamButtons}
+                  <button onClick={skipNumber} className={cx(rg.big, rg.sk)}>
+                    <SkipForward />
                     Numéro suivant (sans points)
                   </button>
                 </>
@@ -1312,79 +1277,49 @@ export default function LineupPage() {
               {/* Jeu en pause */}
               {gamePaused && (
                 <>
-                  <button
-                    onClick={resumeGame}
-                    className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
-                  >
-                    <Play className="h-5 w-5" />
-                    ▶️ REPRENDRE
+                  <button onClick={resumeGame} className={cx(rg.big, rg.go)}>
+                    <Play />
+                    REPRENDRE
                   </button>
-
-                  {/* Attribution des points même en pause */}
-                  {currentNumber && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => awardPoints(1)}
-                        className="py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm truncate px-2"
-                      >
-                        ✓ {team1Name}
-                      </button>
-                      <button
-                        onClick={() => awardPoints(2)}
-                        className="py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm truncate px-2"
-                      >
-                        ✓ {team2Name}
-                      </button>
-                    </div>
-                  )}
+                  {teamButtons}
                 </>
               )}
 
               {/* Jeu terminé */}
               {gameEnded && (
                 <>
-                  <div className="bg-[#1A1A1E] rounded-lg p-4 text-center mb-2">
-                    <p className="text-2xl mb-2">🏆</p>
-                    <p className="text-[#D4AF37] font-bold text-lg">
+                  <div className={rg.res}>
+                    <div className={rg.cup}>🏆</div>
+                    <h3>
                       {team1Score > team2Score ? team1Name : team2Score > team1Score ? team2Name : 'Égalité'}
                       {team1Score !== team2Score && ' gagne !'}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {team1Score} - {team2Score}
-                    </p>
+                    </h3>
+                    <p>{team1Score} - {team2Score}</p>
                   </div>
 
                   {showWinner && (
-                    <button
-                      onClick={hideWinnerScreen}
-                      className="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium"
-                    >
+                    <button onClick={hideWinnerScreen} className={rg.big}>
+                      <EyeOff />
                       Masquer l&apos;écran de victoire
                     </button>
                   )}
 
-                  <button
-                    onClick={startGame}
-                    className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw className="h-5 w-5" />
-                    🔄 NOUVELLE PARTIE
+                  <button onClick={startGame} className={cx(rg.big, rg.gd)}>
+                    <RotateCcw />
+                    NOUVELLE PARTIE
                   </button>
                 </>
               )}
             </div>
 
             {/* Quitter - TOUJOURS visible */}
-            <button
-              onClick={exitGame}
-              className="w-full mt-3 py-2 bg-red-500/30 hover:bg-red-500 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-            >
-              <X className="h-4 w-4" />
+            <button onClick={exitGame} className={cx(rg.big, rg.q)}>
+              <X />
               Quitter le jeu
             </button>
-          </motion.div>
+          </section>
         )}
-      </main>
+      </div>
     </div>
   )
 }
