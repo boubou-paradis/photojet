@@ -58,6 +58,7 @@ import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import rg from './regie.module.css'
 
 interface PhotoSlot {
   url: string
@@ -1294,262 +1295,152 @@ export default function MysteryPage() {
     )
   }
 
+  // Habillage « régie » AnimaJet 2.0 (maquette V2 validée le 25/11/2026) — handlers et états inchangés.
+  const toolCls = (...extra: string[]) => [rg.tool, ...extra].join(' ')
+  const bigCls = (...extra: string[]) => [rg.big, ...extra].join(' ')
+
   return (
-    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
-      {/* Animated background effects - Gold/Violet premium theme */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
-      </div>
-
-      {/* Header */}
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
-              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-600/30 flex items-center justify-center">
-                <span className="text-xl">🔍</span>
-                <div className="absolute inset-0 rounded-xl bg-cyan-400/20 blur-xl opacity-50" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-white">Photo Mystère</h1>
-                <p className="text-xs text-gray-500">{session.name}</p>
-              </div>
+    <div className={rg.page}>
+      <div className={rg.wrap}>
+        {/* En-tête */}
+        <header className={rg.top}>
+          <button className={rg.ghost} onClick={() => router.push(`/admin/jeux?session=${session.id}`)}>
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </button>
+          <div className={rg.brand}>
+            <svg viewBox="0 0 120 96" aria-hidden="true">
+              <defs>
+                <linearGradient id="pmCam" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#FFF3C0" /><stop offset=".45" stopColor="#F7C548" /><stop offset=".6" stopColor="#B87610" /><stop offset="1" stopColor="#FFE08A" />
+                </linearGradient>
+              </defs>
+              <path d="M40 18 L48 6 H74 L82 18 H104 a10 10 0 0 1 10 10 V80 a10 10 0 0 1-10 10 H16 A10 10 0 0 1 6 80 V28 a10 10 0 0 1 10-10 Z" fill="rgba(20,8,36,.65)" stroke="url(#pmCam)" strokeWidth="9" strokeLinejoin="round" />
+              <circle cx="60" cy="54" r="21" fill="none" stroke="url(#pmCam)" strokeWidth="9" />
+              <circle cx="60" cy="54" r="9" fill="url(#pmCam)" opacity=".35" />
+              <circle cx="96" cy="34" r="5" fill="url(#pmCam)" />
+            </svg>
+            <div>
+              <h1>Photo <span>Mystère</span></h1>
+              <small>{session.name}</small>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} legend={remoteLegend} />
-            <a href="/photo-mystere-regles.pdf" target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300 border border-cyan-400/30 hover:border-cyan-400">
-                <FileText className="h-4 w-4 mr-2" />
-                Notice
-              </Button>
-            </a>
-            <button
-              onClick={() => setShowSaveMysteryModal(true)}
-              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
-              title="Sauvegarder ce jeu dans votre bibliothèque"
-            >
-              <span aria-hidden>💾</span>
-              Sauvegarder
-            </button>
-            <button
-              onClick={loadSavedMysteries}
-              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
-              title="Charger un jeu de votre bibliothèque"
-            >
-              <span aria-hidden>📂</span>
-              Charger
-            </button>
-            <button
-              onClick={openExportModal}
-              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30"
-              title="Exporter cette partie dans un fichier à partager"
-            >
-              <Download className="h-4 w-4" />
-              Exporter
-            </button>
-            <button
-              onClick={openImportModal}
-              disabled={gameActive}
-              className="px-4 py-2.5 bg-[#2E2E33] text-[#B0B0B5] rounded-xl hover:bg-[#3E3E43] hover:text-white hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] flex items-center gap-2 text-sm transition-all duration-200 border border-[rgba(255,255,255,0.05)] hover:border-[#D4AF37]/30 disabled:opacity-50 disabled:cursor-not-allowed"
-              title={gameActive ? 'Quittez la partie en cours pour importer' : 'Importer une partie depuis un fichier'}
-            >
-              <FileUp className="h-4 w-4" />
-              Importer
-            </button>
-            <button
-              onClick={clearAllData}
-              className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-              title="Supprimer toutes les photos et audio"
-            >
-              <Trash2 className="h-4 w-4" />
-              Tout vider
-            </button>
-            {gameActive && (
-              <Button
-                size="sm"
-                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:opacity-90 transition-opacity"
-              >
-                <Monitor className="h-4 w-4 mr-2" />
-                Diaporama
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main content */}
-      <main className="relative z-10 px-8 py-6">
-        {gameActive ? (
-          /* Remote Control Panel */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl border-2 border-[#D4AF37] overflow-hidden hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
+        <div className={rg.tools}>
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} legend={remoteLegend} />
+          <a href="/photo-mystere-regles.pdf" target="_blank" rel="noopener noreferrer" className={toolCls(rg.sep)}>
+            <FileText />
+            Notice
+          </a>
+          <button onClick={() => setShowSaveMysteryModal(true)} className={toolCls()} title="Sauvegarder ce jeu dans votre bibliothèque">
+            <span aria-hidden>💾</span>
+            Sauvegarder
+          </button>
+          <button onClick={loadSavedMysteries} className={toolCls()} title="Charger un jeu de votre bibliothèque">
+            <span aria-hidden>📂</span>
+            Charger
+          </button>
+          <button onClick={openExportModal} className={toolCls()} title="Exporter cette partie dans un fichier à partager">
+            <Download />
+            Exporter
+          </button>
+          <button
+            onClick={openImportModal}
+            disabled={gameActive}
+            className={toolCls()}
+            title={gameActive ? 'Quittez la partie en cours pour importer' : 'Importer une partie depuis un fichier'}
           >
-            {/* Header compact */}
-            <div className="p-4 bg-gradient-to-br from-[#D4AF37]/10 to-transparent">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-white font-bold">
-                    Jeu en cours - Manche {currentRound}/{totalRounds}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1 rounded-lg">
-                  <span className="text-[#D4AF37] text-lg font-bold">{revealedTiles.length}/{totalTiles}</span>
-                  <span className="text-white/60 text-xs">cases</span>
-                </div>
+            <FileUp />
+            Importer
+          </button>
+          <button onClick={clearAllData} className={toolCls(rg.danger, rg.sep)} title="Supprimer toutes les photos et audio">
+            <Trash2 />
+            Tout vider
+          </button>
+          {gameActive && (
+            <button onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className={toolCls(rg.violetTool)} title="Ouvrir l'écran public">
+              <Monitor />
+              Diaporama
+            </button>
+          )}
+        </div>
+
+        {gameActive ? (
+          /* Partie en cours */
+          <section className={rg.panel}>
+            <div className={rg.status}>
+              <div className={rg.st}>
+                <span className={`${rg.dot} ${isPlaying ? '' : rg.dotPause}`} />
+                <span>Jeu en cours - Manche {currentRound}/{totalRounds}</span>
               </div>
-
-              {/* Preview miniature */}
-              <div className="bg-black rounded-lg overflow-hidden relative mb-4 flex items-center justify-center" style={{ minHeight: '250px', maxHeight: '350px' }}>
-                {photos[currentRound - 1]?.preview && (
-                  <img
-                    src={photos[currentRound - 1]!.preview}
-                    alt="Current photo"
-                    className="max-w-full max-h-[350px] object-contain opacity-40"
-                  />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]"
-                    initial={{ width: '0%' }}
-                    animate={{ width: `${(revealedTiles.length / totalTiles) * 100}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-              </div>
-
-              {/* Control buttons */}
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                <button
-                  onClick={togglePlayPause}
-                  className={`py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
-                    isPlaying
-                      ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                  }`}
-                >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isPlaying ? 'PAUSE' : 'PLAY'}
-                </button>
-
-                <button
-                  onClick={revealAll}
-                  className="py-3 bg-[#D4AF37] hover:bg-[#F4D03F] text-[#1A1A1E] rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <Eye className="h-4 w-4" />
-                  Révéler
-                </button>
-
-                <button
-                  onClick={nextRound}
-                  disabled={currentRound >= totalRounds}
-                  className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <SkipForward className="h-4 w-4" />
-                  Suivante
-                </button>
-
-                <button
-                  onClick={resetCurrentRound}
-                  className="py-3 bg-[#3E3E43] hover:bg-[#4E4E53] text-white rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Reset
-                </button>
-              </div>
-
-              {/* Winner & Quit buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={triggerWinnerAnimation}
-                  className="py-3 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black rounded-lg font-bold flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  🏆 GAGNANT !
-                </button>
-
-                <button
-                  onClick={exitGame}
-                  className="py-3 bg-red-500/80 hover:bg-red-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all"
-                >
-                  <StopCircle className="h-4 w-4" />
-                  Quitter
-                </button>
+              <div className={rg.cases}>
+                <span className={rg.g}>{Array.from({ length: 9 }, (_, i) => <i key={i} />)}</span>
+                <span><b>{revealedTiles.length}</b> <b>/</b> <b>{totalTiles}</b> cases</span>
               </div>
             </div>
-          </motion.div>
+
+            {/* Aperçu en pleine luminosité */}
+            <div className={rg.preview}>
+              {photos[currentRound - 1]?.preview && (
+                <img src={photos[currentRound - 1]!.preview} alt="Photo de la manche" style={{ aspectRatio: `${cols} / ${rows}` }} />
+              )}
+              <div className={rg.bar}>
+                <i style={{ width: `${totalTiles ? (revealedTiles.length / totalTiles) * 100 : 0}%` }} />
+              </div>
+            </div>
+
+            <div className={`${rg.ctrl} ${rg.r4}`}>
+              <button onClick={togglePlayPause} className={bigCls(isPlaying ? rg.pause : rg.play)}>
+                {isPlaying ? <Pause /> : <Play />}
+                {isPlaying ? 'PAUSE' : 'PLAY'}
+              </button>
+              <button onClick={revealAll} className={bigCls(rg.gold)}>
+                <Eye />
+                Révéler
+              </button>
+              <button onClick={nextRound} disabled={currentRound >= totalRounds} className={bigCls(rg.violet)}>
+                <SkipForward />
+                Suivante
+              </button>
+              <button onClick={resetCurrentRound} className={bigCls(rg.slate)}>
+                <RotateCcw />
+                Reset
+              </button>
+            </div>
+
+            <div className={`${rg.ctrl} ${rg.r2}`}>
+              <button onClick={triggerWinnerAnimation} className={bigCls(rg.gold)}>
+                🏆 GAGNANT !
+              </button>
+              <button onClick={exitGame} className={bigCls(rg.red)}>
+                <StopCircle />
+                Quitter
+              </button>
+            </div>
+          </section>
         ) : (
           /* Configuration */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl p-4 space-y-4 w-full hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300"
-          >
-            {/* Global Reveal Audio Section */}
-            <div className="bg-[#1A1A1E] rounded-xl p-4 border border-cyan-500/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Music className="h-5 w-5 text-cyan-400" />
-                <Label className="text-white text-sm font-semibold">
-                  Musique de dévoilement
-                </Label>
-                <span className="text-xs text-cyan-400/70">(pendant que les cases s'enlèvent)</span>
-              </div>
-
+          <section className={`${rg.panel} ${rg.cfg}`}>
+            <div className={rg.box}>
+              <h3 className={rg.h3}>
+                <Music />
+                Musique de dévoilement <em>(pendant que les cases s&apos;enlèvent)</em>
+              </h3>
               {revealAudio ? (
-                <div className="flex items-center gap-3 bg-[#242428] rounded-lg p-3">
-                  <button
-                    onClick={toggleRevealAudioPreview}
-                    className={`p-3 rounded-lg transition-all ${
-                      playingRevealAudio
-                        ? 'bg-cyan-500 text-white'
-                        : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'
-                    }`}
-                  >
-                    {playingRevealAudio ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                <div className={rg.aud}>
+                  <button onClick={toggleRevealAudioPreview} className={`${rg.iconBtn} ${rg.iconGold}`} title={playingRevealAudio ? 'Stop' : 'Écouter'}>
+                    {playingRevealAudio ? <Pause /> : <Play />}
                   </button>
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-medium">Audio configuré</p>
-                    <p className="text-cyan-400/70 text-xs">Joue pendant le dévoilement</p>
-                  </div>
-                  <button
-                    onClick={removeRevealAudio}
-                    className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4" />
+                  <p>Audio configuré<small>Joue pendant le dévoilement</small></p>
+                  <button onClick={removeRevealAudio} className={`${rg.iconBtn} ${rg.iconDel}`} title="Supprimer">
+                    <Trash2 />
                   </button>
-                  <audio
-                    ref={revealAudioPreviewRef}
-                    src={revealAudio.preview}
-                    onEnded={() => setPlayingRevealAudio(false)}
-                  />
+                  <audio ref={revealAudioPreviewRef} src={revealAudio.preview} onEnded={() => setPlayingRevealAudio(false)} />
                 </div>
               ) : (
-                <button
-                  onClick={() => revealAudioInputRef.current?.click()}
-                  disabled={uploadingRevealAudio}
-                  className="w-full py-4 border-2 border-dashed border-cyan-500/30 rounded-lg text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-2"
-                >
-                  {uploadingRevealAudio ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Upload className="h-5 w-5" />
-                  )}
+                <button onClick={() => revealAudioInputRef.current?.click()} disabled={uploadingRevealAudio} className={rg.addAudio}>
+                  {uploadingRevealAudio ? <Loader2 className={rg.spin} /> : <Upload />}
                   Ajouter une musique de fond
                 </button>
               )}
@@ -1562,177 +1453,120 @@ export default function MysteryPage() {
               />
             </div>
 
-            {/* Compact photo grid 5x4 */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label className="text-white text-sm">
-                  Photos à deviner (1 à 20 manches)
-                </Label>
-                <span className="text-xs text-[#6B6B70]">
-                  {validPhotosCount}/20 photos
-                  {photos.filter(p => p?.audioUrl).length > 0 && (
-                    <span className="ml-1 text-[#D4AF37]">
-                      • {photos.filter(p => p?.audioUrl).length} audio
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div className="grid grid-cols-5 gap-4 w-full">
-                {photos.map((photo, index) => (
-                  <div
-                    key={index}
-                    className={`
-                      rounded-xl border-2 relative overflow-hidden cursor-pointer
-                      transition-all duration-200 group
-                      ${photo
-                        ? 'border-[#D4AF37]'
-                        : 'border-dashed border-[#3E3E43] hover:border-[#D4AF37]/50 bg-[#1A1A1E]'
-                      }
-                    `}
-                    style={{ aspectRatio: `${cols} / ${rows}` }}
-                    onClick={() => {
-                      if (!uploading && !photo) {
-                        fileInputRefs.current[index]?.click()
-                      }
-                    }}
-                  >
-                    {uploading === index ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
-                        <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
-                      </div>
-                    ) : uploadingAudio === index ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1E]">
-                        <Loader2 className="h-4 w-4 text-[#D4AF37] animate-spin" />
-                      </div>
-                    ) : photo ? (
-                      <>
-                        {/* Photo thumbnail */}
-                        <img
-                          src={photo.preview}
-                          alt={`Photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-
-                        {/* Number badge */}
-                        <div className="absolute top-1 left-1 bg-[#D4AF37] text-[#1A1A1E] text-xs font-bold w-6 h-6 rounded-lg flex items-center justify-center shadow-lg">
-                          {index + 1}
+            <div className={rg.slotsHead}>
+              <h3 className={rg.h3}>Photos à deviner (1 à 20 manches)</h3>
+              <span>
+                {validPhotosCount}/20 photos
+                {photos.filter(p => p?.audioUrl).length > 0 && (
+                  <b> • {photos.filter(p => p?.audioUrl).length} audio</b>
+                )}
+              </span>
+            </div>
+            <div className={rg.slots}>
+              {photos.map((photo, index) => (
+                <div
+                  key={index}
+                  className={`${rg.slot} ${photo ? rg.full : rg.empty}`}
+                  style={{ aspectRatio: `${cols} / ${rows}` }}
+                  onClick={() => {
+                    if (!uploading && !photo) {
+                      fileInputRefs.current[index]?.click()
+                    }
+                  }}
+                >
+                  {uploading === index || uploadingAudio === index ? (
+                    <div className={rg.loading}>
+                      <Loader2 className={rg.spin} />
+                    </div>
+                  ) : photo ? (
+                    <>
+                      <img src={photo.preview} alt={`Photo ${index + 1}`} />
+                      <div className={`${rg.badge} ${rg.badgeN}`}>{index + 1}</div>
+                      {photo.audioUrl && (
+                        <div className={`${rg.badge} ${rg.badgeA}`}>
+                          <Volume2 />
                         </div>
-
-                        {/* Audio indicator */}
-                        {photo.audioUrl && (
-                          <div className="absolute top-1 right-1 bg-emerald-500 text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-lg">
-                            <Volume2 className="h-3.5 w-3.5" />
-                          </div>
+                      )}
+                      <div className={rg.hov}>
+                        {photo.audioUrl ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleAudioPreview(index) }}
+                            className={`${rg.mini} ${playingAudio === index ? rg.miniOn : ''}`}
+                            title={playingAudio === index ? 'Stop' : 'Play audio'}
+                          >
+                            {playingAudio === index ? <Pause /> : <Play />}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); audioInputRefs.current[index]?.click() }}
+                            className={rg.mini}
+                            title="Ajouter audio"
+                          >
+                            <Music />
+                          </button>
                         )}
-
-                        {/* Hover overlay with actions */}
-                        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                          {/* Audio button */}
-                          {photo.audioUrl ? (
+                        <div className={rg.row}>
+                          {photo.audioUrl && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleAudioPreview(index)
-                              }}
-                              className={`p-2 rounded-lg ${playingAudio === index ? 'bg-[#D4AF37] text-black' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                              title={playingAudio === index ? "Stop" : "Play audio"}
+                              onClick={(e) => { e.stopPropagation(); removeAudio(index) }}
+                              className={`${rg.mini} ${rg.miniO}`}
+                              title="Supprimer audio"
                             >
-                              {playingAudio === index ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                audioInputRefs.current[index]?.click()
-                              }}
-                              className="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30"
-                              title="Ajouter audio"
-                            >
-                              <Music className="h-5 w-5" />
+                              <VolumeX />
                             </button>
                           )}
-
-                          {/* Delete buttons row */}
-                          <div className="flex gap-2">
-                            {photo.audioUrl && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  removeAudio(index)
-                                }}
-                                className="p-1.5 rounded-lg bg-orange-500/80 text-white hover:bg-orange-500"
-                                title="Supprimer audio"
-                              >
-                                <VolumeX className="h-4 w-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                removePhoto(index)
-                              }}
-                              className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500"
-                              title="Supprimer photo"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removePhoto(index) }}
+                            className={`${rg.mini} ${rg.miniR}`}
+                            title="Supprimer photo"
+                          >
+                            <Trash2 />
+                          </button>
                         </div>
-
-                        {/* Hidden audio element */}
-                        {photo.audioUrl && (
-                          <audio
-                            ref={(el) => { audioPreviewRefs.current[index] = el }}
-                            src={photo.audioPreview}
-                            onEnded={() => setPlayingAudio(null)}
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B70] group-hover:text-[#D4AF37]/70 transition-colors">
-                        <span className="text-sm font-bold mb-1">{index + 1}</span>
-                        <Upload className="h-6 w-6" />
                       </div>
-                    )}
+                      {photo.audioUrl && (
+                        <audio
+                          ref={(el) => { audioPreviewRefs.current[index] = el }}
+                          src={photo.audioPreview}
+                          onEnded={() => setPlayingAudio(null)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div>
+                      {index + 1}
+                      <Upload />
+                    </div>
+                  )}
 
-                    {/* Hidden file inputs */}
-                    <input
-                      ref={(el) => { fileInputRefs.current[index] = el }}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileSelect(e, index)}
-                      className="hidden"
-                    />
-                    <input
-                      ref={(el) => { audioInputRefs.current[index] = el }}
-                      type="file"
-                      accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3,.mp3,.wav,.ogg"
-                      onChange={(e) => handleAudioUpload(e, index)}
-                      className="hidden"
-                    />
-                  </div>
-                ))}
-              </div>
+                  <input
+                    ref={(el) => { fileInputRefs.current[index] = el }}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileSelect(e, index)}
+                    className="hidden"
+                  />
+                  <input
+                    ref={(el) => { audioInputRefs.current[index] = el }}
+                    type="file"
+                    accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3,.mp3,.wav,.ogg"
+                    onChange={(e) => handleAudioUpload(e, index)}
+                    className="hidden"
+                  />
+                </div>
+              ))}
             </div>
 
-            {/* Settings grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={rg.settings}>
               <div>
-                <Label className="text-white text-sm mb-2 block">Nombre de cases</Label>
-                <Select
-                  value={mysteryPhotoGrid}
-                  onValueChange={(value) => setMysteryPhotoGrid(value as MysteryPhotoGrid)}
-                >
-                  <SelectTrigger className="w-full bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                <label>Nombre de cases</label>
+                <Select value={mysteryPhotoGrid} onValueChange={(value) => setMysteryPhotoGrid(value as MysteryPhotoGrid)}>
+                  <SelectTrigger className={`w-full ${rg.selTrigger}`}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                  <SelectContent className={rg.selContent}>
                     {gridOptions.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="text-white hover:bg-[#D4AF37]/10 focus:bg-[#D4AF37]/10"
-                      >
+                      <SelectItem key={option.value} value={option.value} className="text-white hover:bg-[#D4AF37]/10 focus:bg-[#D4AF37]/10">
                         {option.label}
                       </SelectItem>
                     ))}
@@ -1740,21 +1574,14 @@ export default function MysteryPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-white text-sm mb-2 block">Vitesse de dévoilement</Label>
-                <Select
-                  value={mysteryPhotoSpeed}
-                  onValueChange={(value) => setMysteryPhotoSpeed(value as MysteryPhotoSpeed)}
-                >
-                  <SelectTrigger className="w-full bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                <label>Vitesse de dévoilement</label>
+                <Select value={mysteryPhotoSpeed} onValueChange={(value) => setMysteryPhotoSpeed(value as MysteryPhotoSpeed)}>
+                  <SelectTrigger className={`w-full ${rg.selTrigger}`}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                  <SelectContent className={rg.selContent}>
                     {speedOptions.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="text-white hover:bg-[#D4AF37]/10 focus:bg-[#D4AF37]/10"
-                      >
+                      <SelectItem key={option.value} value={option.value} className="text-white hover:bg-[#D4AF37]/10 focus:bg-[#D4AF37]/10">
                         {option.label}
                       </SelectItem>
                     ))}
@@ -1763,33 +1590,18 @@ export default function MysteryPage() {
               </div>
             </div>
 
-            {/* Save button */}
-            <Button
-              onClick={saveSettings}
-              disabled={saving}
-              variant="outline"
-              className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
-            >
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            <button onClick={saveSettings} disabled={saving} className={rg.line}>
+              {saving && <Loader2 className={`h-4 w-4 ${rg.spin}`} />}
               Sauvegarder les paramètres
-            </Button>
+            </button>
 
-            {/* Launch button */}
-            <Button
-              onClick={launchGame}
-              disabled={validPhotosCount === 0 || launching}
-              className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-[#1A1A1E] hover:opacity-90 disabled:opacity-50"
-            >
-              {launching ? (
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              ) : (
-                <Play className="h-5 w-5 mr-2" />
-              )}
+            <button onClick={launchGame} disabled={validPhotosCount === 0 || launching} className={bigCls(rg.gold, rg.launch)}>
+              {launching ? <Loader2 className={rg.spin} /> : <Play />}
               Lancer le jeu ({validPhotosCount} manche{validPhotosCount > 1 ? 's' : ''})
-            </Button>
-          </motion.div>
+            </button>
+          </section>
         )}
-      </main>
+      </div>
 
       {/* Modale de recadrage : ratio verrouillé sur le quadrillage RÉELLEMENT
           enregistré en base (croppingGrid, relu à l'ouverture) — pas sur
@@ -1819,29 +1631,22 @@ export default function MysteryPage() {
 
       {/* Modale : Sauvegarder le jeu dans la bibliothèque */}
       {showSaveMysteryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-md w-full overflow-hidden flex flex-col"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">💾</div>
+        <div className={rg.modalBg}>
+          <div className={`${rg.modal} ${rg.modalSm}`}>
+            <div className={rg.mHead}>
+              <div>
+                <div className={rg.mIco}>💾</div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Sauvegarder ce jeu</h3>
-                  <p className="text-sm text-gray-400">{validPhotosCount} photo{validPhotosCount > 1 ? 's' : ''} dans votre bibliothèque</p>
+                  <h3>Sauvegarder ce jeu</h3>
+                  <p>{validPhotosCount} photo{validPhotosCount > 1 ? 's' : ''} dans votre bibliothèque</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowSaveMysteryModal(false)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5" />
+              <button onClick={() => setShowSaveMysteryModal(false)} className={rg.mClose}>
+                <X />
               </button>
             </div>
-            <div className="p-5">
-              <label className="text-gray-400 text-xs">Nom du jeu</label>
+            <div className={rg.mBody}>
+              <label>Nom du jeu</label>
               <input
                 type="text"
                 value={saveMysteryName}
@@ -1849,109 +1654,76 @@ export default function MysteryPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !savingMystery) handleSaveMystery() }}
                 autoFocus
                 placeholder="Ex : Les plus grandes villes du monde"
-                className="w-full bg-[#2E2E33] text-white rounded-lg px-3 py-2.5 border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none mt-1"
               />
-              <p className="text-xs text-gray-500 mt-2">Supprimer une photo depuis une session la retirera aussi de ce jeu sauvegardé.</p>
+              <p className={rg.hint}>Supprimer une photo depuis une session la retirera aussi de ce jeu sauvegardé.</p>
             </div>
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
-              <button
-                onClick={() => setShowSaveMysteryModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveMystery}
-                disabled={savingMystery}
-                className="px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-xl font-bold hover:from-[#F4D03F] hover:to-[#D4AF37] flex items-center gap-2 transition-all duration-200 disabled:opacity-60"
-              >
-                {savingMystery ? <Loader2 className="h-4 w-4 animate-spin" /> : <span aria-hidden>💾</span>}
+            <div className={rg.mFoot}>
+              <button onClick={() => setShowSaveMysteryModal(false)}>Annuler</button>
+              <button onClick={handleSaveMystery} disabled={savingMystery} className={rg.btnGoldS}>
+                {savingMystery ? <Loader2 className={`h-4 w-4 ${rg.spin}`} /> : <span aria-hidden>💾</span>}
                 Sauvegarder
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Modale : Charger un jeu sauvegardé */}
       {showLoadMysteryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="card-gold rounded-2xl border-[#D4AF37]/30 shadow-[0_0_50px_rgba(212,175,55,0.2)] max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-          >
-            <div className="flex items-center justify-between p-5 border-b border-[rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center border border-[#D4AF37]/30 text-lg">📂</div>
+        <div className={rg.modalBg}>
+          <div className={rg.modal}>
+            <div className={rg.mHead}>
+              <div>
+                <div className={rg.mIco}>📂</div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Votre bibliothèque de jeux Photo Mystère</h3>
-                  <p className="text-sm text-gray-400">Charger remplace les photos actuelles</p>
+                  <h3>Votre bibliothèque de jeux Photo Mystère</h3>
+                  <p>Charger remplace les photos actuelles</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowLoadMysteryModal(false)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5" />
+              <button onClick={() => setShowLoadMysteryModal(false)} className={rg.mClose}>
+                <X />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className={rg.mBody}>
               {loadingSavedMysteries ? (
-                <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Chargement…
+                <div className={rg.emptyLib}>
+                  <Loader2 className={`inline h-5 w-5 mr-2 ${rg.spin}`} /> Chargement…
                 </div>
               ) : savedMysteries.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className={rg.emptyLib}>
                   <div className="text-4xl mb-3">📂</div>
                   <p>Aucun jeu sauvegardé pour l&apos;instant.</p>
-                  <p className="text-sm text-gray-500 mt-1">Préparez un jeu puis cliquez sur « 💾 Sauvegarder ».</p>
+                  <p className="text-sm mt-1">Préparez un jeu puis cliquez sur « 💾 Sauvegarder ».</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {savedMysteries.map((mystery) => (
-                    <div
-                      key={mystery.id}
-                      className="card-gold rounded-xl p-4 flex items-center justify-between gap-3 hover:border-[#D4AF37]/50 transition-all duration-200"
+                savedMysteries.map((mystery) => (
+                  <div key={mystery.id} className={rg.lib}>
+                    <button onClick={() => handleLoadMystery(mystery)} className={rg.libMain}>
+                      <h4>{mystery.name}</h4>
+                      <small>
+                        {(mystery.photos?.length ?? 0)} photo{(mystery.photos?.length ?? 0) > 1 ? 's' : ''}
+                        {' · '}
+                        {new Date(mystery.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </small>
+                    </button>
+                    <button onClick={() => handleLoadMystery(mystery)} className={rg.btnGoldS}>
+                      Charger
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSavedMystery(mystery.id)}
+                      className={`${rg.iconBtn} ${rg.iconDel}`}
+                      title="Supprimer de la bibliothèque"
                     >
-                      <button
-                        onClick={() => handleLoadMystery(mystery)}
-                        className="flex-1 text-left group"
-                      >
-                        <h4 className="text-white font-bold group-hover:text-[#D4AF37] transition-colors">{mystery.name}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {(mystery.photos?.length ?? 0)} photo{(mystery.photos?.length ?? 0) > 1 ? 's' : ''}
-                          {' · '}
-                          {new Date(mystery.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </p>
-                      </button>
-                      <button
-                        onClick={() => handleLoadMystery(mystery)}
-                        className="shrink-0 px-3 py-2 bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black rounded-lg font-bold text-sm hover:from-[#F4D03F] hover:to-[#D4AF37] transition-all duration-200"
-                      >
-                        Charger
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSavedMystery(mystery.id)}
-                        className="shrink-0 p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                        title="Supprimer de la bibliothèque"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                      <Trash2 />
+                    </button>
+                  </div>
+                ))
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10">
-              <button
-                onClick={() => setShowLoadMysteryModal(false)}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Fermer
-              </button>
+            <div className={rg.mFoot}>
+              <button onClick={() => setShowLoadMysteryModal(false)}>Fermer</button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

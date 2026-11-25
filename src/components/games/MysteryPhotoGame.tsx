@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react'
+import { Maximize, Minimize, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import QRCode from '@/components/QRCode'
 import { MysteryPhotoGrid, MysteryPhotoSpeed } from '@/types/database'
 import { createClient, createPublicClient } from '@/lib/supabase'
 import type { LiveSession } from '@/lib/public-api/columns'
 import { getInviteUrl } from '@/lib/utils'
+import st from './mystery/MysteryStage.module.css'
+
+// Habillage « plateau TV » AnimaJet 2.0 (maquette V2 validée le 25/11/2026) : décor, cadre et case
+// sont des rendus Blender précalculés ; la logique de jeu ci-dessous est inchangée.
+const ASSETS = '/photo-mystere'
+const STAGE_W = 1920
+const STAGE_H = 1080
 
 interface MysteryPhotoGameProps {
   session: LiveSession
@@ -57,26 +63,22 @@ function preloadImageWithRetry(
   tryLoad()
 }
 
-// Données pré-générées pour éviter Math.random() dans le render (évite le clignotement)
-const WINNER_CONFETTI_DATA = Array.from({ length: 100 }, (_, i) => ({
-  id: i,
-  left: Math.random() * 100,
-  width: 8 + Math.random() * 12,
-  height: 8 + Math.random() * 12,
-  isRound: Math.random() > 0.5,
-  xOffset: (Math.random() - 0.5) * 100,
-  duration: 3 + Math.random() * 2,
-  delay: Math.random() * 3,
-}))
+// Confettis du gagnant : valeurs déterministes (aucun Math.random() au rendu)
+const CONFETTI = Array.from({ length: 90 }, (_, i) => {
+  const r = (k: number) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x) }
+  const s = 8 + r(1) * 12
+  return {
+    id: i,
+    left: r(2) * 100,
+    w: s * 0.7,
+    h: s * 1.5,
+    color: ['#FFD86B', '#F2B632', '#FFF1B8', '#C9A2FF', '#9B5CFF', '#E8B341'][i % 6],
+    duration: 3.5 + r(3) * 2.5,
+    delay: -r(4) * 5,
+  }
+})
 
-const WINNER_STARS_DATA = Array.from({ length: 30 }, (_, i) => ({
-  id: i,
-  left: Math.random() * 100,
-  top: Math.random() * 100,
-  delay: Math.random() * 2,
-}))
-
-// Generate zigzag path for Pac-Man
+// Parcours en zigzag des cases à la révélation finale (ex-parcours Pac-Man, même ordre)
 const generatePacmanPath = (rows: number, cols: number) => {
   const path: { row: number; col: number }[] = []
   for (let row = 0; row < rows; row++) {
@@ -104,15 +106,24 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   // Winner animation states
   const [showWinnerAnimation, setShowWinnerAnimation] = useState(false)
   const [animationPhase, setAnimationPhase] = useState(0)
-  const [pacmanPosition, setPacmanPosition] = useState({ row: 0, col: 0 })
-  const [pacmanDirection, setPacmanDirection] = useState<'right' | 'left' | 'up' | 'down'>('right')
+  // Position/direction conservées (logique inchangée) ; le personnage n'est plus affiché.
+  const [, setPacmanPosition] = useState({ row: 0, col: 0 })
+  const [, setPacmanDirection] = useState<'right' | 'left' | 'up' | 'down'>('right')
   const [eatenTiles, setEatenTiles] = useState<number[]>([])
 
   // Fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMac, setIsMac] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const gameAreaRef = useRef<HTMLDivElement>(null)
+
+  // Scène fixe 1920×1080 mise à l'échelle de l'écran (letterbox noir si le ratio diffère)
+  const [stageScale, setStageScale] = useState(1)
+  useEffect(() => {
+    const fit = () => setStageScale(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H))
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [])
 
   // Stabilité : guard unmount + refs timing
   const isMountedRef = useRef(true)
@@ -613,534 +624,197 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
     }))
   }, [totalTiles, revealedTiles])
 
-  if (!currentPhotoUrl) {
-    return (
-      <div className="fixed inset-0 bg-[#1A1A1E] flex items-center justify-center">
-        <p className="text-white text-xl">Aucune photo configurée</p>
-      </div>
-    )
+  // ---------------------------------------------------------------------------
+  // Rendu « plateau TV » (habillage uniquement)
+  // ---------------------------------------------------------------------------
+
+  // Taille du plateau : même calcul que la maquette (zone centrale, QR hors plateau)
+  const zoneW = STAGE_W - 660 - 60
+  const zoneH = STAGE_H - 132 - 42 - 60
+  let boardW = zoneW
+  let boardH = (boardW * rows) / cols
+  if (boardH > zoneH) { boardH = zoneH; boardW = (boardH * cols) / rows }
+  const tileGap = Math.max(3, Math.round((boardW / cols) * 0.07))
+  const allRevealed = revealedTiles.length === totalTiles && totalTiles > 0
+  const hasAudio = hasPhotoAudio || hasRevealAudio
+
+  const stageVars = {
+    '--pm-cadre': `url(${ASSETS}/cadre-or-9parties.webp)`,
+    '--pm-case': `url(${ASSETS}/case-doree.webp)`,
+    '--gap': `${tileGap}px`,
+  } as React.CSSProperties
+
+  const boardStyle = { width: boardW + 60, height: boardH + 60 }
+  const gridStyle = {
+    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
   }
 
+  const decorLayers = (
+    <>
+      <img className={st.decor} src={`${ASSETS}/decor-plateau-sans-faisceaux.webp`} alt="" draggable={false} />
+      <img className={`${st.decor} ${st.beams}`} src={`${ASSETS}/calque-faisceaux.webp`} alt="" draggable={false} />
+      <img className={`${st.decor} ${st.sweepNeon}`} src={`${ASSETS}/calque-neons-arches.webp`} alt="" draggable={false} />
+    </>
+  )
+
+  const corner = (pos: string) => (
+    <svg className={`${st.corner} ${pos}`} viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M4 60 V18 A14 14 0 0 1 18 4 H60" fill="none" stroke="#FFE08A" strokeWidth="5" strokeLinecap="round" />
+      <path d="M14 60 V24 A10 10 0 0 1 24 14 H60" fill="none" stroke="#C98612" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="18" cy="18" r="5" fill="#FFF3C0" />
+    </svg>
+  )
+
   return (
-    <div ref={containerRef} className="fixed inset-0 bg-[#1A1A1E] flex flex-col">
-      {/* Round transition overlay */}
-      <AnimatePresence>
-        {showRoundTransition && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#1A1A1E] flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="text-center"
-            >
-              <span className="text-7xl mb-6 block">🎉</span>
-              <h2 className="text-5xl font-bold text-white mb-4">Bien joué !</h2>
-              <p className="text-[#D4AF37] text-3xl">
-                Préparez-vous pour la photo suivante
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div ref={containerRef} className={st.root}>
+      <div
+        className={`${st.stage} ${showWinnerAnimation && animationPhase === 3 ? st.party : ''}`}
+        style={{ ...stageVars, transform: `translate(-50%, -50%) scale(${stageScale})` }}
+      >
+        {decorLayers}
 
-      {/* WINNER ANIMATION OVERLAY */}
-      <AnimatePresence>
-        {showWinnerAnimation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] overflow-hidden"
-          >
-            {/* Black background */}
-            <div className="absolute inset-0 bg-black" />
-
-            {/* Phase 1 & 2: Photo with tiles + Pac-Man eating them */}
-            {(animationPhase === 1 || animationPhase === 2) && (
-              <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-                <div
-                  className="relative"
-                  style={{
-                    width: '64vw',
-                    maxWidth: '900px',
-                    paddingBottom: `${(rows / cols) * 64}vw`,
-                    maxHeight: `${(rows / cols) * 900}px`,
-                  }}
-                >
-                  {/* Photo underneath */}
-                  <img
-                    src={currentPhotoUrl || ''}
-                    alt="Photo révélée"
-                    className="absolute top-0 left-0 w-full h-full object-cover rounded-xl"
-                  />
-
-                  {/* Tile grid overlay */}
-                  <div
-                    className="absolute top-0 left-0 right-0 bottom-0 rounded-xl overflow-hidden"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                      gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {Array.from({ length: totalTiles }, (_, index) => {
-                      const isEaten = eatenTiles.includes(index)
-                      return (
-                        <motion.div
-                          key={index}
-                          initial={{ scale: 1, opacity: 1 }}
-                          animate={{
-                            scale: isEaten ? 0 : 1,
-                            opacity: isEaten ? 0 : 1,
-                          }}
-                          transition={{ duration: 0.1 }}
-                          className="bg-[#D4AF37]"
-                          style={{
-                            boxShadow: isEaten ? 'none' : 'inset 0 0 0 1px rgba(0,0,0,0.1)',
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-
-                  {/* PAC-MAN */}
-                  {animationPhase === 2 && (
-                    <motion.div
-                      className="absolute z-10"
-                      style={{
-                        width: `${100 / cols}%`,
-                        height: `${100 / rows}%`,
-                        left: `${(pacmanPosition.col / cols) * 100}%`,
-                        top: `${(pacmanPosition.row / rows) * 100}%`,
-                        transform: `rotate(${
-                          pacmanDirection === 'right' ? 0 :
-                          pacmanDirection === 'down' ? 90 :
-                          pacmanDirection === 'left' ? 180 :
-                          270
-                        }deg)`,
-                      }}
-                      transition={{ duration: 0.03 }}
-                    >
-                      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
-                        <defs>
-                          <radialGradient id="pacmanGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#FFFF00" />
-                            <stop offset="100%" stopColor="#FFD700" />
-                          </radialGradient>
-                        </defs>
-                        {/* Body */}
-                        <circle cx="50" cy="50" r="45" fill="url(#pacmanGlow)" />
-                        {/* Animated mouth */}
-                        <motion.path
-                          d="M50,50 L95,25 A45,45 0 0,1 95,75 Z"
-                          fill="#000"
-                          animate={{
-                            d: [
-                              "M50,50 L95,15 A45,45 0 0,1 95,85 Z",
-                              "M50,50 L95,45 A45,45 0 0,1 95,55 Z",
-                              "M50,50 L95,15 A45,45 0 0,1 95,85 Z",
-                            ]
-                          }}
-                          transition={{ duration: 0.15, repeat: Infinity }}
-                        />
-                        {/* Eye */}
-                        <circle cx="55" cy="25" r="8" fill="#000" />
-                      </svg>
-                    </motion.div>
-                  )}
-                </div>
+        {!currentPhotoUrl ? (
+          <div className={st.empty}>Aucune photo configurée</div>
+        ) : (
+          <>
+            {/* En-tête */}
+            {totalRounds > 1 && (
+              <div className={`${st.pill} ${st.round}`}>
+                {isPlaying && <span className={st.liveDot} />}
+                Manche <b>{currentRound} / {totalRounds}</b>
               </div>
             )}
+            <div className={`${st.pill} ${st.cases} ${hasAudio ? '' : st.noVol}`}>
+              {isPlaying && totalRounds <= 1 && <span className={st.liveDot} />}
+              <span>{revealedTiles.length}</span>&nbsp;/&nbsp;<b>{totalTiles}</b>&nbsp;cases
+            </div>
 
-            {/* Phase 3: VICTORY EXPLOSION */}
-            {animationPhase === 3 && (
+            {hasAudio && (
               <>
-                {/* Animated gradient background */}
-                <motion.div
-                  className="absolute inset-0"
-                  animate={{
-                    background: [
-                      'linear-gradient(45deg, #1a0a2e, #0a1a3e, #2e0a1a)',
-                      'linear-gradient(90deg, #0a1a3e, #2e0a1a, #1a0a2e)',
-                      'linear-gradient(135deg, #2e0a1a, #1a0a2e, #0a1a3e)',
-                      'linear-gradient(180deg, #1a0a2e, #0a1a3e, #2e0a1a)',
-                    ]
-                  }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-
-                {/* Neon borders */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <motion.div
-                    className="absolute top-0 left-0 right-0 h-2 bg-[#D4AF37]"
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
+                <button
+                  className={`${st.sq} ${st.vol} ${(isPhotoAudioPlaying || isRevealAudioPlaying) && !isMuted ? st.audioOn : ''}`}
+                  onClick={toggleMute}
+                  title={isMuted ? 'Activer le son' : 'Couper le son'}
+                >
+                  {isMuted ? <VolumeX /> : <Volume2 />}
+                </button>
+                <div className={st.volPop}>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={isMuted ? 0 : audioVolume}
+                    onChange={(e) => {
+                      setAudioVolume(parseFloat(e.target.value))
+                      if (parseFloat(e.target.value) > 0) setIsMuted(false)
+                    }}
+                    title="Volume"
                   />
-                  <motion.div
-                    className="absolute bottom-0 left-0 right-0 h-2 bg-[#D4AF37]"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
-                  />
-                  <motion.div
-                    className="absolute top-0 bottom-0 left-0 w-2 bg-[#D4AF37]"
-                    animate={{ opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.25 }}
-                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
-                  />
-                  <motion.div
-                    className="absolute top-0 bottom-0 right-0 w-2 bg-[#D4AF37]"
-                    animate={{ opacity: [1, 0.7, 1] }}
-                    transition={{ duration: 0.5, repeat: Infinity, delay: 0.25 }}
-                    style={{ boxShadow: '0 0 30px #D4AF37, 0 0 60px #D4AF37, 0 0 90px #D4AF37' }}
-                  />
-                </div>
-
-                {/* Fireworks */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(20)].map((_, i) => (
-                    <motion.div
-                      key={`firework-${i}`}
-                      className="absolute"
-                      style={{
-                        left: `${10 + (i * 4) % 80}%`,
-                        top: `${10 + (i * 7) % 60}%`,
-                      }}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{
-                        scale: [0, 1, 1.5, 0],
-                        opacity: [0, 1, 1, 0],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.3,
-                        repeatDelay: 1,
-                      }}
-                    >
-                      {[...Array(12)].map((_, j) => (
-                        <motion.div
-                          key={j}
-                          className="absolute w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor: ['#D4AF37', '#FF0000', '#00FF00', '#0000FF', '#FF00FF', '#FFFF00', '#00FFFF', '#FF6600', '#9900FF', '#FF0099', '#00FF99', '#99FF00'][j],
-                            transformOrigin: 'center',
-                          }}
-                          animate={{
-                            x: [0, Math.cos(j * 30 * Math.PI / 180) * 80],
-                            y: [0, Math.sin(j * 30 * Math.PI / 180) * 80],
-                            scale: [1, 0],
-                            opacity: [1, 0],
-                          }}
-                          transition={{
-                            duration: 1,
-                            delay: 0.2,
-                            repeat: Infinity,
-                            repeatDelay: 1.8,
-                          }}
-                        />
-                      ))}
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Confetti */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {WINNER_CONFETTI_DATA.map((c) => (
-                    <motion.div
-                      key={`confetti-${c.id}`}
-                      className="absolute"
-                      style={{
-                        left: `${c.left}%`,
-                        width: `${c.width}px`,
-                        height: `${c.height}px`,
-                        backgroundColor: ['#D4AF37', '#F4D03F', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'][c.id % 9],
-                        borderRadius: c.isRound ? '50%' : '2px',
-                      }}
-                      initial={{ top: '-5%', rotate: 0 }}
-                      animate={{ top: '105%', rotate: 720, x: [0, c.xOffset, 0] }}
-                      transition={{ duration: c.duration, repeat: Infinity, delay: c.delay, ease: 'linear' }}
-                    />
-                  ))}
-                </div>
-
-                {/* Stars */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {WINNER_STARS_DATA.map((s) => (
-                    <motion.div
-                      key={`star-${s.id}`}
-                      className="absolute"
-                      style={{ left: `${s.left}%`, top: `${s.top}%` }}
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5], rotate: [0, 180, 360] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: s.delay }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF">
-                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
-                      </svg>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Spinning light rays */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none overflow-hidden opacity-20"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-                  style={{
-                    backgroundColor: 'transparent', // Fallback for browsers without conic-gradient
-                    background: 'conic-gradient(from 0deg, transparent, #D4AF37 10deg, transparent 20deg, transparent 30deg, #D4AF37 40deg, transparent 50deg, transparent 60deg, #D4AF37 70deg, transparent 80deg)',
-                  }}
-                />
-
-                {/* Main winner text */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    {/* Trophy */}
-                    <motion.div
-                      className="text-[120px] md:text-[180px] mb-4"
-                      animate={{ y: [0, -20, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      🏆
-                    </motion.div>
-
-                    {/* WINNER text */}
-                    <motion.h1
-                      className="text-7xl md:text-9xl font-black"
-                      animate={{
-                        backgroundPosition: ['0% 50%', '200% 50%'],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                      style={{
-                        backgroundImage: 'linear-gradient(90deg, #D4AF37, #F4D03F, #FFFFFF, #F4D03F, #D4AF37)',
-                        backgroundSize: '200% auto',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        filter: 'drop-shadow(0 0 30px #D4AF37) drop-shadow(0 0 60px #D4AF37)',
-                      }}
-                    >
-                      WINNER
-                    </motion.h1>
-
-                    {/* Congratulations */}
-                    <motion.p
-                      className="text-3xl md:text-5xl text-white mt-6"
-                      animate={{ opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      style={{ textShadow: '0 0 20px rgba(255,255,255,0.8)' }}
-                    >
-                      🎉 FÉLICITATIONS ! 🎉
-                    </motion.p>
-                  </div>
+                  {hasPhotoAudio && (
+                    <button onClick={replayPhotoAudio} title="Rejouer l'audio de la photo">
+                      <RotateCcw />
+                    </button>
+                  )}
                 </div>
               </>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#242428]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-            <Search className="h-4 w-4 text-[#D4AF37]" />
-          </div>
-          <h1 className="text-lg font-bold text-white">Photo Mystère</h1>
-          {totalRounds > 1 && (
-            <span className="ml-2 px-2 py-0.5 bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-semibold">
-              Manche {currentRound}/{totalRounds}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[#D4AF37] font-bold text-sm">
-            {revealedTiles.length}/{totalTiles} cases
-          </span>
-          {isPlaying && (
-            <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-emerald-400 text-sm font-medium">En cours</span>
-            </span>
-          )}
+            <button
+              className={`${st.sq} ${st.fs}`}
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Quitter plein écran (ESC)' : 'Plein écran'}
+            >
+              {isFullscreen ? <Minimize /> : <Maximize />}
+            </button>
 
-          {/* Audio controls - show if any audio is available */}
-          {(hasPhotoAudio || hasRevealAudio) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/30">
-              {/* Audio indicator */}
-              <Volume2 className={`h-4 w-4 ${(isPhotoAudioPlaying || isRevealAudioPlaying) ? 'text-[#D4AF37] animate-pulse' : 'text-[#D4AF37]/70'}`} />
-
-              {/* Volume slider */}
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={isMuted ? 0 : audioVolume}
-                onChange={(e) => {
-                  setAudioVolume(parseFloat(e.target.value))
-                  if (parseFloat(e.target.value) > 0) setIsMuted(false)
-                }}
-                className="w-16 h-1 bg-[#3E3E43] rounded-lg appearance-none cursor-pointer accent-[#D4AF37]"
-                title="Volume"
-              />
-
-              {/* Mute button */}
-              <button
-                onClick={toggleMute}
-                className="p-1 rounded hover:bg-white/10 transition-colors"
-                title={isMuted ? "Activer le son" : "Couper le son"}
-              >
-                {isMuted ? (
-                  <VolumeX className="h-4 w-4 text-white/50" />
-                ) : (
-                  <Volume2 className="h-4 w-4 text-white/70" />
-                )}
-              </button>
-
-              {/* Replay photo audio button - only show if photo has audio */}
-              {hasPhotoAudio && (
-                <button
-                  onClick={replayPhotoAudio}
-                  className="p-1 rounded hover:bg-white/10 transition-colors"
-                  title="Rejouer l'audio de la photo"
-                >
-                  <RotateCcw className="h-4 w-4 text-white/70 hover:text-[#D4AF37]" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Fullscreen button */}
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors group"
-            title={isFullscreen ? "Quitter plein écran (ESC)" : "Plein écran"}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-5 w-5 text-white/70 group-hover:text-white" />
-            ) : (
-              <Maximize className="h-5 w-5 text-white/70 group-hover:text-white" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Game area - uses 85vh height with aspect ratio */}
-      <div ref={gameAreaRef} className="flex-1 flex items-center justify-center overflow-hidden p-1">
-        <div
-          className="relative rounded-2xl shadow-2xl overflow-hidden"
-          style={{
-            width: '95vw',
-            height: '85vh',
-            maxWidth: `calc(85vh * ${cols / rows})`,
-            maxHeight: `calc(95vw / ${cols / rows})`,
-          }}
-        >
-          {readyPhotoUrl && (
-            <img
-              src={readyPhotoUrl}
-              alt="Photo Mystère"
-              className="absolute top-0 left-0 w-full h-full object-cover"
-            />
-          )}
-          <div
-            className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-            }}
-          >
-            <AnimatePresence>
-              {tiles.map((tile) => (
-                <motion.div
-                  key={tile.id}
-                  initial={false}
-                  animate={
-                    tile.revealed
-                      ? { opacity: 0, scale: 0.8 }
-                      : { opacity: 1, scale: 1 }
-                  }
-                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  style={{
-                    backgroundColor: tile.revealed ? 'transparent' : '#D4AF37',
-                    background: tile.revealed ? 'transparent' : 'linear-gradient(135deg, #D4AF37 0%, #B8960C 100%)',
-                    border: tile.revealed ? 'none' : '0.5px solid rgba(184, 150, 12, 0.3)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                  className={tile.revealed ? 'pointer-events-none' : ''}
-                >
-                  {!tile.revealed && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, transparent 100%)',
-                      }}
-                    />
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="h-2 bg-[#242428]">
-        <motion.div
-          className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4D03F]"
-          initial={{ width: '0%' }}
-          animate={{ width: `${(revealedTiles.length / totalTiles) * 100}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
-
-      {/* QR Code overlay */}
-      <AnimatePresence>
-        {showQR && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed bottom-8 right-8 z-50"
-          >
-            <div className="flex items-center gap-3 bg-black/50 backdrop-blur-sm rounded-xl p-3">
-              <motion.div
-                animate={{
-                  scale: [1, 1.02, 1],
-                  boxShadow: [
-                    '0 0 0 0 rgba(212, 175, 55, 0.4)',
-                    '0 0 0 8px rgba(212, 175, 55, 0)',
-                    '0 0 0 0 rgba(212, 175, 55, 0)',
-                  ],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="bg-white p-2 rounded-lg"
-              >
-                <QRCode
-                  value={getInviteUrl(session.code)}
-                  size={80}
-                />
-              </motion.div>
-              <div className="text-right">
-                <p className="text-xl font-mono font-bold text-[#D4AF37]">#{session.code}</p>
-                <p className="text-sm text-white/70">Partagez vos photos</p>
+            {/* Plateau */}
+            <div className={st.boardZone}>
+              <div className={`${st.board} ${allRevealed ? st.revealed : ''}`} style={boardStyle}>
+                <div className={st.boardIn}>
+                  {readyPhotoUrl && <img src={readyPhotoUrl} alt="Photo Mystère" className={st.photo} />}
+                  <div className={st.tiles} style={gridStyle}>
+                    {tiles.map((tile) => (
+                      <div key={tile.id} className={`${st.tile} ${tile.revealed ? st.gone : ''}`} />
+                    ))}
+                  </div>
+                </div>
+                <div className={st.frameShine} />
+                {corner(st.tl)}{corner(st.tr)}{corner(st.bl)}{corner(st.br)}
               </div>
             </div>
-          </motion.div>
+
+            <div className={st.progress}>
+              <i style={{ width: `${(revealedTiles.length / totalTiles) * 100}%` }} />
+            </div>
+
+            {/* QR : colonne réservée à droite, jamais sur le plateau */}
+            <div className={`${st.qr} ${showQR ? '' : st.qrOff}`} aria-hidden={!showQR}>
+              <div className={st.qrCode}>
+                <QRCode value={getInviteUrl(session.code)} size={112} />
+              </div>
+              <div className={st.qrTxt}>
+                <div className={st.qrNum}>#{session.code}</div>
+                <div className={st.qrLbl}>Partagez<br />vos photos</div>
+              </div>
+            </div>
+
+            {/* Rideau entre deux manches (opaque) */}
+            <div className={`${st.overlay} ${showRoundTransition ? st.overlayOn : ''}`}>
+              <div className={st.card}>
+                <svg className={st.star} viewBox="0 0 100 100" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="pmStar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="#FFF3C0" /><stop offset=".5" stopColor="#F2B632" /><stop offset="1" stopColor="#A8680C" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M50 4 L62 36 L96 38 L69 59 L79 93 L50 73 L21 93 L31 59 L4 38 L38 36 Z" fill="url(#pmStar)" stroke="#5A3304" strokeWidth="2" />
+                </svg>
+                <h2><span className={st.tWhite}>Bien</span> <span className={st.tGold}>joué !</span></h2>
+                <p>Préparez-vous pour la photo suivante</p>
+              </div>
+            </div>
+
+            {/* Gagnant : même décor sur les deux étapes */}
+            {showWinnerAnimation && (
+              <div className={st.winner}>
+                {decorLayers}
+                <div className={st.boardZone}>
+                  <div className={`${st.board} ${animationPhase === 3 ? st.boardOut : ''}`} style={boardStyle}>
+                    <div className={st.boardIn}>
+                      <img src={currentPhotoUrl} alt="Photo révélée" className={st.photo} />
+                      <div className={st.wTiles} style={gridStyle}>
+                        {Array.from({ length: totalTiles }, (_, index) => (
+                          <div key={index} className={`${st.wTile} ${eatenTiles.includes(index) ? st.eaten : ''}`} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={`${st.w3} ${animationPhase === 3 ? st.w3On : ''}`}>
+                  <div className={st.veil} />
+                  <div className={st.burst} />
+                  <div className={st.rays} />
+                  {animationPhase === 3 && CONFETTI.map((c) => (
+                    <i
+                      key={c.id}
+                      className={st.conf}
+                      style={{ left: `${c.left}%`, width: c.w, height: c.h, background: c.color, animationDuration: `${c.duration}s`, animationDelay: `${c.delay}s` }}
+                    />
+                  ))}
+                  <div className={st.flash} />
+                  <div className={st.center}>
+                    <div className={st.kick}>★<i>PHOTO MYSTÈRE</i>★</div>
+                    <h1 className={`${st.wtxt} ${st.wBig}`} data-t="WINNER"><span data-t="WINNER">WINNER</span></h1>
+                    <p className={`${st.wtxt} ${st.wSub}`} data-t="FÉLICITATIONS !"><span data-t="FÉLICITATIONS !">FÉLICITATIONS !</span></p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* Hidden audio elements */}
       {/* Per-photo audio (plays when photo is fully revealed) */}
