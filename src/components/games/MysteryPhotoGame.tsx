@@ -641,6 +641,8 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
   const stageVars = {
     '--pm-cadre': `url(${ASSETS}/cadre-or-9parties.webp)`,
     '--pm-case': `url(${ASSETS}/case-doree.webp)`,
+    '--pm-colonnes': `url(${ASSETS}/calque-colonnes.webp)`,
+    '--pm-colonnes-halo': `url(${ASSETS}/calque-colonnes-halo.webp)`,
     '--gap': `${tileGap}px`,
   } as React.CSSProperties
 
@@ -652,9 +654,12 @@ export default function MysteryPhotoGame({ session, onExit }: MysteryPhotoGamePr
 
   const decorLayers = (
     <>
-      <img className={st.decor} src={`${ASSETS}/decor-plateau-sans-faisceaux.webp`} alt="" draggable={false} />
+      <img className={`${st.decor} ${st.decorBase}`} src={`${ASSETS}/decor-plateau-sans-faisceaux.webp`} alt="" draggable={false} />
       <img className={`${st.decor} ${st.beams}`} src={`${ASSETS}/calque-faisceaux.webp`} alt="" draggable={false} />
-      <img className={`${st.decor} ${st.sweepNeon}`} src={`${ASSETS}/calque-neons-arches.webp`} alt="" draggable={false} />
+      <div className={st.colTint}><div className={st.colGrad} /></div>
+      <div className={st.colGlow}><div className={st.colGrad} /></div>
+      <img className={`${st.decor} ${st.neonBoost}`} src={`${ASSETS}/calque-neons-halo.webp`} alt="" draggable={false} />
+      <img className={`${st.decor} ${st.sweepNeon}`} src={`${ASSETS}/calque-neons-halo.webp`} alt="" draggable={false} />
     </>
   )
 

@@ -8,19 +8,40 @@
 
 /* ---------- décor précalculé + faisceaux qui respirent + balayage des néons des arches ---------- */
 .decor { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
-.beams { mix-blend-mode: screen; opacity: .9; animation: breathe 9s ease-in-out infinite; }
-@keyframes breathe { 0%, 100% { opacity: .78 } 50% { opacity: 1 } }
+/* décor de base (statique) : un peu plus de contraste et de couleur, moins « laiteux » */
+.decorBase { filter: contrast(1.1) saturate(1.15) brightness(.97); }
+.beams { mix-blend-mode: screen; will-change: opacity; animation: breathe 7s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { opacity: .2 } 50% { opacity: .3 } }
+/* Halos PRÉCALCULÉS (post.py halos) : aucun flou ni ombre calculé en direct, seules l'opacité et des
+   translations sont animées → fluide même sur un ordinateur modeste. */
+/* néons des arches renforcés en permanence, pulsation lente */
+.neonBoost { mix-blend-mode: plus-lighter; will-change: opacity; animation: neonPulse 4.5s ease-in-out infinite; }
+@keyframes neonPulse { 0%, 100% { opacity: .2 } 50% { opacity: .42 } }
+/* colonnes LED latérales : un dégradé de couleurs monte le long des LED (masque = calque Blender des colonnes) */
+.colTint, .colGlow { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* teinte : multiplication sur les LED blanches → couleur saturée, détail des LED conservé */
+.colTint { mix-blend-mode: multiply; -webkit-mask: var(--pm-colonnes) center / cover no-repeat; mask: var(--pm-colonnes) center / cover no-repeat; }
+/* halo : même dégradé, révélé par le halo précalculé des colonnes, ajouté en lumière */
+.colGlow { mix-blend-mode: plus-lighter; opacity: .75; -webkit-mask: var(--pm-colonnes-halo) center / cover no-repeat; mask: var(--pm-colonnes-halo) center / cover no-repeat; }
+.colGrad {
+  position: absolute; left: 0; right: 0; top: 0; height: 300%; will-change: transform;
+  /* 3 cycles identiques : une translation d'un tiers boucle sans raccord visible */
+  background: linear-gradient(180deg, #FFB23F 0.0%, #FF4FC8 8.33%, #9B5CFF 16.67%, #34A6FF 25.0%, #FFB23F 33.33%, #FF4FC8 41.67%, #9B5CFF 50.0%, #34A6FF 58.33%, #FFB23F 66.67%, #FF4FC8 75.0%, #9B5CFF 83.33%, #34A6FF 91.67%, #FFB23F 100%);
+  animation: colRise 9s linear infinite;
+}
+@keyframes colRise { from { transform: translateY(0) } to { transform: translateY(-33.333%) } }
 @property --pm-sw { syntax: '<angle>'; inherits: false; initial-value: 50deg; }
 .sweepNeon {
   mix-blend-mode: plus-lighter;
-  filter: brightness(1.6) drop-shadow(0 0 6px rgba(255, 235, 200, .9)) drop-shadow(0 0 18px rgba(190, 140, 255, .7));
-  -webkit-mask-image: conic-gradient(from 180deg at 50% 76%, transparent 0deg, transparent calc(var(--pm-sw) - 22deg), #000 var(--pm-sw), transparent calc(var(--pm-sw) + 22deg), transparent 360deg);
-  mask-image: conic-gradient(from 180deg at 50% 76%, transparent 0deg, transparent calc(var(--pm-sw) - 22deg), #000 var(--pm-sw), transparent calc(var(--pm-sw) + 22deg), transparent 360deg);
+  -webkit-mask-image: conic-gradient(from 180deg at 50% 76%, transparent 0deg, transparent calc(var(--pm-sw) - 30deg), #000 var(--pm-sw), transparent calc(var(--pm-sw) + 30deg), transparent 360deg);
+  mask-image: conic-gradient(from 180deg at 50% 76%, transparent 0deg, transparent calc(var(--pm-sw) - 30deg), #000 var(--pm-sw), transparent calc(var(--pm-sw) + 30deg), transparent 360deg);
   animation: arcsweep 11s cubic-bezier(.45, 0, .25, 1) infinite;
 }
 @keyframes arcsweep { 0% { --pm-sw: 50deg } 30% { --pm-sw: 310deg } 50% { --pm-sw: 310deg } 80% { --pm-sw: 50deg } 100% { --pm-sw: 50deg } }
 .party .sweepNeon { animation-duration: 3.2s; }
-.party .beams { animation-duration: 2.4s; filter: brightness(1.35); }
+.party .beams { animation-duration: 2.4s; }
+.party .colGrad { animation-duration: 2.5s; }
+.party .neonBoost { animation-duration: 1.2s; }
 
 /* ---------- en-tête ---------- */
 .pill {
@@ -169,5 +190,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sweepNeon { display: none; }
+  .colGrad, .neonBoost { animation: none; }
   .beams, .rays, .burst, .conf, .wtxt span::after, .liveDot, .qrCode { animation: none; }
 }
