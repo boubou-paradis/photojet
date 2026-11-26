@@ -13,7 +13,8 @@ import {
   Gift,
   Sparkles,
 } from 'lucide-react'
-import AnimaJetLogo from '@/components/branding/AnimaJetLogo'
+import Image from 'next/image'
+import './saas-v2.css'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase'
 import { formatTimeRemaining } from '@/lib/trial'
@@ -104,14 +105,16 @@ export default function AdminLayoutClient({
     // de l'écran, sans barre de défilement de la page. Les autres pages défilent normalement.
     <div className={`min-h-screen bg-[#1A1A1E] ${isDashboard ? 'lg:h-dvh lg:flex lg:flex-col lg:overflow-hidden' : ''}`}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#1A1A1E]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.1)]">
+      {/* Habillage SaaS V2 (maquette validée le 26/11/2026) : barre en tôle et bronze rendue dans Blender. */}
+      <header className="saas-v2 v2-barre-admin sticky top-0 z-50">
         {/* Pleine largeur, mêmes marges que le tableau de bord (24 px). Grand écran : grille
             à 3 colonnes pour que le menu soit exactement centré dans la page. */}
         <div className="px-6">
-          <div className="flex items-center justify-between h-16 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:grid-rows-[4rem] lg:gap-x-4">
-            {/* Logo — l'image a 27 px de marge transparente à gauche, compensée */}
-            <Link href="/admin/dashboard" className="flex items-center -ml-[27px] lg:justify-self-start">
-              <AnimaJetLogo size="md" variant="horizontal" />
+          <div className="flex items-center justify-between h-16 lg:h-20 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:grid-rows-[5rem] lg:gap-x-4">
+            {/* Logo : emblème + « Anima » doré, « Jet » blanc */}
+            <Link href="/admin/dashboard" className="v2-logo lg:justify-self-start" aria-label="AnimaJet — tableau de bord">
+              <Image src="/saas-v2/logo-embleme.png" alt="" width={113} height={101} priority unoptimized />
+              <span><b>Anima</b>Jet</span>
             </Link>
 
             {/* Navigation */}
@@ -123,7 +126,7 @@ export default function AdminLayoutClient({
                   <Link
                     key={item.href}
                     href={lienNav(item)}
-                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
+                    className={`v2-nav-lien ${isActive ? 'v2-actif' : ''} relative flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'text-[#D4AF37]'
                         : 'text-[#B0B0B5] hover:text-white hover:bg-[#2E2E33]'
@@ -162,7 +165,7 @@ export default function AdminLayoutClient({
               )}
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="hidden sm:flex items-center gap-2 h-9 px-4 text-sm font-medium text-red-400 border border-red-400/45 hover:text-red-300 hover:border-red-400/70 hover:bg-red-500/10 rounded-lg transition-all"
+                className="v2-deco hidden sm:flex items-center gap-2 h-9 px-4 text-sm font-medium text-red-400 border border-red-400/45 hover:text-red-300 hover:border-red-400/70 hover:bg-red-500/10 rounded-lg transition-all"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Déconnexion</span>
@@ -237,7 +240,7 @@ export default function AdminLayoutClient({
       </main>
 
       {/* Footer */}
-      <Footer liensSociaux={false} />
+      <Footer liensSociaux={false} className="saas-v2 v2-pied" />
 
       {/* Logout Confirmation Modal */}
       <AnimatePresence>

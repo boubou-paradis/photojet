@@ -474,7 +474,7 @@ export default function VoteAdminPage() {
   // Hauteur de l'écran moins la barre admin (65 px) et le pied de page (30 px) :
   // la préparation tient sans défilement sur un écran d'ordinateur.
   return (
-    <div className={`av-root min-h-[calc(100dvh-95px)] bg-[#0D0D0F] ${voteFontVars}`}>
+    <div className={`av-root min-h-[calc(100dvh-var(--admin-chrome,95px))] bg-[#0D0D0F] ${voteFontVars}`}>
       <style>{VOTE_CSS + ADMIN_CSS}</style>
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />

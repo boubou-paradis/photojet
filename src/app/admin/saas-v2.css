@@ -181,7 +181,7 @@
 .v2-depot b { color: var(--or-texte); font-weight: 600; }
 
 /* ========== Page Jeux — « It's showtime! » (maquette jeux-plateau.html) ========== */
-.v2-pl { position: relative; isolation: isolate; overflow-x: clip; min-height: calc(100dvh - 140px); display: flex; flex-direction: column;
+.v2-pl { position: relative; isolation: isolate; overflow-x: clip; min-height: calc(100dvh - var(--admin-chrome, 124px)); display: flex; flex-direction: column;
   /* Fond de plateau limité à la zone de la page : la barre et le pied gardent le leur. */
   background:
     radial-gradient(120% 80% at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.65) 100%) fixed,
@@ -319,6 +319,7 @@
 .v2-pa [data-slot="slider-thumb"] { width: 30px !important; height: 30px !important; border: 0 !important; box-shadow: none !important;
   background: url(/saas-v2/curseur.webp) center / 46px 46px no-repeat !important; }
 
+@media (min-width: 1024px) { .v2-pa { height: calc(100dvh - var(--admin-chrome, 124px)); } }
 @media (max-width: 1500px) { .v2-pa-corps { grid-template-columns: 250px minmax(0, 1fr); } .v2-pa-sommaire a { font-size: 13px; } }
 @media (max-height: 820px) {
   .v2-pa-titre img { height: 52px; } .v2-pa-tete { padding-top: 12px; }
@@ -441,3 +442,50 @@
 .v2-tb .v2-qr-carte + p { position: relative; z-index: 1; margin-top: 16px !important; text-shadow: 0 0 12px rgba(243, 198, 78, 0.5), 0 1px 2px #000; }
 .v2-tb .v2-qr-zone > .grid { position: relative; z-index: 1; margin-top: 10px !important; }
 .v2-tb .v2-note { position: relative; z-index: 2; padding-top: 8px; }
+
+/* ========== Barre du haut et pied de page de l'admin (toutes les pages /admin, régies comprises) ==========
+   Seuls la barre et le pied portent .saas-v2 : le contenu des régies garde sa police et son fond. */
+.v2-barre-admin { position: sticky; border: 0 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  background: #0c0910 url(/saas-v2/barre-c.webp) center top / 100% 100% no-repeat !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6); }
+@media (min-width: 1280px) {
+  .v2-barre-admin { background:
+      url(/saas-v2/barre-g.webp) left top / 650px 100% no-repeat,
+      url(/saas-v2/barre-d.webp) right top / 570px 100% no-repeat,
+      url(/saas-v2/barre-c.webp) 650px 0 / calc(100% - 1220px) 100% no-repeat,
+      #0c0910 !important; }
+  /* Les rangées optionnelles (essai, navigation mobile) gardent un fond uni sous la tôle. */
+  .v2-barre-admin > :not(:first-child) { background-color: #0c0910; }
+}
+.v2-logo { display: flex; align-items: center; gap: 10px; padding-left: 2px; }
+.v2-logo img { height: 54px; width: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(255, 190, 80, 0.55)) brightness(1.12) contrast(1.08); }
+.v2-logo span { font-size: 28px; font-weight: 600; letter-spacing: .2px; color: #fff; line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.6)); }
+.v2-logo span b { font-weight: 600; background: linear-gradient(180deg, #fff6d0 0%, #ffd768 38%, #e8a923 70%, #b97a12 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+@media (min-width: 1280px) { .v2-logo img { height: 64px; } .v2-logo span { font-size: 32px; } .v2-logo { padding-left: 14px; } }
+.v2-nav-lien { position: relative; isolation: isolate; height: 46px; padding: 0 20px !important; border-radius: 12px; color: var(--texte) !important; background: none !important; }
+.v2-nav-lien > div.absolute { display: none; }
+.v2-nav-lien span { font-size: 16px !important; }
+.v2-nav-lien svg { width: 20px; height: 20px; color: var(--texte-2); }
+.v2-nav-lien:hover { color: var(--or-clair) !important; }
+.v2-nav-lien.v2-actif { color: var(--or-clair) !important; text-shadow: 0 0 12px rgba(246, 215, 122, 0.45); }
+.v2-nav-lien.v2-actif svg { color: var(--or-clair); }
+.v2-nav-lien.v2-actif::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -20px;
+  border: 36px solid transparent; border-image: url(/saas-v2/bouton-orf.webp) 72 fill / 36px stretch; }
+@media (max-width: 1439px) { .v2-nav-lien { padding: 0 14px !important; } .v2-nav-lien span { font-size: 15px !important; } }
+.v2-deco { position: relative; isolation: isolate; height: 44px !important; padding: 0 20px !important; font-size: 15px !important; color: #ff7676 !important;
+  background: none !important; border: 0 !important; }
+.v2-deco::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -20px;
+  border: 36px solid transparent; border-image: url(/saas-v2/bouton-rouge.webp) 72 fill / 36px stretch; }
+.v2-deco:hover { filter: brightness(1.18); }
+
+/* Hauteur cumulée barre + pied (pages qui remplissent l'écran sans défiler). */
+:root { --admin-chrome: 108px; }
+@media (min-width: 1024px) { :root { --admin-chrome: 124px; } }
+@media (min-width: 1024px) and (max-height: 820px) { :root { --admin-chrome: 116px; } }
+footer.v2-pied { box-sizing: border-box; height: 44px; padding: 4px 16px 0 !important; display: flex; align-items: center; justify-content: center; line-height: 16px; font-size: 13px; color: #ddd6e8; background: #0c0910 url(/saas-v2/pied.webp) center top / 100% 100% no-repeat; }
+footer.v2-pied a:hover { color: var(--or-clair); }
+@media (max-height: 820px) { footer.v2-pied { height: 36px; font-size: 12px; } }
+/* Téléphone : les liens passent sur plusieurs lignes, le pied s'allonge. */
+@media (max-width: 1023px) { footer.v2-pied { height: auto; min-height: 44px; padding: 10px 16px 8px !important; } }

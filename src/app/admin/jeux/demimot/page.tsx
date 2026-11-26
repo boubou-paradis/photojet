@@ -353,7 +353,7 @@ export default function DemiMotAdminPage() {
 
   const themeId = resolveTheme(regie?.settings.theme?.id)
   return (
-    <div className="min-h-[calc(100dvh-95px)] bg-[#0b0b0d]">
+    <div className="min-h-[calc(100dvh-var(--admin-chrome,95px))] bg-[#0b0b0d]">
       <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">

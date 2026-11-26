@@ -245,7 +245,7 @@ export default function BornePage() {
 
   // Hauteur = écran moins la barre de menu (64 px) et le pied de page (31 px) du layout admin : pas de défilement inutile
   return (
-    <div className={`min-h-[calc(100vh-95px)] bg-[#0D0D0F] overflow-hidden ${buzzerFontVars}`}>
+    <div className={`min-h-[calc(100dvh-var(--admin-chrome,95px))] bg-[#0D0D0F] overflow-hidden ${buzzerFontVars}`}>
       {/* Animated background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
