@@ -50,6 +50,8 @@ import DisplayDefaultsCard from '@/components/DisplayDefaultsCard'
 import SocialShortcuts from '@/components/SocialShortcuts'
 import PromoAfficheDetail from '@/components/PromoAfficheDetail'
 import MusicRequestSettings from '@/components/settings/MusicRequestSettings'
+import { Info, Cast, Camera, Music, BookmarkCheck, type LucideIcon } from 'lucide-react'
+import '../saas-v2.css'
 import { ACTIVATION_DENIED_MESSAGE, type ActiveSessionInfo } from '@/lib/sessions/activation'
 import { requestSessionState } from '@/lib/sessions/client'
 import { Session, TransitionType, CameraType, BackgroundType, LogoSize, LogoPosition, PrintMode, QRSize } from '@/types/database'
@@ -86,6 +88,7 @@ export default function SettingsPage() {
   const bgInputRef = useRef<HTMLInputElement>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const promoInputRef = useRef<HTMLInputElement>(null)
+  const contenuRef = useRef<HTMLElement>(null)
   const MAX_PROMO_AFFICHES = 20
   const PROMO_COMPRESSION = { maxSizeMB: 1.5, maxWidthOrHeight: 2560, initialQuality: 0.9 }
   const PROMO_MAX_MB = MAX_FILE_SIZE / (1024 * 1024)
@@ -629,112 +632,91 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0D0D0F] flex flex-col overflow-hidden relative">
-      {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
-      </div>
-
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
-        <div className="px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/admin/dashboard')}
-              className="text-white hover:text-[#D4AF37] hover:bg-[#2E2E33]"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#D4AF37]/20 blur-xl rounded-full" />
-                <Image
-                  src="/images/animajet_logo_principal.png"
-                  alt="AnimaJet"
-                  width={50}
-                  height={50}
-                  className="relative z-10 drop-shadow-lg"
-                />
-              </div>
-              <h1 className="text-xl font-bold text-white">Paramètres</h1>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <SocialShortcuts />
-            <SessionSwitchDialog
-              others={activeConflict}
-              targetName={formData.name}
-              busy={togglingActive}
-              onCancel={() => setActiveConflict(null)}
-              onConfirm={() => changeSessionState(true, activeConflict?.map((session) => session.id))}
-            />
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
+    // Habillage SaaS V2 « Régie » (maquette validée le 26/11/2026) : styles dans ../saas-v2.css.
+    // Mêmes réglages, mêmes enregistrements automatiques ; seuls l'ordre des blocs et l'habillage changent.
+    <div className="saas-v2 v2-pa">
+      <header className="v2-pa-tete">
+        <button type="button" className="v2-btn v2-petit" onClick={() => router.push('/admin/dashboard')}>
+          <ArrowLeft />
+          Retour
+        </button>
+        <h1 className="v2-pa-titre">
+          <Image src="/saas-v2/pa-titre.webp" alt="Paramètres" width={1400} height={200} priority unoptimized />
+        </h1>
+        <div className="v2-verre v2-session-mini">
+          <span>{formData.name}</span>
+          <small>#{formData.code}</small>
+          <em className={formData.is_active ? '' : 'v2-off'}>● {formData.is_active ? 'Active' : 'Inactive'}</em>
+        </div>
+        <div className="v2-pa-actions">
+          {saving ? (
+            <span className="v2-pa-enregistre v2-encours">
+              <Loader2 className="animate-spin" />
+              Enregistrement...
+            </span>
+          ) : (
+            <span className="v2-pa-enregistre">
+              <CheckCircle />
+              Enregistré
+            </span>
+          )}
+          <SocialShortcuts />
+          <SessionSwitchDialog
+            others={activeConflict}
+            targetName={formData.name}
+            busy={togglingActive}
+            onCancel={() => setActiveConflict(null)}
+            onConfirm={() => changeSessionState(true, activeConflict?.map((session) => session.id))}
+          />
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogTrigger asChild>
+              <button type="button" className="v2-btn v2-petit v2-danger">
+                <Trash2 />
+                Supprimer
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#242428] border-[rgba(255,255,255,0.1)]">
+              <DialogHeader>
+                <DialogTitle className="text-white">Supprimer la session ?</DialogTitle>
+              </DialogHeader>
+              <p className="text-[#B0B0B5]">
+                Cette action est irréversible. Toutes les photos seront également supprimées.
+              </p>
+              <DialogFooter>
                 <Button
-                  size="sm"
+                  variant="outline"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleDelete}
                   className="bg-[#E53935] hover:bg-[#D32F2F] text-white"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#242428] border-[rgba(255,255,255,0.1)]">
-                <DialogHeader>
-                  <DialogTitle className="text-white">Supprimer la session ?</DialogTitle>
-                </DialogHeader>
-                <p className="text-[#B0B0B5]">
-                  Cette action est irréversible. Toutes les photos seront également supprimées.
-                </p>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    onClick={handleDelete}
-                    className="bg-[#E53935] hover:bg-[#D32F2F] text-white"
-                  >
-                    Supprimer
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <div className="flex items-center gap-2 text-sm">
-              {saving ? (
-                <span className="flex items-center gap-1.5 text-[#D4AF37]">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Enregistrement...
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 text-[#4CAF50]">
-                  <CheckCircle className="h-4 w-4" />
-                  Enregistré
-                </span>
-              )}
-            </div>
-          </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
-      <main className="relative z-10 px-4 sm:px-8 py-3 flex-1 overflow-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start"
-        >
-          {/* Grand écran (≥ 1280 px) : colonne gauche. En dessous, chaque bloc reprend sa place d’origine (max-xl:order-*). */}
-          <div className="contents xl:flex xl:flex-col xl:gap-3 xl:min-w-0">
-            {/* Colonne gauche : Informations générales */}
-            <motion.div
-              whileHover={{ scale: 1.002 }}
-              className="max-xl:order-1 card-gold rounded-xl flex flex-col transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+      <div className="v2-pa-corps">
+        <SommaireParametres
+          contenuRef={contenuRef}
+          etats={{
+            infos: formData.is_active,
+            messages: formData.messages_enabled,
+            affiches: formData.promo_enabled,
+            impression: formData.print_enabled,
+          }}
+        />
+        <main ref={contenuRef} className="v2-pa-contenu">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="v2-pa-intitule">Événement</div>
+            <motion.div id="infos"
+              className="card-gold rounded-xl flex flex-col"
             >
               <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
                 <h3 className="text-sm font-semibold text-white">Informations générales</h3>
@@ -799,211 +781,279 @@ export default function SettingsPage() {
               </div>
             </motion.div>
 
-            {/* Personnalisation Diaporama - pleine largeur */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-3 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Palette className="h-5 w-5 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Personnalisation Diaporama</h3>
-                    <p className="text-sm text-[#6B6B70]">Fond d&apos;écran et logo personnalisé</p>
+            <div className="v2-pa-intitule">Grand écran</div>
+            <div className="v2-pa-pile">
+              <motion.div id="perso"
+                className="card-gold rounded-xl"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                      <Palette className="h-5 w-5 text-[#D4AF37]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Personnalisation Diaporama</h3>
+                      <p className="text-sm text-[#6B6B70]">Fond d&apos;écran et logo personnalisé</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Section Fond d'écran */}
-                  <div className="space-y-4">
-                    <h4 className="text-white font-medium flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
-                      Fond d&apos;écran
-                    </h4>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Section Fond d'écran */}
+                    <div className="space-y-4">
+                      <h4 className="text-white font-medium flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
+                        Fond d&apos;écran
+                      </h4>
 
-                    <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant={formData.background_type === 'color' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setFormData((prev) => ({ ...prev, background_type: 'color' }))}
+                          className={formData.background_type === 'color'
+                            ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                            : 'border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]'}
+                        >
+                          Couleur unie
+                        </Button>
+                        <Button
+                          variant={formData.background_type === 'image' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => formData.background_image && setFormData((prev) => ({ ...prev, background_type: 'image' }))}
+                          disabled={!formData.background_image}
+                          className={formData.background_type === 'image'
+                            ? 'bg-[#D4AF37] text-[#1A1A1E]'
+                            : 'border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]'}
+                        >
+                          Image
+                        </Button>
+                      </div>
+
+                      {formData.background_type === 'color' ? (
+                        <div className="space-y-2">
+                          <Label className="text-[#B0B0B5] text-sm">Couleur de fond</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={formData.background_color}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, background_color: e.target.value }))}
+                              className="w-12 h-10 rounded border border-[rgba(255,255,255,0.1)] cursor-pointer bg-transparent"
+                            />
+                            <Input
+                              value={formData.background_color}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, background_color: e.target.value }))}
+                              className="flex-1 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white font-mono"
+                              maxLength={7}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {formData.background_image ? (
+                            <div className="relative">
+                              <img
+                                src={getStorageUrl(formData.background_image) || ''}
+                                alt="Background"
+                                className="w-full h-24 object-cover rounded-lg border border-[rgba(255,255,255,0.1)]"
+                              />
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="absolute top-2 right-2 h-7 w-7 p-0"
+                                onClick={handleRemoveBackground}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : null}
+
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between">
+                              <Label className="text-[#B0B0B5] text-sm">Opacité overlay</Label>
+                              <span className="text-sm text-[#D4AF37] font-semibold">
+                                {formData.background_opacity}%
+                              </span>
+                            </div>
+                            <Slider
+                              value={[formData.background_opacity]}
+                              onValueChange={([value]) =>
+                                setFormData((prev) => ({ ...prev, background_opacity: value }))
+                              }
+                              min={0}
+                              max={100}
+                              step={5}
+                              className="[&_[role=slider]]:bg-[#D4AF37]"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <input
+                        ref={bgInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadBackground}
+                        className="hidden"
+                      />
                       <Button
-                        variant={formData.background_type === 'color' ? 'default' : 'outline'}
+                        variant="outline"
                         size="sm"
-                        onClick={() => setFormData((prev) => ({ ...prev, background_type: 'color' }))}
-                        className={formData.background_type === 'color'
-                          ? 'bg-[#D4AF37] text-[#1A1A1E]'
-                          : 'border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]'}
+                        onClick={() => bgInputRef.current?.click()}
+                        disabled={uploadingBg}
+                        className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
                       >
-                        Couleur unie
-                      </Button>
-                      <Button
-                        variant={formData.background_type === 'image' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => formData.background_image && setFormData((prev) => ({ ...prev, background_type: 'image' }))}
-                        disabled={!formData.background_image}
-                        className={formData.background_type === 'image'
-                          ? 'bg-[#D4AF37] text-[#1A1A1E]'
-                          : 'border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]'}
-                      >
-                        Image
+                        {uploadingBg ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2" />
+                        )}
+                        {formData.background_image ? 'Changer l\'image' : 'Uploader une image'}
                       </Button>
                     </div>
 
-                    {formData.background_type === 'color' ? (
-                      <div className="space-y-2">
-                        <Label className="text-[#B0B0B5] text-sm">Couleur de fond</Label>
-                        <div className="flex gap-2">
-                          <input
-                            type="color"
-                            value={formData.background_color}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, background_color: e.target.value }))}
-                            className="w-12 h-10 rounded border border-[rgba(255,255,255,0.1)] cursor-pointer bg-transparent"
-                          />
-                          <Input
-                            value={formData.background_color}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, background_color: e.target.value }))}
-                            className="flex-1 bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white font-mono"
-                            maxLength={7}
+                    {/* Section Logo */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-white font-medium flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
+                          Logo personnalisé
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-[#B0B0B5] text-sm">Afficher</Label>
+                          <Switch
+                            checked={formData.show_logo}
+                            onCheckedChange={(checked) =>
+                              setFormData((prev) => ({ ...prev, show_logo: checked }))
+                            }
                           />
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {formData.background_image ? (
+
+                      <div className="flex items-center gap-4">
+                        {formData.custom_logo ? (
                           <div className="relative">
                             <img
-                              src={getStorageUrl(formData.background_image) || ''}
-                              alt="Background"
-                              className="w-full h-24 object-cover rounded-lg border border-[rgba(255,255,255,0.1)]"
+                              src={getStorageUrl(formData.custom_logo) || ''}
+                              alt="Logo"
+                              className="h-16 w-auto object-contain bg-[#2E2E33] rounded-lg p-2"
                             />
                             <Button
                               size="sm"
                               variant="destructive"
-                              className="absolute top-2 right-2 h-7 w-7 p-0"
-                              onClick={handleRemoveBackground}
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                              onClick={handleRemoveLogo}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
-                        ) : null}
-
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between">
-                            <Label className="text-[#B0B0B5] text-sm">Opacité overlay</Label>
-                            <span className="text-sm text-[#D4AF37] font-semibold">
-                              {formData.background_opacity}%
-                            </span>
+                        ) : (
+                          <div className="h-20 w-20 bg-[#2E2E33] rounded-lg flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.2)]">
+                            <Image src="/images/animajet_logo_principal.png" alt="AnimaJet" width={50} height={50} />
                           </div>
-                          <Slider
-                            value={[formData.background_opacity]}
-                            onValueChange={([value]) =>
-                              setFormData((prev) => ({ ...prev, background_opacity: value }))
+                        )}
+                        <p className="text-xs text-[#6B6B70]">
+                          {formData.custom_logo ? 'Logo personnalisé actif' : 'Logo AnimaJet par défaut'}
+                        </p>
+                      </div>
+
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadLogo}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
+                      >
+                        {uploadingLogo ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2" />
+                        )}
+                        {formData.custom_logo ? 'Changer le logo' : 'Uploader un logo'}
+                      </Button>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-[#B0B0B5] text-sm">Taille</Label>
+                          <Select
+                            value={formData.logo_size}
+                            onValueChange={(value: LogoSize) =>
+                              setFormData((prev) => ({ ...prev, logo_size: value }))
                             }
-                            min={0}
-                            max={100}
-                            step={5}
-                            className="[&_[role=slider]]:bg-[#D4AF37]"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <input
-                      ref={bgInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadBackground}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => bgInputRef.current?.click()}
-                      disabled={uploadingBg}
-                      className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
-                    >
-                      {uploadingBg ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      {formData.background_image ? 'Changer l\'image' : 'Uploader une image'}
-                    </Button>
-                  </div>
-
-                  {/* Section Logo */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-white font-medium flex items-center gap-2">
-                        <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
-                        Logo personnalisé
-                      </h4>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-[#B0B0B5] text-sm">Afficher</Label>
-                        <Switch
-                          checked={formData.show_logo}
-                          onCheckedChange={(checked) =>
-                            setFormData((prev) => ({ ...prev, show_logo: checked }))
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      {formData.custom_logo ? (
-                        <div className="relative">
-                          <img
-                            src={getStorageUrl(formData.custom_logo) || ''}
-                            alt="Logo"
-                            className="h-16 w-auto object-contain bg-[#2E2E33] rounded-lg p-2"
-                          />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                            onClick={handleRemoveLogo}
                           >
-                            <X className="h-3 w-3" />
-                          </Button>
+                            <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                              <SelectItem value="small">Petit</SelectItem>
+                              <SelectItem value="medium">Moyen</SelectItem>
+                              <SelectItem value="large">Grand</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      ) : (
-                        <div className="h-20 w-20 bg-[#2E2E33] rounded-lg flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.2)]">
-                          <Image src="/images/animajet_logo_principal.png" alt="AnimaJet" width={50} height={50} />
+                        <div className="space-y-1.5">
+                          <Label className="text-[#B0B0B5] text-sm">Position</Label>
+                          <Select
+                            value={formData.logo_position}
+                            onValueChange={(value: LogoPosition) =>
+                              setFormData((prev) => ({ ...prev, logo_position: value }))
+                            }
+                          >
+                            <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                              <SelectItem value="center">Centre</SelectItem>
+                              <SelectItem value="bottom-left">Bas gauche</SelectItem>
+                              <SelectItem value="top-left">Haut gauche</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      )}
-                      <p className="text-xs text-[#6B6B70]">
-                        {formData.custom_logo ? 'Logo personnalisé actif' : 'Logo AnimaJet par défaut'}
-                      </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+              <div className="v2-pa-colonnes">
+                <motion.div id="diaporama"
+                  className="card-gold rounded-xl"
+                >
+                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                    <h3 className="text-sm font-semibold text-white">Diaporama</h3>
+                    <p className="text-xs text-[#6B6B70]">
+                      Affichage sur l&apos;écran de projection
+                    </p>
+                  </div>
+                  <div className="p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-white text-sm">Afficher le QR code</Label>
+                        <p className="text-xs text-[#6B6B70]">
+                          QR code en bas à droite
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.show_qr_on_screen}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, show_qr_on_screen: checked }))
+                        }
+                      />
                     </div>
 
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadLogo}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={uploadingLogo}
-                      className="w-full border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33]"
-                    >
-                      {uploadingLogo ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      {formData.custom_logo ? 'Changer le logo' : 'Uploader un logo'}
-                    </Button>
-
-                    <div className="grid grid-cols-2 gap-3">
+                    {formData.show_qr_on_screen && (
                       <div className="space-y-1.5">
-                        <Label className="text-[#B0B0B5] text-sm">Taille</Label>
+                        <Label className="text-[#B0B0B5] text-sm">Taille du QR code</Label>
                         <Select
-                          value={formData.logo_size}
-                          onValueChange={(value: LogoSize) =>
-                            setFormData((prev) => ({ ...prev, logo_size: value }))
+                          value={formData.qr_size}
+                          onValueChange={(value: QRSize) =>
+                            setFormData((prev) => ({ ...prev, qr_size: value }))
                           }
                         >
                           <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
@@ -1016,795 +1066,803 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-[#B0B0B5] text-sm">Position</Label>
+                        <Label className="text-[#B0B0B5] text-sm">Transition</Label>
                         <Select
-                          value={formData.logo_position}
-                          onValueChange={(value: LogoPosition) =>
-                            setFormData((prev) => ({ ...prev, logo_position: value }))
+                          value={formData.transition_type}
+                          onValueChange={(value: TransitionType) =>
+                            setFormData((prev) => ({ ...prev, transition_type: value }))
                           }
                         >
                           <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                            <SelectItem value="center">Centre</SelectItem>
-                            <SelectItem value="bottom-left">Bas gauche</SelectItem>
-                            <SelectItem value="top-left">Haut gauche</SelectItem>
+                            <SelectItem value="fade">Fondu</SelectItem>
+                            <SelectItem value="slide">Glissement</SelectItem>
+                            <SelectItem value="zoom">Zoom</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Messages - pleine largeur */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-6 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#9C27B0]/50 hover:shadow-[0_0_20px_rgba(156,39,176,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#9C27B0]/10 flex items-center justify-center">
-                    <MessageCircle className="h-4 w-4 text-[#9C27B0]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Messages</h3>
-                    <p className="text-xs text-[#6B6B70]">Messages texte dans le diaporama</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-white text-sm">Activer les messages</Label>
-                      <p className="text-xs text-[#6B6B70]">
-                        Permettre aux invités d&apos;envoyer des messages
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.messages_enabled}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({ ...prev, messages_enabled: checked }))
-                      }
-                    />
-                  </div>
-
-                  {formData.messages_enabled && (
-                    <>
                       <div className="space-y-1.5">
                         <div className="flex justify-between">
-                          <Label className="text-[#B0B0B5] text-sm">Fréquence d&apos;affichage</Label>
+                          <Label className="text-[#B0B0B5] text-sm">Durée</Label>
                           <span className="text-sm text-[#D4AF37] font-semibold">
-                            Toutes les {formData.messages_frequency} photos
+                            {formData.transition_duration}s
                           </span>
                         </div>
                         <Slider
-                          value={[formData.messages_frequency]}
+                          value={[formData.transition_duration]}
                           onValueChange={([value]) =>
-                            setFormData((prev) => ({ ...prev, messages_frequency: value }))
+                            setFormData((prev) => ({ ...prev, transition_duration: value }))
                           }
-                          min={2}
-                          max={10}
-                          step={1}
-                          className="[&_[role=slider]]:bg-[#D4AF37]"
-                        />
-                        <p className="text-xs text-[#6B6B70]">
-                          Un message sera affiché toutes les X photos
-                        </p>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <Label className="text-[#B0B0B5] text-sm">Durée d&apos;affichage</Label>
-                          <span className="text-sm text-[#D4AF37] font-semibold">
-                            {formData.messages_duration}s
-                          </span>
-                        </div>
-                        <Slider
-                          value={[formData.messages_duration]}
-                          onValueChange={([value]) =>
-                            setFormData((prev) => ({ ...prev, messages_duration: value }))
-                          }
-                          min={5}
+                          min={3}
                           max={15}
                           step={1}
                           className="[&_[role=slider]]:bg-[#D4AF37]"
                         />
-                        <p className="text-xs text-[#6B6B70]">
-                          Temps d&apos;affichage de chaque message
-                        </p>
                       </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Demandes de musique - pleine largeur (table à part, enregistrement immédiat) */}
-            {selectedSession && <MusicRequestSettings sessionId={selectedSession.id} className="max-xl:order-6" />}
-
-            {/* Affiches promotionnelles - pleine largeur */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-7 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Megaphone className="h-4 w-4 text-[#D4AF37]" />
+                    </div>
                   </div>
-                  <div>
+                </motion.div>
+                <motion.div id="messages"
+                  className="card-gold rounded-xl"
+                >
+                  <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-white">Affiches promotionnelles</h3>
-                      {/* BADGE-NOUVEAU : retirer ce span pour supprimer le badge */}
-                      <span className="px-1.5 py-0.5 rounded-md bg-[#D4AF37] text-[#1A1A1E] text-[10px] font-bold uppercase tracking-wide">
-                        Nouveau
-                      </span>
+                      <div className="w-8 h-8 rounded-lg bg-[#9C27B0]/10 flex items-center justify-center">
+                        <MessageCircle className="h-4 w-4 text-[#9C27B0]" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Messages</h3>
+                        <p className="text-xs text-[#6B6B70]">Messages texte dans le diaporama</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-[#6B6B70]">Afficher une affiche toutes les X photos dans le diaporama</p>
                   </div>
-                </div>
-              </div>
-              <div className="p-3 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-sm">Activer les affiches promotionnelles</Label>
-                    <p className="text-xs text-[#6B6B70]">
-                      Intercale vos affiches entre les photos des invités
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formData.promo_enabled}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, promo_enabled: checked }))
-                    }
-                  />
-                </div>
-
-                {formData.promo_enabled && (
-                  <>
-                    <div className="space-y-1.5 max-w-xs">
-                      <Label className="text-[#B0B0B5] text-sm">Fréquence d&apos;affichage</Label>
-                      <Select
-                        value={String(formData.promo_frequency)}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, promo_frequency: Number(value) }))
-                        }
-                      >
-                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                          <SelectItem value="5">Toutes les 5 photos</SelectItem>
-                          <SelectItem value="10">Toutes les 10 photos</SelectItem>
-                          <SelectItem value="15">Toutes les 15 photos</SelectItem>
-                          <SelectItem value="20">Toutes les 20 photos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-[#6B6B70]">
-                        Les affiches défilent en boucle, dans l&apos;ordre d&apos;ajout. Tant qu&apos;aucune photo n&apos;est arrivée, elles défilent seules.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
+                  <div className="p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex items-center justify-between">
-                        <Label className="text-[#B0B0B5] text-sm">
-                          Affiches ({formData.promo_affiches.length}/{MAX_PROMO_AFFICHES})
-                        </Label>
-                        <input
-                          ref={promoInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png"
-                          multiple
-                          onChange={handleUploadPromo}
-                          className="hidden"
+                        <div>
+                          <Label className="text-white text-sm">Activer les messages</Label>
+                          <p className="text-xs text-[#6B6B70]">
+                            Permettre aux invités d&apos;envoyer des messages
+                          </p>
+                        </div>
+                        <Switch
+                          checked={formData.messages_enabled}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, messages_enabled: checked }))
+                          }
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={uploadingPromo || formData.promo_affiches.length >= MAX_PROMO_AFFICHES}
-                          onClick={() => promoInputRef.current?.click()}
-                          className="text-[#D4AF37] hover:text-amber-300 border border-[#D4AF37]/30 hover:border-[#D4AF37] disabled:opacity-40"
-                        >
-                          {uploadingPromo ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Plus className="h-4 w-4 mr-1" />
-                          )}
-                          Ajouter des affiches
-                        </Button>
                       </div>
 
-                      {formData.promo_affiches.length === 0 ? (
-                        <p className="text-xs text-[#6B6B70] py-4 text-center border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
-                          Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max {PROMO_MAX_MB} Mo), plusieurs à la fois si besoin.
-                        </p>
-                      ) : (
+                      {formData.messages_enabled && (
                         <>
-                        <p className="text-xs text-[#6B6B70]">
-                          Cliquez sur une affiche pour choisir « Ajuster » ou « Plein écran ».
-                        </p>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
-                          {formData.promo_affiches.map((path, i) => {
-                            const isFull = formData.promo_affiches_plein_ecran.includes(path)
-                            const isSelected = selectedPromo === path
-                            return (
-                            <div
-                              key={path}
-                              role="button"
-                              tabIndex={0}
-                              aria-pressed={isSelected}
-                              aria-label={`Affiche ${i + 1}, ${isFull ? 'plein écran' : 'ajuster'}`}
-                              onClick={() => setSelectedPromo(isSelected ? null : path)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault()
-                                  setSelectedPromo(isSelected ? null : path)
-                                }
-                              }}
-                              className={`relative aspect-[3/4] rounded-lg overflow-hidden bg-[#2E2E33] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
-                                isSelected ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/20'
-                              }`}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={getStorageUrl(path) || ''}
-                                alt={`Affiche ${i + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-semibold">
-                                {i + 1}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (selectedPromo === path) setSelectedPromo(null)
-                                  handleRemovePromo(path)
-                                }}
-                                aria-label={`Supprimer l'affiche ${i + 1}`}
-                                className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white hover:bg-red-500/80 transition-colors"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                              <span
-                                className={`absolute left-1 right-1 bottom-1 rounded px-1 py-0.5 text-center text-[10px] font-medium truncate ${
-                                  isFull ? 'bg-[#D4AF37] text-[#1A1405]' : 'bg-black/70 text-white'
-                                }`}
-                              >
-                                {isFull ? 'Plein écran' : 'Ajuster'}
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between">
+                              <Label className="text-[#B0B0B5] text-sm">Fréquence d&apos;affichage</Label>
+                              <span className="text-sm text-[#D4AF37] font-semibold">
+                                Toutes les {formData.messages_frequency} photos
                               </span>
                             </div>
-                            )
-                          })}
-                        </div>
-                        {selectedPromo && formData.promo_affiches.includes(selectedPromo) && (
-                          <PromoAfficheDetail
-                            index={formData.promo_affiches.indexOf(selectedPromo)}
-                            src={getStorageUrl(selectedPromo) || ''}
-                            fullScreen={formData.promo_affiches_plein_ecran.includes(selectedPromo)}
-                            onChange={(full) => handlePromoFullScreen(selectedPromo, full)}
-                          />
-                        )}
+                            <Slider
+                              value={[formData.messages_frequency]}
+                              onValueChange={([value]) =>
+                                setFormData((prev) => ({ ...prev, messages_frequency: value }))
+                              }
+                              min={2}
+                              max={10}
+                              step={1}
+                              className="[&_[role=slider]]:bg-[#D4AF37]"
+                            />
+                            <p className="text-xs text-[#6B6B70]">
+                              Un message sera affiché toutes les X photos
+                            </p>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between">
+                              <Label className="text-[#B0B0B5] text-sm">Durée d&apos;affichage</Label>
+                              <span className="text-sm text-[#D4AF37] font-semibold">
+                                {formData.messages_duration}s
+                              </span>
+                            </div>
+                            <Slider
+                              value={[formData.messages_duration]}
+                              onValueChange={([value]) =>
+                                setFormData((prev) => ({ ...prev, messages_duration: value }))
+                              }
+                              min={5}
+                              max={15}
+                              step={1}
+                              className="[&_[role=slider]]:bg-[#D4AF37]"
+                            />
+                            <p className="text-xs text-[#6B6B70]">
+                              Temps d&apos;affichage de chaque message
+                            </p>
+                          </div>
                         </>
                       )}
                     </div>
-                  </>
-                )}
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-
-            {/* Réglages par défaut du compte - pleine largeur */}
-            <div className="lg:col-span-2 max-xl:order-4">
-              <DisplayDefaultsCard
-                key={selectedSession.id}
-                sessionId={selectedSession.id}
-                sessionName={selectedSession.name}
-                flushPendingSave={flushPendingSave}
-                onApplied={handleDefaultsApplied}
-              />
-            </div>
-          </div>
-
-          {/* Grand écran : colonne droite */}
-          <div className="contents xl:flex xl:flex-col xl:gap-3 xl:min-w-0">
-            {/* Colonne droite : Diaporama */}
-            <div className="max-xl:order-2 flex flex-col gap-3">
-              {/* Diaporama */}
-              <motion.div
-                whileHover={{ scale: 1.002 }}
-                className="card-gold rounded-xl transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
+              <motion.div id="affiches"
+                className="card-gold rounded-xl"
               >
                 <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                  <h3 className="text-sm font-semibold text-white">Diaporama</h3>
-                  <p className="text-xs text-[#6B6B70]">
-                    Affichage sur l&apos;écran de projection
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                      <Megaphone className="h-4 w-4 text-[#D4AF37]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-white">Affiches promotionnelles</h3>
+                        {/* BADGE-NOUVEAU : retirer ce span pour supprimer le badge */}
+                        <span className="px-1.5 py-0.5 rounded-md bg-[#D4AF37] text-[#1A1A1E] text-[10px] font-bold uppercase tracking-wide">
+                          Nouveau
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#6B6B70]">Afficher une affiche toutes les X photos dans le diaporama</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3 space-y-3">
+                <div className="p-3 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="text-white text-sm">Afficher le QR code</Label>
+                      <Label className="text-white text-sm">Activer les affiches promotionnelles</Label>
                       <p className="text-xs text-[#6B6B70]">
-                        QR code en bas à droite
+                        Intercale vos affiches entre les photos des invités
                       </p>
                     </div>
                     <Switch
-                      checked={formData.show_qr_on_screen}
+                      checked={formData.promo_enabled}
                       onCheckedChange={(checked) =>
-                        setFormData((prev) => ({ ...prev, show_qr_on_screen: checked }))
+                        setFormData((prev) => ({ ...prev, promo_enabled: checked }))
                       }
                     />
                   </div>
 
-                  {formData.show_qr_on_screen && (
-                    <div className="space-y-1.5">
-                      <Label className="text-[#B0B0B5] text-sm">Taille du QR code</Label>
-                      <Select
-                        value={formData.qr_size}
-                        onValueChange={(value: QRSize) =>
-                          setFormData((prev) => ({ ...prev, qr_size: value }))
-                        }
-                      >
-                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                          <SelectItem value="small">Petit</SelectItem>
-                          <SelectItem value="medium">Moyen</SelectItem>
-                          <SelectItem value="large">Grand</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[#B0B0B5] text-sm">Transition</Label>
-                      <Select
-                        value={formData.transition_type}
-                        onValueChange={(value: TransitionType) =>
-                          setFormData((prev) => ({ ...prev, transition_type: value }))
-                        }
-                      >
-                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                          <SelectItem value="fade">Fondu</SelectItem>
-                          <SelectItem value="slide">Glissement</SelectItem>
-                          <SelectItem value="zoom">Zoom</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between">
-                        <Label className="text-[#B0B0B5] text-sm">Durée</Label>
-                        <span className="text-sm text-[#D4AF37] font-semibold">
-                          {formData.transition_duration}s
-                        </span>
+                  {formData.promo_enabled && (
+                    <>
+                      <div className="space-y-1.5 max-w-xs">
+                        <Label className="text-[#B0B0B5] text-sm">Fréquence d&apos;affichage</Label>
+                        <Select
+                          value={String(formData.promo_frequency)}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({ ...prev, promo_frequency: Number(value) }))
+                          }
+                        >
+                          <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                            <SelectItem value="5">Toutes les 5 photos</SelectItem>
+                            <SelectItem value="10">Toutes les 10 photos</SelectItem>
+                            <SelectItem value="15">Toutes les 15 photos</SelectItem>
+                            <SelectItem value="20">Toutes les 20 photos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-[#6B6B70]">
+                          Les affiches défilent en boucle, dans l&apos;ordre d&apos;ajout. Tant qu&apos;aucune photo n&apos;est arrivée, elles défilent seules.
+                        </p>
                       </div>
-                      <Slider
-                        value={[formData.transition_duration]}
-                        onValueChange={([value]) =>
-                          setFormData((prev) => ({ ...prev, transition_duration: value }))
-                        }
-                        min={3}
-                        max={15}
-                        step={1}
-                        className="[&_[role=slider]]:bg-[#D4AF37]"
-                      />
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[#B0B0B5] text-sm">
+                            Affiches ({formData.promo_affiches.length}/{MAX_PROMO_AFFICHES})
+                          </Label>
+                          <input
+                            ref={promoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            multiple
+                            onChange={handleUploadPromo}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={uploadingPromo || formData.promo_affiches.length >= MAX_PROMO_AFFICHES}
+                            onClick={() => promoInputRef.current?.click()}
+                            className="text-[#D4AF37] hover:text-amber-300 border border-[#D4AF37]/30 hover:border-[#D4AF37] disabled:opacity-40"
+                          >
+                            {uploadingPromo ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Plus className="h-4 w-4 mr-1" />
+                            )}
+                            Ajouter des affiches
+                          </Button>
+                        </div>
+
+                        {formData.promo_affiches.length === 0 ? (
+                          <p className="text-xs text-[#6B6B70] py-4 text-center border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
+                            Aucune affiche. Ajoutez jusqu&apos;à {MAX_PROMO_AFFICHES} affiches (JPG/PNG, max {PROMO_MAX_MB} Mo), plusieurs à la fois si besoin.
+                          </p>
+                        ) : (
+                          <>
+                          <p className="text-xs text-[#6B6B70]">
+                            Cliquez sur une affiche pour choisir « Ajuster » ou « Plein écran ».
+                          </p>
+                          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
+                            {formData.promo_affiches.map((path, i) => {
+                              const isFull = formData.promo_affiches_plein_ecran.includes(path)
+                              const isSelected = selectedPromo === path
+                              return (
+                              <div
+                                key={path}
+                                role="button"
+                                tabIndex={0}
+                                aria-pressed={isSelected}
+                                aria-label={`Affiche ${i + 1}, ${isFull ? 'plein écran' : 'ajuster'}`}
+                                onClick={() => setSelectedPromo(isSelected ? null : path)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setSelectedPromo(isSelected ? null : path)
+                                  }
+                                }}
+                                className={`relative aspect-[3/4] rounded-lg overflow-hidden bg-[#2E2E33] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
+                                  isSelected ? 'border-2 border-[#D4AF37]' : 'border border-[#D4AF37]/20'
+                                }`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={getStorageUrl(path) || ''}
+                                  alt={`Affiche ${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-semibold">
+                                  {i + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (selectedPromo === path) setSelectedPromo(null)
+                                    handleRemovePromo(path)
+                                  }}
+                                  aria-label={`Supprimer l'affiche ${i + 1}`}
+                                  className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white hover:bg-red-500/80 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                                <span
+                                  className={`absolute left-1 right-1 bottom-1 rounded px-1 py-0.5 text-center text-[10px] font-medium truncate ${
+                                    isFull ? 'bg-[#D4AF37] text-[#1A1405]' : 'bg-black/70 text-white'
+                                  }`}
+                                >
+                                  {isFull ? 'Plein écran' : 'Ajuster'}
+                                </span>
+                              </div>
+                              )
+                            })}
+                          </div>
+                          {selectedPromo && formData.promo_affiches.includes(selectedPromo) && (
+                            <PromoAfficheDetail
+                              index={formData.promo_affiches.indexOf(selectedPromo)}
+                              src={getStorageUrl(selectedPromo) || ''}
+                              fullScreen={formData.promo_affiches_plein_ecran.includes(selectedPromo)}
+                              onChange={(full) => handlePromoFullScreen(selectedPromo, full)}
+                            />
+                          )}
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+              <motion.div id="ecran2"
+                className="card-gold rounded-xl"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                      <Monitor className="h-4 w-4 text-[#D4AF37]" />
                     </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Affichage écran secondaire</h3>
+                      <p className="text-xs text-[#6B6B70]">Projeter le diaporama et les jeux sur un écran ou une TV</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 text-sm text-[#B0B0B5] leading-relaxed">
+                  {/* Brancher le second écran */}
+                  <div>
+                    <p className="text-white font-semibold mb-1">Brancher le second écran</p>
+                    <p>
+                      Reliez votre écran ou téléviseur (HDMI). Dans les réglages d&apos;affichage de votre
+                      ordinateur, choisissez le mode <span className="text-white font-medium">« Bureau étendu »</span>{' '}
+                      (et non « Recopie » / « Duplication »). Glissez ensuite la fenêtre AnimaJet sur ce
+                      second écran, puis activez le plein écran avec le bouton{' '}
+                      <span className="text-[#D4AF37]">⛶</span> en haut à droite.
+                    </p>
+                  </div>
+
+                  {/* Sur Mac */}
+                  <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
+                    <p className="text-white font-semibold mb-1.5">🍎 Sur Mac</p>
+                    <ul className="space-y-1.5 list-disc list-inside marker:text-[#D4AF37]">
+                      <li>
+                        En plein écran, une <span className="text-white font-medium">fine barre du
+                        navigateur peut rester visible</span> en haut de l&apos;écran secondaire :
+                        c&apos;est normal, lié à une limitation du web sur Mac —
+                        <span className="text-white font-medium"> ce n&apos;est pas un bug</span>.
+                      </li>
+                      <li>
+                        Astuce pour la réduire au minimum : agrandissez la fenêtre du navigateur sur
+                        l&apos;écran TV avant de passer en plein écran.
+                      </li>
+                      <li>
+                        Appuyez sur la touche{' '}
+                        <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Échap</kbd>{' '}
+                        pour quitter le plein écran.
+                      </li>
+                      <li>
+                        <span className="text-white font-medium">Avec Safari</span>, une manipulation
+                        officielle Apple permet d&apos;éliminer complètement cette barre résiduelle :
+                        <br />
+                        1. Menu <span className="text-white font-medium">Présentation</span> de
+                        Safari → décochez{' '}
+                        <span className="text-white font-medium">
+                          « Toujours afficher la barre d&apos;outils en plein écran »
+                        </span>
+                        <br />
+                        2. Activez le plein écran avec{' '}
+                        <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Ctrl + Cmd + F</kbd>
+                        <br />
+                        3. Si la barre est encore visible, répétez une seconde fois ce raccourci.
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Sur Windows */}
+                  <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
+                    <p className="text-white font-semibold mb-1.5">🪟 Sur Windows</p>
+                    <p>
+                      Rien de particulier : le plein écran fonctionne{' '}
+                      <span className="text-white font-medium">nativement</span>, sans limitation.
+                    </p>
                   </div>
                 </div>
               </motion.div>
             </div>
 
-            {/* Impression - pleine largeur */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-8 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#E91E63]/50 hover:shadow-[0_0_20px_rgba(233,30,99,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center justify-between">
+            <div className="v2-pa-intitule">Borne &amp; impression</div>
+            <div className="v2-pa-pile">
+              <motion.div id="booth"
+                className="card-gold rounded-xl"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[#E91E63]/10 flex items-center justify-center">
-                      <Printer className="h-4 w-4 text-[#E91E63]" />
+                    <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                      <Tablet className="h-4 w-4 text-[#D4AF37]" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-white">Impression</h3>
-                      <p className="text-xs text-[#6B6B70]">Permettre aux invités de demander une impression</p>
+                      <h3 className="text-sm font-semibold text-white">AnimaBooth</h3>
+                      <p className="text-xs text-[#6B6B70]">Paramètres de la tablette</p>
                     </div>
                   </div>
-                  <a href="/impression-photo-notice.pdf" target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="sm" className="text-[#E91E63] hover:text-pink-300 border border-[#E91E63]/30 hover:border-[#E91E63]">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Notice
-                    </Button>
-                  </a>
                 </div>
-              </div>
-              <div className="p-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-white text-sm">Activer l&apos;impression</Label>
+                <div className="p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-white text-sm">Compte à rebours</Label>
+                          <p className="text-xs text-[#6B6B70]">Avant la capture</p>
+                        </div>
+                        <Switch
+                          checked={formData.borne_countdown}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, borne_countdown: checked }))
+                          }
+                        />
+                      </div>
+                      {formData.borne_countdown && (
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between">
+                            <Label className="text-[#B0B0B5] text-xs">Durée</Label>
+                            <span className="text-xs text-[#D4AF37] font-semibold">
+                              {formData.borne_countdown_duration}s
+                            </span>
+                          </div>
+                          <Slider
+                            value={[formData.borne_countdown_duration]}
+                            onValueChange={([value]) =>
+                              setFormData((prev) => ({ ...prev, borne_countdown_duration: value }))
+                            }
+                            min={1}
+                            max={10}
+                            step={1}
+                            className="[&_[role=slider]]:bg-[#D4AF37]"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between">
+                        <Label className="text-[#B0B0B5] text-sm">Délai retour caméra</Label>
+                        <span className="text-sm text-[#D4AF37] font-semibold">
+                          {formData.borne_return_delay}s
+                        </span>
+                      </div>
+                      <Slider
+                        value={[formData.borne_return_delay]}
+                        onValueChange={([value]) =>
+                          setFormData((prev) => ({ ...prev, borne_return_delay: value }))
+                        }
+                        min={3}
+                        max={10}
+                        step={1}
+                        className="[&_[role=slider]]:bg-[#D4AF37]"
+                      />
                       <p className="text-xs text-[#6B6B70]">
-                        Les invités pourront demander une impression
+                        Retour auto après envoi
                       </p>
                     </div>
-                    <Switch
-                      checked={formData.print_enabled}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({ ...prev, print_enabled: checked }))
-                      }
-                    />
-                  </div>
 
-                  {formData.print_enabled && (
-                    <>
-                      <div className="space-y-1.5">
-                        <Label className="text-[#B0B0B5] text-sm">Mode d&apos;impression</Label>
-                        <Select
-                          value={formData.print_mode}
-                          onValueChange={(value: PrintMode) =>
-                            setFormData((prev) => ({ ...prev, print_mode: value }))
-                          }
-                        >
-                          <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                            <SelectItem value="manual">Manuel (validation requise)</SelectItem>
-                            <SelectItem value="auto">Automatique</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-[#6B6B70]">
-                          {formData.print_mode === 'manual'
-                            ? 'Vous validez chaque demande avant impression'
-                            : 'Les photos s\'impriment automatiquement'}
-                        </p>
-                        {formData.print_mode === 'auto' && (
-                          <div className="mt-2">
-                            <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                              <p className="text-xs text-blue-400 font-medium">💡 Imprimer sans confirmation (boîte &quot;Imprimer&quot;)</p>
-                              <p className="text-xs text-blue-400/80 mt-1 leading-relaxed">
-                                <strong className="text-blue-300">Windows :</strong> appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
-                                <strong className="text-blue-300">Mac :</strong> Terminal → <span className="font-mono bg-blue-900/40 px-1 rounded">open -a &quot;Google Chrome&quot; --args --kiosk-printing</span><br />
-                                À faire à chaque début de soirée.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-[#B0B0B5] text-sm">Limite d&apos;impressions</Label>
-                        <Select
-                          value={formData.print_limit === null ? 'unlimited' : String(formData.print_limit)}
-                          onValueChange={(value) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              print_limit: value === 'unlimited' ? null : parseInt(value),
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                            <SelectItem value="50">50 impressions</SelectItem>
-                            <SelectItem value="100">100 impressions</SelectItem>
-                            <SelectItem value="150">150 impressions</SelectItem>
-                            <SelectItem value="unlimited">Illimité</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-[#6B6B70]">
-                          {selectedSession?.print_count ?? 0}
-                          {formData.print_limit !== null
-                            ? ` / ${formData.print_limit} photos imprimées`
-                            : ' photos imprimées'}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Impression payante */}
-                {formData.print_enabled && (
-                  <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-white text-sm">Impression payante</Label>
-                        <p className="text-xs text-[#6B6B70]">
-                          Afficher un prix indicatif à l&apos;invité avant impression (paiement sur place, pas en ligne)
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.print_paid}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, print_paid: checked }))
+                    <div className="space-y-1.5">
+                      <Label className="text-[#B0B0B5] text-sm">Caméra par défaut</Label>
+                      <Select
+                        value={formData.borne_default_camera}
+                        onValueChange={(value: CameraType) =>
+                          setFormData((prev) => ({ ...prev, borne_default_camera: value }))
                         }
-                      />
+                      >
+                        <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                          <SelectItem value="front">Frontale (selfie)</SelectItem>
+                          <SelectItem value="back">Arrière</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center justify-between pt-2">
+                        <Label className="text-white text-xs">Nom événement</Label>
+                        <Switch
+                          checked={formData.borne_show_event_name}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, borne_show_event_name: checked }))
+                          }
+                        />
+                      </div>
                     </div>
 
-                    {formData.print_paid && (
-                      <div className="mt-3 space-y-1.5 max-w-[200px]">
-                        <Label className="text-[#B0B0B5] text-sm">Prix de l&apos;impression</Label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.50"
-                            placeholder="2.00"
-                            value={formData.print_price}
-                            onChange={(e) =>
-                              setFormData((prev) => ({ ...prev, print_price: e.target.value }))
-                            }
-                            className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white pr-8"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0B0B5] text-sm pointer-events-none">€</span>
-                        </div>
-                        <p className="text-xs text-[#6B6B70]">
-                          Prix indicatif affiché à l&apos;invité (paiement physique avec l&apos;établissement)
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Statut imprimante */}
-                {formData.print_enabled && (
-                  <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                          printerStatus === 'ready'
-                            ? 'bg-[#4CAF50]/10 border border-[#4CAF50]/30'
-                            : printerStatus === 'error'
-                            ? 'bg-[#E53935]/10 border border-[#E53935]/30'
-                            : 'bg-white/5 border border-white/10'
-                        }`}>
-                          {printerStatus === 'ready' ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-[#4CAF50]" />
-                              <span className="text-sm text-[#4CAF50] font-medium">Imprimante prête</span>
-                            </>
-                          ) : printerStatus === 'error' ? (
-                            <>
-                              <XCircle className="h-4 w-4 text-[#E53935]" />
-                              <span className="text-sm text-[#E53935] font-medium">Non détectée</span>
-                            </>
-                          ) : (
-                            <>
-                              <Printer className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-400 font-medium">Non testée</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                    <div className="flex items-end">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleTestPrint}
-                        disabled={testingPrint}
-                        className="border-[#E91E63]/30 text-[#E91E63] hover:bg-[#E91E63]/10 hover:border-[#E91E63]/50"
+                        className="w-full h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
+                        onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
                       >
-                        {testingPrint ? (
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                        ) : (
-                          <Printer className="h-4 w-4 mr-1.5" />
-                        )}
-                        Tester l&apos;impression
+                        <Tablet className="h-3.5 w-3.5 mr-1.5" />
+                        Gérer la borne
                       </Button>
                     </div>
                   </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* AnimaBooth (borne photo) - pleine largeur */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-9 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Tablet className="h-4 w-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">AnimaBooth</h3>
-                    <p className="text-xs text-[#6B6B70]">Paramètres de la tablette</p>
+                </div>
+              </motion.div>
+              <motion.div id="impression"
+                className="card-gold rounded-xl"
+              >
+                <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#E91E63]/10 flex items-center justify-center">
+                        <Printer className="h-4 w-4 text-[#E91E63]" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Impression</h3>
+                        <p className="text-xs text-[#6B6B70]">Permettre aux invités de demander une impression</p>
+                      </div>
+                    </div>
+                    <a href="/impression-photo-notice.pdf" target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="sm" className="text-[#E91E63] hover:text-pink-300 border border-[#E91E63]/30 hover:border-[#E91E63]">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Notice
+                      </Button>
+                    </a>
                   </div>
                 </div>
-              </div>
-              <div className="p-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="space-y-3">
+                <div className="p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-white text-sm">Compte à rebours</Label>
-                        <p className="text-xs text-[#6B6B70]">Avant la capture</p>
+                        <Label className="text-white text-sm">Activer l&apos;impression</Label>
+                        <p className="text-xs text-[#6B6B70]">
+                          Les invités pourront demander une impression
+                        </p>
                       </div>
                       <Switch
-                        checked={formData.borne_countdown}
+                        checked={formData.print_enabled}
                         onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, borne_countdown: checked }))
+                          setFormData((prev) => ({ ...prev, print_enabled: checked }))
                         }
                       />
                     </div>
-                    {formData.borne_countdown && (
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <Label className="text-[#B0B0B5] text-xs">Durée</Label>
-                          <span className="text-xs text-[#D4AF37] font-semibold">
-                            {formData.borne_countdown_duration}s
-                          </span>
+
+                    {formData.print_enabled && (
+                      <>
+                        <div className="space-y-1.5">
+                          <Label className="text-[#B0B0B5] text-sm">Mode d&apos;impression</Label>
+                          <Select
+                            value={formData.print_mode}
+                            onValueChange={(value: PrintMode) =>
+                              setFormData((prev) => ({ ...prev, print_mode: value }))
+                            }
+                          >
+                            <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                              <SelectItem value="manual">Manuel (validation requise)</SelectItem>
+                              <SelectItem value="auto">Automatique</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-[#6B6B70]">
+                            {formData.print_mode === 'manual'
+                              ? 'Vous validez chaque demande avant impression'
+                              : 'Les photos s\'impriment automatiquement'}
+                          </p>
+                          {formData.print_mode === 'auto' && (
+                            <div className="mt-2">
+                              <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                                <p className="text-xs text-blue-400 font-medium">💡 Imprimer sans confirmation (boîte &quot;Imprimer&quot;)</p>
+                                <p className="text-xs text-blue-400/80 mt-1 leading-relaxed">
+                                  <strong className="text-blue-300">Windows :</strong> appuie sur <span className="font-mono bg-blue-900/40 px-1 rounded">Windows + R</span>, tape <span className="font-mono bg-blue-900/40 px-1 rounded">chrome --kiosk-printing</span> puis Entrée.<br />
+                                  <strong className="text-blue-300">Mac :</strong> Terminal → <span className="font-mono bg-blue-900/40 px-1 rounded">open -a &quot;Google Chrome&quot; --args --kiosk-printing</span><br />
+                                  À faire à chaque début de soirée.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <Slider
-                          value={[formData.borne_countdown_duration]}
-                          onValueChange={([value]) =>
-                            setFormData((prev) => ({ ...prev, borne_countdown_duration: value }))
-                          }
-                          min={1}
-                          max={10}
-                          step={1}
-                          className="[&_[role=slider]]:bg-[#D4AF37]"
-                        />
-                      </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-[#B0B0B5] text-sm">Limite d&apos;impressions</Label>
+                          <Select
+                            value={formData.print_limit === null ? 'unlimited' : String(formData.print_limit)}
+                            onValueChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                print_limit: value === 'unlimited' ? null : parseInt(value),
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
+                              <SelectItem value="50">50 impressions</SelectItem>
+                              <SelectItem value="100">100 impressions</SelectItem>
+                              <SelectItem value="150">150 impressions</SelectItem>
+                              <SelectItem value="unlimited">Illimité</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-[#6B6B70]">
+                            {selectedSession?.print_count ?? 0}
+                            {formData.print_limit !== null
+                              ? ` / ${formData.print_limit} photos imprimées`
+                              : ' photos imprimées'}
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between">
-                      <Label className="text-[#B0B0B5] text-sm">Délai retour caméra</Label>
-                      <span className="text-sm text-[#D4AF37] font-semibold">
-                        {formData.borne_return_delay}s
-                      </span>
+                  {/* Impression payante */}
+                  {formData.print_enabled && (
+                    <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-white text-sm">Impression payante</Label>
+                          <p className="text-xs text-[#6B6B70]">
+                            Afficher un prix indicatif à l&apos;invité avant impression (paiement sur place, pas en ligne)
+                          </p>
+                        </div>
+                        <Switch
+                          checked={formData.print_paid}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, print_paid: checked }))
+                          }
+                        />
+                      </div>
+
+                      {formData.print_paid && (
+                        <div className="mt-3 space-y-1.5 max-w-[200px]">
+                          <Label className="text-[#B0B0B5] text-sm">Prix de l&apos;impression</Label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.50"
+                              placeholder="2.00"
+                              value={formData.print_price}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, print_price: e.target.value }))
+                              }
+                              className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white pr-8"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0B0B5] text-sm pointer-events-none">€</span>
+                          </div>
+                          <p className="text-xs text-[#6B6B70]">
+                            Prix indicatif affiché à l&apos;invité (paiement physique avec l&apos;établissement)
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <Slider
-                      value={[formData.borne_return_delay]}
-                      onValueChange={([value]) =>
-                        setFormData((prev) => ({ ...prev, borne_return_delay: value }))
-                      }
-                      min={3}
-                      max={10}
-                      step={1}
-                      className="[&_[role=slider]]:bg-[#D4AF37]"
-                    />
-                    <p className="text-xs text-[#6B6B70]">
-                      Retour auto après envoi
-                    </p>
-                  </div>
+                  )}
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[#B0B0B5] text-sm">Caméra par défaut</Label>
-                    <Select
-                      value={formData.borne_default_camera}
-                      onValueChange={(value: CameraType) =>
-                        setFormData((prev) => ({ ...prev, borne_default_camera: value }))
-                      }
-                    >
-                      <SelectTrigger className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)] text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#2E2E33] border-[rgba(255,255,255,0.1)]">
-                        <SelectItem value="front">Frontale (selfie)</SelectItem>
-                        <SelectItem value="back">Arrière</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center justify-between pt-2">
-                      <Label className="text-white text-xs">Nom événement</Label>
-                      <Switch
-                        checked={formData.borne_show_event_name}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, borne_show_event_name: checked }))
-                        }
-                      />
+                  {/* Statut imprimante */}
+                  {formData.print_enabled && (
+                    <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.1)]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                            printerStatus === 'ready'
+                              ? 'bg-[#4CAF50]/10 border border-[#4CAF50]/30'
+                              : printerStatus === 'error'
+                              ? 'bg-[#E53935]/10 border border-[#E53935]/30'
+                              : 'bg-white/5 border border-white/10'
+                          }`}>
+                            {printerStatus === 'ready' ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-[#4CAF50]" />
+                                <span className="text-sm text-[#4CAF50] font-medium">Imprimante prête</span>
+                              </>
+                            ) : printerStatus === 'error' ? (
+                              <>
+                                <XCircle className="h-4 w-4 text-[#E53935]" />
+                                <span className="text-sm text-[#E53935] font-medium">Non détectée</span>
+                              </>
+                            ) : (
+                              <>
+                                <Printer className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-400 font-medium">Non testée</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleTestPrint}
+                          disabled={testingPrint}
+                          className="border-[#E91E63]/30 text-[#E91E63] hover:bg-[#E91E63]/10 hover:border-[#E91E63]/50"
+                        >
+                          {testingPrint ? (
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          ) : (
+                            <Printer className="h-4 w-4 mr-1.5" />
+                          )}
+                          Tester l&apos;impression
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
 
-                  <div className="flex items-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-9 text-xs border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#F4D03F]"
-                      onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
-                    >
-                      <Tablet className="h-3.5 w-3.5 mr-1.5" />
-                      Gérer la borne
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <div className="v2-pa-intitule">Invités</div>
+            {/* Demandes de musique (table à part, enregistrement immédiat) */}
+            <div id="musique">{selectedSession && <MusicRequestSettings sessionId={selectedSession.id} />}</div>
 
-            {/* Affichage écran secondaire - pleine largeur (info, lecture seule) */}
-            <motion.div
-              whileHover={{ scale: 1.001 }}
-              className="max-xl:order-5 card-gold rounded-xl lg:col-span-2 transition-all duration-200 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-            >
-              <div className="p-3 border-b border-[rgba(255,255,255,0.1)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Monitor className="h-4 w-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Affichage écran secondaire</h3>
-                    <p className="text-xs text-[#6B6B70]">Projeter le diaporama et les jeux sur un écran ou une TV</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 space-y-3 text-sm text-[#B0B0B5] leading-relaxed">
-                {/* Brancher le second écran */}
-                <div>
-                  <p className="text-white font-semibold mb-1">Brancher le second écran</p>
-                  <p>
-                    Reliez votre écran ou téléviseur (HDMI). Dans les réglages d&apos;affichage de votre
-                    ordinateur, choisissez le mode <span className="text-white font-medium">« Bureau étendu »</span>{' '}
-                    (et non « Recopie » / « Duplication »). Glissez ensuite la fenêtre AnimaJet sur ce
-                    second écran, puis activez le plein écran avec le bouton{' '}
-                    <span className="text-[#D4AF37]">⛶</span> en haut à droite.
-                  </p>
-                </div>
-
-                {/* Sur Mac */}
-                <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
-                  <p className="text-white font-semibold mb-1.5">🍎 Sur Mac</p>
-                  <ul className="space-y-1.5 list-disc list-inside marker:text-[#D4AF37]">
-                    <li>
-                      En plein écran, une <span className="text-white font-medium">fine barre du
-                      navigateur peut rester visible</span> en haut de l&apos;écran secondaire :
-                      c&apos;est normal, lié à une limitation du web sur Mac —
-                      <span className="text-white font-medium"> ce n&apos;est pas un bug</span>.
-                    </li>
-                    <li>
-                      Astuce pour la réduire au minimum : agrandissez la fenêtre du navigateur sur
-                      l&apos;écran TV avant de passer en plein écran.
-                    </li>
-                    <li>
-                      Appuyez sur la touche{' '}
-                      <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Échap</kbd>{' '}
-                      pour quitter le plein écran.
-                    </li>
-                    <li>
-                      <span className="text-white font-medium">Avec Safari</span>, une manipulation
-                      officielle Apple permet d&apos;éliminer complètement cette barre résiduelle :
-                      <br />
-                      1. Menu <span className="text-white font-medium">Présentation</span> de
-                      Safari → décochez{' '}
-                      <span className="text-white font-medium">
-                        « Toujours afficher la barre d&apos;outils en plein écran »
-                      </span>
-                      <br />
-                      2. Activez le plein écran avec{' '}
-                      <kbd className="px-1.5 py-0.5 rounded bg-[#2E2E33] border border-[rgba(255,255,255,0.15)] text-white text-xs">Ctrl + Cmd + F</kbd>
-                      <br />
-                      3. Si la barre est encore visible, répétez une seconde fois ce raccourci.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Sur Windows */}
-                <div className="rounded-lg bg-white/5 border border-[rgba(255,255,255,0.08)] p-3">
-                  <p className="text-white font-semibold mb-1.5">🪟 Sur Windows</p>
-                  <p>
-                    Rien de particulier : le plein écran fonctionne{' '}
-                    <span className="text-white font-medium">nativement</span>, sans limitation.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-      </main>
+            <div className="v2-pa-intitule">Compte</div>
+            <div id="defaut">
+            <DisplayDefaultsCard
+              key={selectedSession.id}
+              sessionId={selectedSession.id}
+              sessionName={selectedSession.name}
+              flushPendingSave={flushPendingSave}
+              onApplied={handleDefaultsApplied}
+            />
+            </div>
+          </motion.div>
+        </main>
+      </div>
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Sommaire de la page (habillage V2) : groupé par usage, suit la section visible,
+// un point vert signale les modules activés. Purement visuel : aucun réglage ici.
+// ---------------------------------------------------------------------------
+type EntreeSommaire = { id: string; label: string; icone: LucideIcon; etat?: 'infos' | 'messages' | 'affiches' | 'impression' }
+const SOMMAIRE: { groupe: string; entrees: EntreeSommaire[] }[] = [
+  { groupe: 'Événement', entrees: [{ id: 'infos', label: 'Informations générales', icone: Info, etat: 'infos' }] },
+  {
+    groupe: 'Grand écran',
+    entrees: [
+      { id: 'perso', label: 'Personnalisation', icone: Palette },
+      { id: 'diaporama', label: 'Diaporama', icone: Monitor },
+      { id: 'messages', label: 'Messages', icone: MessageCircle, etat: 'messages' },
+      { id: 'affiches', label: 'Affiches promo', icone: Megaphone, etat: 'affiches' },
+      { id: 'ecran2', label: 'Écran secondaire', icone: Cast },
+    ],
+  },
+  {
+    groupe: 'Borne & impression',
+    entrees: [
+      { id: 'booth', label: 'AnimaBooth', icone: Camera },
+      { id: 'impression', label: 'Impression', icone: Printer, etat: 'impression' },
+    ],
+  },
+  { groupe: 'Invités', entrees: [{ id: 'musique', label: 'Demandes de musique', icone: Music }] },
+  { groupe: 'Compte', entrees: [{ id: 'defaut', label: 'Réglages par défaut', icone: BookmarkCheck }] },
+]
+
+function SommaireParametres({
+  contenuRef,
+  etats,
+}: {
+  contenuRef: React.RefObject<HTMLElement | null>
+  etats: Record<NonNullable<EntreeSommaire['etat']>, boolean>
+}) {
+  const ids = SOMMAIRE.flatMap((g) => g.entrees.map((e) => e.id))
+  const [actif, setActif] = useState(ids[0])
+
+  useEffect(() => {
+    const cont = contenuRef.current
+    if (!cont) return
+    const suivre = () => {
+      const haut = cont.getBoundingClientRect().top
+      let courant = ids[0]
+      let dernier = -Infinity
+      for (const id of ids) {
+        const el = document.getElementById(id)
+        if (!el) continue
+        const t = el.getBoundingClientRect().top - haut
+        // Deux panneaux sur la même ligne : celui de gauche l'emporte.
+        if (t <= 60 && t > dernier + 2) {
+          courant = id
+          dernier = t
+        }
+      }
+      if (cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 4) courant = ids[ids.length - 1]
+      setActif(courant)
+    }
+    suivre()
+    cont.addEventListener('scroll', suivre, { passive: true })
+    return () => cont.removeEventListener('scroll', suivre)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contenuRef])
+
+  const aller = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    const cont = contenuRef.current
+    const el = document.getElementById(id)
+    if (!cont || !el) return
+    const top = cont.scrollTop + el.getBoundingClientRect().top - cont.getBoundingClientRect().top - 10
+    cont.scrollTo({ top, behavior: 'smooth' })
+  }
+
+  return (
+    <nav className="v2-verre v2-pa-sommaire" aria-label="Sections des paramètres">
+      {SOMMAIRE.map((g) => (
+        <div key={g.groupe} className="contents">
+          <div className="v2-groupe">{g.groupe}</div>
+          {g.entrees.map(({ id, label, icone: Icone, etat }) => (
+            <a key={id} href={`#${id}`} onClick={(e) => aller(e, id)} className={actif === id ? 'v2-actif' : ''} aria-current={actif === id ? 'true' : undefined}>
+              <Icone />
+              {label}
+              {etat && <span className={`v2-etat ${etats[etat] ? 'v2-on' : ''}`} />}
+            </a>
+          ))}
+        </div>
+      ))}
+    </nav>
+  )
+}
+

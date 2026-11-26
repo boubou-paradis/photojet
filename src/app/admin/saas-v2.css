@@ -246,3 +246,93 @@
 }
 @media (max-width: 560px) { .v2-pl-galerie { grid-template-columns: minmax(0, 1fr); max-width: 420px; } }
 @media (prefers-reduced-motion: reduce) { .v2-pl-jeu *, .v2-pl-jeu *::before, .v2-pl-jeu *::after { transition: none !important; } }
+
+/* ========== Page Paramètres — « Régie » (maquette parametres-regie.html) ==========
+   Les panneaux existants (.card-gold, y compris ceux des composants Musique et Réglages par défaut)
+   et les commandes shadcn (data-slot) sont rhabillés ici, sans toucher à leur logique. */
+.v2-pa { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.v2-pa-tete { flex-shrink: 0; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 16px 28px 6px; }
+.v2-pa-titre { line-height: 0; margin: 0 4px 0 6px; }
+.v2-pa-titre img { height: 64px; width: auto; margin: -8px 0; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7)); }
+.v2-pa-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.v2-pa-enregistre { display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 99px; font-size: 14px; font-weight: 500; color: #86efac;
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.22), rgba(21, 128, 61, 0.14)); border: 1px solid rgba(74, 222, 128, 0.4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.v2-pa-enregistre.v2-encours { color: var(--or-texte); background: rgba(243, 198, 78, 0.1); border-color: rgba(243, 198, 78, 0.4); }
+.v2-pa-enregistre svg { width: 16px; height: 16px; }
+.v2-btn.v2-danger svg, .v2-btn.v2-petit svg { width: 17px; height: 17px; }
+
+.v2-pa-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: 286px minmax(0, 1fr); padding: 12px 0 16px 28px; }
+.v2-pa-sommaire { align-self: start; padding: 10px 12px 14px; }
+.v2-pa-sommaire .v2-groupe { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--texte-3); padding: 14px 12px 6px; }
+.v2-pa-sommaire .v2-groupe:first-child { padding-top: 6px; }
+.v2-pa-sommaire a { position: relative; isolation: isolate; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border-radius: 10px;
+  font-size: 14px; white-space: nowrap; color: var(--texte-2); transition: color .2s, background .2s; }
+.v2-pa-sommaire a svg { width: 17px; height: 17px; color: var(--texte-3); flex-shrink: 0; }
+.v2-pa-sommaire a:hover { color: var(--texte); background: rgba(255, 255, 255, 0.04); }
+.v2-pa-sommaire a.v2-actif { color: #2a1a03; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); background: none; }
+.v2-pa-sommaire a.v2-actif::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -17px;
+  border: 30px solid transparent; border-image: url(/saas-v2/onglet-actif.webp) 60 fill / 30px stretch; }
+.v2-pa-sommaire a.v2-actif svg { color: #3a2604; }
+.v2-pa-sommaire .v2-etat { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #3a3446; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6); }
+.v2-pa-sommaire .v2-etat.v2-on { background: #4ade80; box-shadow: 0 0 8px rgba(74, 222, 128, 0.8); }
+.v2-pa-contenu { min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 4px 34px 40px; }
+.v2-pa-contenu::-webkit-scrollbar { width: 6px; }
+.v2-pa-contenu::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 6px; }
+.v2-pa-contenu::-webkit-scrollbar-thumb { background: linear-gradient(#ffe29a, #b8891c); border-radius: 6px; }
+.v2-pa-intitule { display: flex; align-items: center; gap: 14px; margin: 30px 2px 18px; font-size: 13px; font-weight: 600; letter-spacing: 2.4px; text-transform: uppercase; color: var(--or-clair); }
+.v2-pa-intitule:first-child { margin-top: 6px; }
+.v2-pa-intitule::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(243, 198, 78, 0.55), transparent); }
+.v2-pa-pile { display: flex; flex-direction: column; gap: 26px; }
+.v2-pa-colonnes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; align-items: start; }
+.v2-pa-pile + .v2-pa-colonnes, .v2-pa-colonnes + .v2-pa-pile { margin-top: 26px; }
+.v2-pa [id] { scroll-margin-top: 10px; }
+
+/* Panneaux : verre fumé à liseré (9-slice) à la place de .card-gold */
+.v2-pa .card-gold { position: relative; isolation: isolate; background: none !important; border: 0 !important; box-shadow: none !important; transform: none !important; }
+.v2-pa .card-gold::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -32px;
+  border: 55px solid transparent; border-image: url(/saas-v2/panneau-or.webp) 110 fill / 55px stretch; }
+.v2-pa .card-gold > .border-b:first-child { position: relative; border: 0 !important; padding: 14px 18px 13px; }
+.v2-pa .card-gold > .border-b:first-child::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  background: linear-gradient(rgba(0, 0, 0, 0.75) 0 1px, rgba(255, 236, 190, 0.09) 1px 2px); }
+.v2-pa .card-gold > .border-b:first-child h3 { font-size: 16px !important; font-weight: 600; }
+.v2-pa .card-gold > .border-b:first-child .rounded-lg:is(.w-8, .w-9) { position: relative; isolation: isolate; width: 40px; height: 40px; flex-shrink: 0; margin-right: 4px; background: none !important; }
+.v2-pa .card-gold > .border-b:first-child .rounded-lg:is(.w-8, .w-9)::before { content: ''; position: absolute; inset: -11px; z-index: -1; background: url(/saas-v2/puits-or.webp) center / 100% 100%; }
+.v2-pa .card-gold > .border-b:first-child .rounded-lg:is(.w-8, .w-9) svg { color: var(--or-texte) !important; width: 19px; height: 19px; }
+.v2-pa .card-gold > :not(:first-child) { padding-left: 20px; padding-right: 20px; }
+
+/* Commandes shadcn */
+.v2-pa [data-slot="switch"] { width: 52px !important; height: 28px !important; border: 0 !important; box-shadow: none !important;
+  background: url(/saas-v2/inter-off.webp) center / 74px 50px no-repeat !important; }
+.v2-pa [data-slot="switch"][data-state="checked"] { background-image: url(/saas-v2/inter-on.webp) !important; }
+.v2-pa [data-slot="switch"] [data-slot="switch-thumb"] { opacity: 0; }
+.v2-pa [data-slot="switch"]:disabled { opacity: .5; }
+.v2-pa :is([data-slot="input"], [data-slot="select-trigger"], textarea) {
+  background: transparent !important; color: var(--texte); box-shadow: none !important;
+  /* longhands : le raccourci « border » remettrait border-image à zéro */
+  border-width: 1px !important; border-style: solid !important; border-color: transparent !important;
+  border-image: url(/saas-v2/champ.webp) 46 fill / 23px / 10px stretch !important; }
+.v2-pa :is([data-slot="input"], [data-slot="select-trigger"]):focus-visible { outline: 2px solid rgba(243, 198, 78, 0.55); outline-offset: 6px; }
+.v2-pa [data-slot="select-trigger"] svg { color: var(--or-texte); opacity: 1; }
+.v2-pa [data-slot="slider-track"] { height: 8px !important; background: rgba(0, 0, 0, 0.6) !important; border-radius: 99px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 236, 190, 0.08); }
+.v2-pa [data-slot="slider-range"] { background: linear-gradient(180deg, #fff1b8, #f3c64e 45%, #b8891c) !important; box-shadow: 0 0 10px rgba(243, 198, 78, 0.55); }
+.v2-pa [data-slot="slider-thumb"] { width: 30px !important; height: 30px !important; border: 0 !important; box-shadow: none !important;
+  background: url(/saas-v2/curseur.webp) center / 46px 46px no-repeat !important; }
+
+@media (max-width: 1500px) { .v2-pa-corps { grid-template-columns: 250px minmax(0, 1fr); } .v2-pa-sommaire a { font-size: 13px; } }
+@media (max-height: 820px) {
+  .v2-pa-titre img { height: 52px; } .v2-pa-tete { padding-top: 12px; }
+  .v2-pa-sommaire { padding: 6px 12px 10px; } .v2-pa-sommaire a { height: 32px; font-size: 13px; } .v2-pa-sommaire .v2-groupe { padding: 9px 12px 3px; font-size: 10px; }
+  .v2-pa-sommaire a.v2-actif::before { inset: -15px -17px; }
+}
+/* Tablette / téléphone : sommaire en pastilles défilantes au-dessus, une colonne */
+@media (max-width: 1023px) {
+  .v2-pa-tete { padding: 12px 16px 4px; gap: 12px; } .v2-pa-titre img { height: 40px; margin: 0; }
+  .v2-pa-actions { margin-left: 0; width: 100%; }
+  .v2-pa-corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); padding: 8px 0 0; }
+  .v2-pa-sommaire { display: flex; gap: 6px; overflow-x: auto; margin: 0 16px; padding: 8px 10px; scrollbar-width: none; }
+  .v2-pa-sommaire .v2-groupe { display: none; }
+  .v2-pa-sommaire a { flex-shrink: 0; height: 34px; }
+  .v2-pa-contenu { padding: 4px 30px 32px; }
+  .v2-pa-colonnes { grid-template-columns: minmax(0, 1fr); }
+}
