@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Sparkles, FileText } from 'lucide-react'
+import { ArrowLeft, Loader2, FileText } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { Session } from '@/types/database'
 import { toast } from 'sonner'
 import { fetchUserSession } from '@/lib/session-select'
+import '../saas-v2.css'
 
 // Game card data
 const games = [
@@ -84,9 +85,6 @@ const games = [
     borderHover: 'hover:border-violet-400',
     accentColor: 'text-violet-400',
     notice: '/animabuzz-regles.pdf',
-    // Grand écran : 2e ligne de 4 (avec AnimaVote, À Demi-Mot, AnimaBingo),
-    // centrée par un décalage d'une demi-colonne + demi-gouttière (gap-6 = 1,5rem).
-    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'vote',
@@ -99,9 +97,6 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
     notice: '/animavote-regles.pdf',
-    // Tablette (3 colonnes) : 9 jeux = 3 lignes pleines, sans décalage.
-    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
-    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'demimot',
@@ -115,8 +110,6 @@ const games = [
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
     notice: '/a-demi-mot-regles.pdf',
-    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
-    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
   {
     id: 'bingo',
@@ -128,8 +121,6 @@ const games = [
     glowColor: 'rgba(212, 175, 55, 0.5)',
     borderHover: 'hover:border-[#D4AF37]',
     accentColor: 'text-[#D4AF37]',
-    // Grand écran : 2e ligne de 4, même décalage qu'AnimaBuzz.
-    gridClass: 'lg:translate-x-[calc(50%+0.75rem)]',
   },
 ]
 
@@ -194,139 +185,78 @@ export default function JeuxPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
-      {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
+    // Habillage SaaS V2 « It's showtime! » (maquette validée le 26/11/2026) : styles dans ../saas-v2.css.
+    // Logique inchangée : mêmes jeux, mêmes liens (?session=), mêmes notices PDF.
+    <div className="saas-v2 v2-pl">
+      <div className="v2-pl-sousbarre">
+        <button type="button" className="v2-btn v2-petit" onClick={() => router.push('/admin/dashboard')}>
+          <ArrowLeft className="h-[17px] w-[17px]" />
+          Retour
+        </button>
+        <div className="v2-verre v2-session-mini">
+          <span>{session.name}</span>
+          <small>#{session.code}</small>
+          <em className={session.is_active ? '' : 'v2-off'}>● {session.is_active ? 'Active' : 'Inactive'}</em>
+        </div>
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/admin/dashboard')}
-            className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
-          </Button>
-          <div className="h-4 w-px bg-white/10" />
-          <span className="text-gray-500 text-sm">{session.name}</span>
-        </div>
-      </header>
+      <main className="v2-pl-main">
+        <h1 className="v2-pl-titre">
+          <Image src="/saas-v2/pl-titre-showtime.webp" alt="" width={1800} height={340} priority unoptimized />
+          <span className="v2-sr">It’s showtime! — Jeux</span>
+        </h1>
 
-      {/* Main content */}
-      <main className="relative z-10 mx-auto px-4 md:px-8 py-8 md:py-12 max-w-[1800px]">
-
-        {/* Premium Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="text-center mb-12 md:mb-16"
-        >
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: '120px' }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-8"
-          />
-
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-[#D4AF37] to-white mb-4 relative">
-            Jeux & Animations
-            <span className="absolute inset-0 text-4xl md:text-5xl lg:text-6xl font-black text-[#D4AF37] blur-2xl opacity-30">
-              Jeux & Animations
-            </span>
-          </h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-gray-400 text-lg md:text-xl flex items-center justify-center gap-2"
-          >
-            <Sparkles className="h-5 w-5 text-[#D4AF37]" />
-            <span>Sélectionnez un jeu pour animer votre événement</span>
-            <Sparkles className="h-5 w-5 text-[#D4AF37]" />
-          </motion.p>
-
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: '120px' }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mt-8"
-          />
-        </motion.div>
-
-        {/* Games Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6">
+        <div className="v2-pl-galerie">
           {games.map((game, index) => (
             <motion.div
               key={game.id}
-              initial={{ opacity: 0, y: 40, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{
-                delay: index * 0.08,
-                duration: 0.5,
-                ease: [0.23, 1, 0.32, 1]
-              }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.06, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
               onClick={() => game.available && router.push(`${game.path}?session=${session.id}`)}
-              className={`
-                group relative rounded-2xl cursor-pointer
-                transition-all duration-300 ease-out
-                ${game.available ? 'hover:scale-[1.03] hover:-translate-y-2' : 'opacity-50 cursor-not-allowed'}
-                ${'gridClass' in game ? game.gridClass : ''}
-              `}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && game.available) {
+                  e.preventDefault()
+                  router.push(`${game.path}?session=${session.id}`)
+                }
+              }}
+              role="link"
+              tabIndex={game.available ? 0 : -1}
+              aria-label={game.name}
+              aria-disabled={!game.available}
+              className={`v2-pl-jeu ${game.available ? '' : 'v2-ferme'}`}
             >
-              {/* Card */}
-              <div className={`
-                relative rounded-2xl overflow-hidden aspect-[16/9]
-                border-2 border-white/5 ${game.available ? game.borderHover : 'grayscale opacity-60'}
-                transition-all duration-300 group-hover:brightness-110
-              `}>
-                <Image
-                  src={game.image}
-                  alt={game.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                />
-                {/* Badge notice PDF (cartes ouvertes seulement : une carte grisée n'affiche pas sa notice) */}
+              <div className="v2-pl-faisceau" />
+              <div className="v2-pl-vitrine">
+                {/* Badge notice PDF : sur l'arête de l'écrin, jamais sur l'affiche (cartes ouvertes seulement) */}
                 {game.available && 'notice' in game && game.notice && (
                   <a
                     href={game.notice as string}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-white backdrop-blur-sm transition-all hover:scale-105"
-                    style={{ background: 'rgba(139,92,246,0.85)', border: '1px solid rgba(139,92,246,0.5)' }}
+                    className="v2-pl-notice"
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <FileText />
                     Notice
                   </a>
                 )}
+                <div className="v2-pl-affiche">
+                  <Image
+                    src={game.image}
+                    alt=""
+                    fill
+                    sizes="(max-width: 560px) 100vw, (max-width: 1023px) 50vw, 20vw"
+                  />
+                </div>
+              </div>
+              <div className="v2-pl-socle">
+                <span>{game.name}</span>
+                <div className="v2-pl-ombre" />
               </div>
             </motion.div>
           ))}
         </div>
-
-        {/* Bottom decoration */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-16 text-center"
-        >
-          <div className="inline-flex items-center gap-3 text-gray-600 text-sm">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-700" />
-            <span>{games.filter((g) => g.available).length} jeux disponibles</span>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-700" />
-          </div>
-        </motion.div>
       </main>
     </div>
   )
