@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeux — proposition « Le Plateau »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="saas.css">
+<style>
+  /* Proposition « Le Plateau » : galerie premium de plateau TV. Titre en lettres d'or, affiches
+     présentées comme des œuvres (écrin laqué à double filet d'or) posées sur un socle qui porte
+     leur nom, projecteur au survol. Toutes les matières sont des rendus Blender Cycles (pl-*).
+     saas.css et commun.js (partagés avec le tableau de bord validé) ne sont PAS modifiés. */
+  body { background: #050308 url(assets/pl-fond.webp) center top / cover no-repeat fixed; }
+  body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(120% 80% at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.65) 100%); }
+  .app { position: relative; z-index: 1; }
+
+  .sous-barre { display: flex; align-items: center; gap: 16px; padding: 18px 28px 0; }
+  .session-mini { display: flex; align-items: center; gap: 12px; padding: 9px 18px; font-size: 15px; font-weight: 500; }
+  .session-mini small { font-weight: 700; color: var(--or-texte); }
+  .session-mini em { font-style: normal; color: var(--vert); font-size: 13px; }
+
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 56px 18px; }
+
+  /* En-tête : un seul titre fort, sans sous-texte */
+  .titre { margin: -14px 0 26px; text-align: center; }
+  .titre h1 { margin: 0; line-height: 0; }
+  .titre img { width: min(760px, 52vw); height: auto; display: block; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.7)); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* Grille 5 + 4 */
+  .galerie { width: 100%; max-width: 1560px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 44px 46px; }
+  .jeu { grid-column: span 2; position: relative; cursor: pointer; display: flex; flex-direction: column; }
+  .jeu:nth-child(6) { grid-column: 2 / span 2; }
+
+  /* Faisceau de projecteur : derrière l'écrin, s'allume au survol */
+  .faisceau { position: absolute; left: -38%; right: -38%; bottom: 40px; height: 140%;
+    -webkit-mask-image: linear-gradient(to top, #000 45%, transparent 92%); mask-image: linear-gradient(to top, #000 45%, transparent 92%); z-index: 0; pointer-events: none;
+    background: url(assets/pl-faisceau.webp) center bottom / 100% 100% no-repeat; mix-blend-mode: screen;
+    opacity: 0; transform: translateY(14px); transition: opacity .45s ease, transform .45s ease; }
+
+  /* Écrin : rendu 960x610 (2x), fenêtre 800x450 à 80 px -> 40 px CSS de part et d'autre */
+  .vitrine { position: relative; z-index: 1; aspect-ratio: 16 / 9; transition: transform .4s cubic-bezier(.2, .8, .2, 1); }
+  .vitrine::before, .vitrine::after { content: ''; position: absolute; inset: -40px; z-index: 2; pointer-events: none;
+    border: 40px solid transparent; border-image: url(assets/pl-ecrin.webp) 80 fill / 40px stretch; transition: opacity .4s; }
+  .vitrine::after { border-image-source: url(assets/pl-ecrin-survol.webp); opacity: 0; }
+  .vitrine .affiche { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; background: #000; }
+  .vitrine img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2, .8, .2, 1), filter .4s; filter: brightness(.9) saturate(.95); }
+  .vitrine .affiche::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 35%, rgba(255, 240, 210, 0.16) 48%, transparent 60%) -120% 0 / 250% 100% no-repeat; transition: background-position .9s ease; }
+
+  /* Socle laqué qui porte le nom (3-slice horizontal ; rendu 940x180) */
+  .socle { position: relative; z-index: 1; height: 50px; margin: 12px -10px 0; display: grid; place-items: center; padding-top: 7px; }
+  .socle::before { content: ''; position: absolute; inset: -20px; z-index: -1; pointer-events: none;
+    border-style: solid; border-color: transparent; border-width: 0 40px; border-image: url(assets/pl-socle.webp) 0 80 fill / 0 40px stretch; }
+  .socle span { font-size: 13px; font-weight: 600; letter-spacing: 2.2px; text-transform: uppercase; color: #e9dcc0; white-space: nowrap;
+    text-shadow: 0 1px 0 #000; transition: color .3s, text-shadow .3s; }
+  .ombre { position: absolute; left: 4%; right: 4%; bottom: -18px; height: 26px; z-index: 0; pointer-events: none;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.85), transparent); }
+
+  /* Badge Notice : à cheval sur l'arête haute de l'écrin, jamais sur l'affiche */
+  .notice { position: absolute; top: -24px; right: 14px; z-index: 4; display: flex; align-items: center; gap: 5px; padding: 3px 10px 3px 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: #f3e6c4; border-radius: 99px;
+    background: linear-gradient(180deg, #1c1426, #0b0710); border: 1px solid rgba(243, 198, 78, 0.6);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.6); transition: border-color .2s, color .2s; }
+  .notice svg.i { width: 12px; height: 12px; color: var(--or-texte); }
+  .notice:hover { color: #fff; border-color: #ffe08a; }
+
+  /* Survol : l'affiche s'avance, l'écrin s'allume, le projecteur se lève, un reflet balaie l'affiche */
+  .jeu:hover .faisceau, .jeu.survol .faisceau { opacity: .9; transform: none; }
+  .jeu:hover .vitrine, .jeu.survol .vitrine { transform: translateY(-8px); }
+  .jeu:hover .vitrine::after, .jeu.survol .vitrine::after { opacity: 1; }
+  .jeu:hover img, .jeu.survol img { transform: scale(1.045); filter: none; }
+  .jeu:hover .affiche::after, .jeu.survol .affiche::after { background-position: 120% 0; }
+  .jeu:hover .socle span, .jeu.survol .socle span { color: #ffe39a; text-shadow: 0 1px 0 #000, 0 0 14px rgba(255, 200, 90, 0.6); }
+
+  @media (max-height: 820px) {
+    .titre { margin: -10px 0 18px; } .titre img { width: min(500px, 42vw); }
+    .galerie { max-width: 1120px; gap: 34px 36px; } .socle { height: 42px; margin-top: 12px; } .socle span { font-size: 12px; letter-spacing: 1.6px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .jeu *, .jeu *::before, .jeu *::after { transition: none !important; } }
+</style>
+</head>
+<body data-page="jeux">
+<div class="app">
+  <div id="barre"></div>
+  <div class="sous-barre">
+    <a class="btn petit" href="tableau-de-bord.html" data-i="retour">Retour</a>
+    <div class="verre session-mini"><span>Mariage Julie & Thomas</span><small>#3960</small><em>● Active</em></div>
+  </div>
+  <main>
+    <header class="titre">
+      <h1><img id="titre" src="assets/pl-titre-showtime.webp" alt=""><span class="sr" id="titre-texte">It’s showtime! — jeux</span></h1>
+    </header>
+    <div class="galerie" id="jeux"></div>
+  </main>
+  <div id="pied"></div>
+</div>
+<script src="commun.js"></script>
+<script>
+  // Variante de titre : ?titre=b -> « Entrez en scène »
+  if (new URLSearchParams(location.search).get('titre') === 'b') {
+    document.getElementById('titre').src = 'assets/pl-titre-b.webp';
+    document.getElementById('titre-texte').textContent = 'Entrez en scène — jeux';
+  }
+  const jeux = [
+    ['photo-mystere-v2', 'Photo Mystère'], ['le-bon-ordre-v2', 'Le Bon Ordre'], ['roue-de-la-destinee-v2', 'Roue de la Destinée'],
+    ['quiz-v2', 'Quiz'], ['matching-v2', 'Matching'], ['animabuzz-xtreme', 'AnimaBuzz'], ['animavote', 'AnimaVote'],
+    ['a-demi-mot-v2', 'À Demi-Mot'], ['animabingo', 'AnimaBingo'],
+  ];
+  const demo = new URLSearchParams(location.search).get('survol');
+  document.getElementById('jeux').innerHTML = jeux.map(([img, nom], i) => `
+    <div class="jeu${demo !== null && +demo === i ? ' survol' : ''}" tabindex="0" role="link" aria-label="${nom}">
+      <div class="faisceau"></div>
+      <div class="vitrine">
+        ${img !== 'animabingo' ? `<a class="notice" href="#" onclick="event.stopPropagation()">${ico('fichier')}Notice</a>` : ''}
+        <div class="affiche"><img src="assets/jeux/${img}.png" alt=""></div>
+      </div>
+      <div class="socle"><span>${nom}</span><div class="ombre"></div></div>
+    </div>`).join('');
+</script>
+</body>
+</html>

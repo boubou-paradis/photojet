@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord — maquette V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="saas.css">
+<style>
+  .sessions { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px 28px 0; flex-shrink: 0; }
+  .carte-session { display: flex; align-items: center; gap: 14px; padding: 7px 14px 7px 10px; min-width: 290px; }
+  .medaillon { width: 52px; height: 52px; flex-shrink: 0; display: grid; place-items: center; color: #ffe39a;
+    background: url(assets/medaillon.webp) center / 80px 80px no-repeat;
+    -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 71%); mask-image: radial-gradient(circle, #000 60%, transparent 71%); }
+  .medaillon svg.i { width: 24px; height: 24px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)); }
+  .carte-session b { display: block; font-size: 18px; font-weight: 600; line-height: 1.25; }
+  .carte-session small { font-size: 14px; color: var(--or-texte); font-weight: 600; }
+  .carte-session small em { font-style: normal; color: var(--vert); font-weight: 500; }
+  .carte-session small em::before { content: '•'; color: var(--texte-3); margin: 0 7px; }
+  .carte-session .suppr { margin-left: auto; color: var(--texte-2); padding: 8px; border-radius: 10px; }
+  .carte-session .suppr:hover { color: var(--rouge); }
+  .carte-session .suppr svg.i { width: 21px; height: 21px; }
+  .actions-session { display: flex; gap: 12px; padding-top: 6px; }
+  .note { position: relative; z-index: 2; text-shadow: 0 1px 3px #000, 0 0 8px #000; padding: 10px 32px 10px; font-size: 13px; color: var(--texte-2); display: flex; align-items: center; gap: 7px; }
+  .note svg.i { width: 15px; height: 15px; }
+
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; padding: 4px 28px 14px; }
+  .gauche { display: flex; flex-direction: column; gap: 20px; min-height: 0; }
+  .tuiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; height: 92px; flex-shrink: 0; }
+  .tuile.or .puits { --img: url(assets/puits-or.webp); } .tuile.vert .puits { --img: url(assets/puits-vert.webp); }
+  .tuile.cyan .puits { --img: url(assets/puits-cyan.webp); } .tuile.violet .puits { --img: url(assets/puits-violet.webp); }
+  .tuile.gris .puits { --img: url(assets/puits-gris.webp); }
+  .tuile.or { --c: #f3c64e; } .tuile.vert { --c: #4ade80; } .tuile.cyan { --c: #38c6ff; } .tuile.violet { --c: #b57bff; } .tuile.gris { --c: #b9b3c6; }
+  .tuile.gris .val { text-shadow: 0 2px 2px rgba(0, 0, 0, 0.6); }
+  .tuile.connexion { flex-direction: column; align-items: stretch; justify-content: center; gap: 0; padding: 8px 18px; }
+  .tuile.connexion .bas { display: flex; align-items: flex-end; justify-content: space-between; }
+  .jauge { width: 92px; height: 50px; }
+  .debit { text-align: right; line-height: 1; }
+  .debit .val { font-size: 34px; color: #b5f56b; text-shadow: 0 0 14px rgba(150, 240, 80, 0.5); }
+  .debit small { display: block; font-size: 14px; color: var(--texte-2); margin-top: 4px; }
+
+  .contenu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .contenu .tete { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 14px; }
+  .diapo { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--texte-2); }
+  .galerie { flex: 1; min-height: 0; margin: 0 14px 14px; border-radius: 14px; padding: 14px 10px 14px 14px; display: flex;
+    background: rgba(0, 0, 0, 0.5); box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.85), inset 0 -1px 0 rgba(255, 236, 190, 0.07); }
+  .grille { flex: 1; min-height: 0; overflow: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; align-content: start; grid-auto-rows: max-content; }
+  .grille::-webkit-scrollbar { width: 6px; } .grille::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 6px; }
+  .grille::-webkit-scrollbar-thumb { background: linear-gradient(#ffe29a, #b8891c); border-radius: 6px; box-shadow: 0 0 8px rgba(243, 198, 78, 0.6); }
+  .photo { position: relative; aspect-ratio: 1; align-self: start; border-radius: 11px; transition: transform .2s; }
+  .photo img { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); object-fit: cover; border-radius: 9px; display: block; }
+  .photo::after { content: ''; position: absolute; inset: -8px; border: 23px solid transparent; border-image: url(assets/vignette.webp) 46 fill / 23px stretch; pointer-events: none; }
+  .photo:hover, .photo.survol { transform: translateY(-3px); filter: drop-shadow(0 0 14px rgba(243, 198, 78, 0.35)); }
+  .photo .voile { position: absolute; inset: 3px; border-radius: 9px; display: grid; place-items: center; background: rgba(5, 3, 8, 0.5); opacity: 0; transition: .2s; z-index: 2; }
+  .photo:hover .voile, .photo.survol .voile { opacity: 1; }
+  .photo .voile button { width: 50px; height: 50px; display: grid; place-items: center; color: #fff; position: relative; isolation: isolate; }
+  .photo .voile button::before { content: ''; position: absolute; inset: -14px; z-index: -1; background: url(assets/bouton-rouge.webp) center / 100% 100%; filter: saturate(1.6) brightness(1.2); }
+  .photo .voile button span { position: absolute; inset: 4px; z-index: -1; border-radius: 10px; background: linear-gradient(180deg, #ff6262, #c22a2a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 70, 70, 0.6); }
+  .photo .nom { position: absolute; left: 3px; right: 3px; bottom: 3px; padding: 18px 9px 6px; font-size: 12px; border-radius: 0 0 9px 9px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); z-index: 1; }
+  .photo .badge { position: absolute; top: 9px; z-index: 1; left: 9px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 7px; color: var(--or-clair); background: rgba(10, 8, 14, 0.8); border: 1px solid rgba(243, 198, 78, 0.6); }
+  .photo .badge.attente { left: auto; right: 9px; color: #fdba74; border-color: rgba(251, 146, 60, 0.7); }
+
+  .droite { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .droite .entete { padding: 11px 16px 10px; }
+  .actions-rapides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 14px 12px; }
+  .actions-rapides .btn { padding: 0 10px; }
+  .qr-bloc { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .qr-bloc .entete { white-space: nowrap; }
+  .qr-bloc .entete .segment { margin-left: auto; }
+  .qr-bloc .segment button { padding: 0 10px; height: 30px; font-size: 13px; }
+  .qr-scene { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px 14px; overflow: hidden; }
+  .qr-ecrin { position: relative; width: var(--qr); height: var(--qr); flex-shrink: 0; }
+  .qr-ecrin::before { content: ''; position: absolute; left: 50%; top: 50%; width: calc(var(--qr) * 1280 / 560); height: calc(var(--qr) * 1000 / 560);
+    transform: translate(-50%, -50%); background: url(assets/ecrin-qr.webp) center / 100% 100% no-repeat; pointer-events: none; z-index: 1;
+    -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - var(--qr) * 0.95), #000 calc(50% - var(--qr) * 0.7), #000 calc(50% + var(--qr) * 0.7), transparent calc(50% + var(--qr) * 0.95)); mask-image: linear-gradient(90deg, transparent calc(50% - var(--qr) * 0.95), #000 calc(50% - var(--qr) * 0.7), #000 calc(50% + var(--qr) * 0.7), transparent calc(50% + var(--qr) * 0.95)); }
+  .qr-ecrin .carte { position: absolute; inset: 0; background: #fff; border-radius: calc(var(--qr) * 26 / 560); padding: calc(var(--qr) * 0.075); }
+  .qr-ecrin svg { display: block; width: 100%; height: 100%; }
+  .qr-code { position: relative; z-index: 2; font-weight: 700; font-size: 19px; color: var(--or-texte); letter-spacing: .5px; text-shadow: 0 0 12px rgba(243, 198, 78, 0.5); margin-top: calc(var(--qr) * 0.08); }
+  .qr-btns { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+  .qr-btns .btn { padding: 0 8px; gap: 6px; font-size: 13.5px; }
+  .abo .corps { padding: 6px 16px 12px; }
+  .abo .acces { display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 600; color: var(--or-texte); text-shadow: 0 0 14px rgba(243, 198, 78, 0.45); }
+  .abo .acces svg { width: 40px; height: 24px; }
+  .abo .tube { position: relative; height: 5px; margin: 8px 0 14px; opacity: .8; }
+  .abo .tube::before { content: ''; position: absolute; inset: -13px; border-style: solid; border-color: transparent; border-width: 17px 22px;
+    border-image: url(assets/jauge-or.webp) 34 44 fill / 17px 22px stretch; }
+  .abo .btn { width: 100%; }
+
+  @media (max-width: 1500px) {
+    .tuile .puits { display: none; } .tuile { padding: 10px 16px; }
+    .tuiles { gap: 12px; } main { grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; }
+    .actions-session { gap: 8px; } .actions-session .btn { padding: 0 14px; font-size: 15px; }
+    .nav a { padding: 0 16px; font-size: 15px; }
+    .onglets button, .segment button { white-space: nowrap; }
+    .onglets button { padding: 0 12px; font-size: 14px; gap: 7px; height: 38px; }
+    .diapo { gap: 8px; font-size: 13px; } .diapo .segment button { padding: 0 9px; font-size: 13px; }
+    .contenu .tete { padding: 12px 14px; }
+  }
+  @media (max-width: 1400px) { .diapo > span.lib-diapo { display: none; } .droite .entete { font-size: 15px; } }
+  @media (max-height: 820px) {
+    .barre { height: 70px; } .sessions { padding-top: 12px; } .note { padding: 4px 30px 8px; }
+    .tuiles { height: 84px; } .tuile .val { font-size: 28px; } .debit .val { font-size: 28px; } .jauge { width: 76px; height: 42px; }
+    .gauche, .droite { gap: 14px; } .droite .entete { padding: 10px 16px; font-size: 15px; }
+    .actions-rapides { padding: 10px 14px 12px; } .abo .corps { padding: 8px 16px 12px; }
+    .abo .acces { font-size: 21px; } .abo .tube { margin: 8px 0 12px; height: 8px; }
+    .qr-scene { gap: 6px; padding: 8px 12px 10px; } .qr-code { font-size: 16px; margin-top: 4px; }
+    .actions-rapides .btn, .qr-btns .btn { height: 34px; }
+    .btn.petit { height: 36px; } .pied { height: 48px; }
+  }
+</style>
+</head>
+<body data-page="dash">
+<div class="app">
+  <div id="barre"></div>
+
+  <div class="sessions">
+    <div class="verre carte-session">
+      <div class="medaillon" data-i="ouverture"></div>
+      <div><b>Mariage Julie & Thomas</b><small>#3960<em>Active</em></small></div>
+      <button class="suppr" title="Supprimer cette session" data-i="poubelle"></button>
+    </div>
+    <div class="actions-session">
+      <button class="btn" data-i="plus">Nouvelle session</button>
+      <button class="btn" data-i="tablette">Borne</button>
+      <a class="btn" href="jeux.html" data-i="manette">Jeux</a>
+      <a class="btn" href="parametres.html" data-i="reglages">Paramètres</a>
+      <button class="btn or" data-i="ecran">Diaporama</button>
+    </div>
+  </div>
+  <p class="note" data-i="info">Une seule session active à la fois.</p>
+
+  <main>
+    <div class="gauche">
+      <div class="tuiles">
+        <div class="tuile-v tuile or"><div class="puits" data-i="image"></div><div><div class="lib">Photos</div><div class="val">45</div></div></div>
+        <div class="tuile-v tuile vert"><div class="puits" data-i="invites"></div><div><div class="lib">Invités</div><div class="val">45</div></div></div>
+        <div class="tuile-v tuile cyan"><div class="puits" data-i="tablette"></div><div><div class="lib">Borne</div><div class="val">0</div></div></div>
+        <div class="tuile-v tuile violet"><div class="puits" data-i="bulle"></div><div><div class="lib">Messages</div><div class="val">2</div></div></div>
+        <div class="tuile-v tuile gris" title="Cliquer pour activer"><div class="puits" data-i="bouclier_off"></div><div><div class="lib">Modération</div><div class="val">OFF</div></div></div>
+        <div class="tuile-v or tuile connexion">
+          <div class="lib">Connexion</div>
+          <div class="bas">
+            <svg class="jauge" viewBox="0 0 92 50">
+              <defs>
+                <linearGradient id="gj" x1="0" x2="1"><stop offset="0" stop-color="#ff3b3b"/><stop offset=".3" stop-color="#ff8a1f"/><stop offset=".55" stop-color="#ffd23f"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+                <filter id="lj"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <path d="M9 46a37 37 0 0 1 74 0" stroke="rgba(0,0,0,.6)" stroke-width="11" fill="none" stroke-linecap="round"/>
+              <path d="M9 46a37 37 0 0 1 74 0" stroke="url(#gj)" stroke-width="7" fill="none" stroke-linecap="round" filter="url(#lj)"/>
+              <line x1="46" y1="46" x2="34" y2="20" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="46" cy="46" r="5.5" fill="#1a1406" stroke="#ffd23f" stroke-width="2.5"/>
+            </svg>
+            <div class="debit"><span class="val">5.2</span><small>Mbps</small></div>
+          </div>
+        </div>
+      </div>
+
+      <section class="verre contenu">
+        <div class="tete">
+          <div class="onglets">
+            <button class="actif" data-i="image">Photos (45)</button>
+            <button data-i="bulle">Messages (2)</button>
+            <button data-i="note">Musique (1) <span class="compte">1</span></button>
+          </div>
+          <div class="diapo"><span class="lib-diapo">Diaporama :</span>
+            <div class="segment"><button class="actif">Toutes</button><button>30 dernières</button><button>15 dernières</button></div>
+          </div>
+        </div>
+        <div class="galerie"><div class="grille" id="grille"></div></div>
+      </section>
+    </div>
+
+    <aside class="droite">
+      <section class="verre">
+        <div class="entete" data-i="eclair">Actions rapides</div>
+        <div class="actions-rapides">
+          <button class="btn petit contour-cyan" data-i="tablette">AnimaBooth</button>
+          <button class="btn petit contour-or" data-i="telecharger">Télécharger (45)</button>
+        </div>
+      </section>
+
+      <section class="verre qr-bloc">
+        <div class="entete" data-i="qr">QR codes
+          <div class="segment"><button class="actif" data-i="tablette">Invités</button><button data-i="dossier">Album</button></div>
+        </div>
+        <div class="qr-scene">
+          <div class="qr-ecrin"><div class="carte"><svg id="qr" viewBox="0 0 29 29" shape-rendering="crispEdges"></svg></div></div>
+          <div class="qr-code">#3960</div>
+          <div class="qr-btns">
+            <button class="btn petit contour-or" data-i="copier">Copier</button>
+            <button class="btn petit contour-or" data-i="ouvrir">Ouvrir</button>
+            <button class="btn petit contour-or" data-i="imprimante">Imprimer</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="verre abo">
+        <div class="entete" data-i="calendrier">Abonnement <span class="pastille verte" style="margin-left:auto">Actif</span></div>
+        <div class="corps">
+          <div class="acces">Accès à vie
+            <svg viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 12c-4-6-8-8-12-8a8 8 0 0 0 0 16c4 0 8-2 12-8zm0 0c4 6 8 8 12 8a8 8 0 0 0 0-16c-4 0-8 2-12 8z"/></svg>
+          </div>
+          <div class="tube"></div>
+          <button class="btn petit" data-i="carte">Gérer mon abonnement</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="pied"></div>
+</div>
+<script src="commun.js"></script>
+<script>
+  const imgs = ['mariages', 'evenementiel', 'dj-animateurs', 'campings', 'entreprises', 'bars-restaurants', 'diaporama-ecran', 'photos-ecran', 'vote-podium', 'buzz-gagnant'];
+  const noms = ['Camille', 'Léa', 'Hugo', 'Manon', 'Nathan', 'Inès', 'Lucas', 'Chloé', 'Jules', 'Emma', 'Louis', 'Sarah'];
+  const g = document.getElementById('grille');
+  for (let i = 0; i < 24; i++) {
+    const d = document.createElement('div');
+    d.className = 'photo' + (i === 2 ? ' survol' : '');
+    d.innerHTML = `<img src="assets/demo/${imgs[i % imgs.length]}.webp" alt="">` +
+      (i % 7 === 3 ? '<span class="badge">Borne</span>' : '') + (i === 5 ? '<span class="badge attente">Attente</span>' : '') +
+      `<div class="nom">${noms[i % noms.length]}</div><div class="voile"><button title="Supprimer la photo"><span></span>${ico('poubelle')}</button></div>`;
+    g.appendChild(d);
+  }
+  const q = document.getElementById('qr'); let s = '';
+  const finder = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" fill="#fff"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+  let seed = 7; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  for (let y = 0; y < 29; y++) for (let x = 0; x < 29; x++) {
+    const inF = (x < 8 && y < 8) || (x > 20 && y < 8) || (x < 8 && y > 20);
+    if (!inF && rnd() > 0.52) s += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+  }
+  q.innerHTML = s + finder(0, 0) + finder(22, 0) + finder(0, 22);
+  // Taille de la carte QR = place libre (comme le ResizeObserver du site), 96 à 200 px ; l'écrin suit.
+  const scene = document.querySelector('.qr-scene');
+  const ajuste = () => {
+    const autres = scene.querySelector('.qr-code').offsetHeight + scene.querySelector('.qr-btns').offsetHeight;
+    const st = getComputedStyle(scene); const pad = parseFloat(st.paddingTop) + parseFloat(st.paddingBottom) + 2 * parseFloat(st.rowGap);
+    const libre = (scene.clientHeight - autres - pad) / 1.1;
+    scene.style.setProperty('--qr', Math.max(96, Math.min(230, libre, (scene.clientWidth - 50) / 1.15)) + 'px');
+  };
+  new ResizeObserver(ajuste).observe(scene); ajuste();
+</script>
+</body>
+</html>

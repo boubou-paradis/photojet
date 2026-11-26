@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeux — maquette V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="saas.css">
+<style>
+  .sous-barre { display: flex; align-items: center; gap: 16px; padding: 18px 28px 0; }
+  .session-mini { display: flex; align-items: center; gap: 12px; padding: 9px 18px; font-size: 15px; font-weight: 500; }
+  .session-mini small { font-weight: 700; color: var(--or-texte); }
+  .session-mini em { font-style: normal; color: var(--vert); font-size: 13px; }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 48px 10px; }
+  .titre { text-align: center; margin-bottom: 26px; }
+  .titre .filet { width: 220px; height: 3px; margin: 0 auto; border-radius: 3px;
+    background: linear-gradient(90deg, transparent, #b8891c, #ffe8a6, #b8891c, transparent); box-shadow: 0 0 12px rgba(243, 198, 78, 0.6); }
+  .titre h1 { font-size: 50px; font-weight: 800; letter-spacing: .5px; margin: 14px 0 4px;
+    background: linear-gradient(180deg, #fffaf0 0%, #ffe8a6 35%, #e0ac2c 62%, #9c6f12 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 2px 0 #4a3005) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 22px rgba(243, 198, 78, 0.35)); }
+  .titre p { color: var(--texte-2); font-size: 17px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: center; }
+  .titre p svg.i { color: var(--or-texte); width: 17px; height: 17px; }
+
+  .grille-jeux { width: 100%; max-width: 1720px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 34px 30px; }
+  /* Carte : cadre Blender (tôle noire brossée, lèvre or, équerres, bandeau-titre) en 9-slice.
+     Rendu 964x676 (2x) : marge 60, fenêtre image 800x450 à 82 px du bord, bandeau titre 144 px en bas. */
+  .jeu { grid-column: span 2; position: relative; isolation: isolate; cursor: pointer; aspect-ratio: 860 / 564; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  .jeu:nth-child(6) { grid-column: 2 / span 2; }
+  .jeu::before, .jeu::after { content: ''; position: absolute; inset: -30px; z-index: 1; pointer-events: none;
+    border-style: solid; border-color: transparent; border-width: 52px 52px 75px;
+    border-image: url(assets/cadre-jeu.webp) 104 104 150 fill / 52px 52px 75px stretch; transition: opacity .3s; }
+  .jeu::after { border-image-source: url(assets/cadre-jeu-survol.webp); opacity: 0; }
+  .jeu .ecran { position: absolute; left: 15px; right: 15px; top: 15px; bottom: 42px; overflow: hidden; border-radius: 6px; background: #000; z-index: 0; }
+  .jeu img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s cubic-bezier(.2, .8, .2, 1), filter .3s; filter: saturate(1.02); }
+  .jeu .ecran::after { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 30%, transparent 75%, rgba(0, 0, 0, 0.35)); }
+  .jeu .nom { position: absolute; left: 0; right: 0; bottom: 0; height: 42px; z-index: 2; display: grid; place-items: center;
+    font-size: 16px; font-weight: 600; letter-spacing: .4px; color: #fff4d6; text-shadow: 0 1px 0 #000, 0 0 12px rgba(243, 198, 78, 0.35); white-space: nowrap; }
+  .jeu:hover, .jeu.survol { transform: translateY(-8px) scale(1.025); }
+  .jeu:hover::after, .jeu.survol::after { opacity: 1; }
+  .jeu:hover img, .jeu.survol img { transform: scale(1.06); filter: saturate(1.15) brightness(1.06); }
+  .jeu:hover .nom, .jeu.survol .nom { color: #ffe08a; }
+  .notice { position: absolute; top: -11px; right: 20px; z-index: 3; display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; font-size: 12px; font-weight: 600; color: #fff;
+    border-radius: 9px; background: linear-gradient(180deg, rgba(60, 30, 110, 0.92), rgba(28, 12, 56, 0.92)); border: 1px solid rgba(196, 163, 255, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 14px rgba(150, 90, 255, 0.45), 0 3px 8px rgba(0, 0, 0, 0.6); }
+  .notice svg.i { width: 13px; height: 13px; color: var(--violet-clair); }
+  .compteur { margin-top: 30px; display: flex; align-items: center; gap: 14px; color: var(--texte-2); font-size: 14px; }
+  .compteur::before, .compteur::after { content: ''; width: 80px; height: 2px; background: linear-gradient(90deg, transparent, rgba(243, 198, 78, 0.7)); }
+  .compteur::after { transform: scaleX(-1); }
+  @media (max-height: 820px) { .titre h1 { font-size: 38px; margin: 8px 0 2px; } .titre { margin-bottom: 16px; } .titre p { margin-bottom: 10px; font-size: 15px; }
+    .grille-jeux { max-width: 1180px; gap: 26px 22px; } .compteur { margin-top: 16px; } .jeu .nom { font-size: 14px; } }
+</style>
+</head>
+<body data-page="jeux">
+<div class="app">
+  <div id="barre"></div>
+  <div class="sous-barre">
+    <a class="btn petit" href="tableau-de-bord.html" data-i="retour">Retour</a>
+    <div class="verre session-mini"><span>Mariage Julie & Thomas</span><small>#3960</small><em>● Active</em></div>
+  </div>
+  <main>
+    <div class="titre">
+      <div class="filet"></div>
+      <h1>Jeux & Animations</h1>
+      <p><span data-i="etoile"></span>Sélectionnez un jeu pour animer votre événement<span data-i="etoile"></span></p>
+      <div class="filet"></div>
+    </div>
+    <div class="grille-jeux" id="jeux"></div>
+    <div class="compteur">9 jeux disponibles</div>
+  </main>
+  <div id="pied"></div>
+</div>
+<script src="commun.js"></script>
+<script>
+  const jeux = [
+    ['photo-mystere-v2', 'Photo Mystère'], ['le-bon-ordre-v2', 'Le Bon Ordre'], ['roue-de-la-destinee-v2', 'Roue de la Destinée'],
+    ['quiz-v2', 'Quiz'], ['matching-v2', 'Matching'], ['animabuzz-xtreme', 'AnimaBuzz'], ['animavote', 'AnimaVote'],
+    ['a-demi-mot-v2', 'À Demi-Mot'], ['animabingo', 'AnimaBingo'],
+  ];
+  document.getElementById('jeux').innerHTML = jeux.map(([img, nom], i) => `
+    <div class="jeu${i === 2 ? ' survol' : ''}">
+      ${img !== 'animabingo' ? `<a class="notice" href="#">${ico('fichier')}Notice</a>` : ''}
+      <div class="ecran"><img src="assets/jeux/${img}.png" alt="${nom}"></div>
+      <div class="nom">${nom}</div>
+    </div>`).join('');
+</script>
+</body>
+</html>

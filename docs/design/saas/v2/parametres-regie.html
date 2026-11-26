@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paramètres — proposition « Régie »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="saas.css">
+<style>
+  /* Proposition « Régie » : sommaire fixe à gauche (sections groupées par usage, suivi au défilement),
+     panneaux rangés sous des intitulés de groupe, titre au lettrage or champagne de la page Jeux.
+     saas.css et commun.js (partagés avec les pages validées) ne sont PAS modifiés : surcharges locales. */
+  .app { height: 100vh; }
+  .saisie, .choix { --img: url(assets/pa-champ.webp); }
+
+  /* En-tête de page */
+  .tete-page { flex-shrink: 0; display: flex; align-items: center; gap: 18px; padding: 16px 28px 6px; }
+  .tete-page h1 { line-height: 0; margin: 0 4px 0 6px; }
+  .tete-page h1 img { height: 64px; margin: -8px 0; width: auto; display: block; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7)); }
+  .session-mini { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 14px; font-weight: 500; }
+  .session-mini small { font-weight: 700; color: var(--or-texte); }
+  .session-mini em { font-style: normal; color: var(--vert); font-size: 13px; }
+  .tete-page .d { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .reseaux { display: flex; gap: 8px; }
+  .reseaux span { position: relative; isolation: isolate; width: 36px; height: 36px; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--or-texte); }
+  .reseaux span::before { content: ''; position: absolute; inset: -10px; z-index: -1; background: url(assets/puits-or.webp) center / 100% 100%; }
+  .enregistre { display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 99px; font-size: 14px; font-weight: 500; color: #86efac;
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.22), rgba(21, 128, 61, 0.14)); border: 1px solid rgba(74, 222, 128, 0.4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  .enregistre svg.i { width: 16px; height: 16px; }
+
+  /* Corps : sommaire + contenu défilant (la page elle-même ne défile pas) */
+  .corps-page { flex: 1; min-height: 0; display: grid; grid-template-columns: 286px minmax(0, 1fr); gap: 0; padding: 12px 0 16px 28px; }
+  .sommaire { align-self: start; padding: 10px 12px 14px; }
+  .sommaire .groupe { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--texte-3); padding: 14px 12px 6px; }
+  .sommaire .groupe:first-child { padding-top: 6px; }
+  .sommaire a { position: relative; isolation: isolate; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border-radius: 10px;
+    font-size: 14px; white-space: nowrap; color: var(--texte-2); transition: color .2s, background .2s; }
+  .sommaire a svg.i { width: 17px; height: 17px; color: var(--texte-3); transition: color .2s; }
+  .sommaire a:hover { color: var(--texte); background: rgba(255, 255, 255, 0.04); }
+  .sommaire a.actif { --o: 17px; --s: 60; --w: 30px; --img: url(assets/onglet-actif.webp); color: #2a1a03; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); background: none; }
+  .sommaire a.actif::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -17px;
+    border: 30px solid transparent; border-image: url(assets/onglet-actif.webp) 60 fill / 30px stretch; }
+  .sommaire a.actif svg.i { color: #3a2604; }
+  .sommaire .etat { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #3a3446; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6); }
+  .sommaire .etat.on { background: #4ade80; box-shadow: 0 0 8px rgba(74, 222, 128, 0.8); }
+  .sommaire a.actif .etat { box-shadow: 0 0 0 2px rgba(42, 26, 3, 0.5); }
+
+  .contenu { min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 4px 34px 40px 34px; scroll-behavior: smooth; }
+  .contenu::-webkit-scrollbar { width: 6px; } .contenu::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 6px; }
+  .contenu::-webkit-scrollbar-thumb { background: linear-gradient(#ffe29a, #b8891c); border-radius: 6px; }
+
+  /* Intitulé de groupe : petites capitales gravées + filet d'or qui s'efface */
+  .intitule { display: flex; align-items: center; gap: 14px; margin: 30px 2px 18px; font-size: 13px; font-weight: 600; letter-spacing: 2.4px; text-transform: uppercase; color: var(--or-clair); }
+  .intitule:first-child { margin-top: 6px; }
+  .intitule::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(243, 198, 78, 0.55), transparent); }
+  .colonnes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; align-items: start; }
+  .large { grid-column: 1 / -1; }
+
+  /* Panneau de section */
+  .section { scroll-margin-top: 10px; }
+  .section .entete { gap: 14px; padding: 14px 18px 13px; }
+  .section .puits-ic { position: relative; isolation: isolate; width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; color: var(--or-texte); }
+  .section .puits-ic::before { content: ''; position: absolute; inset: -11px; z-index: -1; background: url(assets/puits-or.webp) center / 100% 100%; }
+  .section .puits-ic svg.i { width: 19px; height: 19px; }
+  .section.violet .puits-ic { color: var(--violet-clair); } .section.violet .puits-ic::before { background-image: url(assets/puits-violet.webp); }
+  .section .entete h2 { font-size: 16px; font-weight: 600; margin: 0; }
+  .section .entete .sous { display: block; margin-top: 1px; }
+  .section .entete .inter { margin-left: auto; }
+  .section .corps { padding: 4px 20px 14px; }
+  .section .corps.grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; padding-top: 16px; }
+  .section.eteinte .corps { opacity: .45; pointer-events: none; }
+
+  .ligne-reglage .lib b { font-size: 14.5px; }
+  .ligne-reglage .lib { font-size: 12.5px; }
+  .sous-titre { font-size: 12px; font-weight: 600; color: var(--or-clair); text-transform: uppercase; letter-spacing: 1.4px; margin: 14px 0 2px; display: flex; align-items: center; gap: 8px; }
+  .sous-titre svg.i { width: 14px; height: 14px; }
+  .reglage-curseur { display: flex; align-items: center; gap: 14px; flex: 1; max-width: 300px; }
+  .nuancier { display: flex; gap: 8px; }
+  .nuancier i { width: 30px; height: 30px; border-radius: 8px; border: 2px solid rgba(0, 0, 0, 0.8); box-shadow: 0 0 0 1px rgba(243, 198, 78, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2); cursor: pointer; }
+  .nuancier i.sel { outline: 2px solid var(--or-clair); outline-offset: 2px; }
+  .rangee-code { display: flex; gap: 8px; } .rangee-code .saisie { flex: 1; }
+  .etat-session { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 12px;
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.01)); border: 1px solid rgba(52, 211, 153, 0.3); }
+  .etat-session b { color: #6ee7b7; font-weight: 600; } .etat-session small { display: block; color: var(--texte-3); font-size: 12px; }
+  .inter.on.vert { filter: hue-rotate(95deg) saturate(1.2); }
+  .affiches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
+  .affiches img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; border: 1px solid rgba(243, 198, 78, 0.55); box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.6), 0 4px 10px rgba(0, 0, 0, 0.6); }
+
+  /* Écran secondaire : bloc d'information en deux colonnes */
+  .info2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 14px 20px 18px; font-size: 13.5px; line-height: 1.6; color: var(--texte-2); }
+  .info2 h3 { font-size: 13px; font-weight: 600; color: var(--or-clair); text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 6px; }
+  .info2 strong { color: var(--texte); font-weight: 600; }
+  .info2 ul { margin: 0; padding-left: 18px; } .info2 li { margin-bottom: 4px; }
+  kbd { font: 600 12px ui-monospace, Consolas, monospace; padding: 1px 6px; border-radius: 5px; color: var(--or-clair); background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(243, 198, 78, 0.4); }
+
+  @media (max-width: 1500px) { .corps-page { grid-template-columns: 250px minmax(0, 1fr); } .sommaire a { font-size: 13px; } .colonnes { gap: 20px; } }
+  @media (max-height: 820px) { .tete-page h1 img { height: 52px; }
+    .sommaire { padding: 6px 12px 10px; } .sommaire a { height: 32px; font-size: 13px; } .sommaire .groupe { padding: 9px 12px 3px; font-size: 10px; }
+    .sommaire a.actif::before { inset: -15px -17px; } .tete-page { padding-top: 12px; } }
+</style>
+</head>
+<body data-page="param">
+<div class="app">
+  <div id="barre"></div>
+
+  <div class="tete-page">
+    <a class="btn petit" href="tableau-de-bord.html" data-i="retour">Retour</a>
+    <h1><img src="assets/pa-titre.webp" alt="Paramètres"></h1>
+    <div class="verre session-mini"><span>Mariage Julie & Thomas</span><small>#3960</small><em>● Active</em></div>
+    <div class="d">
+      <span class="enregistre" data-i="coche">Enregistré</span>
+      <div class="reseaux"><span>f</span><span>ig</span><span>in</span><span>yt</span></div>
+      <button class="btn petit danger" data-i="poubelle">Supprimer</button>
+    </div>
+  </div>
+
+  <div class="corps-page">
+    <nav class="verre sommaire" id="sommaire">
+      <div class="groupe">Événement</div>
+      <a href="#infos" class="actif" data-i="info">Informations générales<span class="etat on"></span></a>
+      <div class="groupe">Grand écran</div>
+      <a href="#perso" data-i="palette">Personnalisation</a>
+      <a href="#diaporama" data-i="ecran">Diaporama</a>
+      <a href="#messages" data-i="bulle">Messages<span class="etat on"></span></a>
+      <a href="#affiches" data-i="affiche">Affiches promo<span class="etat on"></span></a>
+      <a href="#ecran2" data-i="ecran">Écran secondaire</a>
+      <div class="groupe">Borne & impression</div>
+      <a href="#booth" data-i="camera">AnimaBooth</a>
+      <a href="#impression" data-i="imprimante">Impression<span class="etat"></span></a>
+      <div class="groupe">Invités</div>
+      <a href="#musique" data-i="note">Demandes de musique<span class="etat on"></span></a>
+      <div class="groupe">Compte</div>
+      <a href="#defaut" data-i="reglages">Réglages par défaut</a>
+    </nav>
+
+    <div class="contenu" id="contenu">
+      <div class="intitule">Événement</div>
+      <section class="verre section" id="infos">
+        <div class="entete"><span class="puits-ic" data-i="info"></span><div><h2>Informations générales</h2><span class="sous">Informations de base de votre événement</span></div></div>
+        <div class="corps grille2">
+          <div class="champ"><label>Nom de l'événement</label><div class="saisie"><input value="Mariage Julie & Thomas"></div></div>
+          <div class="champ"><label>Code session</label><div class="rangee-code"><div class="saisie code"><input value="3960"></div><button class="btn petit contour-or">Régénérer</button></div></div>
+          <div class="etat-session"><div><b>Session active</b><small>Une seule session active à la fois sur le compte</small></div><span class="inter on vert"></span></div>
+        </div>
+      </section>
+
+      <div class="intitule">Grand écran</div>
+      <div class="colonnes">
+        <section class="verre section" id="perso">
+          <div class="entete"><span class="puits-ic" data-i="palette"></span><div><h2>Personnalisation</h2><span class="sous">Fond, logo et habillage du diaporama</span></div></div>
+          <div class="corps">
+            <div class="sous-titre" data-i="image">Fond</div>
+            <div class="ligne-reglage"><span class="lib"><b>Couleur de fond</b></span>
+              <div class="nuancier"><i style="background:#0b0812" class="sel"></i><i style="background:#1d1430"></i><i style="background:#2a1f05"></i><i style="background:#0f2027"></i><i style="background:#fff"></i></div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Image de fond</b></span><div class="depot" style="padding:10px 16px"><b>Choisir une image</b> ou glisser-déposer</div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Opacité overlay</b></span><div class="reglage-curseur"><div class="curseur"><i style="width:40%"></i><b style="left:40%"></b></div><span class="valeur">40 %</span></div></div>
+            <div class="sous-titre" data-i="etoile">Logo</div>
+            <div class="ligne-reglage"><span class="lib"><b>Afficher le logo</b></span><span class="inter on"></span></div>
+            <div class="ligne-reglage"><span class="lib"><b>Taille</b></span><span class="choix">Moyen</span></div>
+            <div class="ligne-reglage"><span class="lib"><b>Position</b></span><span class="choix">En haut à gauche</span></div>
+          </div>
+        </section>
+
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <section class="verre section" id="diaporama">
+            <div class="entete"><span class="puits-ic" data-i="ecran"></span><div><h2>Diaporama</h2><span class="sous">Affichage des photos sur le grand écran</span></div></div>
+            <div class="corps">
+              <div class="ligne-reglage"><span class="lib"><b>Afficher le QR code</b></span><span class="inter on"></span></div>
+              <div class="ligne-reglage"><span class="lib"><b>Taille du QR code</b></span><div class="segment"><button>Petit</button><button class="actif">Moyen</button><button>Grand</button></div></div>
+              <div class="ligne-reglage"><span class="lib"><b>Transition</b></span><span class="choix">Fondu enchaîné</span></div>
+              <div class="ligne-reglage"><span class="lib"><b>Durée</b>par photo</span><div class="reglage-curseur"><div class="curseur"><i style="width:35%"></i><b style="left:35%"></b></div><span class="valeur">6 s</span></div></div>
+            </div>
+          </section>
+          <section class="verre section" id="messages">
+            <div class="entete"><span class="puits-ic" data-i="bulle"></span><div><h2>Messages</h2><span class="sous">Messages des invités sur le diaporama</span></div><span class="inter on" title="Activer les messages"></span></div>
+            <div class="corps">
+              <div class="ligne-reglage"><span class="lib"><b>Fréquence d'affichage</b>toutes les 4 photos</span><div class="reglage-curseur"><div class="curseur"><i style="width:30%"></i><b style="left:30%"></b></div><span class="valeur">4</span></div></div>
+              <div class="ligne-reglage"><span class="lib"><b>Durée d'affichage</b></span><div class="reglage-curseur"><div class="curseur"><i style="width:55%"></i><b style="left:55%"></b></div><span class="valeur">8 s</span></div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="verre violet section large" id="affiches">
+          <div class="entete"><span class="puits-ic" data-i="affiche"></span><div><h2>Affiches promotionnelles</h2><span class="sous">Jusqu'à 20 affiches intercalées dans le diaporama</span></div><span class="inter on" title="Activer les affiches"></span></div>
+          <div class="corps">
+            <div class="ligne-reglage"><span class="lib"><b>Fréquence d'affichage</b>une affiche toutes les 6 photos</span><div class="reglage-curseur"><div class="curseur"><i style="width:45%"></i><b style="left:45%"></b></div><span class="valeur">6</span></div></div>
+            <div class="affiches"><img src="assets/jeux/animabingo.png" alt=""><img src="assets/jeux/quiz-v2.png" alt=""><img src="assets/jeux/animavote.png" alt=""><img src="assets/jeux/matching-v2.png" alt=""><div class="depot" style="display:grid;place-items:center;padding:0"><b>+ Ajouter</b></div></div>
+          </div>
+        </section>
+
+        <section class="verre section large" id="ecran2">
+          <div class="entete"><span class="puits-ic" data-i="ecran"></span><div><h2>Affichage écran secondaire</h2><span class="sous">Projeter le diaporama et les jeux sur un écran ou une TV</span></div></div>
+          <div class="info2">
+            <div><h3>Brancher le second écran</h3>
+              Reliez votre écran ou téléviseur (HDMI). Dans les réglages d'affichage de votre ordinateur, choisissez le mode <strong>« Bureau étendu »</strong> (et non « Recopie » / « Duplication »). Glissez ensuite la fenêtre AnimaJet sur ce second écran, puis activez le plein écran avec le bouton <strong>⛶</strong> en haut à droite.</div>
+            <div><h3>Sur Mac</h3>
+              <ul>
+                <li>En plein écran, une <strong>fine barre du navigateur peut rester visible</strong> en haut de l'écran secondaire : c'est une limitation du web sur Mac, <strong>pas un bug</strong>.</li>
+                <li>Agrandissez la fenêtre sur l'écran TV avant de passer en plein écran ; <kbd>Échap</kbd> pour quitter.</li>
+                <li><strong>Avec Safari</strong> : menu Présentation → décochez « Toujours afficher la barre d'outils en plein écran », puis <kbd>Ctrl + Cmd + F</kbd> (deux fois si besoin).</li>
+              </ul></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="intitule">Borne & impression</div>
+      <div class="colonnes">
+        <section class="verre section" id="booth">
+          <div class="entete"><span class="puits-ic" data-i="camera"></span><div><h2>AnimaBooth</h2><span class="sous">Réglages de la borne photo</span></div></div>
+          <div class="corps">
+            <div class="ligne-reglage"><span class="lib"><b>Compte à rebours</b></span><span class="inter on"></span></div>
+            <div class="ligne-reglage"><span class="lib"><b>Durée</b></span><div class="segment"><button>3 s</button><button class="actif">5 s</button><button>10 s</button></div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Délai retour caméra</b></span><div class="reglage-curseur"><div class="curseur"><i style="width:50%"></i><b style="left:50%"></b></div><span class="valeur">10 s</span></div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Caméra par défaut</b></span><div class="segment"><button class="actif">Avant</button><button>Arrière</button></div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Nom de l'événement</b>affiché sur la borne</span><span class="inter on"></span></div>
+          </div>
+        </section>
+        <section class="verre section eteinte" id="impression">
+          <div class="entete"><span class="puits-ic" data-i="imprimante"></span><div><h2>Impression</h2><span class="sous">Photos de la borne et des invités — désactivée</span></div><span class="inter" title="Activer l'impression"></span></div>
+          <div class="corps">
+            <div class="ligne-reglage"><span class="lib"><b>Mode d'impression</b></span><span class="choix">Sur demande</span></div>
+            <div class="ligne-reglage"><span class="lib"><b>Limite d'impressions</b></span><div class="saisie" style="width:110px"><input value="150"></div></div>
+            <div class="ligne-reglage"><span class="lib"><b>Impression payante</b></span><span class="inter"></span></div>
+            <div class="ligne-reglage"><span class="lib"><b>Prix de l'impression</b></span><div class="saisie" style="width:110px"><input value="2,00 €"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="intitule">Invités</div>
+      <section class="verre violet section" id="musique">
+        <div class="entete"><span class="puits-ic" data-i="note"></span><div><h2>Demandes de musique</h2><span class="sous">Les invités proposent leurs titres au DJ</span></div><span class="inter on" title="Activer les demandes"></span></div>
+        <div class="corps"><div class="ligne-reglage"><span class="lib"><b>Demandes par invité</b></span><div class="segment"><button>1</button><button class="actif">3</button><button>Illimité</button></div></div></div>
+      </section>
+
+      <div class="intitule">Compte</div>
+      <section class="verre section" id="defaut">
+        <div class="entete"><span class="puits-ic" data-i="reglages"></span><div><h2>Réglages par défaut du compte</h2><span class="sous">Appliqués à chaque nouvelle session</span></div></div>
+        <div class="corps"><div class="ligne-reglage"><span class="lib"><b>Utiliser les réglages de cette session comme modèle</b></span><button class="btn petit contour-or">Enregistrer comme défaut</button></div></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="pied"></div>
+</div>
+<script src="commun.js"></script>
+<script>
+  // Interrupteurs cliquables (démo) ; l'interrupteur d'en-tête allume/éteint la section.
+  document.querySelectorAll('.inter').forEach(t => t.addEventListener('click', () => {
+    t.classList.toggle('on');
+    const s = t.closest('.section'); if (s && t.parentElement.classList.contains('entete')) s.classList.toggle('eteinte', !t.classList.contains('on'));
+  }));
+  // Sommaire : suit la section visible.
+  const liens = [...document.querySelectorAll('#sommaire a')];
+  const cont = document.getElementById('contenu');
+  const suivre = () => {
+    let cur = liens[0];
+    let haut = -Infinity;   // deux panneaux sur la même ligne : celui de gauche l'emporte
+    for (const a of liens) { const t = document.querySelector(a.getAttribute('href')).getBoundingClientRect().top - cont.getBoundingClientRect().top;
+      if (t <= 60 && t > haut + 2) { cur = a; haut = t; } }
+    if (cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 4) cur = liens[liens.length - 1];
+    liens.forEach(a => a.classList.toggle('actif', a === cur));
+  };
+  cont.addEventListener('scroll', suivre); suivre();
+  const cible = new URLSearchParams(location.search).get('section');
+  if (cible) { cont.style.scrollBehavior = 'auto'; cont.scrollTop += document.getElementById(cible).getBoundingClientRect().top - cont.getBoundingClientRect().top - 10; suivre(); }
+</script>
+</body>
+</html>
