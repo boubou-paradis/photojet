@@ -336,3 +336,108 @@
   .v2-pa-contenu { padding: 4px 30px 32px; }
   .v2-pa-colonnes { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ========== Tableau de bord (maquette tableau-de-bord.html) ==========
+   Même disposition sans défilement qu'avant ; seuls les matières et les commandes changent.
+   Les panneaux .card-gold (contenu, actions rapides, QR, abonnement) prennent le verre fumé. */
+.v2-tb .card-gold { position: relative; isolation: isolate; background: none !important; border: 0 !important; box-shadow: none !important; overflow: visible !important; }
+.v2-tb .card-gold::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -32px;
+  border: 55px solid transparent; border-image: url(/saas-v2/panneau-or.webp) 110 fill / 55px stretch; }
+.v2-tb .card-gold > .border-b:first-child,
+.v2-tb .card-gold [data-slot="tabs"] > .border-b:first-child { position: relative; border: 0 !important; padding: 10px 16px 9px; }
+.v2-tb .card-gold > .border-b:first-child::after,
+.v2-tb .card-gold [data-slot="tabs"] > .border-b:first-child::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  background: linear-gradient(rgba(0, 0, 0, 0.75) 0 1px, rgba(255, 236, 190, 0.09) 1px 2px); }
+.v2-tb .card-gold > .border-b:first-child h3 { font-size: 15px !important; }
+.v2-tb .card-gold > .border-b:first-child > svg:first-child,
+.v2-tb .card-gold > .border-b:first-child > div > svg:first-child { width: 19px; height: 19px; filter: drop-shadow(0 0 6px rgba(243, 198, 78, 0.45)); }
+
+/* En-tête : cartes de session (médaillon Blender) + actions */
+.v2-tb-tete { background: none !important; border: 0 !important; }
+.v2-tb .v2-carte-session { --o: 32px; position: relative; isolation: isolate; gap: 12px !important; padding: 6px 12px 6px 8px !important;
+  background: none !important; border: 0 !important; box-shadow: none !important; }
+.v2-tb .v2-carte-session::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -24px;
+  border: 40px solid transparent; border-image: url(/saas-v2/panneau-or.webp) 110 fill / 40px stretch; opacity: .55; transition: opacity .2s; }
+.v2-tb .v2-carte-session.v2-sel::before, .v2-tb .v2-carte-session:hover::before { opacity: 1; }
+.v2-tb .v2-carte-session.v2-sel { opacity: 1 !important; }
+.v2-tb .v2-carte-session span.font-semibold { font-size: 16px; max-width: 190px; }
+.v2-tb .v2-carte-session .font-mono { font-size: 13px; font-family: inherit; font-weight: 600; }
+.v2-tb .v2-carte-session .text-\[8px\] { font-size: 12px; }
+.v2-tb .v2-medaillon { width: 44px !important; height: 44px !important; border-radius: 50% !important; color: #ffe39a;
+  background: url(/saas-v2/medaillon.webp) center / 68px 68px no-repeat !important;
+  -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 71%); mask-image: radial-gradient(circle, #000 60%, transparent 71%); }
+.v2-tb .v2-medaillon svg { width: 20px; height: 20px; color: #ffe39a !important; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)); }
+.v2-tb .v2-suppr:hover { background: none !important; }
+.v2-tb .v2-act { position: relative; isolation: isolate; height: 42px !important; padding: 0 18px !important; font-size: 15px !important; font-weight: 500;
+  color: var(--texte) !important; background: none !important; border: 0 !important; box-shadow: none !important; transition: filter .15s; }
+.v2-tb .v2-act::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -20px;
+  border: 36px solid transparent; border-image: url(/saas-v2/bouton-sombre.webp) 72 fill / 36px stretch; }
+.v2-tb .v2-act:hover { filter: brightness(1.18); color: var(--or-clair) !important; }
+.v2-tb .v2-act.v2-act-or { color: #2a1a03 !important; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); }
+.v2-tb .v2-act.v2-act-or::before { border-image-source: url(/saas-v2/bouton-or.webp); }
+.v2-tb .v2-note { color: var(--texte-2) !important; font-size: 12px !important; text-shadow: 0 1px 3px #000; }
+
+/* Tuiles de statistiques : verre teinté + puits Blender */
+.v2-tb .v2-tile { --c: var(--or-texte); position: relative; isolation: isolate; }
+.v2-tb .v2-tile::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -32px;
+  border: 55px solid transparent; border-image: var(--tuile) 110 fill / 55px stretch; }
+.v2-tb .v2-tile.v2-or { --tuile: url(/saas-v2/tuile-or.webp); --puits: url(/saas-v2/puits-or.webp); --c: #f3c64e; }
+.v2-tb .v2-tile.v2-vert { --tuile: url(/saas-v2/tuile-vert.webp); --puits: url(/saas-v2/puits-vert.webp); --c: #4ade80; }
+.v2-tb .v2-tile.v2-cyan { --tuile: url(/saas-v2/tuile-cyan.webp); --puits: url(/saas-v2/puits-cyan.webp); --c: #38c6ff; }
+.v2-tb .v2-tile.v2-violet { --tuile: url(/saas-v2/tuile-violet.webp); --puits: url(/saas-v2/puits-violet.webp); --c: #b57bff; }
+.v2-tb .v2-tile.v2-gris { --tuile: url(/saas-v2/tuile-gris.webp); --puits: url(/saas-v2/puits-gris.webp); --c: #b9b3c6; }
+.v2-tb .v2-tile > .absolute:first-child { display: none; }
+.v2-tb .v2-tile > .relative { background: none !important; border: 0 !important; box-shadow: none !important; }
+.v2-tb .v2-tile .rounded-xl:is(.w-10) { position: relative; isolation: isolate; background: none !important; }
+.v2-tb .v2-tile .rounded-xl:is(.w-10)::before { content: ''; position: absolute; inset: -9px; z-index: -1; background: var(--puits) center / 100% 100%; }
+.v2-tb .v2-tile .rounded-xl:is(.w-10) svg { color: var(--c) !important; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 60%, transparent)); }
+.v2-tb .v2-tile p.uppercase { font-size: 11px; color: #ece6f6; letter-spacing: .8px; font-weight: 500; }
+.v2-tb .v2-tile .font-black { color: var(--c) !important; text-shadow: 0 0 16px color-mix(in srgb, var(--c) 55%, transparent), 0 2px 2px rgba(0, 0, 0, 0.6); }
+
+/* Onglets du contenu + choix du diaporama */
+.v2-tb [data-slot="tabs-list"] { background: rgba(0, 0, 0, 0.45) !important; border: 0 !important; border-radius: 14px; padding: 4px; height: auto;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+.v2-tb [data-slot="tabs-trigger"] { position: relative; isolation: isolate; height: 36px; padding: 0 14px; color: var(--texte-2) !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+.v2-tb [data-slot="tabs-trigger"][data-state="active"] { color: #2a1a03 !important; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); }
+.v2-tb [data-slot="tabs-trigger"][data-state="active"]::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -17px;
+  border: 30px solid transparent; border-image: url(/saas-v2/onglet-actif.webp) 60 fill / 30px stretch; }
+.v2-tb .v2-segment { display: inline-flex; gap: 2px; padding: 4px; border: 0 !important; border-radius: 12px; overflow: visible !important; background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+.v2-tb .v2-segment button { position: relative; isolation: isolate; border: 0 !important; background: none !important; padding: 5px 11px; border-radius: 8px; color: var(--texte-2); }
+.v2-tb .v2-segment button:is(.bg-\[\#D4AF37\], .bg-violet-500, [aria-selected="true"]) { color: #2a1a03 !important; font-weight: 600; }
+.v2-tb .v2-segment button:is(.bg-\[\#D4AF37\], .bg-violet-500, [aria-selected="true"])::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -15px;
+  border: 26px solid transparent; border-image: url(/saas-v2/onglet-actif.webp) 60 fill / 26px stretch; }
+
+/* Galerie : creux sombre + vignettes encadrées (rendu Blender) */
+.v2-tb [data-slot="tabs-content"][data-state="active"] { margin: 0 12px 12px !important; border-radius: 14px; background: rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.85), inset 0 -1px 0 rgba(255, 236, 190, 0.07); }
+.v2-tb [data-slot="tabs-content"]::-webkit-scrollbar { width: 6px; }
+.v2-tb [data-slot="tabs-content"]::-webkit-scrollbar-thumb { background: linear-gradient(#ffe29a, #b8891c); border-radius: 6px; }
+.v2-tb .v2-vignette { position: relative; overflow: visible !important; border: 0 !important; background: #0b0810 !important; border-radius: 10px !important; }
+.v2-tb .v2-vignette img { border-radius: 8px; }
+.v2-tb .v2-vignette::after { content: ''; position: absolute; inset: -8px; pointer-events: none; border: 23px solid transparent; border-image: url(/saas-v2/vignette.webp) 46 fill / 23px stretch; }
+
+/* Colonne droite : boutons en verre bombé (or / cyan / violet), écrin du QR */
+.v2-tb .v2-droite [data-slot="button"] { position: relative; isolation: isolate; height: 34px !important; font-size: 12.5px !important; font-weight: 500;
+  background: none !important; border: 0 !important; box-shadow: none !important; color: var(--or-texte) !important; }
+.v2-tb .v2-droite [data-slot="button"]::before { content: ''; position: absolute; z-index: -1; pointer-events: none; inset: -16px;
+  border: 30px solid transparent; border-image: url(/saas-v2/bouton-orf.webp) 72 fill / 30px stretch; }
+.v2-tb .v2-droite [data-slot="button"].text-cyan-400 { color: #5fd4ff !important; }
+.v2-tb .v2-droite [data-slot="button"].text-cyan-400::before { border-image-source: url(/saas-v2/bouton-cyan.webp); }
+.v2-tb .v2-droite [data-slot="button"].text-violet-400 { color: var(--violet-clair) !important; }
+.v2-tb .v2-droite [data-slot="button"].text-violet-400::before { border-image-source: url(/saas-v2/bouton-violet.webp); }
+.v2-tb .v2-droite [data-slot="button"]:hover { filter: brightness(1.18); }
+.v2-tb .v2-droite [data-slot="button"]:disabled { opacity: .5; }
+.v2-tb .v2-qr-carte { position: relative; border-radius: 10px !important; }
+.v2-tb .v2-qr-carte::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
+  width: calc(var(--qr) * 1280 / 560); height: calc(var(--qr) * 1000 / 560); transform: translate(-50%, -50%);
+  background: url(/saas-v2/ecrin-qr.webp) center / 100% 100% no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - var(--qr) * 0.95), #000 calc(50% - var(--qr) * 0.7), #000 calc(50% + var(--qr) * 0.7), transparent calc(50% + var(--qr) * 0.95));
+  mask-image: linear-gradient(90deg, transparent calc(50% - var(--qr) * 0.95), #000 calc(50% - var(--qr) * 0.7), #000 calc(50% + var(--qr) * 0.7), transparent calc(50% + var(--qr) * 0.95)); }
+.v2-tb .v2-qr-zone { position: relative; isolation: isolate; overflow: hidden; }
+
+/* Corrections après contrôle visuel */
+.v2-tb .v2-droite { overflow: visible !important; }
+.v2-tb .v2-qr-carte + p { position: relative; z-index: 1; margin-top: 16px !important; text-shadow: 0 0 12px rgba(243, 198, 78, 0.5), 0 1px 2px #000; }
+.v2-tb .v2-qr-zone > .grid { position: relative; z-index: 1; margin-top: 10px !important; }
+.v2-tb .v2-note { position: relative; z-index: 2; padding-top: 8px; }

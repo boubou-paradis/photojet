@@ -69,6 +69,7 @@ import { pickSession } from '@/lib/session-select'
 import { getRememberedSessionId, rememberSessionId } from '@/lib/selected-session'
 import { cleanMessage } from '@/lib/messages'
 import MusicRequestsPanel, { useMusicRequests } from '@/components/dashboard/MusicRequestsPanel'
+import '../saas-v2.css'
 
 // Subscription Status Card Component
 function SubscriptionStatusCard({ subscription, isOwner }: { subscription: Subscription; isOwner?: boolean }) {
@@ -1544,15 +1545,10 @@ fetch(${JSON.stringify(imageUrl)})
   }
 
   return (
-    <div className="h-screen lg:h-full bg-[#0D0D0F] flex flex-col overflow-hidden relative">
-      {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
-      </div>
-
-      <header className="relative z-[60] bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5 flex-shrink-0">
+    // Habillage SaaS V2 (maquette validée le 26/11/2026) : styles dans ../saas-v2.css.
+    // Même disposition sans défilement ; seuls les matières et les commandes changent.
+    <div className="saas-v2 v2-tb h-screen lg:h-full flex flex-col overflow-hidden relative">
+      <header className="v2-tb-tete relative z-[60] flex-shrink-0">
         <div className="w-full px-6 py-3 flex flex-wrap items-center justify-between gap-y-2">
           <div className="flex items-center gap-2 max-w-full max-xl:overflow-x-auto">
             {/* Session Cards - Horizontal */}
@@ -1560,14 +1556,14 @@ fetch(${JSON.stringify(imageUrl)})
               <div
                 key={session.id}
                 onClick={() => setSelectedSession(session)}
-                className={`relative flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
+                className={`v2-carte-session ${selectedSession?.id === session.id ? 'v2-sel' : ''} relative flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-xl border cursor-pointer transition-all ${
                   selectedSession?.id === session.id
                     ? 'bg-[#1A1A1E] border-[#D4AF37]/50 shadow-lg shadow-[#D4AF37]/10'
                     : 'bg-[#1A1A1E]/50 border-white/10 hover:border-white/20 opacity-60 hover:opacity-100'
                 }`}
               >
                 {/* Event Icon */}
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                <div className={`v2-medaillon w-7 h-7 rounded-lg flex items-center justify-center ${
                   selectedSession?.id === session.id ? 'bg-[#D4AF37]/20' : 'bg-white/5'
                 }`}>
                   <Aperture className={`h-3.5 w-3.5 ${
@@ -1607,7 +1603,7 @@ fetch(${JSON.stringify(imageUrl)})
                     e.stopPropagation()
                     openDeleteModal(session)
                   }}
-                  className="ml-1 p-1 rounded-lg hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors"
+                  className="v2-suppr ml-1 p-1 rounded-lg hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors"
                   title="Supprimer cette session"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -1620,7 +1616,7 @@ fetch(${JSON.stringify(imageUrl)})
               variant="outline"
               size="sm"
               onClick={createNewSession}
-              className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+              className="v2-act border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle session
@@ -1631,7 +1627,7 @@ fetch(${JSON.stringify(imageUrl)})
                   variant="outline"
                   size="sm"
                   onClick={() => router.push(`/admin/borne?session=${selectedSession.id}`)}
-                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                  className="v2-act border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Tablet className="h-4 w-4 mr-2" />
                   Borne
@@ -1640,7 +1636,7 @@ fetch(${JSON.stringify(imageUrl)})
                   variant="outline"
                   size="sm"
                   onClick={() => router.push(`/admin/jeux?session=${selectedSession.id}`)}
-                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                  className="v2-act border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Gamepad2 className="h-4 w-4 mr-2" />
                   Jeux
@@ -1649,7 +1645,7 @@ fetch(${JSON.stringify(imageUrl)})
                   variant="outline"
                   size="sm"
                   onClick={() => router.push(`/admin/settings?session=${selectedSession.id}`)}
-                  className="border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
+                  className="v2-act border-[rgba(255,255,255,0.1)] text-white hover:bg-[#2E2E33] hover:text-[#D4AF37]"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Paramètres
@@ -1657,7 +1653,7 @@ fetch(${JSON.stringify(imageUrl)})
                 <Button
                   size="sm"
                   onClick={() => window.open(`/live/${selectedSession.code}`, 'photojet-live')}
-                  className="bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
+                  className="v2-act v2-act-or bg-gold-gradient text-[#1A1A1E] font-semibold hover:opacity-90"
                 >
                   <Monitor className="h-4 w-4 mr-2" />
                   Diaporama
@@ -1666,7 +1662,7 @@ fetch(${JSON.stringify(imageUrl)})
             )}
           </div>
         </div>
-        <p className="flex items-center gap-1 px-6 pb-2 -mt-1 text-[11px] text-gray-500 whitespace-nowrap">
+        <p className="v2-note flex items-center gap-1 px-6 pb-2 -mt-1 text-[11px] text-gray-500 whitespace-nowrap">
           <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
           Une seule session active à la fois.
         </p>
@@ -1703,7 +1699,7 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Photos Total */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group h-full"
+                  className="v2-tile v2-or relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37]/30 to-amber-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-[#D4AF37]/20 group-hover:border-[#D4AF37]/50 transition-all">
@@ -1722,7 +1718,7 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Invités */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group h-full"
+                  className="v2-tile v2-vert relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-emerald-500/20 group-hover:border-emerald-500/50 transition-all">
@@ -1741,7 +1737,7 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Borne */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group h-full"
+                  className="v2-tile v2-cyan relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
@@ -1760,7 +1756,7 @@ fetch(${JSON.stringify(imageUrl)})
                 {/* Messages */}
                 <motion.div
                   whileHover={{ scale: 1.03, y: -2 }}
-                  className="relative group h-full"
+                  className="v2-tile v2-violet relative group h-full"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-violet-500/20 group-hover:border-violet-500/50 transition-all">
@@ -1788,7 +1784,7 @@ fetch(${JSON.stringify(imageUrl)})
                   onClick={toggleModeration}
                   whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative group cursor-pointer h-full"
+                  className={`v2-tile ${moderationEnabled ? 'v2-or' : 'v2-gris'} relative group cursor-pointer h-full`}
                 >
                   <div className={`absolute -inset-0.5 rounded-xl blur transition-opacity duration-300 ${
                     moderationEnabled
@@ -1834,13 +1830,13 @@ fetch(${JSON.stringify(imageUrl)})
                 </motion.div>
 
                 {/* Connexion (à côté de la modération) */}
-                <SpeedMeter variant="tile" gaugeClassName={selectedSession?.print_enabled ? 'w-12 min-[1366px]:w-[60px] min-[1500px]:w-[72px]' : 'w-16 min-[1340px]:w-[72px]'} />
+                <SpeedMeter variant="tile" className="v2-tile v2-vert" gaugeClassName={selectedSession?.print_enabled ? 'w-12 min-[1366px]:w-[60px] min-[1500px]:w-[72px]' : 'w-16 min-[1340px]:w-[72px]'} />
 
                 {/* Impressions */}
                 {selectedSession?.print_enabled && (
                   <motion.div
                     whileHover={{ scale: 1.03, y: -2 }}
-                    className="relative group h-full"
+                    className="v2-tile v2-violet relative group h-full"
                   >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500/30 to-rose-500/30 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative h-full flex flex-col justify-center bg-gradient-to-br from-[#1A1A1E] to-[#242428] rounded-xl p-3 border border-pink-500/20 group-hover:border-pink-500/50 transition-all">
@@ -1915,7 +1911,7 @@ fetch(${JSON.stringify(imageUrl)})
                     {/* Slideshow Mode Selector */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500 hidden sm:inline">Diaporama :</span>
-                      <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                      <div className="v2-segment flex rounded-lg border border-white/10 overflow-hidden">
                         <button
                           onClick={() => changeSlideshowMode('all')}
                           className={`px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -1962,7 +1958,7 @@ fetch(${JSON.stringify(imageUrl)})
                             whileHover={{ scale: 1.02, y: -2 }}
                             className="relative group"
                           >
-                            <div className="aspect-square rounded-xl overflow-hidden bg-[#2E2E33] border border-[rgba(255,255,255,0.1)] transition-all duration-200 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_4px_20px_rgba(212,175,55,0.2)]">
+                            <div className="v2-vignette aspect-square rounded-xl overflow-hidden bg-[#2E2E33] border border-[rgba(255,255,255,0.1)] transition-all duration-200 group-hover:border-[#D4AF37]/50 group-hover:shadow-[0_4px_20px_rgba(212,175,55,0.2)]">
                               <img
                                 src={getThumbnailUrl(photo)}
                                 alt="Photo"
@@ -2346,7 +2342,7 @@ fetch(${JSON.stringify(imageUrl)})
             </div>
 
             {/* Colonne droite : QR Code + Infos - largeur fixe */}
-            <div className="lg:w-[320px] flex flex-col gap-3 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
+            <div className="v2-droite lg:w-[320px] flex flex-col gap-3 lg:overflow-y-auto lg:overflow-x-hidden flex-shrink-0">
               {/* Actions rapides */}
               <div className="card-gold rounded-xl flex-shrink-0">
                 <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center gap-1.5">
@@ -2391,7 +2387,7 @@ fetch(${JSON.stringify(imageUrl)})
                 <div className="px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.1)] flex items-center gap-1.5 flex-shrink-0">
                   <QrCode className="h-3.5 w-3.5 text-[#D4AF37]" />
                   <h3 className="font-semibold text-white text-xs">QR codes</h3>
-                  <div role="tablist" aria-label="QR code affiché" className="ml-auto inline-flex p-0.5 rounded-md bg-[#1A1A1E] border border-white/10">
+                  <div role="tablist" aria-label="QR code affiché" className="v2-segment ml-auto inline-flex p-0.5 rounded-md bg-[#1A1A1E] border border-white/10">
                     <button
                       type="button"
                       role="tab"
@@ -2412,10 +2408,10 @@ fetch(${JSON.stringify(imageUrl)})
                     </button>
                   </div>
                 </div>
-                <div ref={qrAreaRef} className="flex-1 min-h-0 p-2 flex flex-col items-center justify-center">
+                <div ref={qrAreaRef} className="v2-qr-zone flex-1 min-h-0 p-2 flex flex-col items-center justify-center">
                   {qrView === 'invite' ? (
                     <>
-                      <div className="bg-white p-1.5 rounded-lg" id="qr-invite">
+                      <div className="v2-qr-carte bg-white p-1.5 rounded-lg" id="qr-invite" style={{ ['--qr' as string]: `${qrSize + 12}px` }}>
                         <QRCode value={getInviteUrl(selectedSession.code)} size={qrSize} />
                       </div>
                       <p className="text-sm font-mono font-black mt-1.5 leading-5 text-[#D4AF37]">#{selectedSession.code}</p>
@@ -2436,7 +2432,7 @@ fetch(${JSON.stringify(imageUrl)})
                     </>
                   ) : (
                     <>
-                      <div className="bg-white p-1.5 rounded-lg">
+                      <div className="v2-qr-carte bg-white p-1.5 rounded-lg" style={{ ['--qr' as string]: `${qrSize + 12}px` }}>
                         <QRCode value={getAlbumUrl(selectedSession.code)} size={qrSize} />
                       </div>
                       <p className="text-sm mt-1.5 leading-5 text-gray-400">
