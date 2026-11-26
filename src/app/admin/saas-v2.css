@@ -1,0 +1,181 @@
+/* © 2025 AnimaJet — Habillage SaaS V2 (maquette validée le 26/11/2026, docs/design/saas/v2).
+   Les matières (verre fumé, liserés, or poli, tôle, commandes…) sont des rendus Blender Cycles
+   posés en 9-slice (border-image) depuis /public/saas-v2/. Le CSS ne gère que la mise en page.
+   Toutes les classes sont préfixées « v2- » et les variables sont portées par .saas-v2 :
+   rien ne s'applique hors des pages qui l'utilisent explicitement. */
+.saas-v2 {
+  --noir: #06040a;
+  --or: #d4af37;
+  --or-clair: #f6d77a;
+  --or-texte: #f3c64e;
+  --violet-clair: #c4a3ff;
+  --texte: #f4f0fa;
+  --texte-2: #c3bbd2;
+  --texte-3: #857c99;
+  --vert: #4ade80;
+  --rouge: #ff6b6b;
+  font-family: var(--font-poppins), system-ui, sans-serif; color: var(--texte);
+  background:
+    radial-gradient(60% 45% at 30% 45%, rgba(4, 3, 7, 0.75), transparent 75%),
+    var(--noir) url(/saas-v2/fond-2560.webp) center / cover no-repeat fixed;
+  -webkit-font-smoothing: antialiased;
+}
+.saas-v2 svg.v2-i { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ---------- Habillage 9-slice générique : l'image vit dans ::before, débordant de --o (marge de rendu) ---------- */
+.v2-m9,
+.v2-verre,
+.v2-tuile-v,
+.v2-nav a,
+.v2-btn-deco,
+.v2-btn,
+.v2-onglets button.v2-actif,
+.v2-segment button.v2-actif,
+.v2-saisie,
+.v2-choix,
+.v2-curseur,
+.v2-puits { position: relative; isolation: isolate; }
+.v2-m9::before,
+.v2-verre::before,
+.v2-tuile-v::before,
+.v2-nav a::before,
+.v2-btn-deco::before,
+.v2-btn::before,
+.v2-onglets button.v2-actif::before,
+.v2-segment button.v2-actif::before,
+.v2-saisie::before,
+.v2-choix::before,
+.v2-curseur::before,
+.v2-puits::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  inset: calc(var(--o) * -1);
+  border-style: solid; border-color: transparent;
+  border-width: var(--w);
+  border-image: var(--img) var(--s) fill / var(--w) stretch;
+}
+/* verre fumé à liseré (rendu 2x : marge 64, angle 110 px) */
+.v2-verre { --o: 32px; --s: 110; --w: 55px; --img: url(/saas-v2/panneau-or.webp); }
+.v2-verre.v2-violet { --img: url(/saas-v2/panneau-violet.webp); }
+.v2-tuile-v { --o: 32px; --s: 110; --w: 55px; }
+.v2-tuile-v.v2-or { --img: url(/saas-v2/tuile-or.webp); } .v2-tuile-v.v2-vert { --img: url(/saas-v2/tuile-vert.webp); }
+.v2-tuile-v.v2-cyan { --img: url(/saas-v2/tuile-cyan.webp); } .v2-tuile-v.v2-violet { --img: url(/saas-v2/tuile-violet.webp); }
+.v2-tuile-v.v2-gris { --img: url(/saas-v2/tuile-gris.webp); }
+
+/* ---------- Bandeau de navigation (plaque bronze brossée + tôle + grille perforée, Blender) ---------- */
+.v2-barre {
+  position: relative; z-index: 5; height: 80px; flex-shrink: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; padding: 0 28px 4px;
+  background:
+    url(/saas-v2/barre-g.webp) left top / 650px 100% no-repeat,
+    url(/saas-v2/barre-d.webp) right top / 570px 100% no-repeat,
+    url(/saas-v2/barre-c.webp) 650px 0 / calc(100% - 1220px) 100% no-repeat;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.6));
+}
+.v2-logo { display: flex; align-items: center; gap: 12px; justify-self: start; padding-left: 14px; }
+.v2-logo img { height: 64px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 14px rgba(255, 190, 80, 0.55)) brightness(1.12) contrast(1.08); }
+.v2-logo span { font-size: 32px; font-weight: 600; letter-spacing: .2px; color: #ffffff; line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 10px rgba(0, 0, 0, 0.6)); }
+.v2-logo span b { font-weight: 600; background: linear-gradient(180deg, #fff6d0 0%, #ffd768 38%, #e8a923 70%, #b97a12 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.v2-nav { display: flex; gap: 6px; }
+.v2-nav a {
+  --o: 20px; --s: 72; --w: 36px; --img: url(/saas-v2/bouton-sombre.webp);
+  display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 22px; font-size: 16px; font-weight: 500; color: var(--texte); white-space: nowrap;
+}
+.v2-nav a svg.v2-i { width: 20px; height: 20px; color: var(--texte-2); }
+.v2-nav a:not(.v2-actif)::before { display: none; }
+.v2-nav a:not(.v2-actif):hover { color: var(--or-clair); }
+.v2-nav a.v2-actif { --img: url(/saas-v2/bouton-orf.webp); color: var(--or-clair); text-shadow: 0 0 12px rgba(246, 215, 122, 0.45); }
+.v2-nav a.v2-actif svg.v2-i { color: var(--or-clair); }
+.v2-droite-barre { justify-self: end; }
+.v2-btn-deco { --o: 20px; --s: 72; --w: 36px; --img: url(/saas-v2/bouton-rouge.webp);
+  display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 22px; color: #ff7676; font-size: 16px; font-weight: 500; }
+
+/* ---------- Boutons (verre bombé à liseré / or poli) ---------- */
+.v2-btn {
+  --o: 20px; --s: 72; --w: 36px; --img: url(/saas-v2/bouton-sombre.webp);
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 46px; padding: 0 20px;
+  font-size: 16px; font-weight: 500; color: var(--texte); white-space: nowrap; transition: filter .15s, transform .15s;
+}
+.v2-btn svg.v2-i { width: 19px; height: 19px; }
+.v2-btn:hover { filter: brightness(1.18); }
+.v2-btn:active { transform: translateY(1px); }
+.v2-btn.v2-or { --img: url(/saas-v2/bouton-or.webp); color: #2a1a03; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); }
+.v2-btn.v2-contour-or { --img: url(/saas-v2/bouton-orf.webp); color: var(--or-texte); }
+.v2-btn.v2-contour-cyan { --img: url(/saas-v2/bouton-cyan.webp); color: #5fd4ff; }
+.v2-btn.v2-contour-violet { --img: url(/saas-v2/bouton-violet.webp); color: var(--violet-clair); }
+.v2-btn.v2-danger { --img: url(/saas-v2/bouton-rouge.webp); color: #ff7676; }
+.v2-btn.v2-petit { height: 40px; padding: 0 14px; font-size: 14px; gap: 8px; }
+.v2-btn.v2-petit svg.v2-i { width: 17px; height: 17px; }
+
+/* ---------- En-têtes de panneaux ---------- */
+.v2-entete { position: relative; display: flex; align-items: center; gap: 11px; padding: 14px 18px 13px; font-weight: 600; font-size: 16px; }
+.v2-entete::after { /* séparateur gravé : creux sombre + arête claire */
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  background: linear-gradient(rgba(0, 0, 0, 0.75) 0 1px, rgba(255, 236, 190, 0.09) 1px 2px);
+}
+.v2-entete > svg.v2-i { color: var(--or-texte); width: 21px; height: 21px; filter: drop-shadow(0 0 6px rgba(243, 198, 78, 0.45)); }
+.v2-entete .v2-sous { font-weight: 400; font-size: 12px; color: var(--texte-3); }
+.v2-pastille { font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 99px; }
+.v2-pastille.v2-verte { color: #86efac; background: linear-gradient(180deg, rgba(34, 197, 94, 0.32), rgba(21, 128, 61, 0.25)); border: 1px solid rgba(74, 222, 128, 0.45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+
+/* ---------- Tuiles de stats ---------- */
+.v2-tuile { --c: var(--or-texte); height: 100%; display: flex; align-items: center; gap: 16px; padding: 10px 18px; }
+.v2-tuile .v2-puits { width: 56px; height: 56px; flex-shrink: 0; display: grid; place-items: center; color: var(--c);
+  --o: 15px; --s: 64; --w: 32px; }
+.v2-tuile .v2-puits svg.v2-i { width: 27px; height: 27px; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 60%, transparent)); }
+.v2-tuile .v2-lib { font-size: 13px; letter-spacing: .8px; text-transform: uppercase; color: #ece6f6; font-weight: 500; }
+.v2-tuile .v2-val { font-size: 34px; font-weight: 700; line-height: 1.05; color: var(--c);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--c) 55%, transparent), 0 2px 2px rgba(0, 0, 0, 0.6); }
+
+/* ---------- Onglets / segments ---------- */
+.v2-onglets { display: inline-flex; gap: 4px; padding: 5px; border-radius: 14px; background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+.v2-onglets button { position: relative; isolation: isolate; display: flex; align-items: center; gap: 9px; height: 42px; padding: 0 18px; color: var(--texte-2); font-size: 16px; font-weight: 500; }
+.v2-onglets button.v2-actif, .v2-segment button.v2-actif { --o: 17px; --s: 60; --w: 30px; --img: url(/saas-v2/onglet-actif.webp); color: #2a1a03; font-weight: 600; text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6); }
+.v2-onglets .v2-compte { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; color: #2a1400; font-size: 12px; font-weight: 700; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, #ffd08a, #f59e0b 60%, #b45309); box-shadow: 0 0 10px rgba(245, 158, 11, 0.7); }
+.v2-segment { display: inline-flex; gap: 2px; padding: 4px; border-radius: 12px; background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+.v2-segment button { min-width: 46px; justify-content: center; position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; font-size: 14px; color: var(--texte-2); }
+.v2-segment button svg.v2-i { width: 15px; height: 15px; }
+
+/* ---------- Pied de page (bande Blender) ---------- */
+.v2-pied { flex-shrink: 0; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 6px 40px 0; font-size: 14px; color: #ddd6e8;
+  background: url(/saas-v2/pied.webp) center top / 100% 100% no-repeat; }
+.v2-pied nav { display: flex; }
+.v2-pied nav a { padding: 0 18px; border-left: 1px solid rgba(243, 198, 78, 0.55); line-height: 1; }
+.v2-pied nav a:first-child { border-left: 0; }
+.v2-pied nav a:hover { color: var(--or-clair); }
+
+/* ---------- Formulaires (paramètres) ---------- */
+.v2-champ { display: flex; flex-direction: column; gap: 8px; }
+.v2-champ label { font-size: 13px; color: var(--texte-2); }
+.v2-saisie { --o: 10px; --s: 46; --w: 23px; --img: url(/saas-v2/champ.webp);
+  display: flex; align-items: center; height: 46px; padding: 0 16px; font-size: 15px; color: var(--texte); }
+.v2-saisie input { all: unset; width: 100%; }
+.v2-saisie.v2-code { font-family: ui-monospace, Consolas, monospace; color: var(--or-texte); letter-spacing: 3px; font-weight: 700; }
+.v2-ligne-reglage { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; }
+.v2-ligne-reglage + .v2-ligne-reglage::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.7) 10%, rgba(0, 0, 0, 0.7) 90%, transparent) top / 100% 1px no-repeat,
+              linear-gradient(90deg, transparent, rgba(255, 236, 190, 0.08) 10%, rgba(255, 236, 190, 0.08) 90%, transparent) bottom / 100% 1px no-repeat; }
+.v2-ligne-reglage .v2-lib { font-size: 13px; color: var(--texte-3); }
+.v2-ligne-reglage .v2-lib b { display: block; color: var(--texte); font-weight: 500; font-size: 15px; }
+.v2-inter { width: 52px; height: 28px; flex-shrink: 0; background: url(/saas-v2/inter-off.webp) center / 74px 50px no-repeat; cursor: pointer; }
+.v2-inter.v2-on { background-image: url(/saas-v2/inter-on.webp); }
+.v2-curseur { position: relative; height: 12px; flex: 1; min-width: 130px; --o: 10px; --s: 46; --w: 6px; --img: url(/saas-v2/champ.webp); }
+.v2-curseur i { position: absolute; left: 2px; top: 3px; bottom: 3px; }
+.v2-curseur i::before { content: ''; position: absolute; inset: -13px -13px; border-style: solid; border-color: transparent; border-width: 17px 22px;
+  border-image: url(/saas-v2/jauge-or.webp) 34 44 fill / 17px 22px stretch; }
+.v2-curseur b { position: absolute; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; background: url(/saas-v2/curseur.webp) center / contain no-repeat; }
+.v2-valeur { min-width: 54px; text-align: right; font-size: 15px; font-weight: 600; color: var(--or-texte); text-shadow: 0 0 10px rgba(243, 198, 78, 0.4); }
+.v2-choix { --o: 10px; --s: 46; --w: 23px; --img: url(/saas-v2/champ.webp);
+  height: 42px; padding: 0 14px; display: inline-flex; align-items: center; gap: 12px; font-size: 15px; min-width: 170px; justify-content: space-between; }
+.v2-choix::after { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--or-texte); border-bottom: 2px solid var(--or-texte); transform: rotate(45deg) translateY(-3px); }
+.v2-depot { border-radius: 12px; padding: 14px 18px; text-align: center; font-size: 14px; color: var(--texte-2);
+  background: repeating-linear-gradient(90deg, rgba(243, 198, 78, 0.5) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat,
+              repeating-linear-gradient(90deg, rgba(243, 198, 78, 0.5) 0 8px, transparent 8px 14px) bottom / 100% 1px no-repeat,
+              repeating-linear-gradient(0deg, rgba(243, 198, 78, 0.5) 0 8px, transparent 8px 14px) left / 1px 100% no-repeat,
+              repeating-linear-gradient(0deg, rgba(243, 198, 78, 0.5) 0 8px, transparent 8px 14px) right / 1px 100% no-repeat,
+              rgba(0, 0, 0, 0.35); }
+.v2-depot b { color: var(--or-texte); font-weight: 600; }
