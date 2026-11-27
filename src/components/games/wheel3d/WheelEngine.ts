@@ -468,6 +468,7 @@ export class WheelEngine {
     if (phase !== this.phase) {
       this.phaseAt = performance.now()
       if (phase === 'spinup') { this.winner = -1; this.revealAt = 0 }
+      if (phase === 'idle') this.stoppedAt = performance.now()
     }
     this.angle = angleDeg; this.vel = velocityDegS; this.phase = phase
   }
@@ -486,6 +487,13 @@ export class WheelEngine {
     this.celebrate(lin(...SEG_COLORS[index % SEG_COLORS.length]), reduced)
   }
   clearReveal() { this.winner = -1; this.revealAt = 0 }
+  /** Lancer en cours, arrivée du résultat ou célébration (6 s) : rendu à pleine cadence, aucun repli 2D pendant ce temps. */
+  get busy() {
+    const now = performance.now()
+    // 1,5 s après l'arrêt : le résultat arrive (révélation) ; puis 6 s de célébration
+    return this.phase !== 'idle' || now - this.stoppedAt < 1500 || (this.winner >= 0 && this.revealAt > 0 && now - this.revealAt < 6000)
+  }
+  private stoppedAt = -1e9
 
   private celebrate(winC: THREE.Color, reduced: boolean) {
     const b = this.burst, NB = b.life.length

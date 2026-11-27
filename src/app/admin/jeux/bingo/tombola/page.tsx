@@ -33,6 +33,7 @@ import type { TombolaCommand, TombolaSnapshot } from '@/lib/bingo/tombola-server
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
 import type { Session } from '@/types/database'
+import { Fx3dPanel } from '@/components/fx3d/Fx3dPanel'
 
 /** Écart minimal entre deux numéros imposé par la base. */
 const MIN_GAP_MS = 2500
@@ -386,6 +387,12 @@ export default function TombolaRegiePage() {
       </div>
 
       {offline && hasGame && <div className="banner bad" role="status">Connexion perdue… La tombola est en sécurité en base : rien n’est perdu, la régie se reconnecte toute seule.</div>}
+      {hasGame && !held && (
+        <div style={{ marginBottom: 10 }}>
+          {/* Mode de la machine sur le grand écran (3D / 2D + raison) et « Réessayer la 3D » */}
+          <Fx3dPanel code={session.code} game="bingo" />
+        </div>
+      )}
       {held && (
         <div className="banner warn" role="status" data-testid="banner-held">
           Un autre jeu est à l’écran : la tombola est en pause. Numéros, gagnants et tickets sont gardés.

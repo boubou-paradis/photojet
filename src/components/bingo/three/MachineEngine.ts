@@ -584,6 +584,9 @@ export class MachineEngine {
     return A.pts[i - 1].clone().lerp(A.pts[i], Math.min(1, Math.max(0, t)))
   }
 
+  /** Tirage en cours ou brassage pas encore retombé : rendu à pleine cadence, aucun repli 2D pendant ce temps. */
+  get busy() { return this.drawAnim !== null || this.intensity > 0.05 }
+
   tick(dt: number) {
     const A = this.drawAnim
     let animI = 0

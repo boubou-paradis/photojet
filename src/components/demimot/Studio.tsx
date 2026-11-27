@@ -1,9 +1,12 @@
 // © 2025 AnimaJet - MG Events Animation. Tous droits réservés.
 // Code propriétaire - Reproduction interdite.
 // Repris du prototype À Demi-Mot (Desktop/a-demi-mot), qui reste la référence.
-// Studio : rendu 3D (Three.js) avec secours DOM lisible (pas de WebGL, contexte perdu, « dom » demandé).
+// Studio : rendu 3D (Three.js) avec secours DOM lisible (pas de WebGL, PC trop lent, « dom » demandé).
+// Contexte graphique perdu : secours DOM le temps de relancer la 3D (2 relances au plus en 5 min, ensuite DOM).
+// Le mode affiché est signalé à la régie, qui peut « Réessayer la 3D » (lib/fx3d/status.ts).
 
 import { useEffect, useRef, useState } from 'react'
+import { onFx3dRetry, reportFx3d, type Fx3dReason } from '@/lib/fx3d/status'
 import { layoutBoard, type Cell } from '@/lib/demimot/text'
 import type { PublicCell } from '@/lib/demimot/view'
 import type { Quality, StudioScene, StudioState } from './three/StudioScene'
@@ -23,16 +26,49 @@ function webglAvailable(): boolean {
   }
 }
 
+const MAX_RESTARTS = 2
+const RESTART_WINDOW_MS = 5 * 60_000
+
+const REASON: Record<string, Fx3dReason> = { forced: 'forced', no_webgl: 'no_webgl', init_failed: 'load_failed', too_slow: 'too_slow', context_lost: 'context_lost' }
+
 export function Studio({ state, quality, reducedMotion }: StudioProps) {
-  // Secours DOM : pas de WebGL, contexte perdu, PC trop lent (signalé par la scène) ou « dom » demandé.
+  // Secours DOM : pas de WebGL, contexte perdu (relances épuisées), PC trop lent (signalé par la scène) ou « dom » demandé.
   const [fallback, setFallback] = useState<string | null>(() => (quality === 'dom' ? 'forced' : typeof document === 'undefined' || webglAvailable() ? null : 'no_webgl'))
+  const [fallbackFps, setFallbackFps] = useState<number | undefined>(undefined)
+  const [ready, setReady] = useState(false)
+  const [pendingFps, setPendingFps] = useState<number | null>(null)
+  // relance après perte du contexte : nouveau canevas (l'ancien contexte est perdu pour de bon)
+  const [restarting, setRestarting] = useState(false)
+  const [gen, setGen] = useState(0)
+  const restartsRef = useRef<number[]>([])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sceneRef = useRef<StudioScene | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
 
   useEffect(() => {
-    if (fallback || !canvasRef.current) return
+    if (fallback) reportFx3d('demimot', { mode: '2d', reason: REASON[fallback] ?? 'load_failed', fps: fallbackFps })
+    else if (!ready || restarting) reportFx3d('demimot', { mode: 'loading', restarting })
+    else reportFx3d('demimot', { mode: '3d', pendingFps: pendingFps ?? undefined })
+  }, [fallback, fallbackFps, ready, restarting, pendingFps])
+  useEffect(() => () => reportFx3d('demimot', { mode: 'off' }), [])
+  // « Réessayer la 3D » depuis la régie (rien à faire si la 3D tourne ou si la 2D est demandée)
+  const fallbackRef = useRef(fallback)
+  fallbackRef.current = fallback
+  useEffect(() => onFx3dRetry('demimot', () => {
+    const f = fallbackRef.current
+    if (!f || f === 'forced') return
+    restartsRef.current = []
+    setFallbackFps(undefined)
+    setPendingFps(null)
+    setRestarting(false)
+    setReady(false)
+    setGen((g) => g + 1)
+    setFallback(webglAvailable() ? null : 'no_webgl')
+  }), [])
+
+  useEffect(() => {
+    if (fallback || restarting || !canvasRef.current) return
     let cancelled = false
     let scene: StudioScene | null = null
     void (async () => {
@@ -45,13 +81,27 @@ export function Studio({ state, quality, reducedMotion }: StudioProps) {
         scene = new StudioScene(canvasRef.current, {
           quality: quality === 'dom' ? 'low' : quality,
           reducedMotion,
-          onFallback: (r) => setFallback(r),
+          onPending: (fps) => setPendingFps(fps),
+          onFallback: (r, fps) => {
+            setReady(false)
+            setPendingFps(null)
+            if (r !== 'context_lost') { setFallbackFps(fps); setFallback(r); return }
+            const now = Date.now()
+            const list = restartsRef.current.filter((t) => now - t < RESTART_WINDOW_MS)
+            if (list.length >= MAX_RESTARTS) { restartsRef.current = list; setFallback('context_lost'); return }
+            restartsRef.current = [...list, now]
+            console.warn('[À Demi-Mot] contexte graphique perdu : relance de la 3D')
+            setRestarting(true)
+          },
         })
         sceneRef.current = scene
         ;(window as unknown as { __demimotStudio?: StudioScene }).__demimotStudio = scene
         scene.setState(stateRef.current)
+        setReady(true)
       } catch {
-        setFallback('init_failed')
+        setReady(false)
+        // après une perte de contexte, Chrome peut refuser un nouveau contexte : la cause reste le contexte graphique
+        setFallback(restartsRef.current.length ? 'context_lost' : 'init_failed')
       }
     })()
     return () => {
@@ -59,16 +109,23 @@ export function Studio({ state, quality, reducedMotion }: StudioProps) {
       scene?.dispose()
       sceneRef.current = null
     }
-  }, [fallback, quality, reducedMotion])
+  }, [fallback, quality, reducedMotion, restarting, gen])
+
+  // relance : secours DOM 1,2 s puis nouveau canevas et nouvelle scène
+  useEffect(() => {
+    if (!restarting) return
+    const t = setTimeout(() => { setGen((g) => g + 1); setRestarting(false) }, 1200)
+    return () => clearTimeout(t)
+  }, [restarting])
 
   useEffect(() => {
     sceneRef.current?.setState(state)
   }, [state])
 
-  if (fallback) return <DomStudio state={state} reducedMotion={reducedMotion} />
+  if (fallback || restarting) return <DomStudio state={state} reducedMotion={reducedMotion} />
   return (
     <>
-      <canvas ref={canvasRef} className="board-canvas" aria-label="Plateau de jeu À Demi-Mot" role="img" data-testid="board-canvas" />
+      <canvas key={gen} ref={canvasRef} className="board-canvas" aria-label="Plateau de jeu À Demi-Mot" role="img" data-testid="board-canvas" />
       {/* Plus de 10 équipes : la scène 3D n'a pas de pupitres, ce tableau (le même qu'en mode sans 3D) les remplace. */}
       {state.showTeams && state.compactScores && (
         <div className="score-board-overlay">

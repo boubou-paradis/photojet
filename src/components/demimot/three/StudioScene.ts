@@ -17,6 +17,7 @@ import { layoutBoard, type Cell } from '@/lib/demimot/text'
 import type { PublicCell } from '@/lib/demimot/view'
 import { beamTexture, contactShadowTexture, disposeTextures, drawBand, drawLectern, drawTimer, glowTexture, hiddenTexture, ledTexture, letterTexture, releaseThemeTextures, setAnisotropy } from './textures'
 import { DEFAULT_THEME, themeOf, type PlateauTheme, type ThemeId } from '../themes'
+import { RenderGuard, FX3D_IDLE_FPS } from '@/lib/fx3d/guard'
 
 export type Quality = 'auto' | 'high' | 'low'
 
@@ -54,7 +55,10 @@ export interface StudioState {
 export interface StudioOptions {
   quality: Quality
   reducedMotion: boolean
-  onFallback?: (reason: string) => void
+  /** 'too_slow' (avec les images/s mesurées) ou 'context_lost'. */
+  onFallback?: (reason: string, fps?: number) => void
+  /** Repli « PC trop lent » décidé mais différé jusqu'à la fin de l'animation en cours (images/s), ou null. */
+  onPending?: (fps: number | null) => void
 }
 
 interface Tile {
@@ -98,7 +102,11 @@ export class StudioScene {
   private level: 'high' | 'low'
   private raf = 0
   private last = performance.now()
-  private frameTimes: number[] = []
+  // Surveillance commune (lib/fx3d/guard.ts) : 30 images/s au repos, repli seulement sous 22 images/s pendant 10 s,
+  // jamais pendant une animation (lettres qui se retournent, éclat de victoire, montée de lumière).
+  private guard = new RenderGuard(performance.now(), { warmupMs: 4000 })
+  private pendingSent: number | null = null
+  private fellBack = false
   private slowWindows = 0
   private qualityHoldUntil = 0
   private disposed = false
@@ -859,36 +867,51 @@ export class StudioScene {
   }
 
   // ---------------------------------------------------------------- boucle
+  /** Animation en cours : rendu à pleine cadence, aucun repli pendant ce temps. */
+  private get busy() {
+    if (this.burst || this.boost > 0.001) return true
+    for (const t of this.tiles.values()) if (t.anim) return true
+    const hasAccent = !!this.state?.teams.some((t) => t.state === 'active')
+    return Math.abs((hasAccent ? 120 : 0) - this.accentLight.intensity) > 1
+  }
+
   private loop = () => {
     if (this.disposed) return
     this.raf = requestAnimationFrame(this.loop)
     const now = performance.now()
-    const dt = Math.min(0.1, (now - this.last) / 1000)
-    this.frameTimes.push(now - this.last)
+    const busy = this.busy
+    const elapsed = this.guard.frame(now, !busy)
+    if (elapsed === null) return
+    const dt = Math.min(0.1, elapsed)
     this.last = now
     this.frames++
-    if (this.frameTimes.length >= 120) {
-      const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length
-      this.frameTimes = []
+    const w = this.guard.window(now)
+    if (w) {
       // Bascule en qualité basse seulement après le démarrage (compilation des shaders, envoi des
-      // textures) et sur deux fenêtres lentes consécutives : un à-coup isolé ne suffit pas.
+      // textures) et sur plusieurs fenêtres lentes consécutives : un à-coup isolé ne suffit pas.
       // Mesure (Chrome, Iris Xe) : le coût vient surtout du nombre de pixels, peu des ombres.
       // Étape 1 : densité de pixels ramenée à 1,25 (matières et ombres conservées) ; étape 2 : niveau bas.
-      this.slowWindows = avg > 18 && !document.hidden && this.frames > 240 && this.frames > this.qualityHoldUntil ? this.slowWindows + 1 : 0
-      if (this.opts.quality === 'auto' && this.level === 'high' && this.slowWindows >= 2) {
+      // Au repos (30 images/s visées), seule une vraie baisse sous la cadence visée compte.
+      const slow = w.idle ? w.fps < FX3D_IDLE_FPS * 0.85 : w.fps < 55
+      this.slowWindows = slow && !document.hidden && this.frames > 240 && this.frames > this.qualityHoldUntil ? this.slowWindows + 1 : 0
+      if (this.opts.quality === 'auto' && this.level === 'high' && this.slowWindows >= 3) {
         this.slowWindows = 0
         if (this.renderer.getPixelRatio() > 1.25) {
           this.renderer.setPixelRatio(1.25)
           this.resize()
-        } else if (avg > 22) {
+        } else if (w.idle || w.fps < 45) {
           this.level = 'low'
           this.applyLevel()
         }
-      } else if (this.opts.quality === 'auto' && this.level === 'low' && this.slowWindows >= 3 && avg > 40) {
-        // Même en qualité basse, moins de 25 images/s : PC trop lent, plateau sans 3D.
-        this.slowWindows = 0
-        this.opts.onFallback?.('too_slow')
       }
+      // Même en qualité basse, moins de 22 images/s pendant 10 s : PC trop lent, plateau sans 3D.
+      this.guard.judge(w, this.opts.quality === 'auto' && this.level === 'low')
+    }
+    const p = this.guard.pendingFps
+    if (p !== this.pendingSent) { this.pendingSent = p; this.opts.onPending?.(p) }
+    if (!this.fellBack && this.guard.fallbackNow(busy)) {
+      this.fellBack = true
+      this.opts.onFallback?.('too_slow', p ?? undefined)
     }
 
     for (const t of this.tiles.values()) {

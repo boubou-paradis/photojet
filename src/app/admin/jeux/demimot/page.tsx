@@ -35,6 +35,7 @@ import type { RegieView } from '@/lib/demimot/view'
 import { createClient } from '@/lib/supabase'
 import { fetchUserSession } from '@/lib/session-select'
 import type { Session } from '@/types/database'
+import { Fx3dPanel } from '@/components/fx3d/Fx3dPanel'
 
 // Colonnes des autres jeux (À Demi-Mot s'efface si l'un d'eux est lancé après lui).
 const OTHER_GAME_FLAGS = ['quiz_active', 'quiz_lobby_visible', 'lineup_active', 'wheel_active', 'mystery_photo_active', 'affinity_active', 'buzzer_active', 'vote_active'] as const
@@ -401,6 +402,8 @@ export default function DemiMotAdminPage() {
                 <button role="tab" aria-selected={tab === 'settings'} onClick={() => setTab('settings')}><Settings size={15} /> Réglages</button>
               </div>
               <span className="spacer" />
+              {/* Mode du plateau sur le grand écran (3D / 2D + raison) et « Réessayer la 3D » */}
+              <Fx3dPanel code={session.code} game="demimot" />
               <span className={`pill ${channel.connected ? 'live' : 'warn'}`} data-testid="regie-online">
                 <span className={`dot ${channel.connected ? 'on' : ''}`} /> {channel.connected ? 'Connecté' : 'Reconnexion…'}
               </span>

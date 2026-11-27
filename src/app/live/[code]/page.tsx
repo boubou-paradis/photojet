@@ -20,6 +20,7 @@ import { getInviteUrl, getQuizJoinUrl } from '@/lib/utils'
 import MysteryPhotoGame from '@/components/games/MysteryPhotoGame'
 import LineupGame from '@/components/games/LineupGame'
 import WheelGame from '@/components/games/WheelGame'
+import { useFx3dLink } from '@/lib/fx3d/status'
 import QuizGame from '@/components/games/QuizGame'
 import AffinityGame from '@/components/games/AffinityGame'
 import { useAffinityStatus } from '@/hooks/useAffinityStatus'
@@ -397,6 +398,8 @@ export default function LivePage() {
   const hideUITimeout = useRef<NodeJS.Timeout | null>(null)
   const messageIndex = useRef(0)
   const supabase = createPublicClient()
+  // Plateaux 3D (Roue, À Demi-Mot, machine AnimaBingo) : mode affiché signalé à la régie, « Réessayer la 3D » reçu d'elle.
+  useFx3dLink(session?.code, supabase)
   const refreshOrder = useRef(0)
   const refreshApplied = useRef(0)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

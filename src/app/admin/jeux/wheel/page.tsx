@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { Fx3dPanel } from '@/components/fx3d/Fx3dPanel'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import localFont from 'next/font/local'
@@ -1140,6 +1141,9 @@ export default function WheelPage() {
                 </button>
               </div>
             </div>
+
+            {/* Mode du plateau sur le grand écran (3D / 2D + raison) et « Réessayer la 3D » */}
+            <div style={{ marginBottom: 14 }}><Fx3dPanel code={session.code} game="wheel" /></div>
 
             <div className={rg.playCols}>
               <div className={rg.stack}>

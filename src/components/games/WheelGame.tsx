@@ -15,7 +15,8 @@ import {
   type DecelPlan,
 } from '@/lib/wheel-physics'
 import { GEMS, GOLD } from './wheel-theme'
-import Wheel3D, { wheel3dAllowed, type WheelFx } from './wheel3d/Wheel3D'
+import Wheel3D, { wheel3dAllowed, wheel3dBlockedReason, resetWheel3dAllowed, type WheelFx } from './wheel3d/Wheel3D'
+import { reportFx3d, onFx3dRetry, type Fx3dReason } from '@/lib/fx3d/status'
 
 interface WheelGameProps {
   segments: WheelSegment[]
@@ -165,8 +166,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   // Repli automatique sur la roue 2D ci-dessous en cas de souci (WebGL absent, PC trop lent…).
   const fxRef = useRef<WheelFx | null>(null)
   const allow3d = useSyncExternalStore(noopSubscribe, wheel3dAllowed, never)
-  const [failed3d, setFailed3d] = useState(false)
+  const [failed3d, setFailed3d] = useState<{ reason: Fx3dReason; fps?: number } | null>(null)
   const [ready3d, setReady3d] = useState(false)
+  const [restarting3d, setRestarting3d] = useState(false)
+  const [pending3d, setPending3d] = useState<number | null>(null)
+  const [, setRetry3d] = useState(0)
+  // 3D prête pendant un lancer (relance après perte de contexte) : elle ne prend la main qu'à l'arrêt de la roue
+  const readyWhenStoppedRef = useRef(false)
   const use3d = allow3d && !failed3d
   const show3d = use3d && ready3d
 
@@ -313,6 +319,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           angle = m.from + m.plan.distance
           m.phase = 'idle'
           fxRef.current?.stop()
+          if (readyWhenStoppedRef.current) { readyWhenStoppedRef.current = false; setReady3d(true) }
         }
       }
 
@@ -438,6 +445,40 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showResult])
 
+  // Plateau 3D (re)lancé : même angle que la roue, résultat déjà affiché remis en place sans fanfare.
+  const on3dReady = useCallback(() => {
+    setRestarting3d(false)
+    fxRef.current?.frame(angleRef.current, 0, 'idle')
+    if (motionRef.current.phase !== 'idle') { readyWhenStoppedRef.current = true; return }
+    setReady3d(true)
+  }, [])
+  useEffect(() => {
+    if (!ready3d) return
+    if (showResult && winnerIndex >= 0) fxRef.current?.reveal(winnerIndex, winningNumber, true)
+    // seulement quand le plateau devient visible
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready3d])
+
+  // Mode affiché, signalé à la régie (3D, chargement, 2D + raison).
+  useEffect(() => {
+    if (!allow3d) reportFx3d('wheel', { mode: '2d', reason: wheel3dBlockedReason() })
+    else if (failed3d) reportFx3d('wheel', { mode: '2d', reason: failed3d.reason, fps: failed3d.fps })
+    else if (!ready3d) reportFx3d('wheel', { mode: 'loading', restarting: restarting3d })
+    else reportFx3d('wheel', { mode: '3d', pendingFps: pending3d ?? undefined })
+  }, [allow3d, failed3d, ready3d, restarting3d, pending3d])
+  useEffect(() => () => reportFx3d('wheel', { mode: 'off' }), [])
+
+  // « Réessayer la 3D » depuis la régie (sans recharger la page).
+  useEffect(() => onFx3dRetry('wheel', () => {
+    resetWheel3dAllowed()
+    readyWhenStoppedRef.current = false
+    setPending3d(null)
+    setRestarting3d(false)
+    setReady3d(false)
+    setFailed3d(null)
+    setRetry3d((n) => n + 1)
+  }), [])
+
   // Confettis dorés via canvas-confetti à l'apparition du résultat / de la fin
   useEffect(() => {
     if (!showConfetti || prefersReducedMotion) return
@@ -491,7 +532,10 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
 
       {use3d && (
         <Wheel3D fxRef={fxRef} numbers={numbers3d} reduced={!!prefersReducedMotion} sfx={audioSettings?.sfxEnabled !== false}
-          onReady={() => setReady3d(true)} onFail={() => { setFailed3d(true); setReady3d(false) }} />
+          onReady={on3dReady}
+          onFail={(reason, fps) => { readyWhenStoppedRef.current = false; setPending3d(null); setRestarting3d(false); setReady3d(false); setFailed3d({ reason, fps }) }}
+          onRestart={() => { readyWhenStoppedRef.current = false; setReady3d(false); setRestarting3d(true) }}
+          onPending={setPending3d} />
       )}
 
       {!show3d && (<>

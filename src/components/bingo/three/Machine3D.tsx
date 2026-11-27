@@ -4,20 +4,23 @@
 // Code propriétaire - Reproduction interdite.
 
 // AnimaBingo — machine 3D du grand écran, avec repli automatique sur la machine 2D :
-//   - pas de WebGL, contexte perdu, modèle introuvable ;
-//   - moins de 40 images/s pendant 6 s (PC trop lent) → 2D pour cette page ; un rechargement retente la 3D ;
+//   - pas de WebGL, modèle introuvable ;
+//   - contexte graphique perdu : 2D le temps de relancer la 3D (2 relances au plus en 5 min, ensuite 2D) ;
+//   - moins de 22 images/s pendant 10 s (PC trop lent, voir lib/fx3d/guard.ts), appliqué seulement hors tirage ;
+//     un affichage bloqué à 30 images/s ne compte jamais ; « Réessayer la 3D » en régie ou un rechargement retente la 3D ;
 //   - « Réduire les animations » demandé par le système ;
 //   - « Machine 2D » choisie en régie (ou /live/<code>?machine=2d).
 // Un seul moteur par page : le canevas passe d'une scène à l'autre sans rechargement.
+// Au repos (pas de tirage), le rendu est limité à 30 images/s. La régie voit le mode affiché (lib/fx3d/status.ts).
 // three n'est chargé qu'ici (jamais sur les téléphones, la régie ni l'accueil).
 
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import { readMachinePref, subscribeMachinePref } from '@/lib/bingo/machine-pref'
 import type { MachineEngine, MachineView } from './MachineEngine'
+import { RenderGuard } from '@/lib/fx3d/guard'
+import { onFx3dRetry, reportFx3d, type Fx3dReason } from '@/lib/fx3d/status'
 
 export type { MachineView }
-
-const MIN_FPS = 40
 
 // écart horloge locale → serveur (ms) : l'heure d'annonce vient du serveur
 let clockOffset = 0
@@ -46,56 +49,108 @@ let raf = 0
 let last = 0
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 let host: HTMLElement | null = null
-// surveillance de la fluidité
-let watchStart = 0
-let winStart = 0
-let winFrames = 0
-let slowWindows = 0
+// surveillance de la fluidité (repos à 30 images/s, repli seulement hors tirage)
+let guard: RenderGuard | null = null
+let failInfo: { reason: Fx3dReason; fps?: number } | null = null
+let pendingFps: number | null = null
+// contexte graphique perdu : relances (au plus 2 en 5 minutes)
+const MAX_RESTARTS = 2
+const RESTART_WINDOW_MS = 5 * 60_000
+let restarts: number[] = []
+let restarting = false
+let restartTimer: ReturnType<typeof setTimeout> | null = null
+const debug = (v: Record<string, unknown>) => { (window as unknown as { __bingoMachine3d?: unknown }).__bingoMachine3d = v }
 
-function fail(reason: string) {
-  if (status === 'failed') return
-  status = 'failed'
-  ;(window as unknown as { __bingoMachine3d?: unknown }).__bingoMachine3d = { status, reason }
+function dropEngine() {
   stopLoop()
   const e = engine
   engine = null
   canvas?.remove()
   canvas = null
   try { e?.dispose() } catch { /* déjà perdu */ }
+}
+
+function fail(reason: Fx3dReason, fps?: number) {
+  if (status === 'failed') return
+  status = 'failed'
+  failInfo = { reason, fps }
+  pendingFps = null
+  restarting = false
+  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null }
+  debug({ status, reason, fps })
+  dropEngine()
   emit()
 }
 
+function lost() {
+  if (status === 'failed') return
+  const now = Date.now()
+  restarts = restarts.filter((t) => now - t < RESTART_WINDOW_MS)
+  dropEngine()
+  loading = null
+  if (restarts.length >= MAX_RESTARTS) { fail('context_lost'); return }
+  restarts.push(now)
+  console.warn('[AnimaBingo] contexte graphique perdu : relance de la 3D')
+  restarting = true
+  status = 'loading'
+  debug({ status: 'restarting', restarts: restarts.length })
+  emit()
+  restartTimer = setTimeout(() => { restartTimer = null; void ensureEngine() }, 1200)
+}
+
+// Test WebGL mis en cache (un seul contexte de test par page) ; refait par « Réessayer la 3D ».
+let webgl: boolean | null = null
 function webglAvailable(): boolean {
+  if (webgl !== null) return webgl
   try {
     const c = document.createElement('canvas')
-    return !!c.getContext('webgl2')
+    const gl = c.getContext('webgl2')
+    gl?.getExtension('WEBGL_lose_context')?.loseContext()
+    webgl = !!gl
   } catch {
-    return false
+    webgl = false
   }
+  return webgl
+}
+
+/** « Réessayer la 3D » (régie) : repart de zéro sans recharger la page. */
+export function retryMachine3D() {
+  if (status !== 'failed' && webgl !== false) return
+  webgl = null
+  status = 'idle'
+  failInfo = null
+  pendingFps = null
+  restarts = []
+  restarting = false
+  loading = null
+  emit()
 }
 
 function ensureEngine(): Promise<void> {
   if (loading) return loading
   status = 'loading'
   emit()
+  const wasRestart = restarting
   loading = (async () => {
     try {
       const { MachineEngine } = await import('./MachineEngine')
       const c = document.createElement('canvas')
       c.className = 'm3d-canvas'
       c.setAttribute('aria-hidden', 'true')
-      c.addEventListener('webglcontextlost', (ev) => { ev.preventDefault(); fail('context_lost') })
+      c.addEventListener('webglcontextlost', (ev) => { ev.preventDefault(); if (c === canvas) lost() })
       const e = await MachineEngine.create(c)
       if ((status as Status) === 'failed') { e.dispose(); return }
       engine = e
       canvas = c
       status = 'ready'
-      ;(window as unknown as { __bingoMachine3d?: unknown }).__bingoMachine3d = { status, engine: e }
+      restarting = false
+      debug({ status, engine: e })
       emit()
       if (mounted > 0) startLoop()
     } catch (err) {
       console.warn('[AnimaBingo] machine 3D indisponible, machine 2D :', err instanceof Error ? err.message : err)
-      fail('load_failed')
+      // après une perte de contexte, Chrome peut refuser un nouveau contexte : la cause reste le contexte graphique
+      fail(wasRestart ? 'context_lost' : 'load_failed')
     }
   })()
   return loading
@@ -104,11 +159,12 @@ function ensureEngine(): Promise<void> {
 function frame(now: number) {
   raf = requestAnimationFrame(frame)
   const e = engine
-  if (!e || !host) return
-  const dt = (now - last) / 1000
+  if (!e || !host || !guard) return
+  const busy = e.busy
+  // au repos : ~30 images/s ; onglet caché / machine en veille : image ignorée
+  const dt = guard.frame(now, !busy)
+  if (dt === null) return
   last = now
-  // onglet caché / machine en veille : on ne compte pas cette image
-  if (dt <= 0 || dt > 0.25) { winStart = now; winFrames = 0; return }
   const r = host.getBoundingClientRect()
   if (r.width > 0 && r.height > 0) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -119,24 +175,18 @@ function frame(now: number) {
   }
   e.tick(Math.min(dt, 1 / 20))
   e.render()
-  // fluidité : après 4 s de chauffe, fenêtres de 3 s ; deux fenêtres lentes de suite → 2D
-  if (now - watchStart < 4000) { winStart = now; winFrames = 0; return }
-  winFrames++
-  if (now - winStart >= 3000) {
-    const fps = (winFrames * 1000) / (now - winStart)
-    slowWindows = fps < MIN_FPS ? slowWindows + 1 : 0
-    winStart = now; winFrames = 0
-    if (slowWindows >= 2) fail(`fps_${Math.round(fps)}`)
-  }
+  // fluidité : sous 22 images/s pendant 10 s → 2D, mais jamais pendant un tirage (attend que la boule soit posée)
+  const w = guard.window(now)
+  if (w) guard.judge(w, true)
+  const p = guard.pendingFps
+  if (p !== pendingFps) { pendingFps = p; emit() }
+  if (guard.fallbackNow(busy)) fail('too_slow', p ?? undefined)
 }
 
 function startLoop() {
   if (raf || !engine) return
   last = performance.now()
-  watchStart = last
-  winStart = last
-  winFrames = 0
-  slowWindows = 0
+  guard = new RenderGuard(last, { warmupMs: 4000 })
   raf = requestAnimationFrame(frame)
 }
 
@@ -167,11 +217,43 @@ function useReducedMotion(): boolean {
 
 /** La 3D est-elle permise sur ce PC (préférence, système, WebGL, échec antérieur) ? */
 function useAllowed(): boolean {
+  return useBlock() === null
+}
+
+/** Ce qui empêche la 3D (null = rien) : 2D choisie ou « réduire les animations » / pas de WebGL / échec. */
+function useBlock(): Fx3dReason | null {
   const pref = useSyncExternalStore(subscribeMachinePref, readMachinePref, () => '2d' as const)
   const reduced = useReducedMotion()
   const st = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
-  const [env] = useState(() => (typeof window === 'undefined' ? false : webglAvailable()))
-  return pref !== '2d' && !reduced && env && st !== 'failed'
+  // relu à chaque rendu (test en cache) : « Réessayer la 3D » le refait
+  const env = typeof window === 'undefined' ? false : webglAvailable()
+  if (pref === '2d' || reduced) return 'forced'
+  if (!env) return 'no_webgl'
+  if (st === 'failed') return failInfo?.reason ?? 'load_failed'
+  return null
+}
+
+// Mode affiché signalé à la régie tant qu'au moins une machine est à l'écran.
+let reporters = 0
+const pendingSnapshot = () => pendingFps
+const pendingServer = (): number | null => null
+function useReport() {
+  const block = useBlock()
+  const st = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
+  const pend = useSyncExternalStore(subscribe, pendingSnapshot, pendingServer)
+  useEffect(() => {
+    if (block) reportFx3d('bingo', { mode: '2d', reason: block, fps: block === failInfo?.reason ? failInfo?.fps : undefined })
+    else if (st === 'ready') reportFx3d('bingo', { mode: '3d', pendingFps: pend ?? undefined })
+    else reportFx3d('bingo', { mode: 'loading', restarting })
+  }, [block, st, pend])
+  useEffect(() => {
+    reporters++
+    const off = onFx3dRetry('bingo', retryMachine3D)
+    return () => {
+      off()
+      if (--reporters === 0) reportFx3d('bingo', { mode: 'off' })
+    }
+  }, [])
 }
 
 /** Précharge la machine 3D dès l'ouverture de l'écran (le premier tirage s'affiche déjà en 3D). */
@@ -194,6 +276,7 @@ export interface MachineBox { left: number; top: number; width: number; height: 
  * La 2D reste affichée pendant le chargement : jamais d'écran vide.
  */
 export function Machine3D({ box, view, fallback, style }: { box: MachineBox; view: MachineView; fallback: ReactNode; style?: CSSProperties }) {
+  useReport()
   const allowed = useAllowed()
   const st = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
   const ref = useRef<HTMLDivElement>(null)
