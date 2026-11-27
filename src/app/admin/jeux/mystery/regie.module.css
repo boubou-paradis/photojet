@@ -32,6 +32,13 @@
 .brand h1 { font-size: 34px; font-weight: 700; letter-spacing: -.3px; line-height: 1.1; }
 .brand h1 span { background: linear-gradient(180deg, #FFF1B8, #FFC94D 55%, #D9971A); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .brand small { display: block; font-size: 13px; color: #9A90AE; font-weight: 500; }
+/* miniature de la carte du jeu + titre façon carte (harmonisé avec les régies Bon Ordre et Roue, 27/11/2026) */
+.thumb { position: relative; width: 96px; height: 54px; flex: none; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1.5px rgba(232, 179, 65, .85), 0 0 14px rgba(255, 170, 50, .3); }
+.thumb img { object-fit: cover; }
+.brand h1.cardTitle { position: relative; display: inline-block; font-size: 34px; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; line-height: 1.05; }
+.brand h1.cardTitle span { position: relative; background: linear-gradient(180deg, #FFFFFF 0%, #F3EEFA 42%, #B9AACF 58%, #E9E3F2 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cardTitle::before { content: attr(data-t); position: absolute; inset: 0; color: #B97A16; -webkit-text-stroke: 3px #B97A16;
+  filter: drop-shadow(0 3px 0 #1A0634) drop-shadow(0 0 4px rgba(255, 170, 50, .35)); }
 .tools { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px 0 26px; flex-wrap: wrap; }
 .tool {
   display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 20px; border-radius: 14px; font-size: 16px; font-weight: 600; color: #F1EDF8; cursor: pointer; border: 0;

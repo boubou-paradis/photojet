@@ -23,6 +23,8 @@ import {
   Download,
   FileUp,
 } from 'lucide-react'
+import Image from 'next/image'
+import localFont from 'next/font/local'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -59,6 +61,9 @@ import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import rg from './regie.module.css'
+
+// Titre façon carte du jeu (même police que les régies du Bon Ordre et de la Roue)
+const cardFont = localFont({ src: './fonts/Anton-Regular.ttf', display: 'swap' })
 
 interface PhotoSlot {
   url: string
@@ -1309,19 +1314,9 @@ export default function MysteryPage() {
             Retour
           </button>
           <div className={rg.brand}>
-            <svg viewBox="0 0 120 96" aria-hidden="true">
-              <defs>
-                <linearGradient id="pmCam" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#FFF3C0" /><stop offset=".45" stopColor="#F7C548" /><stop offset=".6" stopColor="#B87610" /><stop offset="1" stopColor="#FFE08A" />
-                </linearGradient>
-              </defs>
-              <path d="M40 18 L48 6 H74 L82 18 H104 a10 10 0 0 1 10 10 V80 a10 10 0 0 1-10 10 H16 A10 10 0 0 1 6 80 V28 a10 10 0 0 1 10-10 Z" fill="rgba(20,8,36,.65)" stroke="url(#pmCam)" strokeWidth="9" strokeLinejoin="round" />
-              <circle cx="60" cy="54" r="21" fill="none" stroke="url(#pmCam)" strokeWidth="9" />
-              <circle cx="60" cy="54" r="9" fill="url(#pmCam)" opacity=".35" />
-              <circle cx="96" cy="34" r="5" fill="url(#pmCam)" />
-            </svg>
+            <div className={rg.thumb}><Image src="/images/games/photo-mystere-v2.png" alt="" fill sizes="100px" /></div>
             <div>
-              <h1>Photo <span>Mystère</span></h1>
+              <h1 className={`${rg.cardTitle} ${cardFont.className}`} data-t="PHOTO MYSTÈRE"><span>PHOTO MYSTÈRE</span></h1>
               <small>{session.name}</small>
             </div>
           </div>
