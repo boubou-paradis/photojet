@@ -275,6 +275,8 @@ export interface WheelAudioSettings {
   url: string | null
   enabled: boolean
   filename: string | null
+  /** Bruitages de l'écran public (absent = activés). Simple clé du JSON existant, aucune migration. */
+  sfxEnabled?: boolean
 }
 
 // Quiz types

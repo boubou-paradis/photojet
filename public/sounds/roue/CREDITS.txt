@@ -1,0 +1,2 @@
+Bruitages de la Roue de la Destinée 2.0 — générés avec ElevenLabs (API sound-generation, offre Starter de MG Events Animation), novembre 2026.
+Série A choisie par défaut. Textes de génération, durées et dates : docs/design/roue/sons/journal.json.

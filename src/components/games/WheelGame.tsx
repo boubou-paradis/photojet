@@ -15,6 +15,7 @@ import {
   type DecelPlan,
 } from '@/lib/wheel-physics'
 import { GEMS, GOLD } from './wheel-theme'
+import Wheel3D, { wheel3dAllowed, type WheelFx } from './wheel3d/Wheel3D'
 
 interface WheelGameProps {
   segments: WheelSegment[]
@@ -53,6 +54,7 @@ const SPIN_CSS_DURATION_MS = 8000
 const DECEL_MAX_S = 3
 
 const noopSubscribe = () => () => {}
+const never = () => false
 const detectMac = () => /Mac/i.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
 
 // « Clac » de la roue à chaque séparateur qui passe sous le pointeur :
@@ -159,6 +161,14 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const segmentCountRef = useRef(1)
   const frameRef = useRef<FrameRequestCallback | null>(null)
   const playTick = useTickSound()
+  // Plateau 3D 2.0 : il écoute le moteur (angle, vitesse, phase, événements), il ne le pilote jamais.
+  // Repli automatique sur la roue 2D ci-dessous en cas de souci (WebGL absent, PC trop lent…).
+  const fxRef = useRef<WheelFx | null>(null)
+  const allow3d = useSyncExternalStore(noopSubscribe, wheel3dAllowed, never)
+  const [failed3d, setFailed3d] = useState(false)
+  const [ready3d, setReady3d] = useState(false)
+  const use3d = allow3d && !failed3d
+  const show3d = use3d && ready3d
 
   const toggleFullscreen = useCallback(async () => {
     // Mac : faux plein écran (le conteneur est déjà fixed inset-0). On n'appelle
@@ -293,6 +303,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           m.phase = 'decel'
           m.t0 = now
           m.from = angle
+          fxRef.current?.decel()
         }
       } else if (m.phase === 'decel' && m.plan) {
         const t = (now - m.t0) / 1000
@@ -301,11 +312,13 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         if (t >= m.plan.duration) {
           angle = m.from + m.plan.distance
           m.phase = 'idle'
+          fxRef.current?.stop()
         }
       }
 
       angleRef.current = angle
       applyAngle(angle)
+      fxRef.current?.frame(angle, velocity, m.phase)
 
       // Un séparateur passe sous le pointeur : « clac » + le pointeur fléchit.
       const seg = 360 / segmentCountRef.current
@@ -313,7 +326,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       if (boundary !== lastBoundaryRef.current) {
         lastBoundaryRef.current = boundary
         if (velocity > 1) {
-          playTick(audioSettings?.enabled && audioSettings?.url ? 0.16 : 0.3)
+          if (!fxRef.current?.tick(velocity, m.phase) && audioSettings?.sfxEnabled !== false) playTick(audioSettings?.enabled && audioSettings?.url ? 0.16 : 0.3)
           if (!prefersReducedMotion && flapRef.current) {
             const segMs = (seg / velocity) * 1000
             flapRef.current.animate(
@@ -368,6 +381,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         customAudioRef.current.loop = true
         customAudioRef.current.play().catch(() => {})
       }
+      fxRef.current?.spinStart(!!(audioSettings?.enabled && audioSettings?.url))
       motionRef.current = { phase: 'spinup', t0: performance.now(), from: angleRef.current, plan: null }
       lastBoundaryRef.current = Math.floor(angleRef.current / (360 / segmentCountRef.current))
       startLoop()
@@ -414,10 +428,21 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   const winnerIndex = heldWinnerId ? displayedSegments.findIndex(s => s.id === heldWinnerId) : -1
   const winningNumber = heldWinnerId ? (numberOf.get(heldWinnerId) ?? null) : null
   const winningGem = winnerIndex >= 0 ? GEMS[winnerIndex % GEMS.length] : GEMS[0]
+  const numbers3d = useMemo(() => displayedSegments.map((s, i) => numberOf.get(s.id) ?? i + 1), [displayedSegments, numberOf])
+
+  // Plateau 3D : célébration au moment exact de la révélation (lumières, panneaux, bruitages).
+  useEffect(() => {
+    if (showResult && winnerIndex >= 0) fxRef.current?.reveal(winnerIndex, winningNumber)
+    else if (!showResult) fxRef.current?.clear()
+    // winnerIndex/winningNumber relus au moment de la révélation seulement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResult])
 
   // Confettis dorés via canvas-confetti à l'apparition du résultat / de la fin
   useEffect(() => {
     if (!showConfetti || prefersReducedMotion) return
+    // Plateau 3D : il a ses propres confettis pour le résultat (ceux-ci restent pour l'écran de fin).
+    if (show3d && !showFinished) return
     const colors = CONFETTI_COLORS
     confetti({ particleCount: 150, spread: 105, startVelocity: 50, origin: { x: 0.5, y: 0.5 }, colors, scalar: 1.15, ticks: 260 })
     const end = Date.now() + 1500
@@ -429,6 +454,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
     }
     frame()
     return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showConfetti, prefersReducedMotion])
 
   // Géométrie — parts égales, gros numéros centrés
@@ -463,6 +489,12 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: '#03040c' }}>
 
+      {use3d && (
+        <Wheel3D fxRef={fxRef} numbers={numbers3d} reduced={!!prefersReducedMotion} sfx={audioSettings?.sfxEnabled !== false}
+          onReady={() => setReady3d(true)} onFail={() => { setFailed3d(true); setReady3d(false) }} />
+      )}
+
+      {!show3d && (<>
       {/* FOND PLATEAU TV — bleu nuit profond + halo doré derrière la roue */}
       <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 55% at 50% 46%, rgba(255,190,60,0.26) 0%, rgba(212,175,55,0.09) 32%, transparent 58%), radial-gradient(circle at 50% 42%, #111827 0%, #050510 60%, #000000 100%)' }} />
 
@@ -487,6 +519,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
       <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '34%', background: 'radial-gradient(ellipse 70% 100% at 50% 100%, rgba(50,110,210,0.26) 0%, transparent 72%)' }} />
       {/* Vignette de contraste */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(0,0,0,0.52) 100%)' }} />
+      </>)}
 
       {/* Bouton plein écran (discret) */}
       <motion.button onClick={toggleFullscreen} initial={{ opacity: 0 }} animate={{ opacity: 0.25 }}
@@ -496,7 +529,8 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
         {isFullscreen ? <Minimize className="h-5 w-5 text-[#d4af37]" /> : <Maximize className="h-5 w-5 text-[#d4af37]" />}
       </motion.button>
 
-      {/* SCÈNE CENTRÉE */}
+      {/* SCÈNE CENTRÉE (roue 2D : masquée quand le plateau 3D est prêt) */}
+      {!show3d && (
       <div className="relative z-10 h-full w-full flex items-center justify-center">
         {/* Roue légèrement remontée pour laisser le socle visible sous elle.
             Taille liée à l'écran (85 % du petit côté), sans plafond bas : grande aussi en 4K. */}
@@ -769,6 +803,7 @@ export default function WheelGame({ segments, isSpinning, result, spinToIndex, u
           </div>
         </motion.div>
       </div>
+      )}
 
       {/* POPUP RÉSULTAT — temps 2 : après ~1,5 s d'illumination de la case sur la
           roue, le défi s'affiche. Voile partiel : la roue reste visible derrière. */}

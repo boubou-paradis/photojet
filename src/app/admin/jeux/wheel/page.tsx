@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import Image from 'next/image'
+import localFont from 'next/font/local'
 import {
   ArrowLeft,
   Loader2,
@@ -11,9 +12,7 @@ import {
   X,
   Plus,
   Trash2,
-  RotateCcw,
   History,
-  Palette,
   Music,
   Volume2,
   VolumeX,
@@ -23,8 +22,14 @@ import {
   Square,
   Timer,
   Hand,
+  FerrisWheel,
+  Rocket,
+  Trophy,
+  Shuffle,
+  ChevronUp,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase'
 import { sendDeactivateBeacon } from '@/lib/games/deactivate-beacon'
 import { fetchUserSession } from '@/lib/session-select'
@@ -36,6 +41,11 @@ import RemoteControlBadge from '@/components/games/RemoteControlBadge'
 import type { RemoteLegendData } from '@/components/games/RemoteLegend'
 import { useRemoteControl, useRemoteSwitch } from '@/hooks/useRemoteControl'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import rg from './regie.module.css'
+
+// Titre façon carte du jeu (même police que la régie du Bon Ordre)
+const cardFont = localFont({ src: './fonts/Anton-Regular.ttf', display: 'swap' })
+const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
 // Default segments
 const DEFAULT_SEGMENTS: WheelSegment[] = [
@@ -336,69 +346,61 @@ export default function WheelPage() {
     // la roue s'arrête donc toujours au même endroit (cases 1, 2, 3… dans l'ordre).
     const followsList = list.length > 1 && list.every((seg, i) => seg.id === availableSegments[i]?.id)
     return (
-      <div className="card-gold rounded-xl p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-white">Ordre de sortie</h3>
-            <p className="text-gray-400 text-xs">
-              {drawOrder.enabled ? 'Ordre prédéfini : la roue s’arrête dans cet ordre' : 'Mode aléatoire (par défaut)'}
-            </p>
-          </div>
+      <div className={rg.box}>
+        <div className={rg.lab}>
+          <Shuffle />Ordre de sortie
           <button
             onClick={toggleDrawOrder}
             disabled={isSpinning}
             role="switch"
             aria-checked={drawOrder.enabled}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              drawOrder.enabled ? 'bg-[#D4AF37] text-black' : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
-            } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {drawOrder.enabled ? 'Ordre prédéfini : ON' : 'Ordre prédéfini : OFF'}
-          </button>
+            aria-label={drawOrder.enabled ? 'Ordre prédéfini : ON' : 'Ordre prédéfini : OFF'}
+            title={drawOrder.enabled ? 'Ordre prédéfini : ON' : 'Ordre prédéfini : OFF'}
+            className={cx(rg.toggle, drawOrder.enabled && rg.toggleOn, rg.labEnd)}
+          />
         </div>
+        <p className={rg.orderTxt}>
+          {drawOrder.enabled ? 'Ordre prédéfini : la roue s’arrête dans cet ordre' : 'Mode aléatoire (par défaut)'}
+        </p>
         {drawOrder.enabled && next && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-white" data-testid="next-segment">
-              Prochaine case : <b className="text-[#D4AF37]">{next.text}</b>
-              <span className="text-gray-400 text-xs"> (case n°{wheelNumber(next.id)} sur la roue)</span>
+          <>
+            <p className={rg.next} data-testid="next-segment">
+              Prochaine case : <b>{next.text}</b>
+              <small> (case n°{wheelNumber(next.id)} sur la roue)</small>
             </p>
             {followsList && (
-              <p role="alert" className="text-xs text-orange-200 bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-2">
+              <p role="alert" className={rg.warn}>
                 L’ordre suit encore la liste (cases 1, 2, 3… dans l’ordre) : la roue s’arrêtera toujours au même endroit. Réglez-le avec ▲▼ ou mélangez-le.
               </p>
             )}
-            <button
-              onClick={shuffleDrawOrder}
-              disabled={isSpinning || list.length < 2}
-              className="w-full py-1.5 rounded-lg text-xs font-bold border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37]/10 disabled:opacity-40"
-            >
-              🔀 Mélanger l’ordre
+            <button onClick={shuffleDrawOrder} disabled={isSpinning || list.length < 2} className={rg.shuffle}>
+              <Shuffle />Mélanger l’ordre
             </button>
-          </div>
+          </>
         )}
         {drawOrder.enabled && (
-          <div className="space-y-1.5 mt-3 max-h-[260px] overflow-y-auto pr-1">
+          <ul className={cx(rg.list, rg.listOrder)}>
             {list.map((segment, i) => (
-              <div key={segment.id} className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2">
-                <span className="text-[#D4AF37] font-mono text-xs w-6">{i + 1}.</span>
-                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: segment.color }} />
-                <span className="flex-1 text-white text-sm truncate">{segment.text}</span>
-                <span className="text-gray-500 text-[10px] whitespace-nowrap">case n°{wheelNumber(segment.id)}</span>
+              <li key={segment.id}>
+                <span className={rg.r}>{i + 1}.</span>
+                <span className={cx(rg.n, rg.nSm)} style={{ backgroundColor: segment.color }}>{wheelNumber(segment.id)}</span>
+                <span className={rg.tx}>{segment.text}</span>
+                <span className={rg.c}>case n°{wheelNumber(segment.id)}</span>
                 <button
                   onClick={() => moveInDrawOrder(segment.id, -1)}
                   disabled={i === 0 || isSpinning}
                   aria-label="Monter"
-                  className="px-1.5 text-gray-400 hover:text-[#D4AF37] disabled:opacity-30"
-                >▲</button>
+                  className={rg.ib}
+                ><ChevronUp /></button>
                 <button
                   onClick={() => moveInDrawOrder(segment.id, 1)}
                   disabled={i === list.length - 1 || isSpinning}
                   aria-label="Descendre"
-                  className="px-1.5 text-gray-400 hover:text-[#D4AF37] disabled:opacity-30"
-                >▼</button>
-              </div>
+                  className={rg.ib}
+                ><ChevronDown /></button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     )
@@ -496,6 +498,7 @@ export default function WheelPage() {
         url: publicUrl,
         enabled: true,
         filename: file.name,
+        sfxEnabled: audioSettings.sfxEnabled,
       }
       setAudioSettings(newSettings)
 
@@ -534,6 +537,7 @@ export default function WheelPage() {
         url: null,
         enabled: false,
         filename: null,
+        sfxEnabled: audioSettings.sfxEnabled,
       }
       setAudioSettings(newSettings)
 
@@ -564,6 +568,35 @@ export default function WheelPage() {
       enabled: !audioSettings.enabled,
     }
     setAudioSettings(newSettings)
+
+    await supabase
+      .from('sessions')
+      .update({ wheel_audio: JSON.stringify(newSettings) })
+      .eq('id', session.id)
+  }
+
+  // Bruitages de l'écran public (absent = activés) : enregistrés avec la musique dans wheel_audio
+  // et envoyés à l'écran entre deux tirages seulement (interrupteur bloqué pendant une rotation).
+  async function toggleSfxEnabled() {
+    if (!session || isSpinning) return
+
+    const newSettings: WheelAudioSettings = {
+      ...audioSettings,
+      sfxEnabled: audioSettings.sfxEnabled === false,
+    }
+    setAudioSettings(newSettings)
+
+    if (gameActive) {
+      broadcastGameState({
+        gameActive: true,
+        segments,
+        isSpinning: false,
+        result,
+        usedSegmentIds,
+        isGameFinished,
+        audioSettings: newSettings,
+      })
+    }
 
     await supabase
       .from('sessions')
@@ -887,465 +920,331 @@ export default function WheelPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
-          <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
-            <div className="absolute inset-0 h-12 w-12 animate-ping opacity-20 rounded-full bg-[#D4AF37]" />
-          </div>
-          <p className="text-gray-400 text-sm">Chargement...</p>
-        </motion.div>
+      <div className={`${rg.page} ${rg.center}`}>
+        <Loader2 className={rg.spin} />
       </div>
     )
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0D0D0F] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white mb-4">Aucune session trouvée</p>
-          <Button onClick={() => router.push('/admin/dashboard')}>
+      <div className={`${rg.page} ${rg.center}`}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ marginBottom: 16 }}>Aucune session trouvée</p>
+          <button className={rg.btn} onClick={() => router.push('/admin/dashboard')}>
             Retour au dashboard
-          </Button>
+          </button>
         </div>
       </div>
     )
   }
 
+  // Habillage « régie » AnimaJet 2.0 (maquette validée le 27/11/2026, calquée sur la régie du Bon Ordre) — handlers et états inchangés.
+  const sfxOn = audioSettings.sfxEnabled !== false
+  const sfxRow = (
+    <div className={rg.aud}>
+      <p>{sfxOn ? <Sparkles /> : <VolumeX />}Bruitages du jeu <small className={rg.sub}>lancement, roulement, clacs, arrêt, fanfare</small></p>
+      <button
+        onClick={toggleSfxEnabled}
+        disabled={isSpinning}
+        role="switch"
+        aria-checked={sfxOn}
+        aria-label="Bruitages du jeu"
+        className={cx(rg.toggle, sfxOn && rg.toggleOn)}
+      />
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-[#0D0D0F] overflow-hidden">
-      {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-[#D4AF37]/3 to-transparent rounded-full" />
-      </div>
-      {/* Header */}
-      <header className="relative z-10 bg-[#1A1A1E]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(`/admin/jeux?session=${session.id}`)}
-              className="text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-yellow-500/30 flex items-center justify-center">
-                <span className="text-xl">🎡</span>
-                <div className="absolute inset-0 rounded-xl bg-[#D4AF37]/20 blur-xl opacity-50" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-white">Roue de la Destinée</h1>
-                <p className="text-xs text-gray-500">{session.name}</p>
-              </div>
+    <div className={rg.page}>
+      <div className={rg.wrap}>
+        {/* En-tête */}
+        <header className={rg.top}>
+          <button className={rg.btn} onClick={() => router.push(`/admin/jeux?session=${session.id}`)}>
+            <ArrowLeft />
+            Retour
+          </button>
+          <div className={rg.vsep} />
+          <div className={rg.ttl}>
+            <div className={rg.thumb}><Image src="/images/games/roue-de-la-destinee-v2.png" alt="" fill sizes="100px" /></div>
+            <div>
+              <h1 className={`${rg.cardTitle} ${cardFont.className}`} data-t="ROUE DE LA DESTINÉE"><span>ROUE DE LA DESTINÉE</span></h1>
+              <small>{session.name}</small>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameFinished} legend={remoteLegend} />
-            <a href="/roue-de-la-destinee-regles.pdf" target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="sm" className="text-[#D4AF37] hover:text-[#F4D03F] border border-[#D4AF37]/30 hover:border-[#D4AF37]">
-                <FileText className="h-4 w-4 mr-2" />
-                Notice
-              </Button>
-            </a>
-            <button
-              onClick={clearAllData}
-              className="px-4 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 flex items-center gap-2 text-sm border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-              title="Supprimer tous les segments"
-            >
-              <Trash2 className="h-4 w-4" />
-              Tout vider
+          <div className={rg.grow} />
+          <RemoteControlBadge enabled={remoteOn} onToggle={setRemoteOn} gameActive={gameActive} finished={isGameFinished} legend={remoteLegend} />
+          <div className={rg.vsep} />
+          <a href="/roue-de-la-destinee-regles.pdf" target="_blank" rel="noopener noreferrer" className={cx(rg.btn, rg.btnGold)}>
+            <FileText />
+            Notice
+          </a>
+          <button onClick={clearAllData} className={cx(rg.btn, rg.red)} title="Supprimer tous les segments">
+            <Trash2 />
+            Tout vider
+          </button>
+          {gameActive && (
+            <button onClick={() => window.open(`/live/${session.code}`, 'photojet-live')} className={cx(rg.btn, rg.btnViolet)}>
+              <Monitor />
+              Voir le diaporama
             </button>
-            {gameActive && (
-              <Button
-                size="sm"
-                onClick={() => window.open(`/live/${session.code}`, 'photojet-live')}
-                className="bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-semibold hover:opacity-90 transition-opacity"
-              >
-                <Monitor className="h-4 w-4 mr-2" />
-                Voir le diaporama
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+          )}
+        </header>
 
-      {/* Main content */}
-      <main className="relative z-10 px-8 py-6">
         {!gameActive ? (
-          /* Configuration - 2 colonnes sur desktop */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col lg:flex-row gap-6"
-          >
-            {/* Colonne gauche - Configuration */}
-            <div className="flex-1 space-y-4">
-              {/* Segments */}
-              <div className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl">🎡</span>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Segments</h2>
-                    <p className="text-gray-400 text-xs">{segments.length}/20 segments</p>
+          /* Configuration */
+          <section className={cx(rg.panel, rg.cfgPanel)}>
+            <div className={rg.head}>
+              <div className={`${rg.thumb} ${rg.thumbBig}`}><Image src="/images/games/roue-de-la-destinee-v2.png" alt="Roue de la Destinée" fill sizes="200px" priority /></div>
+              <div>
+                <h2 className={`${rg.cardTitle} ${cardFont.className}`} data-t="ROUE DE LA DESTINÉE"><span>ROUE DE LA DESTINÉE</span></h2>
+                <p>Tournez la roue et découvrez votre défi</p>
+              </div>
+            </div>
+
+            <div className={rg.cols}>
+              <div className={rg.stack}>
+                {/* Segments */}
+                <div className={rg.box}>
+                  <div className={rg.lab}><FerrisWheel />Défis de la roue<span className={rg.nb}>{segments.length}/20</span></div>
+                  <div className={rg.add}>
+                    <input
+                      value={newSegmentText}
+                      onChange={(e) => setNewSegmentText(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addSegment()}
+                      placeholder="Nouveau défi..."
+                      className={rg.txt}
+                    />
+                    <button onClick={addSegment} disabled={segments.length >= 20} className={rg.addBtn} aria-label="Ajouter">
+                      <Plus />
+                    </button>
                   </div>
+                  <ul className={cx(rg.list, rg.listSegs)}>
+                    {segments.map((segment, index) => (
+                      <li key={segment.id}>
+                        <span className={rg.n} style={{ backgroundColor: segment.color }} title="Couleur de la case">
+                          {index + 1}
+                          <input
+                            type="color"
+                            value={segment.color}
+                            onChange={(e) => updateSegmentColor(segment.id, e.target.value)}
+                            aria-label="Couleur de la case"
+                          />
+                        </span>
+                        <input
+                          value={segment.text}
+                          onChange={(e) => updateSegmentText(segment.id, e.target.value)}
+                          className={rg.tx}
+                        />
+                        <button onClick={() => removeSegment(segment.id)} className={cx(rg.ib, rg.ibDel)} aria-label="Supprimer">
+                          <Trash2 />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className={rg.hint}>2 défis minimum, 20 maximum · la pastille règle la couleur</div>
+                </div>
+              </div>
+
+              <div className={rg.stack}>
+                {/* Ordre de sortie (mode aléatoire par défaut) */}
+                {renderDrawOrderCard()}
+
+                {/* Musique + bruitages */}
+                <div className={rg.music}>
+                  <div className={rg.eq}>{[30, 44, 22, 50, 36, 26, 46, 32].map((h, i) => <i key={i} style={{ height: h, animationDelay: `${i * 0.12}s` }} />)}</div>
+                  <div className={rg.mRow}>
+                    <div className={rg.mi}><Music /></div>
+                    <div><h3>Musique de la roue</h3><small>Son pendant la rotation</small></div>
+                  </div>
+
+                  {!audioSettings.url ? (
+                    <label className={rg.drop}>
+                      {audioUploading ? <Loader2 className={rg.spin} /> : <><Upload />Uploader (MP3, WAV, OGG)</>}
+                      <input
+                        ref={audioInputRef}
+                        type="file"
+                        accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
+                        onChange={handleAudioUpload}
+                        className="hidden"
+                        disabled={audioUploading}
+                      />
+                    </label>
+                  ) : (
+                    <>
+                      <div className={rg.aud}>
+                        <p><Music />{audioSettings.filename || 'Fichier audio'}</p>
+                        <button onClick={toggleAudioPreview} className={cx(rg.iconBtn, rg.iconPlay)} aria-label={isPreviewPlaying ? 'Pause' : 'Écouter'}>
+                          {isPreviewPlaying ? <Pause /> : <Play />}
+                        </button>
+                        <button onClick={deleteAudio} className={cx(rg.iconBtn, rg.iconDel)} aria-label="Supprimer la musique">
+                          <Trash2 />
+                        </button>
+                      </div>
+                      <div className={rg.aud}>
+                        <p>{audioSettings.enabled ? <Volume2 /> : <VolumeX />}Son activé</p>
+                        <button
+                          onClick={toggleAudioEnabled}
+                          role="switch"
+                          aria-checked={audioSettings.enabled}
+                          aria-label="Son activé"
+                          className={cx(rg.toggle, audioSettings.enabled && rg.toggleOn)}
+                        />
+                      </div>
+                    </>
+                  )}
+                  {sfxRow}
+
+                  {audioSettings.url && (
+                    <audio
+                      ref={audioPreviewRef}
+                      src={audioSettings.url}
+                      onEnded={() => setIsPreviewPlaying(false)}
+                    />
+                  )}
                 </div>
 
-                {/* Add segment */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    value={newSegmentText}
-                    onChange={(e) => setNewSegmentText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addSegment()}
-                    placeholder="Nouveau défi..."
-                    className="flex-1 bg-[#2E2E33] text-white rounded-lg px-3 py-2 text-sm border border-[rgba(255,255,255,0.1)] focus:border-[#D4AF37] focus:outline-none"
-                  />
-                  <button
-                    onClick={addSegment}
-                    disabled={segments.length >= 20}
-                    className="px-3 py-2 bg-[#D4AF37] text-black rounded-lg font-bold hover:bg-[#F4D03F] disabled:opacity-50"
-                  >
-                    <Plus className="h-4 w-4" />
+                {/* Prévisualisation */}
+                <div className={rg.box}>
+                  <div className={rg.lab}><Monitor />Prévisualisation</div>
+                  <div className={rg.preview}>
+                    <WheelPreview segments={segments} size={280} />
+                    <p>La roue se met à jour en temps réel</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={launchGame} disabled={launching || segments.length < 2} className={cx(rg.cta, rg.launchCta)}>
+              {launching ? <Loader2 className={rg.spin} /> : <><Rocket />Configurer et ouvrir le diaporama</>}
+            </button>
+          </section>
+        ) : (
+          /* Partie en cours : commandes à gauche, vue de l'écran géant à droite */
+          <section className={rg.panel}>
+            <div className={rg.status}>
+              <div className={rg.st}>
+                <span className={cx(rg.dot, isGameFinished ? rg.dotEnd : isSpinning ? rg.dotRun : result ? rg.dotPause : null)} />
+                {isGameFinished ? 'Jeu terminé !' : isSpinning ? 'Rotation...' : result ? 'Résultat affiché' : 'Prêt'}
+              </div>
+              <div className={rg.stRight}>
+                <span className={rg.kbd}>{availableSegments.length}/{segments.length} restants</span>
+                <button
+                  onClick={toggleSfxEnabled}
+                  disabled={isSpinning}
+                  className={cx(rg.fxBtn, sfxOn && rg.fxOn)}
+                  title="Bruitages de l'écran public (la musique n'est pas concernée)"
+                >
+                  {sfxOn ? <Volume2 /> : <VolumeX />}
+                  Bruitages {sfxOn ? 'activés' : 'coupés'}
+                </button>
+              </div>
+            </div>
+
+            <div className={rg.playCols}>
+              <div className={rg.stack}>
+                {/* Mode */}
+                <div className={rg.modes}>
+                  <button onClick={() => setSpinMode('auto')} disabled={isSpinning} className={spinMode === 'auto' ? rg.on : undefined}>
+                    <Timer />Auto (8s)
+                  </button>
+                  <button onClick={() => setSpinMode('manual')} disabled={isSpinning} className={spinMode === 'manual' ? rg.on : undefined}>
+                    <Hand />Manuel
                   </button>
                 </div>
 
-                {/* Segments list - hauteur fixe avec scroll */}
-                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
-                  {segments.map((segment, index) => (
-                    <div
-                      key={segment.id}
-                      className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2"
-                    >
-                      <span className="text-gray-500 font-mono text-xs w-5">{index + 1}.</span>
-                      <div
-                        className="w-5 h-5 rounded-full flex-shrink-0 cursor-pointer relative"
-                        style={{ backgroundColor: segment.color }}
-                      >
-                        <input
-                          type="color"
-                          value={segment.color}
-                          onChange={(e) => updateSegmentColor(segment.id, e.target.value)}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                        />
-                      </div>
-                      <input
-                        value={segment.text}
-                        onChange={(e) => updateSegmentText(segment.id, e.target.value)}
-                        className="flex-1 bg-transparent text-white text-sm border-none focus:outline-none"
-                      />
-                      <button
-                        onClick={() => removeSegment(segment.id)}
-                        className="p-1 text-gray-500 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Ordre de sortie (mode aléatoire par défaut) */}
-              {renderDrawOrderCard()}
-
-              {/* Audio Section - Compact */}
-              <div className="card-gold rounded-xl p-4 hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <Music className="h-4 w-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">Musique de la roue</h3>
-                    <p className="text-gray-400 text-xs">Son pendant la rotation</p>
-                  </div>
-                </div>
-
-                {/* Upload zone */}
-                {!audioSettings.url ? (
-                  <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-[rgba(255,255,255,0.1)] rounded-lg cursor-pointer hover:border-[#D4AF37]/50 transition-colors bg-[#1A1A1E]">
-                    {audioUploading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-[#D4AF37]" />
-                    ) : (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Upload className="h-5 w-5" />
-                        <span className="text-sm">Uploader (MP3, WAV, OGG)</span>
-                      </div>
+                {/* Résultat */}
+                {result && (
+                  <div className={rg.res}>
+                    <small className={rg.resLab}>Résultat</small>
+                    {lastDrawnId && wheelNumbers.get(lastDrawnId) && (
+                      <span className={rg.rn} style={{ backgroundColor: segments.find(s => s.id === lastDrawnId)?.color }}>{wheelNumbers.get(lastDrawnId)}</span>
                     )}
-                    <input
-                      ref={audioInputRef}
-                      type="file"
-                      accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3"
-                      onChange={handleAudioUpload}
-                      className="hidden"
-                      disabled={audioUploading}
-                    />
-                  </label>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 bg-[#1A1A1E] rounded-lg p-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0">
-                        <Music className="h-4 w-4 text-[#D4AF37]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate">
-                          {audioSettings.filename || 'Fichier audio'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={toggleAudioPreview}
-                        className="p-1.5 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30"
-                      >
-                        {isPreviewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                      </button>
-                      <button
-                        onClick={deleteAudio}
-                        className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between bg-[#1A1A1E] rounded-lg p-2">
-                      <div className="flex items-center gap-2">
-                        {audioSettings.enabled ? (
-                          <Volume2 className="h-3.5 w-3.5 text-[#D4AF37]" />
-                        ) : (
-                          <VolumeX className="h-3.5 w-3.5 text-gray-500" />
-                        )}
-                        <span className="text-white text-xs">Son activé</span>
-                      </div>
-                      <button
-                        onClick={toggleAudioEnabled}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${
-                          audioSettings.enabled ? 'bg-[#D4AF37]' : 'bg-gray-600'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                            audioSettings.enabled ? 'left-5' : 'left-0.5'
-                          }`}
-                        />
-                      </button>
-                    </div>
+                    <p className={rg.resTxt}>{result}</p>
                   </div>
                 )}
 
-                {audioSettings.url && (
-                  <audio
-                    ref={audioPreviewRef}
-                    src={audioSettings.url}
-                    onEnded={() => setIsPreviewPlaying(false)}
-                  />
-                )}
-              </div>
-
-              {/* Buttons */}
-              <div className="space-y-2">
-                <button
-                  onClick={launchGame}
-                  disabled={launching || segments.length < 2}
-                  className="w-full py-3 bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {launching ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>🚀 Configurer et ouvrir le diaporama</>
-                  )}
-                </button>
-
-              </div>
-            </div>
-
-            {/* Colonne droite - Prévisualisation (hidden on mobile) */}
-            <div className="hidden lg:flex flex-col items-center justify-center card-gold rounded-xl p-6 min-w-[340px]">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Prévisualisation</h3>
-              <WheelPreview segments={segments} size={280} />
-              <p className="text-gray-500 text-xs mt-4 text-center">
-                La roue se met à jour en temps réel
-              </p>
-            </div>
-          </motion.div>
-        ) : (
-          /* Partie en cours - commandes à gauche, vue de la roue à droite */
-          <div className="flex flex-col lg:flex-row gap-6">
-          {/* Control Panel */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex-1 card-gold rounded-xl p-4 border-2 border-[#D4AF37] hover:shadow-[0_0_30px_rgba(212,175,55,0.2)] transition-all duration-300"
-          >
-            {/* Header avec status */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${
-                  isGameFinished ? 'bg-[#D4AF37] animate-pulse' :
-                  isSpinning ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-                }`}></span>
-                <span className="text-white font-bold">
-                  {isGameFinished ? '🏆 Jeu terminé!' : isSpinning ? 'Rotation...' : result ? 'Résultat affiché' : 'Prêt'}
-                </span>
-              </div>
-              <span className={`text-sm ${availableSegments.length === 0 ? 'text-[#D4AF37]' : 'text-gray-400'}`}>
-                {availableSegments.length}/{segments.length} restants
-              </span>
-            </div>
-
-            {/* Mode selector */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setSpinMode('auto')}
-                disabled={isSpinning}
-                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                  spinMode === 'auto'
-                    ? 'bg-[#D4AF37] text-black'
-                    : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
-                } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Timer className="h-4 w-4" />
-                Auto (8s)
-              </button>
-              <button
-                onClick={() => setSpinMode('manual')}
-                disabled={isSpinning}
-                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                  spinMode === 'manual'
-                    ? 'bg-[#D4AF37] text-black'
-                    : 'bg-[#1A1A1E] text-gray-400 hover:text-white'
-                } ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Hand className="h-4 w-4" />
-                Manuel
-              </button>
-            </div>
-
-            {/* Ordre de sortie — modifiable entre deux tirages */}
-            <div className="mb-4">{renderDrawOrderCard()}</div>
-
-            {/* Current result */}
-            {result && (
-              <div className="bg-gradient-to-r from-[#D4AF37]/20 to-[#F4D03F]/20 rounded-lg p-4 mb-4 text-center border border-[#D4AF37]">
-                <p className="text-gray-400 text-xs mb-1">RÉSULTAT</p>
-                <p className="text-2xl font-bold text-[#D4AF37]">{result}</p>
-              </div>
-            )}
-
-            {/* Spin / Stop buttons */}
-            {!isSpinning ? (
-              <button
-                onClick={spinWheel}
-                disabled={isGameFinished}
-                className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                  isGameFinished
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-[#D4AF37] to-[#F4D03F] text-black hover:opacity-90'
-                }`}
-              >
-                {isGameFinished ? (
-                  <>🏆 Tous les segments utilisés!</>
+                {/* Tourner / STOP */}
+                {!isSpinning ? (
+                  <button onClick={spinWheel} disabled={isGameFinished} className={cx(rg.big, isGameFinished ? rg.done : cx(rg.gd, rg.spinBtn))}>
+                    {isGameFinished ? <><Trophy />Tous les segments utilisés !</> : <><FerrisWheel />FAIRE TOURNER {spinMode === 'manual' ? '(Manuel)' : ''}</>}
+                  </button>
+                ) : spinMode === 'manual' ? (
+                  <button onClick={stopWheel} className={cx(rg.big, rg.stop)}>
+                    <Square />
+                    STOP !
+                  </button>
                 ) : (
+                  <button disabled className={cx(rg.big, rg.wait)}>
+                    <Loader2 />
+                    Rotation en cours...
+                  </button>
+                )}
+
+                {result && !isSpinning && (
+                  <button onClick={clearResult} className={cx(rg.big, rg.sk)}>
+                    Masquer le résultat
+                  </button>
+                )}
+
+                {/* Ordre de sortie — modifiable entre deux tirages */}
+                {renderDrawOrderCard()}
+
+                {/* Historique */}
+                {history.length > 0 && (
+                  <div className={rg.box}>
+                    <div className={rg.lab}><History />Historique</div>
+                    <ul className={cx(rg.list, rg.hist)}>
+                      {history.slice(0, 5).map((item, index) => (
+                        <li key={index}>
+                          <span className={rg.r}>{index + 1}.</span>
+                          <span className={rg.tx}>{item.text}</span>
+                          {wheelNumbers.get(item.segmentId) && <span className={rg.c}>case n°{wheelNumbers.get(item.segmentId)}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <button onClick={exitGame} className={cx(rg.big, rg.q)} style={{ marginTop: 0 }}>
+                  <X />
+                  Quitter le jeu
+                </button>
+              </div>
+
+              {/* Les cases telles qu'elles sont sur l'écran géant (numéros fixes) */}
+              <div className={cx(rg.box, rg.giant)} data-testid="wheel-live-view">
+                <h3><Monitor />Sur l’écran géant</h3>
+                <p className={rg.giantSub}>
+                  {result ? 'Case tirée en surbrillance' : `${availableSegments.length} case${availableSegments.length > 1 ? 's' : ''} encore sur la roue`}
+                </p>
+                <div className={rg.preview}>
+                  {screenSegments.length >= 2 ? (
+                    <WheelPreview segments={screenSegments} size={280} numberOf={wheelNumbers} still highlightId={result ? lastDrawnId : null} />
+                  ) : (
+                    <p className={rg.last}>
+                      {screenSegments.length === 1 ? `Dernière case : n°${wheelNumbers.get(screenSegments[0].id)}` : 'Toutes les cases ont été tirées'}
+                    </p>
+                  )}
+                </div>
+                {availableSegments.length > 0 && (
                   <>
-                    <RotateCcw className="h-6 w-6" />
-                    🎡 FAIRE TOURNER {spinMode === 'manual' ? '(Manuel)' : ''}
+                    <div className={cx(rg.lab, rg.restLab)}>Cases restantes</div>
+                    <ul className={rg.list}>
+                      {availableSegments.map(s => (
+                        <li key={s.id}>
+                          <span className={cx(rg.n, rg.nSm)} style={{ backgroundColor: s.color }}>{wheelNumbers.get(s.id)}</span>
+                          <span className={rg.tx}>{s.text}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </>
                 )}
-              </button>
-            ) : spinMode === 'manual' ? (
-              <button
-                onClick={stopWheel}
-                className="w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all bg-red-500 text-white hover:bg-red-600 animate-pulse"
-              >
-                <Square className="h-6 w-6" />
-                🛑 STOP !
-              </button>
-            ) : (
-              <button
-                disabled
-                className="w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gray-600 text-gray-400 cursor-not-allowed"
-              >
-                <Loader2 className="h-6 w-6 animate-spin" />
-                Rotation en cours...
-              </button>
-            )}
-
-            {/* Clear result */}
-            {result && !isSpinning && (
-              <button
-                onClick={clearResult}
-                className="w-full mt-2 py-2 bg-[#2E2E33] text-white rounded-lg font-medium hover:bg-[#3E3E43] transition-colors"
-              >
-                Masquer le résultat
-              </button>
-            )}
-
-            {/* History */}
-            {history.length > 0 && (
-              <div className="mt-4 bg-[#1A1A1E] rounded-lg p-3">
-                <p className="text-gray-400 text-xs mb-2 flex items-center gap-1">
-                  <History className="h-3 w-3" /> Historique
-                </p>
-                <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                  {history.slice(0, 5).map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">{index + 1}.</span>
-                      <span className="text-white">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
-            )}
-
-            {/* Quitter */}
-            <button
-              onClick={exitGame}
-              className="w-full mt-4 py-2 bg-red-500/30 hover:bg-red-500 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Quitter le jeu
-            </button>
-          </motion.div>
-
-          {/* Colonne droite - les cases telles qu'elles sont sur l'écran géant (numéros fixes) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-gold rounded-xl p-5 lg:w-[360px] flex flex-col items-center"
-            data-testid="wheel-live-view"
-          >
-            <h3 className="text-sm font-bold text-white self-start">Sur l’écran géant</h3>
-            <p className="text-gray-400 text-xs mb-4 self-start">
-              {result ? 'Case tirée en surbrillance' : `${availableSegments.length} case${availableSegments.length > 1 ? 's' : ''} encore sur la roue`}
-            </p>
-            {screenSegments.length >= 2 ? (
-              <WheelPreview segments={screenSegments} size={240} numberOf={wheelNumbers} still highlightId={result ? lastDrawnId : null} />
-            ) : (
-              <p className="text-[#D4AF37] text-sm py-8 text-center" style={{ fontFamily: 'var(--font-playfair), serif' }}>
-                {screenSegments.length === 1 ? `Dernière case : n°${wheelNumbers.get(screenSegments[0].id)}` : 'Toutes les cases ont été tirées'}
-              </p>
-            )}
-            {availableSegments.length > 0 && (
-              <div className="w-full mt-5">
-                <p className="text-gray-400 text-xs mb-2">Cases restantes</p>
-                <ul className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
-                  {availableSegments.map(s => (
-                    <li key={s.id} className="flex items-baseline gap-2 text-sm">
-                      <span className="w-7 shrink-0 text-right font-bold text-[#D4AF37] tabular-nums">{wheelNumbers.get(s.id)}</span>
-                      <span className="text-gray-200 min-w-0 break-words">{s.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </motion.div>
-          </div>
+            </div>
+          </section>
         )}
-      </main>
+      </div>
     </div>
   )
 }
